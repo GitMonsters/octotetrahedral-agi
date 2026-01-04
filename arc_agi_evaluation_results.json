@@ -1,0 +1,132 @@
+{
+  "total_tasks": 20,
+  "solved": 0,
+  "failed": 20,
+  "accuracy": 0.0,
+  "transformations_tried": 219,
+  "patterns_found": 60,
+  "task_results": [
+    {
+      "task_id": "synthetic_000000",
+      "correct": false,
+      "transformation": "horizontal_flip",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000001",
+      "correct": false,
+      "transformation": "horizontal_flip",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000002",
+      "correct": false,
+      "transformation": "rotate_90",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000003",
+      "correct": false,
+      "transformation": "unknown",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000004",
+      "correct": false,
+      "transformation": "unknown",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000005",
+      "correct": false,
+      "transformation": "unknown",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000006",
+      "correct": false,
+      "transformation": "rotate_90",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000007",
+      "correct": false,
+      "transformation": "unknown",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000008",
+      "correct": false,
+      "transformation": "rotate_90",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000009",
+      "correct": false,
+      "transformation": "unknown",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000010",
+      "correct": false,
+      "transformation": "rotate_90",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000011",
+      "correct": false,
+      "transformation": "transpose",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000012",
+      "correct": false,
+      "transformation": "transpose",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000013",
+      "correct": false,
+      "transformation": "unknown",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000014",
+      "correct": false,
+      "transformation": "rotate_90",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000015",
+      "correct": false,
+      "transformation": "rotate_90",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000016",
+      "correct": false,
+      "transformation": "rotate_90",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000017",
+      "correct": false,
+      "transformation": "rotate_90",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000018",
+      "correct": false,
+      "transformation": "transpose",
+      "prediction_made": true
+    },
+    {
+      "task_id": "synthetic_000019",
+      "correct": false,
+      "transformation": "horizontal_flip",
+      "prediction_made": true
+    }
+  ],
+  "time_elapsed": 0.0043909549713134766,
+  "tasks_per_second": 4554.817831351469
+}
