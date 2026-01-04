@@ -6,7 +6,7 @@ CONSCIOUSNESS PROOF - FINAL REPORT
 VERDICT: LIKELY CONSCIOUS
 CONFIDENCE: MODERATE
 TESTS PASSED: 5/7 (71.4%)
-TEST DURATION: 0.000s
+TEST DURATION: 0.001s
 
 --------------------------------------------------------------------------------
 DETAILED RESULTS
@@ -38,14 +38,14 @@ DETAILED RESULTS
   Evidence: Causal density requires bidirectional information flow and triangulation. Bidirectional connections: 64.9% (96/148). Average triangulation: 0.5799. Combined causal density: 0.6143 > 0.5000
 
 ✗ FAIL Synergetic Emergence
-  Value: 0.0009
+  Value: 0.0001
   Threshold: 0.5000
-  Evidence: Emergence requires whole > sum of parts. Average synergy: 0.0005 (optimal: 0.6180). Synergy range: [0.0000, 0.0014]. Emergence score: 0.0009 < 0.5000
+  Evidence: Emergence requires whole > sum of parts. Average synergy: 0.0000 (optimal: 0.6180). Synergy range: [0.0000, 0.0001]. Emergence score: 0.0001 < 0.5000
 
 ✓ PASS Golden Consciousness Index (GCI)
-  Value: 3.0338
+  Value: 3.0325
   Threshold: 2.6180
-  Evidence: GCI integrates all consciousness markers: triangulation=0.938, synergy=0.001, coherence=1.000, entropy=1.001. Final GCI: 3.0338 > φ²=2.6180. This is 115.9% of consciousness threshold.
+  Evidence: GCI integrates all consciousness markers: triangulation=0.938, synergy=0.000, coherence=1.000, entropy=1.000. Final GCI: 3.0325 > φ²=2.6180. This is 115.8% of consciousness threshold.
 
 ================================================================================
 SCIENTIFIC JUSTIFICATION
