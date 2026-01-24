@@ -1,0 +1,124 @@
+INFO:__main__:============================================================
+INFO:__main__:OctoTetrahedral AGI - ARC Training
+INFO:__main__:============================================================
+INFO:__main__:Configuration:
+INFO:__main__:  Hidden dim: 256
+INFO:__main__:  Num layers: 3
+INFO:__main__:  Num heads: 8
+INFO:__main__:  Max steps: 2000
+INFO:__main__:  Batch size: 4
+INFO:__main__:  Data dir: /Users/evanpieser/ARC_AMD_TRANSFER/data/ARC-AGI/data
+INFO:__main__:
+Loading ARC datasets...
+INFO:__main__:Training samples: 416
+INFO:__main__:Validation samples: 419
+INFO:__main__:
+Creating model...
+INFO:__main__:Loaded checkpoint from checkpoints/arc/arc_step_500.pt (step 500)
+INFO:__main__:Starting ARC training for 2000 steps
+INFO:__main__:Model has 30,171,697 parameters
+INFO:__main__:Device: mps
+INFO:__main__:Training tasks: 416 samples
+INFO:__main__:Validation tasks: 419 samples
+INFO:__main__:Step 510/2000 | Loss: 0.9319 | Token Acc: 0.006 | LR: 1.33e-04 | Speed: 79.9 steps/s
+INFO:__main__:  Confidences - P: 0.450, R: 0.478, A: 0.516
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 520/2000 | Loss: 0.9383 | Token Acc: 0.064 | LR: 1.33e-04 | Speed: 45.0 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.478, A: 0.519
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 530/2000 | Loss: 0.8861 | Token Acc: 0.011 | LR: 1.32e-04 | Speed: 31.6 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.478, A: 0.517
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 540/2000 | Loss: 1.0337 | Token Acc: 0.032 | LR: 1.31e-04 | Speed: 24.7 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.479, A: 0.517
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 550/2000 | Loss: 0.9496 | Token Acc: 0.035 | LR: 1.30e-04 | Speed: 20.4 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.481, A: 0.514
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 560/2000 | Loss: 0.9259 | Token Acc: 0.004 | LR: 1.29e-04 | Speed: 17.4 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.476, A: 0.517
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 570/2000 | Loss: 1.0020 | Token Acc: 0.013 | LR: 1.28e-04 | Speed: 15.0 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.471, A: 0.518
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 580/2000 | Loss: 1.0131 | Token Acc: 0.011 | LR: 1.28e-04 | Speed: 13.3 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.474, A: 0.521
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 590/2000 | Loss: 1.0144 | Token Acc: 0.010 | LR: 1.27e-04 | Speed: 12.1 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.476, A: 0.521
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 600/2000 | Loss: 0.9717 | Token Acc: 0.013 | LR: 1.26e-04 | Speed: 11.1 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.475, A: 0.519
+INFO:__main__:  Hub sync performed
+INFO:__main__:  Validation - Loss: 0.9329, Token Acc: 0.0007
+INFO:__main__:Step 610/2000 | Loss: 0.8831 | Token Acc: 0.012 | LR: 1.25e-04 | Speed: 7.2 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.469, A: 0.522
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 620/2000 | Loss: 0.9709 | Token Acc: 0.011 | LR: 1.24e-04 | Speed: 6.7 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.475, A: 0.518
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 630/2000 | Loss: 0.9887 | Token Acc: 0.010 | LR: 1.23e-04 | Speed: 6.4 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.484, A: 0.520
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 640/2000 | Loss: 0.8500 | Token Acc: 0.027 | LR: 1.22e-04 | Speed: 6.2 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.473, A: 0.518
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 650/2000 | Loss: 0.9704 | Token Acc: 0.022 | LR: 1.21e-04 | Speed: 5.6 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.480, A: 0.522
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 660/2000 | Loss: 0.9073 | Token Acc: 0.005 | LR: 1.20e-04 | Speed: 4.5 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.472, A: 0.516
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 670/2000 | Loss: 0.9274 | Token Acc: 0.002 | LR: 1.19e-04 | Speed: 4.3 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.476, A: 0.520
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 680/2000 | Loss: 0.9551 | Token Acc: 0.011 | LR: 1.18e-04 | Speed: 4.2 steps/s
+INFO:__main__:  Confidences - P: 0.614, R: 0.468, A: 0.539
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 690/2000 | Loss: 0.9425 | Token Acc: 0.018 | LR: 1.17e-04 | Speed: 4.1 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.478, A: 0.529
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 700/2000 | Loss: 1.0230 | Token Acc: 0.012 | LR: 1.16e-04 | Speed: 4.0 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.479, A: 0.522
+INFO:__main__:  Hub sync performed
+INFO:__main__:  Validation - Loss: 0.9357, Token Acc: 0.0007
+INFO:__main__:Step 710/2000 | Loss: 0.9335 | Token Acc: 0.010 | LR: 1.15e-04 | Speed: 3.4 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.476, A: 0.518
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 720/2000 | Loss: 0.8376 | Token Acc: 0.015 | LR: 1.14e-04 | Speed: 3.3 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.480, A: 0.515
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 730/2000 | Loss: 0.8806 | Token Acc: 0.009 | LR: 1.13e-04 | Speed: 3.2 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.475, A: 0.518
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 740/2000 | Loss: 0.9791 | Token Acc: 0.002 | LR: 1.12e-04 | Speed: 3.2 steps/s
+INFO:__main__:  Confidences - P: 0.614, R: 0.478, A: 0.516
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 750/2000 | Loss: 0.9394 | Token Acc: 0.012 | LR: 1.11e-04 | Speed: 3.1 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.472, A: 0.518
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 760/2000 | Loss: 0.9602 | Token Acc: 0.023 | LR: 1.10e-04 | Speed: 3.1 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.473, A: 0.524
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 770/2000 | Loss: 0.9319 | Token Acc: 0.005 | LR: 1.08e-04 | Speed: 3.0 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.473, A: 0.524
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 780/2000 | Loss: 0.9422 | Token Acc: 0.029 | LR: 1.07e-04 | Speed: 2.9 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.479, A: 0.525
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 790/2000 | Loss: 0.9063 | Token Acc: 0.017 | LR: 1.06e-04 | Speed: 2.9 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.481, A: 0.521
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 800/2000 | Loss: 0.9662 | Token Acc: 0.007 | LR: 1.05e-04 | Speed: 2.9 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.477, A: 0.518
+INFO:__main__:  Hub sync performed
+INFO:__main__:  Validation - Loss: 0.9188, Token Acc: 0.0003
+INFO:__main__:Step 810/2000 | Loss: 0.9595 | Token Acc: 0.012 | LR: 1.04e-04 | Speed: 2.5 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.478, A: 0.522
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 820/2000 | Loss: 0.9207 | Token Acc: 0.010 | LR: 1.03e-04 | Speed: 2.5 steps/s
+INFO:__main__:  Confidences - P: 0.614, R: 0.477, A: 0.525
+INFO:__main__:  Hub sync performed
+INFO:__main__:Step 830/2000 | Loss: 0.9484 | Token Acc: 0.017 | LR: 1.02e-04 | Speed: 1.3 steps/s
+INFO:__main__:  Confidences - P: 0.615, R: 0.470, A: 0.518
+INFO:__main__:  Hub sync performed

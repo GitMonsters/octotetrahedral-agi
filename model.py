@@ -1,0 +1,658 @@
+"""
+OctoTetrahedral AGI - Main Model Integration
+Combines all components into a unified architecture
+
+Architecture:
+    Input (tokens/embeddings)
+         ↓
+    Perception Limb (embedding + encoding)
+         ↓
+    RNA Editing Layer (dynamic adaptation)
+         ↓
+    Tetrahedral Core (geometry-aware transformer)
+         ↓
+    ┌─────────────────────────────────────────┐
+    │           8-Limb Processing             │
+    │  Memory ─── Planning ─── Language       │
+    │     │          │           │            │
+    │  Spatial ─── Reasoning ─── MetaCog      │
+    └─────────────────────────────────────────┘
+         ↓
+    Hub Synchronization
+         ↓
+    AGICognition (causal discovery, world model, meta-learning)
+         ↓
+    Action Limb (output generation)
+         ↓
+    Output (logits)
+"""
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from typing import Optional, Tuple, Dict, Any, List
+
+from config import Config, get_config
+from core.tetrahedral_geometry import TetrahedralGeometry
+from core.tetrahedral_attention import TetrahedralAttention
+from core.tetrahedral_core import TetrahedralCore
+from core.working_memory import WorkingMemory
+from adaptation.lora import LoRALayer
+from adaptation.rna_editing import RNAEditingLayer
+from limbs.perception_limb import PerceptionLimb
+from limbs.reasoning_limb import ReasoningLimb
+from limbs.action_limb import ActionLimb
+from limbs.memory_limb import MemoryLimb
+from limbs.planning_limb import PlanningLimb
+from limbs.language_limb import LanguageLimb
+from limbs.spatial_limb import SpatialLimb
+from limbs.metacognition_limb import MetaCognitionLimb
+from sync.hub_sync import HubSync
+from cognition import AGICognition, CognitionConfig
+
+
+class OctoTetrahedralModel(nn.Module):
+    """
+    OctoTetrahedral AGI - Main Model Class
+    
+    Combines:
+    - Tetrahedral geometry (64-point structure for attention)
+    - Octopus-inspired RNA editing (dynamic weight modulation)
+    - Distributed 8-limb architecture (semi-autonomous processing units):
+        * Perception: Input encoding
+        * Memory: Episodic + semantic storage
+        * Planning: Goal-directed action sequencing
+        * Language: NLU/NLG with grounding
+        * Spatial: Geometric/grid reasoning
+        * Reasoning: Abstract pattern processing
+        * MetaCognition: Self-monitoring and adaptation
+        * Action: Output generation
+    - Working memory (differentiable memory slots)
+    - AGI Cognition (causal discovery, world model, meta-learning)
+    """
+    
+    def __init__(self, config: Optional[Config] = None):
+        super().__init__()
+        
+        self.config = config or get_config()
+        
+        # Store key dimensions
+        self.vocab_size = self.config.model.vocab_size
+        self.hidden_dim = self.config.model.hidden_dim
+        self.num_heads = self.config.model.num_heads
+        self.num_layers = self.config.model.num_layers
+        
+        # === Tetrahedral Geometry ===
+        self.geometry = TetrahedralGeometry()
+        
+        # === Perception Limb (Input Processing) ===
+        self.perception = PerceptionLimb(
+            vocab_size=self.vocab_size,
+            hidden_dim=self.hidden_dim,
+            max_seq_len=self.config.model.max_seq_len,
+            dropout=self.config.model.dropout,
+            lora_rank=self.config.lora.rank,
+            lora_alpha=self.config.lora.alpha,
+            buffer_size=self.config.limb.buffer_size
+        )
+        
+        # === RNA Editing Layer (Dynamic Adaptation) ===
+        self.rna_editing = RNAEditingLayer(
+            hidden_dim=self.hidden_dim,
+            num_heads=self.config.rna_editing.num_gated_heads,
+            num_pathways=self.config.rna_editing.num_pathways,
+            temperature_init=self.config.rna_editing.temperature_init
+        )
+        
+        # === Tetrahedral Core (Main Transformer) ===
+        self.core = TetrahedralCore(
+            hidden_dim=self.hidden_dim,
+            num_heads=self.num_heads,
+            num_layers=self.num_layers,
+            ffn_dim=self.config.model.ffn_dim,
+            dropout=self.config.model.dropout
+        )
+        
+        # === Working Memory ===
+        self.working_memory = WorkingMemory(
+            hidden_dim=self.hidden_dim,
+            num_slots=self.config.model.memory_slots,
+            num_heads=self.num_heads // 2  # Use fewer heads for memory
+        )
+        
+        # === Memory Limb (Episodic + Semantic Memory) ===
+        self.memory_limb = MemoryLimb(
+            hidden_dim=self.hidden_dim,
+            num_memory_slots=128,
+            episodic_capacity=1000,
+            dropout=self.config.model.dropout,
+            lora_rank=self.config.lora.rank,
+            lora_alpha=self.config.lora.alpha,
+            buffer_size=self.config.limb.buffer_size
+        )
+        
+        # === Planning Limb (Goal-Directed Reasoning) ===
+        self.planning = PlanningLimb(
+            hidden_dim=self.hidden_dim,
+            num_actions=10,
+            planning_horizon=10,
+            num_plans=5,
+            dropout=self.config.model.dropout,
+            lora_rank=self.config.lora.rank,
+            lora_alpha=self.config.lora.alpha,
+            buffer_size=self.config.limb.buffer_size
+        )
+        
+        # === Language Limb (NLU/NLG) ===
+        self.language = LanguageLimb(
+            hidden_dim=self.hidden_dim,
+            vocab_size=self.vocab_size,
+            num_heads=self.num_heads // 2,
+            num_layers=2,
+            max_seq_len=self.config.model.max_seq_len,
+            dropout=self.config.model.dropout,
+            lora_rank=self.config.lora.rank,
+            lora_alpha=self.config.lora.alpha,
+            buffer_size=self.config.limb.buffer_size
+        )
+        
+        # === Spatial Limb (Geometric/Grid Reasoning) ===
+        self.spatial = SpatialLimb(
+            hidden_dim=self.hidden_dim,
+            max_grid_size=30,  # ARC grids up to 30x30
+            num_heads=self.num_heads // 2,
+            num_layers=2,
+            dropout=self.config.model.dropout,
+            lora_rank=self.config.lora.rank,
+            lora_alpha=self.config.lora.alpha,
+            buffer_size=self.config.limb.buffer_size
+        )
+        
+        # === MetaCognition Limb (Self-Monitoring) ===
+        self.metacognition = MetaCognitionLimb(
+            hidden_dim=self.hidden_dim,
+            num_heads=self.num_heads // 2,
+            dropout=self.config.model.dropout,
+            lora_rank=self.config.lora.rank,
+            lora_alpha=self.config.lora.alpha,
+            buffer_size=self.config.limb.buffer_size
+        )
+        
+        # === Reasoning Limb (Pattern Processing) ===
+        self.reasoning = ReasoningLimb(
+            hidden_dim=self.hidden_dim,
+            num_heads=self.num_heads // 2,
+            dropout=self.config.model.dropout,
+            lora_rank=self.config.lora.rank,
+            lora_alpha=self.config.lora.alpha,
+            buffer_size=self.config.limb.buffer_size
+        )
+        
+        # === Action Limb (Output Generation) ===
+        self.action = ActionLimb(
+            hidden_dim=self.hidden_dim,
+            vocab_size=self.vocab_size,
+            dropout=self.config.model.dropout,
+            lora_rank=self.config.lora.rank,
+            lora_alpha=self.config.lora.alpha,
+            buffer_size=self.config.limb.buffer_size,
+            tie_weights=True
+        )
+        
+        # Tie embedding weights
+        self.action.tie_embedding_weights(self.perception.get_embedding_weight())
+        
+        # === AGI Cognition (Causal Discovery, World Model, Meta-Learning) ===
+        cognition_config = CognitionConfig(
+            feature_dim=self.hidden_dim,
+            max_causal_variables=64,
+            max_abstraction_depth=5,
+            world_model_horizon=20,
+            meta_learning_window=100
+        )
+        self.cognition = AGICognition(
+            config=cognition_config,
+            feature_dim=self.hidden_dim
+        )
+        
+        # === Hub Synchronization ===
+        self.hub_sync = HubSync(
+            sync_frequency=self.config.sync.sync_frequency,
+            max_drift=self.config.sync.max_drift,
+            rollback_buffer_size=self.config.sync.rollback_buffer_size,
+            use_performance_weighting=self.config.sync.use_performance_weighting
+        )
+        
+        # Collect all 8 limbs for sync
+        self._limbs = {
+            'perception': self.perception,
+            'memory': self.memory_limb,
+            'planning': self.planning,
+            'language': self.language,
+            'spatial': self.spatial,
+            'reasoning': self.reasoning,
+            'metacognition': self.metacognition,
+            'action': self.action
+        }
+        
+        # === Initialization ===
+        self._init_weights()
+        
+        # Statistics tracking
+        self._forward_count = 0
+        self._last_confidences: Dict[str, float] = {}
+    
+    def _init_weights(self):
+        """Initialize model weights"""
+        def _init_module(module):
+            if isinstance(module, nn.Linear):
+                nn.init.xavier_uniform_(module.weight)
+                if module.bias is not None:
+                    nn.init.zeros_(module.bias)
+            elif isinstance(module, nn.Embedding):
+                nn.init.normal_(module.weight, mean=0, std=0.02)
+            elif isinstance(module, nn.LayerNorm):
+                nn.init.ones_(module.weight)
+                nn.init.zeros_(module.bias)
+        
+        # Don't re-initialize limbs (they have their own init)
+        self.core.apply(_init_module)
+        self.working_memory.apply(_init_module)
+    
+    def forward(
+        self,
+        input_ids: Optional[torch.Tensor] = None,
+        embeddings: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        labels: Optional[torch.Tensor] = None,
+        return_dict: bool = True,
+        return_confidences: bool = False,
+        use_memory: bool = True,
+        pathway_hint: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Forward pass through the full model.
+        
+        Args:
+            input_ids: Token IDs [batch, seq_len]
+            embeddings: Pre-computed embeddings (alternative to input_ids)
+            attention_mask: Attention mask [batch, seq_len]
+            labels: Target labels for loss computation [batch, seq_len]
+            return_dict: Whether to return dict (always True for now)
+            return_confidences: Whether to compute limb confidences
+            use_memory: Whether to use working memory
+            pathway_hint: Optional hint for RNA editing pathway (0-2)
+            
+        Returns:
+            Dict with logits, loss (if labels), and optional stats
+        """
+        self._forward_count += 1
+        
+        # === 1. Perception: Encode Input ===
+        encoded, perception_conf = self.perception(
+            token_ids=input_ids,
+            embeddings=embeddings,
+            return_confidence=return_confidences
+        )
+        # encoded: [batch, seq_len, hidden_dim]
+        
+        # === 2. RNA Editing: Dynamic Adaptation ===
+        editing_result = self.rna_editing(encoded)
+        edited = editing_result['output']
+        editing_info = {
+            'temperature': editing_result['temperature'],
+            'head_gates': editing_result['head_gates'],
+            'pathway_weights': editing_result['pathway_weights'],
+            'confidence': editing_result['confidence'],
+            'adaptation_magnitude': editing_result['temperature'].mean()
+        }
+        # edited: [batch, seq_len, hidden_dim]
+        
+        # === 3. Tetrahedral Core: Main Processing ===
+        core_result = self.core(
+            edited,
+            attention_mask=attention_mask,
+            head_gates=editing_info['head_gates']
+        )
+        core_output = core_result['hidden_states']
+        reasoning_state = core_result['reasoning_state']
+        # core_output: [batch, seq_len, hidden_dim]
+        
+        # === 4. Working Memory: Read/Write ===
+        if use_memory:
+            # Use reasoning state as query for memory
+            memory_query = core_output.mean(dim=1, keepdim=True)  # [batch, 1, hidden]
+            
+            # Read from working memory
+            memory_read, _ = self.working_memory.read(
+                core_output,  # Use full sequence as queries
+                return_weights=False
+            )
+            
+            # Write reasoning state to working memory
+            self.working_memory.write(reasoning_state)  # [batch, hidden]
+            
+            # Blend memory with core output
+            memory_enhanced = core_output + 0.1 * memory_read
+        else:
+            memory_enhanced = core_output
+        
+        # === 5. Parallel Limb Processing ===
+        # Memory Limb: Store/retrieve episodic memories
+        memory_out, memory_conf, _ = self.memory_limb(memory_enhanced)
+        
+        # Spatial Limb: Process spatial/grid features (useful for ARC)
+        spatial_out, spatial_conf, _ = self.spatial(memory_enhanced)
+        
+        # Language Limb: Language understanding
+        language_out, language_conf, _ = self.language(memory_enhanced)
+        
+        # MetaCognition: Self-monitoring and strategy selection
+        meta_out, meta_conf, _ = self.metacognition(memory_enhanced)
+        
+        # Combine limb outputs with gating based on metacognition
+        # Stack the outputs: [batch, seq, hidden, 3]
+        limb_outputs = torch.stack([memory_out, spatial_out, language_out], dim=-1)
+        
+        # Simple average for now (can be learned gating later)
+        combined_limbs = limb_outputs.mean(dim=-1)  # [batch, seq, hidden]
+        
+        # Blend with memory_enhanced
+        multi_limb_output = memory_enhanced + 0.3 * combined_limbs
+        
+        # === 6. Reasoning Limb: Pattern Processing ===
+        reasoned, reasoning_conf, _ = self.reasoning(
+            multi_limb_output,
+            attention_mask=attention_mask,
+            return_confidence=return_confidences
+        )
+        # reasoned: [batch, seq_len, hidden_dim]
+        
+        # === 7. Planning Limb: Action Sequencing ===
+        # Get current state from reasoned output
+        current_state = reasoned.mean(dim=1)  # [batch, hidden]
+        goal_state = current_state  # Use same as goal for now
+        planning_output = self.planning(current_state, goal_state)
+        
+        # === 8. AGI Cognition: Higher-level reasoning ===
+        # Feature vector for cognition module
+        cognition_features = reasoned.mean(dim=1)  # [batch, hidden]
+        cognition_output = self.cognition(cognition_features)
+        
+        # Use the projected features (fixed hidden_dim) instead of augmented
+        # (augmented_features can have variable dimension due to discovered variables)
+        enhanced_features = cognition_output['features']  # [batch, hidden] - fixed size
+        cognition_enhanced = reasoned + 0.1 * enhanced_features.unsqueeze(1)
+        
+        # === 9. Action Limb: Generate Output ===
+        logits, action_conf, gate_values = self.action(
+            cognition_enhanced,
+            return_confidence=return_confidences,
+            embedding_weight=self.perception.get_embedding_weight()
+        )
+        # logits: [batch, seq_len, vocab_size]
+        
+        # === Compute Loss if Labels Provided ===
+        loss = None
+        if labels is not None:
+            # Shift for causal LM loss
+            shift_logits = logits[..., :-1, :].contiguous()
+            shift_labels = labels[..., 1:].contiguous()
+            
+            # Cross entropy loss
+            loss = F.cross_entropy(
+                shift_logits.view(-1, self.vocab_size),
+                shift_labels.view(-1),
+                ignore_index=-100
+            )
+            
+            # Add information gain bonus (curiosity)
+            if self.training:
+                info_gain = self._compute_information_gain(
+                    shift_logits, editing_info
+                )
+                loss = loss - self.config.training.information_gain_weight * info_gain
+        
+        # === Build Output ===
+        output = {
+            'logits': logits,
+            'loss': loss,
+            'hidden_states': reasoned,
+            'reasoning_state': reasoning_state
+        }
+        
+        if return_confidences:
+            self._last_confidences = {
+                'perception': perception_conf or 0.0,
+                'reasoning': reasoning_conf or 0.0,
+                'action': action_conf or 0.0,
+                'overall': (
+                    (perception_conf or 0.5) * 
+                    (reasoning_conf or 0.5) * 
+                    (action_conf or 0.5)
+                ) ** (1/3)  # Geometric mean
+            }
+            output['confidences'] = self._last_confidences
+        
+        if self.training:
+            output['editing_info'] = editing_info
+        
+        return output
+    
+    def _compute_information_gain(
+        self,
+        logits: torch.Tensor,
+        editing_info: Dict[str, Any]
+    ) -> torch.Tensor:
+        """
+        Compute information gain (curiosity bonus).
+        
+        Higher uncertainty in predictions + RNA editing activity = more learning
+        """
+        # Entropy of predictions
+        probs = F.softmax(logits, dim=-1)
+        entropy = -(probs * torch.log(probs + 1e-10)).sum(-1).mean()
+        
+        # RNA editing activity
+        editing_activity = editing_info.get('adaptation_magnitude', 0.0)
+        if isinstance(editing_activity, torch.Tensor):
+            editing_activity = editing_activity.mean()
+        
+        # Combine: encourage exploration when uncertain and adapting
+        info_gain = 0.1 * entropy + 0.05 * editing_activity
+        
+        return info_gain
+    
+    def generate(
+        self,
+        input_ids: torch.Tensor,
+        max_new_tokens: int = 50,
+        temperature: float = 1.0,
+        top_k: Optional[int] = 50,
+        top_p: Optional[float] = 0.9,
+        do_sample: bool = True
+    ) -> torch.Tensor:
+        """
+        Generate tokens autoregressively.
+        
+        Args:
+            input_ids: Initial token IDs [batch, seq_len]
+            max_new_tokens: Maximum new tokens to generate
+            temperature: Sampling temperature
+            top_k: Top-k filtering
+            top_p: Nucleus sampling threshold
+            do_sample: Whether to sample (vs greedy)
+            
+        Returns:
+            Generated token IDs [batch, seq_len + new_tokens]
+        """
+        self.eval()
+        
+        generated = input_ids.clone()
+        
+        with torch.no_grad():
+            for _ in range(max_new_tokens):
+                # Truncate if needed
+                if generated.size(1) > self.config.model.max_seq_len:
+                    context = generated[:, -self.config.model.max_seq_len:]
+                else:
+                    context = generated
+                
+                # Forward pass
+                output = self.forward(input_ids=context)
+                logits = output['logits']
+                
+                # Get next token logits
+                next_logits = logits[:, -1, :]  # [batch, vocab]
+                
+                if do_sample:
+                    # Sample with action limb's sampler
+                    next_tokens, _ = self.action.sample(
+                        next_logits.unsqueeze(1),
+                        temperature=temperature,
+                        top_k=top_k,
+                        top_p=top_p
+                    )
+                    next_tokens = next_tokens.squeeze(1)
+                else:
+                    # Greedy
+                    next_tokens = next_logits.argmax(dim=-1)
+                
+                # Append
+                generated = torch.cat([generated, next_tokens.unsqueeze(1)], dim=1)
+                
+                # Check for EOS (assuming token 0 or specific EOS)
+                # For now, just generate max_new_tokens
+        
+        return generated
+    
+    def sync_limbs(self, performance: float) -> Optional[Dict[str, Any]]:
+        """
+        Perform hub synchronization if needed.
+        
+        Args:
+            performance: Current model performance (e.g., validation accuracy)
+            
+        Returns:
+            Sync results if sync occurred, else None
+        """
+        self.hub_sync.step()
+        
+        if self.hub_sync.should_sync():
+            return self.hub_sync.sync(self, self._limbs, performance)
+        
+        return None
+    
+    def get_num_params(self, trainable_only: bool = False) -> int:
+        """Get parameter count"""
+        if trainable_only:
+            return sum(p.numel() for p in self.parameters() if p.requires_grad)
+        return sum(p.numel() for p in self.parameters())
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get model statistics"""
+        return {
+            'total_params': self.get_num_params(),
+            'trainable_params': self.get_num_params(trainable_only=True),
+            'forward_count': self._forward_count,
+            'last_confidences': self._last_confidences,
+            'memory_utilization': self.working_memory.get_memory_state().norm().item(),
+            'hub_sync_stats': self.hub_sync.get_stats(),
+            'perception_stats': self.perception.get_stats(),
+            'memory_limb_stats': self.memory_limb.get_stats(),
+            'planning_stats': self.planning.get_stats(),
+            'language_stats': self.language.get_stats(),
+            'spatial_stats': self.spatial.get_stats(),
+            'reasoning_stats': self.reasoning.get_stats(),
+            'metacognition_stats': self.metacognition.get_stats(),
+            'action_stats': self.action.get_stats()
+        }
+    
+    def reset_memory(self):
+        """Reset working memory slots"""
+        self.working_memory.reset()
+    
+    def save_checkpoint(self, path: str, optimizer=None, step: int = 0):
+        """Save model checkpoint"""
+        checkpoint = {
+            'model_state_dict': self.state_dict(),
+            'config': self.config.to_dict(),
+            'step': step,
+            'stats': self.get_stats()
+        }
+        if optimizer is not None:
+            checkpoint['optimizer_state_dict'] = optimizer.state_dict()
+        
+        torch.save(checkpoint, path)
+    
+    @classmethod
+    def load_checkpoint(cls, path: str, device: str = 'cpu') -> Tuple['OctoTetrahedralModel', Dict]:
+        """Load model from checkpoint"""
+        checkpoint = torch.load(path, map_location=device)
+        
+        config = get_config()  # Default config
+        # Could parse config from checkpoint['config'] here
+        
+        model = cls(config)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        model.to(device)
+        
+        return model, checkpoint
+
+
+if __name__ == "__main__":
+    print("Testing OctoTetrahedralModel...")
+    
+    # Create model with default config
+    config = get_config()
+    model = OctoTetrahedralModel(config)
+    
+    print(f"\nModel created successfully!")
+    print(f"Total parameters: {model.get_num_params():,}")
+    print(f"Trainable parameters: {model.get_num_params(trainable_only=True):,}")
+    
+    # Test forward pass
+    batch_size = 2
+    seq_len = 32
+    input_ids = torch.randint(0, 1000, (batch_size, seq_len))
+    labels = torch.randint(0, 1000, (batch_size, seq_len))
+    
+    print(f"\nTesting forward pass...")
+    print(f"Input shape: {input_ids.shape}")
+    
+    output = model(
+        input_ids=input_ids,
+        labels=labels,
+        return_confidences=True
+    )
+    
+    print(f"Output keys: {output.keys()}")
+    print(f"Logits shape: {output['logits'].shape}")
+    print(f"Loss: {output['loss'].item():.4f}")
+    print(f"Confidences: {output['confidences']}")
+    
+    # Test generation
+    print(f"\nTesting generation...")
+    prompt = torch.randint(0, 1000, (1, 10))
+    generated = model.generate(
+        prompt,
+        max_new_tokens=20,
+        temperature=0.8
+    )
+    print(f"Prompt length: {prompt.size(1)}")
+    print(f"Generated length: {generated.size(1)}")
+    
+    # Test hub sync
+    print(f"\nTesting hub sync...")
+    for _ in range(15):
+        result = model.sync_limbs(performance=0.85)
+        if result:
+            print(f"Sync result: {result}")
+    
+    # Get stats
+    stats = model.get_stats()
+    print(f"\nModel stats:")
+    print(f"  Forward count: {stats['forward_count']}")
+    print(f"  Memory utilization: {stats['memory_utilization']:.4f}")
+    
+    print("\nAll OctoTetrahedralModel tests passed!")
