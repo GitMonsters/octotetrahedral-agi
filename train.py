@@ -371,10 +371,10 @@ def main():
     # Configuration
     config = get_config()
     
-    # Override for quick testing
-    config.training.max_steps = 1000
-    config.training.log_interval = 10
-    config.training.eval_interval = 100
+    # Extended training run
+    config.training.max_steps = 3000
+    config.training.log_interval = 50
+    config.training.eval_interval = 200
     config.training.save_interval = 500
     
     logger.info("Configuration:")
@@ -429,6 +429,12 @@ def main():
         train_dataloader=train_loader,
         val_dataloader=val_loader
     )
+    
+    # Resume from checkpoint if available
+    checkpoint_path = Path("checkpoints/best.pt")
+    if checkpoint_path.exists():
+        logger.info(f"Resuming from checkpoint: {checkpoint_path}")
+        trainer.load_checkpoint(str(checkpoint_path))
     
     # Train
     trainer.train()

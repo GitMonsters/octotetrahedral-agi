@@ -11,6 +11,8 @@ Architecture:
          ↓
     Tetrahedral Core (geometry-aware transformer)
          ↓
+    Geometric Physics Layer (Fuller/Lloyd/Morphogenesis/TPMS)
+         ↓
     ┌─────────────────────────────────────────┐
     │           8-Limb Processing             │
     │  Memory ─── Planning ─── Language       │
@@ -18,7 +20,7 @@ Architecture:
     │  Spatial ─── Reasoning ─── MetaCog      │
     └─────────────────────────────────────────┘
          ↓
-    Hub Synchronization
+    Quantum-Enhanced Hub Synchronization
          ↓
     AGICognition (causal discovery, world model, meta-learning)
          ↓
@@ -50,6 +52,14 @@ from limbs.metacognition_limb import MetaCognitionLimb
 from sync.hub_sync import HubSync
 from cognition import AGICognition, CognitionConfig
 
+# Import new geometric physics modules
+from physics.geometric_physics_layer import (
+    GeometricPhysicsLayer,
+    GeometricPhysicsConfig,
+    QuantumEnhancedHubSync,
+    create_geometric_physics_layer
+)
+
 
 class OctoTetrahedralModel(nn.Module):
     """
@@ -58,6 +68,7 @@ class OctoTetrahedralModel(nn.Module):
     Combines:
     - Tetrahedral geometry (64-point structure for attention)
     - Octopus-inspired RNA editing (dynamic weight modulation)
+    - Geometric Physics Layer (Fuller/Lloyd/Morphogenesis/TPMS)
     - Distributed 8-limb architecture (semi-autonomous processing units):
         * Perception: Input encoding
         * Memory: Episodic + semantic storage
@@ -67,14 +78,16 @@ class OctoTetrahedralModel(nn.Module):
         * Reasoning: Abstract pattern processing
         * MetaCognition: Self-monitoring and adaptation
         * Action: Output generation
+    - Quantum-enhanced hub synchronization
     - Working memory (differentiable memory slots)
     - AGI Cognition (causal discovery, world model, meta-learning)
     """
     
-    def __init__(self, config: Optional[Config] = None):
+    def __init__(self, config: Optional[Config] = None, use_geometric_physics: bool = True):
         super().__init__()
         
         self.config = config or get_config()
+        self.use_geometric_physics = use_geometric_physics
         
         # Store key dimensions
         self.vocab_size = self.config.model.vocab_size
@@ -112,6 +125,51 @@ class OctoTetrahedralModel(nn.Module):
             ffn_dim=self.config.model.ffn_dim,
             dropout=self.config.model.dropout
         )
+        
+        # === Geometric Physics Layer (Fuller/Lloyd/Morphogenesis/TPMS/QbitNexus/ParallelUniverse) ===
+        if self.use_geometric_physics:
+            gp_config = GeometricPhysicsConfig(
+                enable_fuller=self.config.geometric_physics.enable_fuller,
+                enable_lloyd=self.config.geometric_physics.enable_lloyd,
+                enable_morphogenesis=self.config.geometric_physics.enable_morphogenesis,
+                enable_tpms=self.config.geometric_physics.enable_tpms,
+                enable_qbit_nexus=self.config.geometric_physics.enable_qbit_nexus,
+                enable_parallel_universe=self.config.geometric_physics.enable_parallel_universe,
+                combination_mode=self.config.geometric_physics.combination_mode,
+                fuller_ve_vertices=self.config.geometric_physics.fuller_ve_vertices,
+                fuller_tensegrity_struts=self.config.geometric_physics.fuller_tensegrity_struts,
+                fuller_geodesic_frequency=self.config.geometric_physics.fuller_geodesic_frequency,
+                lloyd_energy_budget=self.config.geometric_physics.lloyd_energy_budget,
+                lloyd_temperature=self.config.geometric_physics.lloyd_temperature,
+                lloyd_reversible_fraction=self.config.geometric_physics.lloyd_reversible_fraction,
+                morpho_diffusion_steps=self.config.geometric_physics.morpho_diffusion_steps,
+                morpho_activator_diffusion=self.config.geometric_physics.morpho_activator_diffusion,
+                morpho_inhibitor_diffusion=self.config.geometric_physics.morpho_inhibitor_diffusion,
+                tpms_surface_type=self.config.geometric_physics.tpms_surface_type,
+                tpms_num_heads=self.config.geometric_physics.tpms_num_heads,
+                tpms_threshold=self.config.geometric_physics.tpms_threshold,
+                qbit_num_vertices=self.config.geometric_physics.qbit_num_vertices,
+                qbit_num_layers=self.config.geometric_physics.qbit_num_layers,
+                qbit_dropout=self.config.geometric_physics.qbit_dropout,
+                parallel_num_universes=self.config.geometric_physics.parallel_num_universes,
+                parallel_num_dimensions=self.config.geometric_physics.parallel_num_dimensions,
+                parallel_overlap_dims=self.config.geometric_physics.parallel_overlap_dims,
+                parallel_collapse_mode=self.config.geometric_physics.parallel_collapse_mode,
+                loss_weight_tensegrity=self.config.geometric_physics.loss_weight_tensegrity,
+                loss_weight_lloyd=self.config.geometric_physics.loss_weight_lloyd,
+                loss_weight_turing=self.config.geometric_physics.loss_weight_turing,
+                loss_weight_equilibrium=self.config.geometric_physics.loss_weight_equilibrium,
+                loss_weight_entanglement=self.config.geometric_physics.loss_weight_entanglement,
+                loss_weight_universe_overlap=self.config.geometric_physics.loss_weight_universe_overlap,
+                dropout=self.config.model.dropout
+            )
+            self.geometric_physics = GeometricPhysicsLayer(
+                hidden_dim=self.hidden_dim,
+                config=gp_config,
+                num_heads=self.num_heads
+            )
+        else:
+            self.geometric_physics = None
         
         # === Working Memory ===
         self.working_memory = WorkingMemory(
@@ -216,6 +274,19 @@ class OctoTetrahedralModel(nn.Module):
         )
         
         # === Hub Synchronization ===
+        # Use quantum-enhanced sync if enabled
+        if self.config.sync.use_quantum_sync:
+            self.quantum_hub_sync = QuantumEnhancedHubSync(
+                hidden_dim=self.hidden_dim,
+                num_limbs=8,
+                coupling_strength=self.config.sync.quantum_coupling_strength,
+                use_tpms_routing=self.config.sync.use_tpms_routing,
+                dropout=self.config.model.dropout
+            )
+        else:
+            self.quantum_hub_sync = None
+        
+        # Standard hub sync (always available for FedAvg)
         self.hub_sync = HubSync(
             sync_frequency=self.config.sync.sync_frequency,
             max_drift=self.config.sync.max_drift,
@@ -318,6 +389,25 @@ class OctoTetrahedralModel(nn.Module):
         reasoning_state = core_result['reasoning_state']
         # core_output: [batch, seq_len, hidden_dim]
         
+        # === 3.5 Geometric Physics Layer (NEW) ===
+        physics_loss = torch.tensor(0.0, device=core_output.device)
+        geometric_physics_info = {}
+        
+        if self.use_geometric_physics and self.geometric_physics is not None:
+            gp_result = self.geometric_physics(
+                core_output,
+                attention_mask=attention_mask,
+                return_components=False
+            )
+            core_output = gp_result['output']  # Enhanced by physics principles
+            physics_loss = gp_result['physics_loss']
+            geometric_physics_info = {
+                'physics_loss': physics_loss,
+                'physics_losses': gp_result.get('physics_losses', {}),
+                'gate_weights': gp_result.get('gate_weights', None),
+                'enabled_modules': gp_result.get('enabled_modules', [])
+            }
+        
         # === 4. Working Memory: Read/Write ===
         if use_memory:
             # Use reasoning state as query for memory
@@ -412,13 +502,19 @@ class OctoTetrahedralModel(nn.Module):
                     shift_logits, editing_info
                 )
                 loss = loss - self.config.training.information_gain_weight * info_gain
+                
+                # Add physics-informed losses from GeometricPhysicsLayer
+                if self.use_geometric_physics and physics_loss is not None:
+                    loss = loss + physics_loss
         
         # === Build Output ===
         output = {
             'logits': logits,
             'loss': loss,
             'hidden_states': reasoned,
-            'reasoning_state': reasoning_state
+            'reasoning_state': reasoning_state,
+            'physics_loss': physics_loss if self.use_geometric_physics else None,
+            'geometric_physics_info': geometric_physics_info if self.use_geometric_physics else None
         }
         
         if return_confidences:

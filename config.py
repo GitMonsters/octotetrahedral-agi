@@ -114,6 +114,90 @@ class SyncConfig:
     
     # Performance weighting for FedAvg
     use_performance_weighting: bool = True
+    
+    # Quantum-enhanced sync
+    use_quantum_sync: bool = True
+    quantum_coupling_strength: float = 0.1
+    use_tpms_routing: bool = True
+
+
+@dataclass
+class GeometricPhysicsConfig:
+    """Configuration for the unified Geometric Physics Layer"""
+    # Module enables
+    enable_fuller: bool = True  # Fuller Synergetics (tensegrity, VE, geodesics)
+    enable_lloyd: bool = True  # Lloyd Computational Universe (limits, Landauer)
+    enable_morphogenesis: bool = True  # Turing patterns, Ricci flow, catastrophe
+    enable_tpms: bool = True  # TPMS-guided attention (gyroid, Schwarz)
+    enable_qbit_nexus: bool = True  # Icosahedral quantum network (D-Wave inspired)
+    enable_parallel_universe: bool = True  # Multiverse parallel computation
+    
+    # Combination mode:
+    # - 'learnable': Parallel ensemble with learned gating (default)
+    # - 'compound': Sequential chaining - each module feeds into next (true integration)
+    # - 'sequential': Simple sequential pass through modules
+    # - 'parallel': Average all module outputs
+    # - 'residual': Sum all module outputs with input
+    combination_mode: str = 'compound'  # Changed default to compound for true integration
+    
+    # Fuller Synergetics parameters
+    fuller_ve_vertices: int = 12  # Vector Equilibrium vertices
+    fuller_tensegrity_struts: int = 6  # Number of compression struts
+    fuller_geodesic_frequency: int = 2  # Geodesic subdivision frequency
+    
+    # Lloyd Computational Universe parameters
+    lloyd_energy_budget: float = 1.0  # Total energy budget for computation
+    lloyd_temperature: float = 1.0  # Thermodynamic temperature
+    lloyd_reversible_fraction: float = 0.5  # Fraction of reversible computation
+    
+    # Morphogenesis parameters
+    morpho_diffusion_steps: int = 3  # Reaction-diffusion iterations
+    morpho_activator_diffusion: float = 0.1  # Activator diffusion rate (Du)
+    morpho_inhibitor_diffusion: float = 0.4  # Inhibitor diffusion rate (Dv > Du)
+    
+    # TPMS parameters
+    tpms_surface_type: str = 'gyroid'  # gyroid, schwarz_p, schwarz_d, neovius
+    tpms_num_heads: int = 8  # Number of attention heads
+    tpms_threshold: float = 0.1  # Surface threshold for mask
+    
+    # QbitNexus parameters (icosahedral quantum network)
+    qbit_num_vertices: int = 12  # Icosahedron has 12 vertices (golden ratio)
+    qbit_num_layers: int = 2  # Number of quantum propagation layers
+    qbit_dropout: float = 0.1
+    
+    # ParallelUniverse parameters (multiverse computation)
+    parallel_num_universes: int = 4  # Number of parallel computational universes
+    parallel_num_dimensions: int = 8  # Dimensions per universe
+    parallel_overlap_dims: int = 4  # Overlap dimensions for interference
+    parallel_collapse_mode: str = 'soft'  # 'soft', 'hard', 'superposition'
+    
+    # Physics-informed loss weights
+    loss_weight_tensegrity: float = 0.01  # Tension-compression balance
+    loss_weight_lloyd: float = 0.01  # Computational efficiency (Landauer)
+    loss_weight_turing: float = 0.01  # Pattern emergence
+    loss_weight_equilibrium: float = 0.01  # Vector equilibrium stability
+    loss_weight_entanglement: float = 0.01  # Quantum entanglement coherence
+    loss_weight_universe_overlap: float = 0.01  # Universe interference structure
+
+
+@dataclass
+class QuantumCouplingConfig:
+    """Configuration for quantum coupling between limbs"""
+    # Coupling parameters (z = z³ + 7 → zero-point energy)
+    coupling_strength: float = 0.1
+    zero_point_energy: float = 7.0  # From z = z³ + 7
+    
+    # Oscillator parameters
+    num_oscillators: int = 8  # One per limb
+    frequency_scale: float = 1.0
+    
+    # Quantum parameters
+    coherence_threshold: float = 0.5
+    decoherence_rate: float = 0.01
+    
+    # Training
+    learn_coupling_matrix: bool = True
+    learn_frequencies: bool = True
 
 
 @dataclass
@@ -154,6 +238,8 @@ class Config:
     rna_editing: RNAEditingConfig = field(default_factory=RNAEditingConfig)
     limb: LimbConfig = field(default_factory=LimbConfig)
     sync: SyncConfig = field(default_factory=SyncConfig)
+    geometric_physics: GeometricPhysicsConfig = field(default_factory=GeometricPhysicsConfig)
+    quantum_coupling: QuantumCouplingConfig = field(default_factory=QuantumCouplingConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
     
     # Device
@@ -190,6 +276,8 @@ class Config:
             'rna_editing': self.rna_editing.__dict__,
             'limb': self.limb.__dict__,
             'sync': self.sync.__dict__,
+            'geometric_physics': self.geometric_physics.__dict__,
+            'quantum_coupling': self.quantum_coupling.__dict__,
             'training': {**self.training.__dict__, 'betas': self.training.betas},
             'device': self.device,
             'seed': self.seed
