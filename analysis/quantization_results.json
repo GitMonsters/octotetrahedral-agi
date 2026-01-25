@@ -1,0 +1,215 @@
+{
+  "timestamp": "2026-01-24T20:59:18.756672",
+  "num_samples": 30,
+  "limb_analysis": {
+    "perception": {
+      "limb": "perception",
+      "num_samples": 245760,
+      "mean": 0.00010672121425159276,
+      "std": 1.0004680156707764,
+      "num_peaks": 1,
+      "peak_positions": [
+        -0.04823601245880127
+      ],
+      "quantization_score": 0.125,
+      "spacing_regularity": 0.0,
+      "gaussian_score": 0.8236874447181092,
+      "quantum_signature_score": 0.3162291482393697
+    },
+    "memory": {
+      "limb": "memory",
+      "num_samples": 245760,
+      "mean": -0.028369972482323647,
+      "std": 0.6499300599098206,
+      "num_peaks": 5,
+      "peak_positions": [
+        -0.38771748542785645,
+        -0.12998348474502563,
+        0.42230379581451416,
+        0.6432186365127563,
+        1.1218675374984741
+      ],
+      "quantization_score": 0.625,
+      "spacing_regularity": 0.6261045336723328,
+      "gaussian_score": 0.7675421915748523,
+      "quantum_signature_score": 0.6728822616172766
+    },
+    "planning": {
+      "limb": "planning",
+      "num_samples": 7680,
+      "mean": -0.0009161539492197335,
+      "std": 0.5339874029159546,
+      "num_peaks": 15,
+      "peak_positions": [
+        -1.1447715759277344,
+        -1.0076141357421875,
+        -0.8155938386917114,
+        -0.5687105059623718,
+        -0.43155306577682495,
+        -0.2669641971588135,
+        -0.10237526893615723,
+        0.11707663536071777,
+        0.2816654443740845,
+        0.4462543725967407,
+        0.5834118127822876,
+        0.7205691337585449,
+        0.9125895500183105,
+        1.0497469902038574,
+        1.241767406463623
+      ],
+      "quantization_score": 1.0,
+      "spacing_regularity": 0.8059546947479248,
+      "gaussian_score": 0.38908309293017695,
+      "quantum_signature_score": 0.7316792625593672
+    },
+    "language": {
+      "limb": "language",
+      "num_samples": 245760,
+      "mean": 2.8877479053335264e-05,
+      "std": 1.0010786056518555,
+      "num_peaks": 9,
+      "peak_positions": [
+        -2.4628398418426514,
+        -1.8372399806976318,
+        -1.0410220623016357,
+        -0.6997858285903931,
+        -0.1310586929321289,
+        0.6651592254638672,
+        1.0632681846618652,
+        1.4613771438598633,
+        1.9163589477539062
+      ],
+      "quantization_score": 1.0,
+      "spacing_regularity": 0.6929457187652588,
+      "gaussian_score": 0.6330437150143233,
+      "quantum_signature_score": 0.7753298112598607
+    },
+    "spatial": {
+      "limb": "spatial",
+      "num_samples": 245760,
+      "mean": -0.05475473403930664,
+      "std": 0.7594252228736877,
+      "num_peaks": 10,
+      "peak_positions": [
+        -1.5183906555175781,
+        -1.2372725009918213,
+        -0.9561542272567749,
+        -0.6750358939170837,
+        -0.4742371439933777,
+        0.08799940347671509,
+        0.2887982130050659,
+        0.8108750581741333,
+        1.0518335103988647,
+        1.6943895816802979
+      ],
+      "quantization_score": 1.0,
+      "spacing_regularity": 0.5517393350601196,
+      "gaussian_score": 0.650993551827091,
+      "quantum_signature_score": 0.7342442956290701
+    },
+    "reasoning": {
+      "limb": "reasoning",
+      "num_samples": 245760,
+      "mean": 5.722395871998742e-05,
+      "std": 1.0013245344161987,
+      "num_peaks": 10,
+      "peak_positions": [
+        -2.257237434387207,
+        -1.7912664413452148,
+        -1.4417879581451416,
+        -0.509845495223999,
+        0.07261860370635986,
+        0.363850474357605,
+        0.7133289575576782,
+        1.062807321548462,
+        1.3540394306182861,
+        1.9365034103393555
+      ],
+      "quantization_score": 1.0,
+      "spacing_regularity": 0.579187273979187,
+      "gaussian_score": 0.511956114630449,
+      "quantum_signature_score": 0.6970477962032119
+    },
+    "metacognition": {
+      "limb": "metacognition",
+      "num_samples": 245760,
+      "mean": -0.08793415129184723,
+      "std": 0.6048364639282227,
+      "num_peaks": 6,
+      "peak_positions": [
+        -1.4178907871246338,
+        -0.7006677985191345,
+        -0.5213621258735657,
+        -0.1986117959022522,
+        0.08827739953994751,
+        0.9130837917327881
+      ],
+      "quantization_score": 0.75,
+      "spacing_regularity": 0.4517374634742737,
+      "gaussian_score": 0.6546370288307625,
+      "quantum_signature_score": 0.6187914775667971
+    },
+    "action": {
+      "limb": "action",
+      "num_samples": 96265920,
+      "mean": -0.6326755285263062,
+      "std": 0.3315606415271759,
+      "num_peaks": 1,
+      "peak_positions": [
+        -0.7020642757415771
+      ],
+      "quantization_score": 0.125,
+      "spacing_regularity": 0.0,
+      "gaussian_score": 0.9974570110643876,
+      "quantum_signature_score": 0.3741523370214625
+    }
+  },
+  "rabi_oscillations": {
+    "pairs": [
+      {
+        "limb_pair": "perception-memory",
+        "correlation": -0.23015096443684557,
+        "oscillation_score": 0.23015096443684557
+      },
+      {
+        "limb_pair": "memory-planning",
+        "correlation": 0.18363246394860577,
+        "oscillation_score": 0.0
+      },
+      {
+        "limb_pair": "planning-language",
+        "correlation": 0.3755227372579671,
+        "oscillation_score": 0.0
+      },
+      {
+        "limb_pair": "language-spatial",
+        "correlation": 0.4148772636179078,
+        "oscillation_score": 0.0
+      },
+      {
+        "limb_pair": "spatial-reasoning",
+        "correlation": 0.0339984232312414,
+        "oscillation_score": 0.0
+      },
+      {
+        "limb_pair": "reasoning-metacognition",
+        "correlation": -0.13829010671406144,
+        "oscillation_score": 0.13829010671406144
+      },
+      {
+        "limb_pair": "metacognition-action",
+        "correlation": -0.0061812323276171505,
+        "oscillation_score": 0.0061812323276171505
+      },
+      {
+        "limb_pair": "action-perception",
+        "correlation": -0.1350361329028386,
+        "oscillation_score": 0.1350361329028386
+      }
+    ],
+    "overall_oscillation_score": 0.06370730454767035
+  },
+  "overall_quantum_score": 0.615044548762052,
+  "overall_oscillation_score": 0.06370730454767035,
+  "combined_quantum_score": 0.33937592665486116
+}

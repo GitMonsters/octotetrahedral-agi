@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-01-24T20:57:50.779850",
+  "num_steps": 50,
+  "oscillations": {
+    "limb_oscillations": {
+      "perception": {
+        "mean": 90.50692810058594,
+        "std": 8.051090062422436e-06,
+        "oscillation_score": 8.89555112574941e-08
+      },
+      "memory": {
+        "mean": 48.20868370056152,
+        "std": 0.024788223746967764,
+        "oscillation_score": 0.0005141858652642943
+      },
+      "planning": {
+        "mean": 8.57561876296997,
+        "std": 0.01310525559660773,
+        "oscillation_score": 0.001528199415523811
+      },
+      "language": {
+        "mean": 90.50922256469727,
+        "std": 1.2367152049531328e-05,
+        "oscillation_score": 1.3663968927945125e-07
+      },
+      "spatial": {
+        "mean": 50.11538032531738,
+        "std": 0.07061656333575472,
+        "oscillation_score": 0.0014090796650302925
+      },
+      "reasoning": {
+        "mean": 90.50923553466797,
+        "std": 1.6021001890144882e-05,
+        "oscillation_score": 1.7700958132872778e-07
+      },
+      "metacognition": {
+        "mean": 49.82356643676758,
+        "std": 0.01460803836764715,
+        "oscillation_score": 0.00029319535732663074
+      },
+      "action": {
+        "mean": 573.1896276855468,
+        "std": 0.028016477093181925,
+        "oscillation_score": 4.887819970821776e-05
+      }
+    },
+    "pair_correlations": {
+      "perception-memory": {
+        "correlation": 0.36036980447908323,
+        "lag": 12,
+        "anti_correlated": 
