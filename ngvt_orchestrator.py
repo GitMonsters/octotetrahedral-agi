@@ -343,6 +343,24 @@ class NGVTUnifiedOrchestrator:
         self.extensions.register(PatternExtension(self.config, self.note_store))
         self.extensions.register(EvaluationExtension(self.config))
     
+    @staticmethod
+    def _serialize_value(value: Any) -> Any:
+        """Recursively convert enums and non-serializable objects to strings"""
+        if isinstance(value, Enum):
+            return value.value
+        elif isinstance(value, dict):
+            return {k: NGVTUnifiedOrchestrator._serialize_value(v) for k, v in value.items()}
+        elif isinstance(value, (list, tuple)):
+            return [NGVTUnifiedOrchestrator._serialize_value(item) for item in value]
+        elif hasattr(value, '__dict__') and not isinstance(value, (str, int, float, bool, type(None))):
+            # Convert dataclass or other objects to dict representation
+            try:
+                return str(value)
+            except:
+                return repr(value)
+        else:
+            return value
+    
     async def run_session(self, task: Task) -> Dict[str, Any]:
         """
         Main orchestration loop - execute until completion or max iterations
@@ -404,7 +422,7 @@ class NGVTUnifiedOrchestrator:
                         scope=MemoryScopeType.RUNNABLE,
                         content={
                             "action_type": action.type.value,
-                            "observation": observation.result if observation.success else observation.error,
+                            "observation": self._serialize_value(observation.result if observation.success else observation.error),
                         }
                     )
                     
@@ -604,15 +622,18 @@ Respond with a single JSON action object or array."""
             from ngvt_notes import PatternNote
             # Record as a successful integration pattern
             pattern = PatternNote(
-                id=f"session_{int(self.start_time)}",
+                id=f"session_{int(self.start_time * 1000000)}_{len(self.actions_history)}",
                 title=f"Successful Session: {task_title}",
                 pattern_type=PatternType.INTEGRATION_PATTERN,
                 problem=task_desc,
                 solution=f"Completed {len(self.actions_history)} actions in {self.iteration_count} iterations",
                 keywords=[a.type.value for a in self.actions_history],
                 effectiveness=len(successful_observations) / max(len(self.observations_history), 1),
-                examples=[{"action_type": o.action_type.value, "result": o.result, "latency_ms": o.latency_ms} 
-                         for o in successful_observations[:3]],
+                examples=[{
+                    "action_type": o.action_type.value,
+                    "result": str(o.result) if not isinstance(o.result, (str, int, float, bool, list, dict, type(None))) else o.result,
+                    "latency_ms": o.latency_ms
+                } for o in successful_observations[:3]],
             )
             self.note_store.add_pattern(pattern)
         
@@ -630,8 +651,8 @@ Respond with a single JSON action object or array."""
                 "scopes": len(self.memory.scopes),
                 "total_entries": sum(len(scope.entries) for scope in self.memory.scopes.values()),
             },
-            "actions": [asdict(a) for a in self.actions_history],
-            "observations": [asdict(o) for o in self.observations_history],
+            "actions": [NGVTUnifiedOrchestrator._serialize_value(asdict(a)) for a in self.actions_history],
+            "observations": [NGVTUnifiedOrchestrator._serialize_value(asdict(o)) for o in self.observations_history],
         }
 
 

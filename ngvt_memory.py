@@ -37,7 +37,23 @@ class MemoryEntry:
         """Convert to dictionary"""
         d = asdict(self)
         d['scope'] = self.scope.value  # Convert enum to string
+        # Convert any remaining enums in data to strings
+        if isinstance(d.get('data'), dict):
+            d['data'] = self._serialize_data(d['data'])
         return d
+    
+    @staticmethod
+    def _serialize_data(data: Any) -> Any:
+        """Recursively convert enums to their values"""
+        from enum import Enum
+        if isinstance(data, Enum):
+            return data.value
+        elif isinstance(data, dict):
+            return {k: MemoryEntry._serialize_data(v) for k, v in data.items()}
+        elif isinstance(data, (list, tuple)):
+            return [MemoryEntry._serialize_data(item) for item in data]
+        else:
+            return data
     
     def size_bytes(self) -> int:
         """Estimate size in bytes"""

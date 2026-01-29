@@ -43,7 +43,21 @@ class PatternNote:
         """Convert to dictionary"""
         d = asdict(self)
         d['pattern_type'] = self.pattern_type.value
+        # Recursively serialize any remaining enums
+        d = self._serialize_dict(d)
         return d
+    
+    @staticmethod
+    def _serialize_dict(obj: Any) -> Any:
+        """Recursively convert enums to their values"""
+        if isinstance(obj, Enum):
+            return obj.value
+        elif isinstance(obj, dict):
+            return {k: PatternNote._serialize_dict(v) for k, v in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return [PatternNote._serialize_dict(item) for item in obj]
+        else:
+            return obj
     
     def to_markdown(self) -> str:
         """Convert to Markdown format"""
