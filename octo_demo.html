@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCTO Brain - RNA Editing Layer Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0a1a2e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            background: linear-gradient(90deg, #00ffff, #ff00ff, #00ffff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient 3s linear infinite;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+        }
+
+        .header .subtitle {
+            color: #888;
+            margin-top: 10px;
+            font-size: 1.1em;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        /* Brain visualization */
+        .brain-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .brain-svg {
+            width: 300px;
+            height: 200px;
+        }
+
+        .brain-path {
+            fill: none;
+            stroke: #00ffff;
+            stroke-width: 2;
+            filter: drop-shadow(0 0 10px #00ffff);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        /* Input section */
+        .input-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .input-section h2 {
+            color: #00ffff;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        #userInput {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            color: #fff;
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        #userInput:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .analyze-btn {
+            background: linear-gradient(135deg, #00ffff, #0088ff);
+            border: none;
+            border-radius: 8px;
+            padding: 15px 30px;
+            color: #000;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .analyze-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+        }
+
+        .analyze-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Quick prompts */
+        .quick-prompts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .prompt-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 8px 16px;
+            color: #ccc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 13px;
+        }
+
+        .prompt-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: #00ffff;
+            color: #fff;
+        }
+
+        /* Results grid */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover {
+            border-color: rgba(0, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .result-card h3 {
+            color: #ff00ff;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Metrics */
+        .metric {
+            margin: 12px 0;
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            color: #aaa;
+        }
+
+        .metric-value {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease, background 0.3s ease;
+        }
+
+        .progress-fill.confidence {
+            background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcb77);
+        }
+
+        .progress-fill.temperature {
+            background: linear-gradient(90deg, #00ffff, #ff6b6b);
+        }
+
+        .progress-fill.perception {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .progress-fill.reasoning {
+            background: linear-gradient(90deg, #f093fb, #f5576c);
+        }
+
+        .progress-fill.action {
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+        }
+
+        /* Head gates grid */
+        .gates-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .gate-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gate-name {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .gate-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .gate-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .gate-value {
+            font-size: 12px;
+            color: #fff;
+            margin-top: 3px;
+            text-align: right;
+        }
+
+        /* Routing decision */
+        .routing-decision {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            margin-top: 20px;
+            border: 2px solid transparent;
+            transition: all 0.5s ease;
+        }
+
+        .routing-decision.system1 {
+            border-color: #6bcb77;
+            box-shadow: 0 0 30px rgba(107, 203, 119, 0.3);
+        }
+
+        .routing-decision.system2 {
+            border-color: #4facfe;
+            box-shadow: 0 0 30px rgba(79, 172, 254, 0.3);
+        }
+
+        .routing-icon {
+            font-size: 4em;
+            margin-bottom: 10px;
+        }
+
+        .routing-label {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .routing-decision.system1 .routing-label {
+            color: #6bcb77;
+        }
+
+        .routing-decision.system2 .routing-label {
+            color: #4facfe;
+        }
+
+        .routing-description {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        /* Neural network animation */
+        .neural-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        .neuron {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #00ffff;
+            border-radius: 50%;
+            animation: float 10s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) translateX(50px); opacity: 0; }
+        }
+
+        /* Synapse lines */
+        .synapse {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #ff00ff, transparent);
+            animation: synapse-fire 3s infinite;
+            opacity: 0.5;
+        }
+
+        @keyframes synapse-fire {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 0.8; }
+        }
+
+        /* Loading animation */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 255, 255, 0.3);
+            border-top-color: #00ffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        .footer a {
+            color: #00ffff;
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .input-wrapper {
+                flex-direction: column;
+            }
+        }
+
+        /* History panel */
+        .history-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-panel h3 {
+            color: #888;
+            margin-bottom: 15px;
+        }
+
+        .history-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item:hover {
+            background: rgba(0, 255, 255, 0.1);
+        }
+
+        .history-input {
+            color: #ccc;
+            font-size: 0.9em;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .history-route {
+            font-size: 0.8em;
+            padding: 3px 8px;
+            border-radius: 10px;
+            margin-left: 10px;
+        }
+
+        .history-route.s1 {
+            background: rgba(107, 203, 119, 0.3);
+            color: #6bcb77;
+        }
+
+        .history-route.s2 {
+            background: rgba(79, 172, 254, 0.3);
+            color: #4facfe;
+        }
+    </style>
+</head>
+<body>
+    <!-- Neural background -->
+    <div class="neural-bg" id="neuralBg"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>OCTO BRAIN</h1>
+            <p class="subtitle">RNA Editing Layer - Consciousness Router Visualization</p>
+        </header>
+
+        <!-- Brain SVG -->
+        <div class="brain-container">
+            <svg class="brain-svg" viewBox="0 0 200 120">
+                <path class="brain-path" d="M40,60 Q50,20 80,30 Q110,10 130,30 Q160,20 160,60 Q170,90 140,95 Q110,110 80,95 Q50,100 40,60" />
+                <circle cx="70" cy="50" r="8" fill="none" stroke="#ff00ff" stroke-width="1" opacity="0.5">
+                    <animate attributeName="r" values="8;12;8" dur="2s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="130" cy="50" r="8" fill="none" stroke="#ff00ff" stroke-width="1" opacity="0.5">
+                    <animate attributeName="r" values="8;12;8" dur="2s" repeatCount="indefinite" begin="0.5s"/>
+                </circle>
+                <circle cx="100" cy="70" r="10" fill="none" stroke="#00ffff" stroke-width="1" opacity="0.5">
+                    <animate attributeName="r" values="10;15;10" dur="2s" repeatCount="indefinite" begin="1s"/>
+                </circle>
+                <line x1="70" y1="50" x2="100" y2="70" stroke="#ff00ff" stroke-width="0.5" opacity="0.3"/>
+                <line x1="130" y1="50" x2="100" y2="70" stroke="#ff00ff" stroke-width="0.5" opacity="0.3"/>
+            </svg>
+        </div>
+
+        <!-- Input section -->
+        <section class="input-section">
+            <h2>
+                <span>&#x1F4DD;</span> Input Stimulus
+            </h2>
+            <div class="input-wrapper">
+                <input type="text" id="userInput" placeholder="Enter any text to analyze how OCTO would route it..." />
+                <button class="analyze-btn" onclick="analyzeInput()">
+                    Analyze
+                </button>
+            </div>
+            <div class="quick-prompts">
+                <button class="prompt-btn" onclick="setPrompt('def fibonacci(n): return n if n < 2 else fibonacci(n-1) + fibonacci(n-2)')">Code</button>
+                <button class="prompt-btn" onclick="setPrompt('Hey! How are you doing today?')">Casual Chat</button>
+                <button class="prompt-btn" onclick="setPrompt('Calculate the integral of x^2 * e^x dx')">Math</button>
+                <button class="prompt-btn" onclick="setPrompt('Write a haiku about quantum entanglement')">Creative</button>
+                <button class="prompt-btn" onclick="setPrompt('I am feeling sad today, can we talk?')">Emotional</button>
+                <button class="prompt-btn" onclick="setPrompt('SELECT * FROM users WHERE age > 18 ORDER BY name')">SQL</button>
+                <button class="prompt-btn" onclick="setPrompt('What is the meaning of consciousness?')">Philosophy</button>
+                <button class="prompt-btn" onclick="setPrompt('Help me debug this error: TypeError undefined')">Debug</button>
+            </div>
+        </section>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>Analyzing neural pathways...</p>
+        </div>
+
+        <!-- Results -->
+        <div id="results" style="display: none;">
+            <div class="results-grid">
+                <!-- Confidence & Temperature -->
+                <div class="result-card">
+                    <h3><span>&#x1F4CA;</span> Core Metrics</h3>
+                    
+                    <div class="metric">
+                        <div class="metric-header">
+                            <span class="metric-label">Confidence</span>
+                            <span class="metric-value" id="confidenceValue">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill confidence" id="confidenceBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="metric">
+                        <div class="metric-header">
+                            <span class="metric-label">Temperature (Uncertainty)</span>
+                            <span class="metric-value" id="temperatureValue">0.00</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill temperature" id="temperatureBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="metric" style="margin-top: 20px;">
+                        <div class="metric-header">
+                            <span class="metric-label">Input Type Detected</span>
+                            <span class="metric-value" id="inputType">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pathways -->
+                <div class="result-card">
+                    <h3><span>&#x1F9E0;</span> Cognitive Pathways</h3>
+                    
+                    <div class="metric">
+                        <div class="metric-header">
+                            <span class="metric-label">&#x1F441; Perception</span>
+                            <span class="metric-value" id="perceptionValue">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill perception" id="perceptionBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="metric">
+                        <div class="metric-header">
+                            <span class="metric-label">&#x1F4AD; Reasoning</span>
+                            <span class="metric-value" id="reasoningValue">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill reasoning" id="reasoningBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="metric">
+                        <div class="metric-header">
+                            <span class="metric-label">&#x26A1; Action</span>
+                            <span class="metric-value" id="actionValue">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill action" id="actionBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Head Gates -->
+                <div class="result-card" style="grid-column: span 2;">
+                    <h3><span>&#x1F3AD;</span> Personality Modulation (Head Gates)</h3>
+                    <div class="gates-grid" id="gatesGrid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Routing Decision -->
+            <div class="routing-decision" id="routingDecision">
+                <div class="routing-icon" id="routingIcon">&#x1F9E0;</div>
+                <div class="routing-label" id="routingLabel">System 2</div>
+                <div class="routing-description" id="routingDescription">Deep deliberative reasoning</div>
+            </div>
+
+            <!-- History -->
+            <div class="history-panel">
+                <h3>&#x1F4DC; Analysis History</h3>
+                <div id="historyList"></div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>OCTO Brain - Part of the <a href="https://github.com/GitMonsters/Prime-directive" target="_blank">RustyWorm</a> Universal AI Mimicry Engine</p>
+            <p style="margin-top: 5px; font-size: 0.8em;">RNA Editing Layer inspired by biological neural plasticity</p>
+        </footer>
+    </div>
+
+    <script>
+        // Initialize neural background
+        function initNeuralBg() {
+            const bg = document.getElementById('neuralBg');
+            for (let i = 0; i < 30; i++) {
+                const neuron = document.createElement('div');
+                neuron.className = 'neuron';
+                neuron.style.left = Math.random() * 100 + '%';
+                neuron.style.top = Math.random() * 100 + '%';
+                neuron.style.animationDelay = Math.random() * 10 + 's';
+                neuron.style.animationDuration = (5 + Math.random() * 10) + 's';
+                bg.appendChild(neuron);
+            }
+        }
+
+        // History storage
+        let history = [];
+
+        // Gate names
+        const gateNames = [
+            { name: 'Formality', icon: '&#x1F454;' },
+            { name: 'Verbosity', icon: '&#x1F4AC;' },
+            { name: 'Technical', icon: '&#x1F527;' },
+            { name: 'Warmth', icon: '&#x2764;' },
+            { name: 'Hedging', icon: '&#x1F914;' },
+            { name: 'Creativity', icon: '&#x1F3A8;' },
+            { name: 'Directness', icon: '&#x1F3AF;' },
+            { name: 'Empathy', icon: '&#x1F91D;' }
+        ];
+
+        // Initialize gates grid
+        function initGatesGrid() {
+            const grid = document.getElementById('gatesGrid');
+            grid.innerHTML = gateNames.map((gate, i) => `
+                <div class="gate-item">
+                    <span class="gate-name">${gate.icon} ${gate.name}</span>
+                    <div class="gate-bar">
+                        <div class="gate-fill" id="gate${i}" style="width: 50%"></div>
+                    </div>
+                    <span class="gate-value" id="gateValue${i}">50%</span>
+                </div>
+            `).join('');
+        }
+
+        // Detect input type
+        function detectInputType(text) {
+            const lower = text.toLowerCase();
+            if (/def |function |class |import |const |let |var |=>|SELECT |FROM |WHERE /.test(text)) {
+                return { type: 'Code', color: '#6bcb77' };
+            }
+            if (/integral|derivative|equation|calculate|sum of|prove that|theorem/.test(lower)) {
+                return { type: 'Math', color: '#ffd93d' };
+            }
+            if (/write a|create a|imagine|story|poem|haiku|once upon/.test(lower)) {
+                return { type: 'Creative', color: '#ff6b9d' };
+            }
+            if (/feeling|sad|happy|angry|anxious|depressed|stressed/.test(lower)) {
+                return { type: 'Emotional', color: '#ff9f43' };
+            }
+            if (/what is|why do|how does|explain|meaning of|philosophy/.test(lower)) {
+                return { type: 'Philosophical', color: '#a55eea' };
+            }
+            if (/error|bug|debug|fix|issue|problem|crash/.test(lower)) {
+                return { type: 'Debug', color: '#ff6b6b' };
+            }
+            return { type: 'Conversational', color: '#4facfe' };
+        }
+
+        // Generate simulated OCTO analysis
+        function simulateOCTO(text) {
+            const inputType = detectInputType(text);
+            
+            // Base values with some randomness
+            let confidence = 0.5 + Math.random() * 0.3;
+            let temperature = 2.0 + Math.random() * 2.0;
+            let pathways = [0.33, 0.34, 0.33];
+            let gates = Array(8).fill(0).map(() => 0.4 + Math.random() * 0.2);
+
+            // Adjust based on input type
+            switch (inputType.type) {
+                case 'Code':
+                    confidence = 0.7 + Math.random() * 0.2;
+                    temperature = 1.0 + Math.random() * 1.0;
+                    pathways = [0.2, 0.5, 0.3];
+                    gates[0] = 0.8; // Formality high
+                    gates[2] = 0.9; // Technical high
+                    gates[6] = 0.85; // Directness high
+                    break;
+                case 'Math':
+                    confidence = 0.6 + Math.random() * 0.2;
+                    temperature = 1.5 + Math.random() * 1.5;
+                    pathways = [0.15, 0.7, 0.15];
+                    gates[2] = 0.95; // Technical very high
+                    gates[4] = 0.3; // Hedging low
+                    gates[6] = 0.9; // Directness high
+                    break;
+                case 'Creative':
+                    confidence = 0.4 + Math.random() * 0.3;
+                    temperature = 2.5 + Math.random() * 2.0;
+                    pathways = [0.4, 0.3, 0.3];
+                    gates[5] = 0.95; // Creativity very high
+                    gates[1] = 0.7; // Verbosity higher
+                    gates[0] = 0.3; // Formality low
+                    break;
+                case 'Emotional':
+                    confidence = 0.5 + Math.random() * 0.2;
+                    temperature = 2.0 + Math.random() * 1.5;
+                    pathways = [0.5, 0.25, 0.25];
+                    gates[3] = 0.95; // Warmth very high
+                    gates[7] = 0.9; // Empathy high
+                    gates[6] = 0.3; // Directness low
+                    break;
+                case 'Philosophical':
+                    confidence = 0.45 + Math.random() * 0.2;
+                    temperature = 3.0 + Math.random() * 1.5;
+                    pathways = [0.3, 0.55, 0.15];
+                    gates[4] = 0.8; // Hedging high
+                    gates[1] = 0.75; // Verbosity higher
+                    gates[5] = 0.7; // Creativity higher
+                    break;
+                case 'Debug':
+                    confidence = 0.65 + Math.random() * 0.2;
+                    temperature = 1.2 + Math.random() * 1.0;
+                    pathways = [0.25, 0.45, 0.3];
+                    gates[2] = 0.9; // Technical high
+                    gates[6] = 0.85; // Directness high
+                    gates[0] = 0.7; // Formality higher
+                    break;
+            }
+
+            // Normalize pathways
+            const pathwaySum = pathways.reduce((a, b) => a + b, 0);
+            pathways = pathways.map(p => p / pathwaySum);
+
+            // Add some noise to gates
+            gates = gates.map(g => Math.max(0.1, Math.min(0.95, g + (Math.random() - 0.5) * 0.1)));
+
+            // Determine routing
+            const useSystem1 = confidence > 0.65 && temperature < 1.8;
+
+            return {
+                confidence,
+                temperature,
+                pathways,
+                gates,
+                inputType,
+                useSystem1
+            };
+        }
+
+        // Animate value changes
+        function animateValue(elementId, targetValue, suffix = '%', duration = 500) {
+            const element = document.getElementById(elementId);
+            const startValue = parseFloat(element.textContent) || 0;
+            const startTime = performance.now();
+
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+                const currentValue = startValue + (targetValue - startValue) * eased;
+                
+                if (suffix === '%') {
+                    element.textContent = currentValue.toFixed(1) + suffix;
+                } else {
+                    element.textContent = currentValue.toFixed(2);
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        // Main analysis function
+        function analyzeInput() {
+            const input = document.getElementById('userInput').value.trim();
+            if (!input) return;
+
+            // Show loading
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('results').style.display = 'none';
+
+            // Simulate network delay
+            setTimeout(() => {
+                const result = simulateOCTO(input);
+                displayResults(result, input);
+            }, 800 + Math.random() * 400);
+        }
+
+        // Display results
+        function displayResults(result, input) {
+            document.getElementById('loading').classList.remove('active');
+            document.getElementById('results').style.display = 'block';
+
+            // Update core metrics
+            animateValue('confidenceValue', result.confidence * 100);
+            document.getElementById('confidenceBar').style.width = (result.confidence * 100) + '%';
+
+            animateValue('temperatureValue', result.temperature, '');
+            document.getElementById('temperatureBar').style.width = (result.temperature / 5 * 100) + '%';
+
+            document.getElementById('inputType').textContent = result.inputType.type;
+            document.getElementById('inputType').style.color = result.inputType.color;
+
+            // Update pathways
+            const pathwayIds = ['perception', 'reasoning', 'action'];
+            result.pathways.forEach((value, i) => {
+                animateValue(pathwayIds[i] + 'Value', value * 100);
+                document.getElementById(pathwayIds[i] + 'Bar').style.width = (value * 100) + '%';
+            });
+
+            // Update gates
+            result.gates.forEach((value, i) => {
+                animateValue('gateValue' + i, value * 100);
+                document.getElementById('gate' + i).style.width = (value * 100) + '%';
+            });
+
+            // Update routing decision
+            const routingDiv = document.getElementById('routingDecision');
+            const routingIcon = document.getElementById('routingIcon');
+            const routingLabel = document.getElementById('routingLabel');
+            const routingDesc = document.getElementById('routingDescription');
+
+            routingDiv.classList.remove('system1', 'system2');
+            
+            if (result.useSystem1) {
+                routingDiv.classList.add('system1');
+                routingIcon.innerHTML = '&#x26A1;';
+                routingLabel.textContent = 'System 1';
+                routingDesc.textContent = 'Fast pattern matching - Using cached responses';
+            } else {
+                routingDiv.classList.add('system2');
+                routingIcon.innerHTML = '&#x1F9E0;';
+                routingLabel.textContent = 'System 2';
+                routingDesc.textContent = 'Deep deliberative reasoning - Generating thoughtful response';
+            }
+
+            // Add to history
+            addToHistory(input, result);
+        }
+
+        // Add to history
+        function addToHistory(input, result) {
+            history.unshift({ input, result, timestamp: Date.now() });
+            if (history.length > 10) history.pop();
+
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = history.map((item, i) => `
+                <div class="history-item" onclick="replayHistory(${i})">
+                    <span class="history-input">${item.input}</span>
+                    <span class="history-route ${item.result.useSystem1 ? 's1' : 's2'}">
+                        ${item.result.useSystem1 ? 'S1' : 'S2'}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        // Replay history item
+        function replayHistory(index) {
+            const item = history[index];
+            document.getElementById('userInput').value = item.input;
+            displayResults(item.result, item.input);
+        }
+
+        // Set prompt from quick buttons
+        function setPrompt(text) {
+            document.getElementById('userInput').value = text;
+            analyzeInput();
+        }
+
+        // Handle enter key
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                analyzeInput();
+            }
+        });
+
+        // Initialize
+        initNeuralBg();
+        initGatesGrid();
+    </script>
+</body>
+</html>
