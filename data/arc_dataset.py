@@ -44,8 +44,25 @@ def grid_to_tokens(grid: List[List[int]]) -> str:
 
 def tokens_to_grid(tokens: str) -> List[List[int]]:
     """Convert token string back to grid"""
-    rows = tokens.split(' | ')
-    return [[int(c) for c in row.split()] for row in rows]
+    s = tokens.strip()
+    if s.startswith('['):
+        s = s[1:]
+    if s.endswith(']'):
+        s = s[:-1]
+
+    # Be permissive: models sometimes omit spaces or the exact ' | ' delimiter.
+    rows = [r.strip() for r in s.split('|')]
+    grid: List[List[int]] = []
+    for row in rows:
+        if not row:
+            continue
+        if ' ' in row:
+            parts = [p for p in row.split() if p]
+            grid.append([int(p) for p in parts])
+        else:
+            digits = [ch for ch in row if ch.isdigit()]
+            grid.append([int(ch) for ch in digits])
+    return grid
 
 
 class ARCTask:
@@ -242,17 +259,43 @@ class ARCDataset(Dataset):
         
         # Tokenize if tokenizer provided
         if self.tokenizer is not None:
-            full_tokens = self.tokenizer.encode(item['full_text'])
-            input_tokens = self.tokenizer.encode(input_text)
-            
-            # Truncate if needed
-            if len(full_tokens) > self.max_seq_len:
-                full_tokens = full_tokens[:self.max_seq_len]
-            
-            item['input_ids'] = torch.tensor(full_tokens[:-1])
-            item['labels'] = torch.tensor(full_tokens[1:])
-            item['input_length'] = min(len(input_tokens), len(full_tokens) - 1)
-        
+            input_tokens_all = self.tokenizer.encode(input_text)
+            target_tokens_all = self.tokenizer.encode(target_text)
+
+            # Truncate prompt (from the left) while keeping the full target when possible.
+            if len(input_tokens_all) + len(target_tokens_all) > self.max_seq_len:
+                max_input = self.max_seq_len - len(target_tokens_all)
+                if max_input <= 0:
+                    input_tokens = []
+                    full_tokens = target_tokens_all[-self.max_seq_len:]
+                    input_length = 0
+                else:
+                    input_tokens = input_tokens_all[-max_input:]
+                    full_tokens = input_tokens + target_tokens_all
+                    input_length = len(input_tokens)
+            else:
+                full_tokens = input_tokens_all + target_tokens_all
+                input_length = len(input_tokens_all)
+
+            # Next-token prediction setup.
+            # We only want to apply loss on the target portion (answer), not the prompt.
+            # labels[i] corresponds to predicting full_tokens[i+1] from full_tokens[i].
+            prompt_label_len = max(0, min(input_length - 1, len(full_tokens) - 1))
+
+            input_ids = torch.tensor(full_tokens[:-1])
+            labels = torch.tensor(full_tokens[1:])
+            if prompt_label_len > 0:
+                labels[:prompt_label_len] = -100
+
+            # Avoid NaN loss if everything is ignored (can still happen in edge cases).
+            if (labels != -100).sum().item() == 0:
+                labels = torch.tensor(full_tokens[1:])
+                input_length = 0
+
+            item['input_ids'] = input_ids
+            item['labels'] = labels
+            item['input_length'] = min(input_length, len(full_tokens) - 1)
+         
         return item
     
     def _augment_task(self, task: ARCTask) -> ARCTask:
@@ -345,30 +388,32 @@ def evaluate_arc_prediction(
     
     # Exact match
     exact = 1.0 if pred_grid == target_grid else 0.0
-    
-    # Cell-level accuracy
-    total_cells = 0
+
+    pred_h = len(pred_grid)
+    target_h = len(target_grid)
+    pred_w = max((len(r) for r in pred_grid), default=0)
+    target_w = max((len(r) for r in target_grid), default=0)
+
+    # Cell-level accuracy over the union bounding box; missing cells count as wrong.
+    max_h = max(pred_h, target_h)
+    max_w = max(pred_w, target_w)
+    total_cells = max_h * max_w
     correct_cells = 0
-    
-    for i, (pred_row, target_row) in enumerate(zip(pred_grid, target_grid)):
-        for j, (pred_cell, target_cell) in enumerate(zip(pred_row, target_row)):
-            total_cells += 1
-            if pred_cell == target_cell:
+    for i in range(max_h):
+        for j in range(max_w):
+            pred_cell = pred_grid[i][j] if (i < pred_h and j < len(pred_grid[i])) else None
+            target_cell = target_grid[i][j] if (i < target_h and j < len(target_grid[i])) else None
+            if pred_cell is not None and target_cell is not None and pred_cell == target_cell:
                 correct_cells += 1
-    
-    # Handle size mismatch
-    pred_h, pred_w = len(pred_grid), len(pred_grid[0]) if pred_grid else 0
-    target_h, target_w = len(target_grid), len(target_grid[0]) if target_grid else 0
-    
-    if (pred_h, pred_w) != (target_h, target_w):
-        grid_acc = 0.0
-    else:
-        grid_acc = correct_cells / total_cells if total_cells > 0 else 0.0
-    
+
+    cell_acc = correct_cells / total_cells if total_cells > 0 else 0.0
+    same_shape = (pred_h, pred_w) == (target_h, target_w)
+    grid_acc = cell_acc if same_shape else 0.0
+
     return {
         'exact_match': exact,
         'grid_accuracy': grid_acc,
-        'cell_accuracy': correct_cells / max(total_cells, 1)
+        'cell_accuracy': cell_acc
     }
 
 

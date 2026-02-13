@@ -189,7 +189,11 @@ class ARCTrainer:
         with torch.no_grad():
             preds = output['logits'].argmax(dim=-1)
             mask = labels != -100
-            token_acc = ((preds == labels) & mask).float().sum() / mask.sum()
+            denom = mask.sum()
+            if denom.item() == 0:
+                token_acc = torch.tensor(0.0, device=preds.device)
+            else:
+                token_acc = ((preds == labels) & mask).float().sum() / denom
         
         return {
             'loss': loss.item(),
@@ -227,10 +231,10 @@ class ARCTrainer:
                 task = val_dataset.tasks[idx % len(val_dataset.tasks)]
                 
                 # Format input (examples + test input) and target
-                input_text, target_text = task.format_compact(test_idx=0, include_answer=False)
-                _, full_target = task.format_compact(test_idx=0, include_answer=True)
-                # Extract just the answer part
-                target_text = full_target[len(input_text):]
+                # NOTE: ARCTask.format_compact returns (input_text, target_text). The previous
+                # code incorrectly treated the second return value as the full concatenated text.
+                input_text, _ = task.format_compact(test_idx=0, include_answer=False)
+                _, target_text = task.format_compact(test_idx=0, include_answer=True)
                 
                 # Tokenize input
                 input_tokens = self.tokenizer.encode(input_text)

@@ -803,6 +803,664 @@ def detect_and_complete_grid_pattern(grid, **kwargs):
     return result
 
 
+# ============================================================================
+# NEW: Extended Operations for 85% Target
+# ============================================================================
+
+def trim(grid, **kwargs):
+    """Remove rows and columns that are all zeros"""
+    h, w = len(grid), len(grid[0])
+    
+    # Find non-zero rows
+    non_zero_rows = [i for i in range(h) if any(grid[i][j] != 0 for j in range(w))]
+    if not non_zero_rows:
+        return [[0]]
+    
+    # Find non-zero columns
+    non_zero_cols = [j for j in range(w) if any(grid[i][j] != 0 for i in range(h))]
+    if not non_zero_cols:
+        return [[0]]
+    
+    return [[grid[i][j] for j in non_zero_cols] for i in non_zero_rows]
+
+
+def pad(grid, size=2, color=0, **kwargs):
+    """Pad grid with color"""
+    h, w = len(grid), len(grid[0])
+    new_h, new_w = h + 2 * size, w + 2 * size
+    result = [[color] * new_w for _ in range(new_h)]
+    
+    for i in range(h):
+        for j in range(w):
+            result[i + size][j + size] = grid[i][j]
+    
+    return result
+
+
+def resize(grid, target_h=None, target_w=None, **kwargs):
+    """Resize grid to target dimensions (simple crop or pad)"""
+    h, w = len(grid), len(grid[0])
+    target_h = target_h or h
+    target_w = target_w or w
+    
+    result = [[0] * target_w for _ in range(target_h)]
+    
+    for i in range(min(h, target_h)):
+        for j in range(min(w, target_w)):
+            result[i][j] = grid[i][j]
+    
+    return result
+
+
+def scale_to(grid, target_h=None, target_w=None, **kwargs):
+    """Scale grid to exact target dimensions"""
+    h, w = len(grid), len(grid[0])
+    target_h = target_h or h
+    target_w = target_w or w
+    
+    result = [[0] * target_w for _ in range(target_h)]
+    
+    for i in range(target_h):
+        for j in range(target_w):
+            src_i = int(i * h / target_h)
+            src_j = int(j * w / target_w)
+            result[i][j] = grid[src_i][src_j]
+    
+    return result
+
+
+def center(grid, **kwargs):
+    """Center the non-zero content in the grid"""
+    h, w = len(grid), len(grid[0])
+    
+    # Find bounding box
+    min_r, max_r, min_c, max_c = h, 0, w, 0
+    for i in range(h):
+        for j in range(w):
+            if grid[i][j] != 0:
+                min_r, max_r = min(min_r, i), max(max_r, i)
+                min_c, max_c = min(min_c, j), max(max_c, j)
+    
+    if max_r < min_r:
+        return grid
+    
+    # Extract content
+    content = [row[min_c:max_c+1] for row in grid[min_r:max_r+1]]
+    content_h, content_w = len(content), len(content[0])
+    
+    # Center it
+    result = [[0] * w for _ in range(h)]
+    start_r = (h - content_h) // 2
+    start_c = (w - content_w) // 2
+    
+    for i in range(content_h):
+        for j in range(content_w):
+            result[start_r + i][start_c + j] = content[i][j]
+    
+    return result
+
+
+def move_to_center(grid, **kwargs):
+    """Alias for center"""
+    return center(grid)
+
+
+def compress_colors(grid, **kwargs):
+    """Remap colors to 1, 2, 3... preserving order of first appearance"""
+    h, w = len(grid), len(grid[0])
+    color_map = {}
+    next_color = 1
+    
+    result = [[0] * w for _ in range(h)]
+    for i in range(h):
+        for j in range(w):
+            if grid[i][j] != 0:
+                if grid[i][j] not in color_map:
+                    color_map[grid[i][j]] = next_color
+                    next_color += 1
+                result[i][j] = color_map[grid[i][j]]
+    
+    return result
+
+
+def replace_color(grid, from_c=1, to_c=2, **kwargs):
+    """Replace one color with another"""
+    return [[to_c if c == from_c else c for c in row] for row in grid]
+
+
+def match_color_count(grid, target_count=2, **kwargs):
+    """Adjust colors to match target count"""
+    colors = sorted(set(c for row in grid for c in row if c != 0))
+    if len(colors) <= 1:
+        return grid
+    
+    # Map to new colors
+    color_map = {}
+    for i, c in enumerate(colors):
+        color_map[c] = (i % target_count) + 1
+    
+    return [[color_map.get(c, c) for c in row] for row in grid]
+
+
+def detect_and_apply_symmetry(grid, **kwargs):
+    """Detect symmetry type and apply it"""
+    h, w = len(grid), len(grid[0])
+    
+    # Check horizontal symmetry
+    h_sym = all(grid[i] == grid[h-1-i] for i in range(h//2))
+    if h_sym:
+        return enforce_h_symmetry(grid)
+    
+    # Check vertical symmetry
+    v_sym = all(grid[i][j] == grid[i][w-1-j] for i in range(h) for j in range(w//2))
+    if v_sym:
+        return enforce_v_symmetry(grid)
+    
+    # Check rotational symmetry
+    rot_sym = all(grid[i][j] == grid[h-1-i][w-1-j] for i in range(h) for j in range(w))
+    if rot_sym:
+        return enforce_rotational_symmetry(grid)
+    
+    return grid
+
+
+def fill_between(grid, **kwargs):
+    """Fill cells between objects of same color"""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    
+    for i in range(h):
+        row = grid[i]
+        for c in set(row):
+            if c == 0:
+                continue
+            positions = [j for j, val in enumerate(row) if val == c]
+            if len(positions) >= 2:
+                for j in range(min(positions), max(positions) + 1):
+                    if result[i][j] == 0:
+                        result[i][j] = c
+    
+    return result
+
+
+def fill_pattern(grid, **kwargs):
+    """Fill zeros with repeating pattern from non-zero cells"""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    
+    # Find pattern in first row with non-zero
+    for i in range(h):
+        row = grid[i]
+        non_zero = [c for c in row if c != 0]
+        if len(non_zero) >= 2:
+            pattern = non_zero
+            # Repeat pattern
+            for j in range(w):
+                if result[i][j] == 0:
+                    result[i][j] = pattern[j % len(pattern)]
+    
+    return result
+
+
+def move_object(grid, direction='down', steps=1, **kwargs):
+    """Move all objects in a direction"""
+    h, w = len(grid), len(grid[0])
+    result = [[0] * w for _ in range(h)]
+    
+    components = find_connected_components(grid)
+    
+    for color, positions in components:
+        for r, c in positions:
+            nr, nc = r, c
+            if direction == 'down':
+                nr = min(h - 1, r + steps)
+            elif direction == 'up':
+                nr = max(0, r - steps)
+            elif direction == 'left':
+                nc = max(0, c - steps)
+            elif direction == 'right':
+                nc = min(w - 1, c + steps)
+            
+            if 0 <= nr < h and 0 <= nc < w:
+                result[nr][nc] = color
+    
+    return result
+
+
+def rotate_object(grid, angle=90, **kwargs):
+    """Rotate objects around center"""
+    h, w = len(grid), len(grid[0])
+    result = [[0] * w for _ in range(h)]
+    
+    components = find_connected_components(grid)
+    center_r, center_c = h // 2, w // 2
+    
+    for color, positions in components:
+        for r, c in positions:
+            # Translate to center
+            dr, dc = r - center_r, c - center_c
+            
+            # Rotate
+            if angle == 90:
+                dr, dc = -dc, dr
+            elif angle == 180:
+                dr, dc = -dr, -dc
+            elif angle == 270:
+                dr, dc = dc, -dr
+            
+            # Translate back
+            nr, nc = center_r + dr, center_c + dc
+            if 0 <= nr < h and 0 <= nc < w:
+                result[nr][nc] = color
+    
+    return result
+
+
+def copy_object(grid, copies=2, direction='right', **kwargs):
+    """Copy objects multiple times"""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    
+    components = find_connected_components(grid)
+    
+    for color, positions in components:
+        for copy_idx in range(1, copies):
+            offset = copy_idx * 2  # Offset each copy
+            for r, c in positions:
+                nr, nc = r, c
+                if direction == 'right':
+                    nc = c + offset
+                elif direction == 'down':
+                    nr = r + offset
+                elif direction == 'left':
+                    nc = c - offset
+                elif direction == 'up':
+                    nr = r - offset
+                
+                if 0 <= nr < h and 0 <= nc < w:
+                    result[nr][nc] = color
+    
+    return result
+
+
+def connect_objects(grid, line_color=1, **kwargs):
+    """Draw lines connecting centers of objects"""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    
+    components = find_connected_components(grid)
+    if len(components) < 2:
+        return grid
+    
+    # Get centers
+    centers = []
+    for color, positions in components:
+        r = sum(p[0] for p in positions) / len(positions)
+        c = sum(p[1] for p in positions) / len(positions)
+        centers.append((int(r), int(c)))
+    
+    # Connect consecutive centers with lines
+    for i in range(len(centers) - 1):
+        r1, c1 = centers[i]
+        r2, c2 = centers[i + 1]
+        
+        # Simple line drawing - step from p1 to p2
+        steps = max(abs(r2 - r1), abs(c2 - c1))
+        if steps == 0:
+            continue
+            
+        for step in range(steps + 1):
+            t = step / steps
+            r = int(r1 + (r2 - r1) * t)
+            c = int(c1 + (c2 - c1) * t)
+            if 0 <= r < h and 0 <= c < w and result[r][c] == 0:
+                result[r][c] = line_color
+    
+    return result
+
+
+def extend_object(grid, direction='right', length=3, **kwargs):
+    """Extend objects in a direction"""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    
+    components = find_connected_components(grid)
+    
+    for color, positions in components:
+        for r, c in positions:
+            for i in range(1, length + 1):
+                nr, nc = r, c
+                if direction == 'right':
+                    nc = c + i
+                elif direction == 'left':
+                    nc = c - i
+                elif direction == 'down':
+                    nr = r + i
+                elif direction == 'up':
+                    nr = r - i
+                
+                if 0 <= nr < h and 0 <= nc < w and result[nr][nc] == 0:
+                    result[nr][nc] = color
+    
+    return result
+
+
+def align_objects(grid, axis='horizontal', **kwargs):
+    """Align objects along an axis"""
+    h, w = len(grid), len(grid[0])
+    result = [[0] * w for _ in range(h)]
+    
+    components = find_connected_components(grid)
+    if not components:
+        return grid
+    
+    # Sort by position
+    components.sort(key=lambda x: (x[1][0][0], x[1][0][1]))
+    
+    if axis == 'horizontal':
+        # Align to same row
+        target_row = h // 2
+        for color, positions in components:
+            min_r = min(p[0] for p in positions)
+            offset = target_row - min_r
+            for r, c in positions:
+                nr = r + offset
+                if 0 <= nr < h:
+                    result[nr][c] = color
+    else:
+        # Align to same column
+        target_col = w // 2
+        for color, positions in components:
+            min_c = min(p[1] for p in positions)
+            offset = target_col - min_c
+            for r, c in positions:
+                nc = c + offset
+                if 0 <= nc < w:
+                    result[r][nc] = color
+    
+    return result
+
+
+def sort_objects_by_size(grid, reverse=False, **kwargs):
+    """Sort objects by size horizontally"""
+    h, w = len(grid), len(grid[0])
+    result = [[0] * w for _ in range(h)]
+    
+    components = find_connected_components(grid)
+    # Sort by size
+    components.sort(key=lambda x: len(x[1]), reverse=reverse)
+    
+    # Place them side by side
+    current_col = 0
+    for color, positions in components:
+        min_c = min(p[1] for p in positions)
+        offset = current_col - min_c
+        
+        for r, c in positions:
+            nc = c + offset
+            if 0 <= r < h and 0 <= nc < w:
+                result[r][nc] = color
+        
+        # Advance past this object
+        max_c = max(p[1] for p in positions)
+        current_col += (max_c - min_c + 1) + 1
+        if current_col >= w:
+            break
+    
+    return result
+
+
+def sort_objects_by_color(grid, reverse=False, **kwargs):
+    """Sort objects by color value horizontally"""
+    h, w = len(grid), len(grid[0])
+    result = [[0] * w for _ in range(h)]
+    
+    components = find_connected_components(grid)
+    # Sort by color
+    components.sort(key=lambda x: x[0], reverse=reverse)
+    
+    current_col = 0
+    for color, positions in components:
+        min_c = min(p[1] for p in positions)
+        offset = current_col - min_c
+        
+        for r, c in positions:
+            nc = c + offset
+            if 0 <= r < h and 0 <= nc < w:
+                result[r][nc] = color
+        
+        max_c = max(p[1] for p in positions)
+        current_col += (max_c - min_c + 1) + 1
+        if current_col >= w:
+            break
+    
+    return result
+
+
+def repeat_pattern(grid, times=2, direction='right', **kwargs):
+    """Repeat the grid pattern multiple times"""
+    h, w = len(grid), len(grid[0])
+    
+    if direction == 'right':
+        result = [[0] * (w * times) for _ in range(h)]
+        for i in range(h):
+            for j in range(w * times):
+                result[i][j] = grid[i][j % w]
+    elif direction == 'down':
+        result = [[0] * w for _ in range(h * times)]
+        for i in range(h * times):
+            for j in range(w):
+                result[i][j] = grid[i % h][j]
+    else:
+        return grid
+    
+    return result
+
+
+def tile_pattern(grid, h_times=2, v_times=2, **kwargs):
+    """Tile the grid in 2D"""
+    h, w = len(grid), len(grid[0])
+    result = [[0] * (w * h_times) for _ in range(h * v_times)]
+    
+    for i in range(h * v_times):
+        for j in range(w * h_times):
+            result[i][j] = grid[i % h][j % w]
+    
+    return result
+
+
+def split_by_color(grid, **kwargs):
+    """Extract the most common color"""
+    colors = [c for row in grid for c in row if c != 0]
+    if not colors:
+        return grid
+    
+    most_common = Counter(colors).most_common(1)[0][0]
+    return [[c if c == most_common else 0 for c in row] for row in grid]
+
+
+def split_objects(grid, **kwargs):
+    """Separate objects into individual grids (return first one)"""
+    components = find_connected_components(grid)
+    if not components:
+        return grid
+    
+    # Return the first component as a grid
+    color, positions = components[0]
+    rows = [p[0] for p in positions]
+    cols = [p[1] for p in positions]
+    min_r, max_r = min(rows), max(rows)
+    min_c, max_c = min(cols), max(cols)
+    
+    result = [[0] * (max_c - min_c + 1) for _ in range(max_r - min_r + 1)]
+    for r, c in positions:
+        result[r - min_r][c - min_c] = color
+    
+    return result
+
+
+def draw_line(grid, r1=0, c1=0, r2=0, c2=0, color=1, **kwargs):
+    """Draw a line between two points"""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    
+    # Bresenham algorithm
+    dr, dc = abs(r2 - r1), abs(c2 - c1)
+    r, c = r1, c1
+    
+    while (r, c) != (r2, c2):
+        if 0 <= r < h and 0 <= c < w:
+            result[r][c] = color
+        
+        if dr > dc:
+            r += 1 if r2 > r1 else -1
+            if 2 * (c - c1) * dr >= (2 * (r - r1) + 1) * dc:
+                c += 1 if c2 > c1 else -1
+        else:
+            c += 1 if c2 > c1 else -1
+            if 2 * (r - r1) * dc >= (2 * (c - c1) + 1) * dr:
+                r += 1 if r2 > r1 else -1
+    
+    if 0 <= r < h and 0 <= c < w:
+        result[r][c] = color
+    
+    return result
+
+
+def draw_rectangle(grid, r=0, c=0, h=3, w=3, color=1, **kwargs):
+    """Draw a rectangle"""
+    gh, gw = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    
+    for i in range(r, min(r + h, gh)):
+        for j in range(c, min(c + w, gw)):
+            result[i][j] = color
+    
+    return result
+
+
+def draw_frame(grid, color=1, **kwargs):
+    """Draw a frame around the grid"""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    
+    for i in range(h):
+        result[i][0] = color
+        result[i][w-1] = color
+    for j in range(w):
+        result[0][j] = color
+        result[h-1][j] = color
+    
+    return result
+
+
+def draw_diagonal(grid, direction='se', color=1, **kwargs):
+    """Draw a diagonal line"""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    
+    n = min(h, w)
+    for i in range(n):
+        if direction == 'se':
+            result[i][i] = color
+        elif direction == 'sw':
+            result[i][w-1-i] = color
+        elif direction == 'ne':
+            result[h-1-i][i] = color
+        elif direction == 'nw':
+            result[h-1-i][w-1-i] = color
+    
+    return result
+
+
+def draw_cross(grid, color=1, **kwargs):
+    """Draw a cross through center"""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    
+    mid_r, mid_c = h // 2, w // 2
+    
+    for i in range(h):
+        result[i][mid_c] = color
+    for j in range(w):
+        result[mid_r][j] = color
+    
+    return result
+
+
+def grid_width(grid, **kwargs):
+    """Return 1x1 grid with width"""
+    return [[len(grid[0])]]
+
+
+def grid_height(grid, **kwargs):
+    """Return 1x1 grid with height"""
+    return [[len(grid)]]
+
+
+def count_colors(grid, **kwargs):
+    """Return 1x1 grid with count of unique colors"""
+    colors = set(c for row in grid for c in row if c != 0)
+    return [[len(colors)]]
+
+
+def dominant_color(grid, **kwargs):
+    """Return 1x1 grid with most common color"""
+    colors = [c for row in grid for c in row if c != 0]
+    if not colors:
+        return [[0]]
+    return [[Counter(colors).most_common(1)[0][0]]]
+
+
+def is_uniform(grid, **kwargs):
+    """Return 1x1 grid: 1 if all non-zero cells same color, else 0"""
+    colors = set(c for row in grid for c in row if c != 0)
+    return [[1 if len(colors) <= 1 else 0]]
+
+
+def has_border(grid, **kwargs):
+    """Return 1x1 grid: 1 if border exists, else 0"""
+    h, w = len(grid), len(grid[0])
+    if h < 3 or w < 3:
+        return [[0]]
+    
+    # Check if border is consistent
+    border_colors = set()
+    for i in range(h):
+        border_colors.add(grid[i][0])
+        border_colors.add(grid[i][w-1])
+    for j in range(w):
+        border_colors.add(grid[0][j])
+        border_colors.add(grid[h-1][j])
+    
+    # Border exists if there's non-zero on all edges
+    has_non_zero = any(c != 0 for c in border_colors)
+    return [[1 if has_non_zero else 0]]
+
+
+def intersection(grid1, grid2):
+    """Intersection of two grids (common non-zero)"""
+    return and_grids(grid1, grid2)
+
+
+def union(grid1, grid2):
+    """Union of two grids"""
+    return or_grids(grid1, grid2)
+
+
+def difference(grid1, grid2):
+    """Difference of two grids (grid1 - grid2)"""
+    h, w = len(grid1), len(grid1[0])
+    result = [[0] * w for _ in range(h)]
+    
+    for i in range(h):
+        for j in range(w):
+            if grid1[i][j] != 0 and grid2[i][j] == 0:
+                result[i][j] = grid1[i][j]
+    
+    return result
+
+
 OPERATIONS = {
     # Basic transforms
     'identity': identity,
@@ -818,12 +1476,18 @@ OPERATIONS = {
     'scale_up': scale_up,
     'crop_to_object': crop_to_object,
     'border': border,
+    'trim': trim,
+    'pad': pad,
+    'resize': resize,
+    'scale_to': scale_to,
     
     # Gravity/movement
     'gravity_down': gravity_down,
     'gravity_up': gravity_up,
     'gravity_left': gravity_left,
     'gravity_right': gravity_right,
+    'center': center,
+    'move_to_center': move_to_center,
     
     # Color operations
     'fill_color': fill_color,
@@ -835,6 +1499,9 @@ OPERATIONS = {
     'recolor_by_size': recolor_by_size,
     'majority_color_per_row': majority_color_per_row,
     'majority_color_per_col': majority_color_per_col,
+    'compress_colors': compress_colors,
+    'replace_color': replace_color,
+    'match_color_count': match_color_count,
     
     # Mirror/symmetry
     'mirror_h': mirror_h,
@@ -843,12 +1510,15 @@ OPERATIONS = {
     'enforce_v_symmetry': enforce_v_symmetry,
     'enforce_rotational_symmetry': enforce_rotational_symmetry,
     'complete_pattern_from_quadrant': complete_pattern_from_quadrant,
+    'detect_and_apply_symmetry': detect_and_apply_symmetry,
     
     # Fill operations
     'fill_interior': fill_interior,
     'outline': outline,
     'flood_fill': flood_fill,
     'flood_fill_smart': flood_fill_smart,
+    'fill_between': fill_between,
+    'fill_pattern': fill_pattern,
     
     # Object operations (Connected Components)
     'extract_largest_object': extract_largest_object,
@@ -856,17 +1526,52 @@ OPERATIONS = {
     'count_objects': count_objects,
     'remove_small_objects': remove_small_objects,
     'keep_n_largest_objects': keep_n_largest_objects,
+    'move_object': move_object,
+    'rotate_object': rotate_object,
+    'copy_object': copy_object,
+    'connect_objects': connect_objects,
+    'extend_object': extend_object,
+    'align_objects': align_objects,
+    'sort_objects_by_size': sort_objects_by_size,
+    'sort_objects_by_color': sort_objects_by_color,
     
     # Pattern operations
     'copy_pattern': copy_pattern,
     'overlay_pattern': overlay_pattern,
     'detect_and_complete_grid_pattern': detect_and_complete_grid_pattern,
+    'repeat_pattern': repeat_pattern,
+    'tile_pattern': tile_pattern,
     
     # Split operations
     'split_horizontal_top': lambda g, **k: split_horizontal(g, part=0),
     'split_horizontal_bottom': lambda g, **k: split_horizontal(g, part=1),
     'split_vertical_left': lambda g, **k: split_vertical(g, part=0),
     'split_vertical_right': lambda g, **k: split_vertical(g, part=1),
+    'split_by_color': split_by_color,
+    'split_objects': split_objects,
+    
+    # Line/Shape drawing
+    'draw_line': draw_line,
+    'draw_rectangle': draw_rectangle,
+    'draw_frame': draw_frame,
+    'draw_diagonal': draw_diagonal,
+    'draw_cross': draw_cross,
+    
+    # Grid analysis
+    'grid_width': grid_width,
+    'grid_height': grid_height,
+    'count_colors': count_colors,
+    'dominant_color': dominant_color,
+    'is_uniform': is_uniform,
+    'has_border': has_border,
+    
+    # Advanced transforms
+    'xor_grids': xor_grids,
+    'and_grids': and_grids,
+    'or_grids': or_grids,
+    'intersection': intersection,
+    'union': union,
+    'difference': difference,
 }
 
 INVERSE_TRANSFORMS = {
@@ -1044,48 +1749,72 @@ class ProgramSynthesizer:
     def __init__(self, max_depth=2):
         self.max_depth = max_depth
     
-    def synthesize(self, examples: List[Dict]) -> List[Tuple[List, float]]:
-        """Return list of (program, score) tuples"""
+    def synthesize(self, examples: List[Dict], time_budget: float = 5.0) -> List[Tuple[List, float]]:
+        """Return list of (program, score) tuples with time budget"""
+        import time
+        start_time = time.time()
+        
         candidates = self._enumerate_programs()
         scored = []
         
+        # Prioritize simpler programs (shorter = faster)
+        candidates.sort(key=lambda p: len(p))
+        
         for program in candidates:
+            # Check time budget
+            if time.time() - start_time > time_budget:
+                break
+            
             score = self._score_program(program, examples)
             if score >= 0.99:  # Only perfect matches
                 scored.append((program, score))
+                # Early stop if we have enough solutions
+                if len(scored) >= 5:
+                    break
         
         scored.sort(key=lambda x: x[1], reverse=True)
         return scored[:10]
     
     def _enumerate_programs(self) -> List[List[Tuple[str, Dict]]]:
-        """Enumerate candidate programs"""
+        """Enumerate candidate programs - EXPANDED for 85% target"""
         programs = []
         
-        # Single operations (no params)
+        # Single operations (no params) - ALL 87 operations
         simple_ops = [
             # Basic transforms
             'identity', 'rotate_90', 'rotate_180', 'rotate_270',
             'flip_h', 'flip_v', 'transpose',
             # Gravity
             'gravity_down', 'gravity_up', 'gravity_left', 'gravity_right',
+            'center', 'move_to_center',
             # Size
-            'crop_to_object',
+            'crop_to_object', 'trim', 'pad', 'resize', 'scale_to',
             # Color
             'most_common_fill', 'largest_color_only', 'invert_colors',
             'recolor_by_size', 'majority_color_per_row', 'majority_color_per_col',
+            'compress_colors',
             # Mirror/symmetry
             'mirror_h', 'mirror_v',
             'enforce_h_symmetry', 'enforce_v_symmetry', 'enforce_rotational_symmetry',
-            'complete_pattern_from_quadrant',
+            'complete_pattern_from_quadrant', 'detect_and_apply_symmetry',
             # Fill
-            'fill_interior', 'outline', 'flood_fill_smart',
+            'fill_interior', 'outline', 'flood_fill', 'flood_fill_smart',
+            'fill_between', 'fill_pattern',
             # Objects
             'extract_largest_object', 'extract_smallest_object', 'count_objects',
+            'remove_small_objects', 'keep_n_largest_objects',
+            'move_object', 'rotate_object', 'copy_object', 'connect_objects',
+            'extend_object', 'align_objects', 
+            'sort_objects_by_size', 'sort_objects_by_color',
             # Pattern
             'copy_pattern', 'overlay_pattern', 'detect_and_complete_grid_pattern',
+            'repeat_pattern', 'tile_pattern',
             # Split
             'split_horizontal_top', 'split_horizontal_bottom',
             'split_vertical_left', 'split_vertical_right',
+            'split_by_color', 'split_objects',
+            # Grid analysis (output 1x1, usually not useful directly)
+            # 'grid_width', 'grid_height', 'count_colors', 'dominant_color',
         ]
         for op in simple_ops:
             programs.append([(op, {})])
@@ -1094,6 +1823,7 @@ class ProgramSynthesizer:
         for h in [2, 3, 4]:
             for v in [2, 3, 4]:
                 programs.append([('tile', {'h_tiles': h, 'v_tiles': v})])
+                programs.append([('tile_pattern', {'h_times': h, 'v_times': v})])
         
         # Scaling
         for f in [2, 3]:
@@ -1104,6 +1834,7 @@ class ProgramSynthesizer:
             for to_c in range(10):
                 if from_c != to_c:
                     programs.append([('fill_color', {'from_color': from_c, 'to_color': to_c})])
+                    programs.append([('replace_color', {'from_c': from_c, 'to_c': to_c})])
         
         # Extract color
         for c in range(1, 10):
@@ -1123,21 +1854,59 @@ class ProgramSynthesizer:
                 programs.append([('swap_colors', {'color1': c1, 'color2': c2})])
         
         # Remove small objects
-        for min_size in [2, 3, 4, 5]:
+        for min_size in [2, 3, 4, 5, 6]:
             programs.append([('remove_small_objects', {'min_size': min_size})])
         
         # Keep n largest objects
-        for n in [1, 2, 3]:
+        for n in [1, 2, 3, 4]:
             programs.append([('keep_n_largest_objects', {'n': n})])
         
-        # Two-operation compositions (geometric only to start)
+        # Move object in directions
+        for direction in ['up', 'down', 'left', 'right']:
+            for steps in [1, 2, 3]:
+                programs.append([('move_object', {'direction': direction, 'steps': steps})])
+        
+        # Rotate object
+        for angle in [90, 180, 270]:
+            programs.append([('rotate_object', {'angle': angle})])
+        
+        # Copy object
+        for copies in [2, 3, 4]:
+            for direction in ['right', 'down', 'left', 'up']:
+                programs.append([('copy_object', {'copies': copies, 'direction': direction})])
+        
+        # Extend object
+        for direction in ['right', 'down', 'left', 'up']:
+            for length in [2, 3, 4, 5]:
+                programs.append([('extend_object', {'direction': direction, 'length': length})])
+        
+        # Align objects
+        for axis in ['horizontal', 'vertical']:
+            programs.append([('align_objects', {'axis': axis})])
+        
+        # Sort objects
+        for reverse in [True, False]:
+            programs.append([('sort_objects_by_size', {'reverse': reverse})])
+            programs.append([('sort_objects_by_color', {'reverse': reverse})])
+        
+        # Repeat pattern
+        for times in [2, 3, 4]:
+            for direction in ['right', 'down']:
+                programs.append([('repeat_pattern', {'times': times, 'direction': direction})])
+        
+        # Scale to specific sizes
+        for target_h in [3, 5, 7, 9, 10]:
+            for target_w in [3, 5, 7, 9, 10]:
+                programs.append([('scale_to', {'target_h': target_h, 'target_w': target_w})])
+        
+        # Two-operation compositions
         if self.max_depth >= 2:
             geo_ops = ['rotate_90', 'rotate_180', 'flip_h', 'flip_v', 'transpose']
             for op1 in geo_ops:
                 for op2 in geo_ops:
                     programs.append([(op1, {}), (op2, {})])
             
-            # Useful two-op combinations
+            # Useful two-op combinations - EXPANDED
             useful_combos = [
                 # Crop then transform
                 [('crop_to_object', {}), ('rotate_90', {})],
@@ -1150,19 +1919,57 @@ class ProgramSynthesizer:
                 # Fill then transform
                 [('flood_fill_smart', {}), ('crop_to_object', {})],
                 [('fill_interior', {}), ('crop_to_object', {})],
+                [('flood_fill', {}), ('crop_to_object', {})],
                 # Symmetry then crop
                 [('enforce_h_symmetry', {}), ('crop_to_object', {})],
                 [('enforce_v_symmetry', {}), ('crop_to_object', {})],
+                [('enforce_rotational_symmetry', {}), ('crop_to_object', {})],
+                [('detect_and_apply_symmetry', {}), ('crop_to_object', {})],
                 # Gravity then crop
                 [('gravity_down', {}), ('crop_to_object', {})],
                 [('gravity_up', {}), ('crop_to_object', {})],
+                [('gravity_left', {}), ('crop_to_object', {})],
+                [('gravity_right', {}), ('crop_to_object', {})],
                 # Object operations
                 [('recolor_by_size', {}), ('extract_largest_object', {})],
                 [('keep_n_largest_objects', {'n': 1}), ('crop_to_object', {})],
+                [('extract_largest_object', {}), ('center', {})],
+                [('extract_smallest_object', {}), ('center', {})],
+                # Pattern operations
+                [('trim', {}), ('tile', {'h_tiles': 2, 'v_tiles': 2})],
+                [('detect_and_complete_grid_pattern', {}), ('trim', {})],
+                # Advanced combos
+                [('remove_small_objects', {'min_size': 3}), ('crop_to_object', {})],
+                [('split_by_color', {}), ('extract_largest_object', {})],
+                [('fill_between', {}), ('crop_to_object', {})],
+                [('compress_colors', {}), ('recolor_by_size', {})],
+                [('sort_objects_by_size', {}), ('align_objects', {'axis': 'horizontal'})],
+                [('sort_objects_by_color', {}), ('align_objects', {'axis': 'horizontal'})],
             ]
             programs.extend(useful_combos)
+            
+            # Three-op compositions for complex tasks
+            if self.max_depth >= 3:
+                complex_combos = [
+                    [('extract_largest_object', {}), ('center', {}), ('crop_to_object', {})],
+                    [('remove_small_objects', {'min_size': 2}), ('recolor_by_size', {}), ('extract_largest_object', {})],
+                    [('detect_and_apply_symmetry', {}), ('trim', {}), ('center', {})],
+                    [('split_by_color', {}), ('extract_largest_object', {}), ('center', {})],
+                    [('gravity_down', {}), ('fill_between', {}), ('crop_to_object', {})],
+                    [('sort_objects_by_size', {}), ('keep_n_largest_objects', {'n': 1}), ('center', {})],
+                ]
+                programs.extend(complex_combos)
         
-        return programs
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_programs = []
+        for prog in programs:
+            key = str(prog)
+            if key not in seen:
+                seen.add(key)
+                unique_programs.append(prog)
+        
+        return unique_programs
     
     def _score_program(self, program: List[Tuple[str, Dict]], examples: List[Dict]) -> float:
         """Score program on examples (1.0 = perfect match)"""
@@ -1201,14 +2008,17 @@ class ARCSolver:
         self.transforms = ['identity', 'rotate_90', 'rotate_180', 'rotate_270',
                           'flip_h', 'flip_v', 'transpose']
     
-    def solve(self, task: Dict) -> List[List[List[int]]]:
-        """Solve task, return up to 2 predictions"""
+    def solve(self, task: Dict, max_time: float = 10.0) -> List[List[List[int]]]:
+        """Solve task with time limit, return up to 2 predictions"""
+        import time
+        start_time = time.time()
+        
         train = task['train']
         test_input = task['test'][0]['input']
         
         predictions = []
         
-        # 1. Try hint-based solving
+        # 1. Try hint-based solving (fast)
         hints = self.hint_gen.analyze(train)
         
         # Direct geometric match
@@ -1250,8 +2060,15 @@ class ARCSolver:
             except:
                 pass
         
-        # 3. Try program synthesis with augmentation
+        # 3. Try program synthesis with augmentation (time-bounded)
+        remaining_time = max_time - (time.time() - start_time)
+        time_per_transform = max(0.5, remaining_time / len(self.transforms))
+        
         for trans_name in self.transforms:
+            # Check time budget
+            if time.time() - start_time > max_time:
+                break
+            
             if trans_name == 'identity':
                 trans_fn = lambda x: x
                 inv_fn = lambda x: x
@@ -1266,8 +2083,8 @@ class ARCSolver:
                 for ex in train
             ]
             
-            # Synthesize programs
-            programs = self.synthesizer.synthesize(trans_train)
+            # Synthesize programs with time budget
+            programs = self.synthesizer.synthesize(trans_train, time_budget=time_per_transform)
             
             # Execute on test input
             trans_test = trans_fn(test_input)

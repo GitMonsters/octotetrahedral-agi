@@ -10,7 +10,37 @@ Combines:
 
 from dataclasses import dataclass, field
 from typing import List, Dict, Any
+import os
 import torch
+
+
+def _select_device() -> str:
+    """Select a usable device; fall back if accelerators are broken."""
+    forced = os.getenv("OCTO_DEVICE") or os.getenv("OCTOTETRAHEDRAL_DEVICE")
+    if forced:
+        return forced
+
+    # Respect explicit CUDA disable.
+    if os.getenv("CUDA_VISIBLE_DEVICES", None) == "":
+        cuda_available = False
+    else:
+        cuda_available = torch.cuda.is_available()
+
+    if cuda_available:
+        # Some environments report CUDA available but fail at runtime
+        # (e.g. invalid device function on embedding kernels). Smoke-test.
+        try:
+            emb = torch.nn.Embedding(16, 8).to("cuda")
+            ids = torch.tensor([1, 2, 3, 4], device="cuda")
+            _ = emb(ids).sum().item()
+            return "cuda"
+        except Exception:
+            pass
+
+    if torch.backends.mps.is_available():
+        return "mps"
+
+    return "cpu"
 
 
 @dataclass
@@ -243,11 +273,7 @@ class Config:
     training: TrainingConfig = field(default_factory=TrainingConfig)
     
     # Device
-    device: str = field(default_factory=lambda: (
-        'cuda' if torch.cuda.is_available() 
-        else 'mps' if torch.backends.mps.is_available() 
-        else 'cpu'
-    ))
+    device: str = field(default_factory=_select_device)
     
     # Seed for reproducibility
     seed: int = 42

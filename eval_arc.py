@@ -29,7 +29,8 @@ from data.arc_dataset import (
 
 def get_tokenizer():
     if HAS_TIKTOKEN:
-        return tiktoken.get_encoding("cl100k_base")
+        import tiktoken as _tiktoken
+        return _tiktoken.get_encoding("cl100k_base")
     else:
         class SimpleTokenizer:
             def encode(self, text):
@@ -39,7 +40,17 @@ def get_tokenizer():
         return SimpleTokenizer()
 
 
-def generate(model, tokenizer, input_text, max_new_tokens=100, temperature=0.3, device='mps'):
+def generate(
+    model,
+    tokenizer,
+    input_text,
+    max_new_tokens=100,
+    temperature=0.3,
+    top_k=50,
+    greedy=False,
+    debug_tokens=0,
+    device='mps'
+):
     """Generate output from input text"""
     model.eval()
     
@@ -48,8 +59,11 @@ def generate(model, tokenizer, input_text, max_new_tokens=100, temperature=0.3, 
     
     generated = input_ids.clone()
     
+    stop_reason = "max_new_tokens"
+    debug_decoded = []
+
     with torch.no_grad():
-        for _ in range(max_new_tokens):
+        for step in range(max_new_tokens):
             # Truncate if needed
             if generated.shape[1] > 512:
                 context = generated[:, -512:]
@@ -57,26 +71,41 @@ def generate(model, tokenizer, input_text, max_new_tokens=100, temperature=0.3, 
                 context = generated
             
             output = model(input_ids=context)
-            logits = output['logits'][:, -1, :] / temperature
-            
-            # Top-k sampling
-            top_k = 50
-            v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
-            logits[logits < v[:, [-1]]] = float('-inf')
-            
-            probs = F.softmax(logits, dim=-1)
-            next_token = torch.multinomial(probs, num_samples=1)
+            logits = output['logits'][:, -1, :]
+
+            if temperature and temperature > 0:
+                logits = logits / temperature
+
+            if greedy:
+                next_token = torch.argmax(logits, dim=-1, keepdim=True)
+            else:
+                # Top-k sampling
+                if top_k and top_k > 0:
+                    v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
+                    logits[logits < v[:, [-1]]] = float('-inf')
+
+                probs = F.softmax(logits, dim=-1)
+                next_token = torch.multinomial(probs, num_samples=1)
             
             generated = torch.cat([generated, next_token], dim=1)
             
-            # Stop at ] which marks end of grid
             decoded = tokenizer.decode([next_token.item()])
+            if debug_tokens and step < debug_tokens:
+                debug_decoded.append(decoded)
+
+            # Stop at ] which marks end of grid
             if ']' in decoded:
+                stop_reason = "saw_close_bracket"
                 break
     
     # Return only generated part
     generated_text = tokenizer.decode(generated[0, len(input_tokens):].tolist())
-    return generated_text
+    return generated_text, {
+        'stop_reason': stop_reason,
+        'debug_decoded': debug_decoded,
+        'input_tokens': len(input_tokens),
+        'total_tokens': generated.shape[1]
+    }
 
 
 def print_grid(grid, title="Grid"):
@@ -86,7 +115,18 @@ def print_grid(grid, title="Grid"):
         print("  " + " ".join(str(x) for x in row))
 
 
-def evaluate_on_task(model, tokenizer, task, device='mps'):
+def evaluate_on_task(
+    model,
+    tokenizer,
+    task,
+    *,
+    max_new_tokens=256,
+    temperature=0.3,
+    top_k=50,
+    greedy=False,
+    debug_tokens=0,
+    device='mps'
+):
     """Evaluate model on a single ARC task"""
     print(f"\n{'='*60}")
     print(f"Task: {task.task_id}")
@@ -106,9 +146,10 @@ def evaluate_on_task(model, tokenizer, task, device='mps'):
         print(f"\n--- Test {test_idx + 1} ---")
         
         # Get input and target
+        # NOTE: ARCTask.format_compact returns (input_text, target_text). The previous
+        # code incorrectly treated the second value as the full concatenated text.
         input_text, _ = task.format_compact(test_idx=test_idx, include_answer=False)
-        _, full_target = task.format_compact(test_idx=test_idx, include_answer=True)
-        target_text = full_target[len(input_text):]
+        _, target_text = task.format_compact(test_idx=test_idx, include_answer=True)
         
         # Show test input
         test_input = task.get_test_input(test_idx)
@@ -116,9 +157,23 @@ def evaluate_on_task(model, tokenizer, task, device='mps'):
         
         # Generate prediction
         print("\nGenerating prediction...")
-        generated = generate(model, tokenizer, input_text, max_new_tokens=100, device=device)
+        generated, gen_info = generate(
+            model,
+            tokenizer,
+            input_text,
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            top_k=top_k,
+            greedy=greedy,
+            debug_tokens=debug_tokens,
+            device=device,
+        )
         
-        print(f"\nGenerated: {generated[:100]}...")
+        if gen_info.get('debug_decoded'):
+            dbg = ''.join(gen_info['debug_decoded'])
+            print(f"\nFirst decoded tokens: {repr(dbg)}")
+        print(f"Stop reason: {gen_info.get('stop_reason')}")
+        print(f"\nGenerated: {repr(generated[:200])}...")
         print(f"Target:    {target_text[:100]}...")
         
         # Evaluate
@@ -161,6 +216,16 @@ def main():
                        help='Specific task ID to evaluate')
     parser.add_argument('--split', type=str, default='evaluation',
                        help='Data split (training/evaluation)')
+    parser.add_argument('--max-new-tokens', type=int, default=256,
+                       help='Max new tokens to generate per test')
+    parser.add_argument('--temperature', type=float, default=0.3,
+                       help='Sampling temperature (ignored with --greedy)')
+    parser.add_argument('--top-k', type=int, default=50,
+                       help='Top-k for sampling (ignored with --greedy)')
+    parser.add_argument('--greedy', action='store_true',
+                       help='Use greedy decoding (argmax)')
+    parser.add_argument('--debug-tokens', type=int, default=0,
+                       help='Decode and print first N generated tokens')
     args = parser.parse_args()
     
     # Config and device
@@ -214,7 +279,17 @@ def main():
     # Evaluate
     all_results = []
     for task in tasks:
-        results = evaluate_on_task(model, tokenizer, task, device)
+        results = evaluate_on_task(
+            model,
+            tokenizer,
+            task,
+            max_new_tokens=args.max_new_tokens,
+            temperature=args.temperature,
+            top_k=args.top_k,
+            greedy=args.greedy,
+            debug_tokens=args.debug_tokens,
+            device=device,
+        )
         all_results.extend(results)
     
     # Summary
