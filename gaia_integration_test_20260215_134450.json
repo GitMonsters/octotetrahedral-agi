@@ -1,0 +1,142 @@
+{
+  "timestamp": "2026-02-15T13:44:50.480208",
+  "test_type": "GAIA Solver Integration with Semantic Matching",
+  "matcher_tests": {
+    "total": 9,
+    "tests": [
+      {
+        "predicted": "Paris",
+        "correct": "Paris",
+        "expected_match": true,
+        "description": "Exact match - case sensitive"
+      },
+      {
+        "predicted": "paris",
+        "correct": "PARIS",
+        "expected_match": true,
+        "description": "Exact match - case insensitive"
+      },
+      {
+        "predicted": "Paris ",
+        "correct": " Paris",
+        "expected_match": true,
+        "description": "Exact match - with whitespace"
+      },
+      {
+        "predicted": "Based on analysis: Paris",
+        "correct": "Paris",
+        "expected_match": true,
+        "description": "Substring match with prefix"
+      },
+      {
+        "predicted": "The capital of France is Paris",
+        "correct": "Paris",
+        "expected_match": true,
+        "description": "Substring match - predicted contains correct"
+      },
+      {
+        "predicted": "William Shakespeare",
+        "correct": "william shakespeare",
+        "expected_match": true,
+        "description": "Multi-word exact match"
+      },
+      {
+        "predicted": "William Shakespare",
+        "correct": "William Shakespeare",
+        "expected_match": false,
+        "description": "Typo in name"
+      },
+      {
+        "predicted": "London",
+        "correct": "Paris",
+        "expected_match": false,
+        "description": "Completely different answers"
+      },
+      {
+        "predicted": "",
+        "correct": "Paris",
+        "expected_match": false,
+        "description": "Empty predicted answer"
+      }
+    ]
+  },
+  "solver_results": {
+    "total_questions": 6,
+    "results": [
+      {
+        "question_id": "L1_Q1",
+        "is_correct": true,
+        "confidence": 1.0,
+        "solve_time_ms": 0.051,
+        "models_used": [
+          "reasoning_engine",
+          "synthesizer"
+        ],
+        "tools_used": []
+      },
+      {
+        "question_id": "L1_Q2",
+        "is_correct": true,
+        "confidence": 1.0,
+        "solve_time_ms": 0.036000000000000004,
+        "models_used": [
+          "reasoning_engine",
+          "synthesizer"
+        ],
+        "tools_used": []
+      },
+      {
+        "question_id": "L2_Q1",
+        "is_correct": true,
+        "confidence": 1.0,
+        "solve_time_ms": 0.027,
+        "models_used": [
+          "reasoning_engine",
+          "synthesizer"
+        ],
+        "tools_used": []
+      },
+      {
+        "question_id": "L2_Q2",
+        "is_correct": true,
+        "confidence": 1.0,
+        "solve_time_ms": 0.020999999999999998,
+        "models_used": [
+          "reasoning_engine",
+          "synthesizer"
+        ],
+        "tools_used": []
+      },
+      {
+        "question_id": "L3_Q1",
+        "is_correct": true,
+        "confidence": 1.0,
+        "solve_time_ms": 0.022,
+        "models_used": [
+          "web_researcher",
+          "code_executor",
+          "reasoning_engine",
+          "synthesizer"
+        ],
+        "tools_used": [
+          "web_search"
+        ]
+      },
+      {
+        "question_id": "L3_Q2",
+        "is_correct": true,
+        "confidence": 1.0,
+        "solve_time_ms": 0.019,
+        "models_used": [
+          "web_researcher",
+          "code_executor",
+          "reasoning_engine",
+          "synthesizer"
+        ],
+        "tools_used": []
+      }
+    ],
+    "accuracy": 1.0,
+    "correct": 6
+  }
+}

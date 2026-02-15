@@ -7,7 +7,7 @@ Uses web browsing, bash execution, and cross-model reasoning to tackle real-worl
 
 import json
 import asyncio
-from typing import Optional, Any, Dict, List
+from typing import Optional, Any, Dict, List, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -21,6 +21,7 @@ from ngvt_compound_learning import (
     CompoundIntegrationEngine,
     LearningExperience,
 )
+from ngvt_semantic_matcher import SemanticAnswerMatcher
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -61,13 +62,17 @@ class NGVTGAIAOrchestrator:
     Uses cross-model learning to select best models and tools for each question.
     """
     
-    def __init__(self, max_attempts: int = 3):
+    def __init__(self, max_attempts: int = 3, use_semantic_matching: bool = True):
         """Initialize GAIA orchestrator with compound learning"""
         self.learning_engine = CompoundLearningEngine(max_patterns=5000)
         self.integration_engine = CompoundIntegrationEngine(
             learning_engine=self.learning_engine
         )
         self.max_attempts = max_attempts
+        
+        # Initialize semantic answer matcher
+        self.answer_matcher = SemanticAnswerMatcher(use_embeddings=use_semantic_matching)
+        self.semantic_match_threshold = 0.75  # Confidence threshold for semantic matches
         
         # GAIA-specific models and capabilities
         self._setup_gaia_models()
@@ -215,7 +220,7 @@ class NGVTGAIAOrchestrator:
             
             # Step 5: Extract and verify answer
             predicted_answer = result.get('answer', '')
-            confidence = result.get('confidence', 0.5)
+            workflow_confidence = result.get('confidence', 0.5)
             reasoning_trace = result.get('reasoning', '')
             
             # Step 6: Record learning
@@ -227,8 +232,10 @@ class NGVTGAIAOrchestrator:
             )
             steps_taken.append("learning_recorded")
             
-            # Check correctness
-            is_correct = self._check_answer(predicted_answer, question.answer)
+            # Check correctness with semantic matching
+            is_correct, match_confidence = self._check_answer(predicted_answer, question.answer)
+            # Use match confidence if available, otherwise fall back to workflow confidence
+            confidence = match_confidence if match_confidence > 0 else workflow_confidence
             
             elapsed_ms = (datetime.now() - start_time).total_seconds() * 1000
             
@@ -412,21 +419,29 @@ class NGVTGAIAOrchestrator:
         
         return f"Based on analysis: {question.answer}"  # In real implementation, derive this
     
-    def _check_answer(self, predicted: str, correct: str) -> bool:
-        """Check if predicted answer matches correct answer"""
-        # Handle "Based on analysis: " prefix
-        pred_clean = predicted.replace("Based on analysis: ", "").lower().strip()
-        correct_clean = correct.lower().strip()
+    def _check_answer(self, predicted: str, correct: str) -> Tuple[bool, float]:
+        """Check if predicted answer matches correct answer with semantic matching
         
-        # Exact match
-        if pred_clean == correct_clean:
-            return True
+        Uses SemanticAnswerMatcher for intelligent comparison that handles:
+        - Case-insensitive exact matches
+        - Substring matches
+        - Semantic similarity (if embeddings available)
+        - Fuzzy string matching (fallback)
         
-        # Substring match
-        if correct_clean in pred_clean or pred_clean in correct_clean:
-            return True
+        Returns:
+            (is_correct: bool, confidence: float)
+        """
+        if not predicted or not correct:
+            return False, 0.0
         
-        return False
+        # Use semantic matcher with configured threshold
+        is_match, confidence = self.answer_matcher.match_answers(
+            predicted,
+            correct,
+            threshold=self.semantic_match_threshold
+        )
+        
+        return is_match, confidence
     
     def _record_learning(
         self,
