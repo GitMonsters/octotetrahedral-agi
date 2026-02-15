@@ -1,15 +1,17 @@
 """
 NGVT Compound Learning System
 Advanced meta-learning with knowledge accumulation and transfer
+Supports cross-model learning, orchestrator integration, and adaptive compound workflows
 """
 
 import json
 import time
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, Set
 from dataclasses import dataclass, field
 from datetime import datetime
 import hashlib
 import math
+import asyncio
 
 @dataclass
 class LearningExperience:
@@ -37,10 +39,38 @@ class CompoundLearningPattern:
     created_at: str = ""
     last_used: str = ""
     effectiveness_score: float = 0.0
+    model_sources: List[str] = field(default_factory=list)  # Which models generated this pattern
+    cross_model_applicability: Dict[str, float] = field(default_factory=dict)  # Model -> applicability score
+
+@dataclass
+class CrossModelLearning:
+    """Learning transferred between models in compound workflows"""
+    source_model: str
+    target_model: str
+    pattern_id: str
+    transfer_score: float  # 0-1, how well pattern transferred
+    successful_applications: int = 0
+    failed_applications: int = 0
+    created_at: str = ""
+    last_applied: str = ""
+
+@dataclass
+class IntegrationWorkflow:
+    """Represents a compound integration workflow with learning"""
+    workflow_id: str
+    model_sequence: List[str]
+    success_rate: float = 0.0
+    avg_latency_ms: float = 0.0
+    execution_count: int = 0
+    learned_optimizations: List[str] = field(default_factory=list)  # Applied patterns
+    created_at: str = ""
+    last_executed: str = ""
+    effectiveness_trend: List[float] = field(default_factory=list)  # Historical effectiveness
 
 class CompoundLearningEngine:
     """
     Meta-learning engine that learns from interactions and improves over time
+    Supports cross-model learning and compound workflow optimization
     """
     
     def __init__(self, max_patterns: int = 10000, learning_rate: float = 0.01):
@@ -60,10 +90,17 @@ class CompoundLearningEngine:
             'cumulative_accuracy': 0.0,
             'knowledge_density': 0.0,
             'transfer_efficiency': 0.0,
+            'cross_model_efficiency': 0.0,
         }
         
         # Pattern relationships (graph)
         self.pattern_relationships: Dict[str, List[str]] = {}
+        
+        # Cross-model learning
+        self.cross_model_transfers: Dict[str, List[CrossModelLearning]] = {}  # source_model -> transfers
+        self.model_signatures: Dict[str, Set[str]] = {}  # model -> capability signatures
+        self.workflow_history: Dict[str, IntegrationWorkflow] = {}  # workflow_id -> workflow
+        self.model_affinity_matrix: Dict[str, Dict[str, float]] = {}  # model1 -> {model2 -> affinity}
         
     def record_experience(self, experience: LearningExperience) -> None:
         """Record a new learning experience"""
@@ -282,17 +319,190 @@ class CompoundLearningEngine:
             'cumulative_accuracy': self.knowledge_base['cumulative_accuracy'],
             'knowledge_density': self.knowledge_base['knowledge_density'],
             'transfer_efficiency': self.knowledge_base['transfer_efficiency'],
+            'cross_model_efficiency': self.knowledge_base['cross_model_efficiency'],
             'pattern_relationships': len(self.pattern_relationships),
+            'active_models': len(self.model_signatures),
+            'workflows': len(self.workflow_history),
             'timestamp': datetime.now().isoformat(),
         }
+    
+    # ============ CROSS-MODEL LEARNING METHODS ============
+    
+    def register_model(self, model_id: str, capabilities: List[str]) -> None:
+        """Register a model with its capabilities"""
+        self.model_signatures[model_id] = set(capabilities)
+        self.model_affinity_matrix[model_id] = {}
+    
+    def record_cross_model_transfer(self, pattern: CompoundLearningPattern, 
+                                   source_model: str, target_model: str,
+                                   success: bool, effectiveness: float) -> None:
+        """Record knowledge transfer between models"""
+        if source_model not in self.cross_model_transfers:
+            self.cross_model_transfers[source_model] = []
+        
+        transfer = CrossModelLearning(
+            source_model=source_model,
+            target_model=target_model,
+            pattern_id=pattern.pattern_id,
+            transfer_score=effectiveness,
+            successful_applications=1 if success else 0,
+            failed_applications=0 if success else 1,
+            created_at=datetime.now().isoformat(),
+            last_applied=datetime.now().isoformat(),
+        )
+        
+        self.cross_model_transfers[source_model].append(transfer)
+        
+        # Update model affinity
+        if target_model not in self.model_affinity_matrix[source_model]:
+            self.model_affinity_matrix[source_model][target_model] = effectiveness
+        else:
+            # Exponential moving average
+            current = self.model_affinity_matrix[source_model][target_model]
+            self.model_affinity_matrix[source_model][target_model] = (
+                current * 0.7 + effectiveness * 0.3
+            )
+        
+        # Update pattern applicability
+        if target_model not in pattern.cross_model_applicability:
+            pattern.cross_model_applicability[target_model] = effectiveness
+        else:
+            pattern.cross_model_applicability[target_model] = (
+                pattern.cross_model_applicability[target_model] * 0.7 + effectiveness * 0.3
+            )
+    
+    def get_applicable_patterns_for_model(self, model_id: str, 
+                                         top_k: int = 5) -> List[CompoundLearningPattern]:
+        """Get patterns most applicable to a specific model"""
+        applicable = []
+        
+        for pattern in self.patterns.values():
+            # Score based on model applicability and effectiveness
+            score = pattern.cross_model_applicability.get(model_id, 0.0)
+            score *= pattern.effectiveness_score  # Favor effective patterns
+            
+            applicable.append((pattern, score))
+        
+        # Sort by score and return top K
+        applicable.sort(key=lambda x: x[1], reverse=True)
+        return [p for p, _ in applicable[:top_k]]
+    
+    def find_complementary_models(self, model_id: str) -> Dict[str, float]:
+        """Find models that work well with the given model (based on learning history)"""
+        if model_id not in self.model_affinity_matrix:
+            return {}
+        
+        # Return affinity scores
+        affinities = self.model_affinity_matrix[model_id]
+        sorted_affinities = sorted(affinities.items(), key=lambda x: x[1], reverse=True)
+        
+        return dict(sorted_affinities)
+    
+    def create_adaptive_workflow(self, workflow_id: str, initial_models: List[str],
+                               input_signature: Dict[str, Any]) -> IntegrationWorkflow:
+        """Create a workflow that learns and adapts based on execution"""
+        workflow = IntegrationWorkflow(
+            workflow_id=workflow_id,
+            model_sequence=initial_models,
+            created_at=datetime.now().isoformat(),
+        )
+        
+        self.workflow_history[workflow_id] = workflow
+        return workflow
+    
+    def optimize_workflow(self, workflow_id: str) -> Dict[str, Any]:
+        """Optimize a workflow based on learned patterns and model affinities"""
+        if workflow_id not in self.workflow_history:
+            return {'error': f'Workflow {workflow_id} not found'}
+        
+        workflow = self.workflow_history[workflow_id]
+        original_sequence = workflow.model_sequence.copy()
+        
+        # Try to reorder models based on affinity scores
+        if len(workflow.model_sequence) > 1:
+            optimized = self._optimize_model_sequence(workflow.model_sequence)
+            workflow.model_sequence = optimized
+        
+        # Find applicable patterns to apply
+        applicable_patterns = []
+        for model in workflow.model_sequence:
+            patterns = self.get_applicable_patterns_for_model(model, top_k=3)
+            applicable_patterns.extend([p.pattern_id for p in patterns])
+        
+        workflow.learned_optimizations = list(set(applicable_patterns))
+        workflow.last_executed = datetime.now().isoformat()
+        
+        return {
+            'workflow_id': workflow_id,
+            'optimized': original_sequence != workflow.model_sequence,
+            'original_sequence': original_sequence,
+            'optimized_sequence': workflow.model_sequence,
+            'applied_patterns': workflow.learned_optimizations,
+            'estimated_improvement': self._estimate_improvement(original_sequence, 
+                                                               workflow.model_sequence),
+        }
+    
+    def _optimize_model_sequence(self, models: List[str]) -> List[str]:
+        """Reorder models for better workflow efficiency"""
+        if len(models) <= 1:
+            return models
+        
+        # Start with first model
+        optimized = [models[0]]
+        remaining = set(models[1:])
+        
+        while remaining:
+            current = optimized[-1]
+            # Find best next model based on affinity
+            best_next = None
+            best_score = -1
+            
+            for candidate in remaining:
+                score = self.model_affinity_matrix.get(current, {}).get(candidate, 0.3)
+                if score > best_score:
+                    best_score = score
+                    best_next = candidate
+            
+            if best_next:
+                optimized.append(best_next)
+                remaining.remove(best_next)
+            else:
+                # Just pick first remaining if no affinity data
+                best_next = remaining.pop()
+                optimized.append(best_next)
+        
+        return optimized
+    
+    def _estimate_improvement(self, original: List[str], optimized: List[str]) -> float:
+        """Estimate performance improvement from sequence reordering"""
+        # Calculate average affinity for each sequence
+        def calculate_sequence_score(sequence: List[str]) -> float:
+            if len(sequence) <= 1:
+                return 1.0
+            
+            total_affinity = 0.0
+            for i in range(len(sequence) - 1):
+                affinity = self.model_affinity_matrix.get(sequence[i], {}).get(sequence[i+1], 0.5)
+                total_affinity += affinity
+            
+            return total_affinity / (len(sequence) - 1)
+        
+        original_score = calculate_sequence_score(original)
+        optimized_score = calculate_sequence_score(optimized)
+        
+        if original_score == 0:
+            return 0.0
+        
+        return (optimized_score - original_score) / original_score
 
 
 class CompoundIntegrationEngine:
     """
     Multi-model integration with compound cross-model learning
+    Coordinates workflows between models and learns optimal integration patterns
     """
     
-    def __init__(self):
+    def __init__(self, learning_engine: Optional['CompoundLearningEngine'] = None):
         self.models: Dict[str, Any] = {}
         self.integration_paths: Dict[str, List[str]] = {}  # workflow paths
         self.cross_model_cache: Dict[str, Any] = {}
@@ -302,7 +512,12 @@ class CompoundIntegrationEngine:
             'failed_integrations': 0,
             'average_path_latency': 0.0,
             'model_compatibility_matrix': {},
+            'cross_model_learning_events': 0,
+            'optimization_improvements': 0.0,
         }
+        
+        # Link to learning engine for knowledge transfer
+        self.learning_engine = learning_engine
     
     def register_model(self, model_id: str, model_type: str, config: Dict[str, Any]) -> None:
         """Register a new model for integration"""
@@ -318,8 +533,9 @@ class CompoundIntegrationEngine:
         """Define a compound integration path (workflow)"""
         self.integration_paths[path_id] = model_sequence
     
-    def execute_integration_path(self, path_id: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a compound integration workflow"""
+    def execute_integration_path(self, path_id: str, input_data: Dict[str, Any],
+                               record_learning: bool = True) -> Dict[str, Any]:
+        """Execute a compound integration workflow with optional learning"""
         if path_id not in self.integration_paths:
             return {'error': f'Path {path_id} not found'}
         
@@ -327,8 +543,9 @@ class CompoundIntegrationEngine:
         current_data = input_data
         results = []
         start_time = time.time()
+        path_success = True
         
-        for model_id in models:
+        for i, model_id in enumerate(models):
             if model_id not in self.models:
                 return {'error': f'Model {model_id} not found'}
             
@@ -340,6 +557,14 @@ class CompoundIntegrationEngine:
             self.models[model_id]['call_count'] += 1
             if model_result.get('success'):
                 self.models[model_id]['success_count'] += 1
+            else:
+                path_success = False
+            
+            # Record cross-model transfer if learning engine available
+            if record_learning and self.learning_engine and i > 0:
+                prev_model = models[i-1]
+                transfer_effectiveness = 0.9 if model_result.get('success') else 0.3
+                self._record_model_transition_learning(prev_model, model_id, transfer_effectiveness)
             
             # Use output as input for next model
             current_data = model_result.get('output', current_data)
@@ -347,7 +572,7 @@ class CompoundIntegrationEngine:
         total_latency = (time.time() - start_time) * 1000
         
         self.integration_metrics['total_integrations'] += 1
-        if all(r.get('success') for r in results):
+        if path_success and all(r.get('success') for r in results):
             self.integration_metrics['successful_integrations'] += 1
         else:
             self.integration_metrics['failed_integrations'] += 1
@@ -360,7 +585,7 @@ class CompoundIntegrationEngine:
         
         return {
             'path_id': path_id,
-            'success': all(r.get('success') for r in results),
+            'success': path_success,
             'results': results,
             'total_latency_ms': total_latency,
             'final_output': current_data,
@@ -381,6 +606,33 @@ class CompoundIntegrationEngine:
             },
             'latency_ms': 10.0,
         }
+    
+    def _record_model_transition_learning(self, source_model: str, target_model: str,
+                                         effectiveness: float) -> None:
+        """Record learning from model-to-model transitions"""
+        if self.learning_engine:
+            # Create a synthetic pattern representing the transition
+            pattern = CompoundLearningPattern(
+                pattern_id=f"{source_model}->{target_model}",
+                query_hash=hashlib.md5(f"{source_model}-{target_model}".encode()).hexdigest(),
+                response_template=f"Transfer from {source_model} to {target_model}",
+                accuracy=effectiveness,
+                frequency=1,
+                avg_latency_ms=10.0,
+                effectiveness_score=effectiveness,
+                model_sources=[source_model],
+            )
+            
+            # Record transfer
+            self.learning_engine.record_cross_model_transfer(
+                pattern=pattern,
+                source_model=source_model,
+                target_model=target_model,
+                success=effectiveness > 0.7,
+                effectiveness=effectiveness
+            )
+            
+            self.integration_metrics['cross_model_learning_events'] += 1
     
     def get_model_compatibility(self, model_id1: str, model_id2: str) -> float:
         """Calculate compatibility between two models"""
@@ -407,7 +659,7 @@ class CompoundIntegrationEngine:
         return 0.5
     
     def suggest_integration_paths(self) -> List[Dict[str, Any]]:
-        """Suggest optimal integration paths based on model compatibility"""
+        """Suggest optimal integration paths based on model compatibility and learning"""
         if len(self.models) < 2:
             return []
         
@@ -418,29 +670,59 @@ class CompoundIntegrationEngine:
         for i, m1 in enumerate(model_ids):
             for m2 in model_ids[i+1:]:
                 compat = self.get_model_compatibility(m1, m2)
-                if compat > 0.5:
-                    suggestions.append({
-                        'path': [m1, m2],
-                        'compatibility_score': compat,
-                        'path_id': f'{m1}-{m2}',
-                    })
+                
+                # Get learning efficiency if available
+                learning_boost = 1.0
+                if self.learning_engine:
+                    affinity = self.learning_engine.model_affinity_matrix.get(m1, {}).get(m2, 0.0)
+                    if affinity > 0:
+                        learning_boost = 1.0 + affinity * 0.2  # 20% boost from learning
+                
+                final_score = compat * learning_boost
+                
+                suggestions.append({
+                    'path': [m1, m2],
+                    'compatibility_score': compat,
+                    'learning_boost': learning_boost - 1.0,
+                    'final_score': final_score,
+                    'path_id': f'{m1}-{m2}',
+                })
         
-        # Return top suggestions
-        return sorted(suggestions, key=lambda x: x['compatibility_score'], reverse=True)[:5]
+        # Return top suggestions sorted by final score
+        return sorted(suggestions, key=lambda x: x['final_score'], reverse=True)[:5]
+    
+    def optimize_existing_path(self, path_id: str) -> Dict[str, Any]:
+        """Use learning engine to optimize an existing integration path"""
+        if not self.learning_engine or path_id not in self.integration_paths:
+            return {'error': 'Cannot optimize path'}
+        
+        result = self.learning_engine.optimize_workflow(path_id)
+        
+        if 'error' not in result:
+            # Update the path in integration engine
+            self.integration_paths[path_id] = result.get('optimized_sequence', 
+                                                        self.integration_paths[path_id])
+            self.integration_metrics['optimization_improvements'] += result.get('estimated_improvement', 0)
+        
+        return result
     
     def get_integration_stats(self) -> Dict[str, Any]:
-        """Get integration statistics"""
+        """Get comprehensive integration statistics including cross-model learning"""
+        success_rate = (
+            self.integration_metrics['successful_integrations'] / 
+            self.integration_metrics['total_integrations']
+            if self.integration_metrics['total_integrations'] > 0 else 0.0
+        )
+        
         return {
             'total_integrations': self.integration_metrics['total_integrations'],
             'successful_integrations': self.integration_metrics['successful_integrations'],
             'failed_integrations': self.integration_metrics['failed_integrations'],
-            'success_rate': (
-                self.integration_metrics['successful_integrations'] / 
-                self.integration_metrics['total_integrations']
-                if self.integration_metrics['total_integrations'] > 0 else 0.0
-            ),
+            'success_rate': success_rate,
             'average_path_latency_ms': self.integration_metrics['average_path_latency'],
             'total_models': len(self.models),
             'total_paths': len(self.integration_paths),
+            'cross_model_learning_events': self.integration_metrics.get('cross_model_learning_events', 0),
+            'optimization_improvements': self.integration_metrics.get('optimization_improvements', 0.0),
             'timestamp': datetime.now().isoformat(),
         }

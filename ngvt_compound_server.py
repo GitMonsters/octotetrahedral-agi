@@ -41,7 +41,7 @@ app.add_middleware(
 
 # Global engines
 learning_engine = CompoundLearningEngine(max_patterns=10000)
-integration_engine = CompoundIntegrationEngine()
+integration_engine = CompoundIntegrationEngine(learning_engine=learning_engine)
 
 # Request/Response Models
 class CompoundInferenceRequest(BaseModel):
@@ -311,6 +311,140 @@ async def add_timing_header(request: Request, call_next):
     process_time = time.time() - start_time_req
     response.headers["X-Process-Time"] = str(process_time)
     return response
+
+# ============ ADVANCED COMPOUND LEARNING ENDPOINTS ============
+
+@app.post("/learning/register-model")
+async def register_model_with_capabilities(body: Dict[str, Any]):
+    """Register a model with its capabilities for cross-model learning"""
+    model_id = body.get('model_id')
+    capabilities = body.get('capabilities', [])
+    
+    if not model_id:
+        raise HTTPException(status_code=400, detail="model_id required")
+    
+    learning_engine.register_model(model_id, capabilities)
+    
+    return {
+        'status': 'registered',
+        'model_id': model_id,
+        'capabilities': capabilities,
+        'timestamp': datetime.now().isoformat(),
+    }
+
+@app.get("/learning/model-affinity/{source_model}")
+async def get_model_affinity(source_model: str):
+    """Get model affinity scores (which models work well together)"""
+    affinity = learning_engine.find_complementary_models(source_model)
+    
+    return {
+        'source_model': source_model,
+        'complementary_models': affinity,
+        'timestamp': datetime.now().isoformat(),
+    }
+
+@app.post("/learning/workflow/create")
+async def create_adaptive_workflow(body: Dict[str, Any]):
+    """Create an adaptive workflow that learns and optimizes"""
+    workflow_id = body.get('workflow_id')
+    models = body.get('models', [])
+    input_signature = body.get('input_signature', {})
+    
+    if not workflow_id or not models:
+        raise HTTPException(status_code=400, detail="workflow_id and models required")
+    
+    workflow = learning_engine.create_adaptive_workflow(workflow_id, models, input_signature)
+    
+    return {
+        'workflow_id': workflow_id,
+        'models': models,
+        'status': 'created',
+        'created_at': workflow.created_at,
+    }
+
+@app.post("/learning/workflow/optimize/{workflow_id}")
+async def optimize_workflow(workflow_id: str):
+    """Optimize a workflow based on learned patterns"""
+    result = learning_engine.optimize_workflow(workflow_id)
+    
+    if 'error' in result:
+        raise HTTPException(status_code=400, detail=result['error'])
+    
+    return result
+
+@app.get("/learning/patterns-for-model/{model_id}")
+async def get_applicable_patterns(model_id: str, top_k: int = 5):
+    """Get patterns most applicable to a specific model"""
+    patterns = learning_engine.get_applicable_patterns_for_model(model_id, top_k=top_k)
+    
+    return {
+        'model_id': model_id,
+        'applicable_patterns': [
+            {
+                'pattern_id': p.pattern_id,
+                'effectiveness_score': p.effectiveness_score,
+                'frequency': p.frequency,
+                'applicability': p.cross_model_applicability.get(model_id, 0.0),
+            }
+            for p in patterns
+        ],
+        'timestamp': datetime.now().isoformat(),
+    }
+
+@app.post("/integration/path/execute-with-learning")
+async def execute_integration_with_learning(request: IntegrationPathRequest):
+    """Execute integration path with cross-model learning"""
+    result = integration_engine.execute_integration_path(
+        request.path_id,
+        request.input_data,
+        record_learning=True
+    )
+    
+    if 'error' in result:
+        raise HTTPException(status_code=400, detail=result['error'])
+    
+    return result
+
+@app.post("/integration/path/optimize/{path_id}")
+async def optimize_integration_path(path_id: str):
+    """Optimize an integration path using learned model affinities"""
+    result = integration_engine.optimize_existing_path(path_id)
+    
+    if 'error' in result:
+        raise HTTPException(status_code=400, detail=result['error'])
+    
+    return result
+
+@app.get("/learning/cross-model-transfers/{model_id}")
+async def get_cross_model_transfers(model_id: str):
+    """Get all cross-model learning transfers from a specific model"""
+    transfers = learning_engine.cross_model_transfers.get(model_id, [])
+    
+    return {
+        'source_model': model_id,
+        'total_transfers': len(transfers),
+        'transfers': [
+            {
+                'target_model': t.target_model,
+                'pattern_id': t.pattern_id,
+                'transfer_score': t.transfer_score,
+                'successful_applications': t.successful_applications,
+                'failed_applications': t.failed_applications,
+            }
+            for t in transfers
+        ],
+        'timestamp': datetime.now().isoformat(),
+    }
+
+@app.get("/integration/suggestions-with-learning")
+async def get_integration_suggestions_enhanced():
+    """Get suggested integration paths enhanced with learning metrics"""
+    suggestions = integration_engine.suggest_integration_paths()
+    
+    return {
+        'suggestions': suggestions,
+        'timestamp': datetime.now().isoformat(),
+    }
 
 if __name__ == "__main__":
     import sys
