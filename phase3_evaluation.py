@@ -27,13 +27,12 @@ from ngvt_gaia_solver import (
 )
 from ngvt_semantic_matcher import SemanticAnswerMatcher
 
-# Try to import official GAIA benchmark
-try:
-    from inspect_evals.gaia import gaia
-    OFFICIAL_GAIA_AVAILABLE = True
-except ImportError:
-    OFFICIAL_GAIA_AVAILABLE = False
-    print("⚠ Official GAIA benchmark not available - using mock data only")
+# Check if HF token is available for official GAIA benchmark
+import os
+HF_TOKEN = os.environ.get('HF_TOKEN', '')
+OFFICIAL_GAIA_AVAILABLE = bool(HF_TOKEN)
+if not OFFICIAL_GAIA_AVAILABLE:
+    print("⚠ HF_TOKEN not set - using mock data only. Set HF_TOKEN to access official GAIA benchmark.")
 
 
 class Phase3Evaluator:
@@ -43,6 +42,7 @@ class Phase3Evaluator:
         self.use_official = use_official_benchmark and OFFICIAL_GAIA_AVAILABLE
         self.orchestrator = NGVTGAIAOrchestrator(use_semantic_matching=True)
         self.results: List[GAIASolveResult] = []
+        self.question_levels: Dict[str, int] = {}  # question_id -> level
         self.start_time = None
         self.end_time = None
         
@@ -92,6 +92,7 @@ class Phase3Evaluator:
             if verbose and i % 10 == 1:
                 print(f"Progress: {i}/{len(questions)}...", end="\r", flush=True)
             
+            self.question_levels[question.question_id] = question.level
             result = await self.orchestrator.solve_question(question)
             self.results.append(result)
         
@@ -132,26 +133,33 @@ class Phase3Evaluator:
             
             print("Loading official GAIA dataset from HuggingFace...")
             
-            # Load from HuggingFace
-            dataset = load_dataset('gaia-benchmark/GAIA', split='validation')
+            # Load from HuggingFace with token and correct config
+            dataset = load_dataset(
+                'gaia-benchmark/GAIA',
+                '2023_all',
+                split='validation',
+                token=HF_TOKEN
+            )
             
             questions = []
             for item in dataset:
-                # Handle both question and file_name fields
-                question_text = item.get('question', '')
+                # Use correct field names from GAIA dataset
+                question_text = item.get('Question', '')
                 file_name = item.get('file_name', '')
-                answer = item.get('answer', '')
-                level_num = item.get('level', 1)
-                question_id = item.get('question_id', f"q_{len(questions)}")
+                answer = item.get('Final answer', '')
+                level_num = item.get('Level', 1)
+                question_id = item.get('task_id', f"q_{len(questions)}")
                 
                 q = GAIAQuestion(
                     question_id=str(question_id),
                     question=question_text,
                     answer=answer,
                     file=file_name if file_name else None,
-                    level=int(level_num)
+                    level=int(level_num)  # Level comes as string from dataset
                 )
                 questions.append(q)
+            
+            print(f"Loaded {len(questions)} questions from official GAIA dataset")
             
             # Filter by level if specified
             if level:
@@ -280,7 +288,7 @@ class Phase3Evaluator:
         # By level
         by_level = {}
         for result in self.results:
-            level = 1  # Default to 1, would need to extract from question
+            level = self.question_levels.get(result.question_id, 1)
             if level not in by_level:
                 by_level[level] = {'correct': 0, 'total': 0, 'times': []}
             by_level[level]['total'] += 1
@@ -314,9 +322,13 @@ class Phase3Evaluator:
             'results': [
                 {
                     'question_id': r.question_id,
+                    'question': r.question[:150],
+                    'predicted_answer': r.predicted_answer,
+                    'expected_answer': r.correct_answer,
                     'correct': r.is_correct,
                     'confidence': r.confidence,
                     'time_ms': r.solve_time_ms,
+                    'reasoning_trace': r.reasoning_trace[:500] if r.reasoning_trace else '',
                 }
                 for r in self.results
             ]
