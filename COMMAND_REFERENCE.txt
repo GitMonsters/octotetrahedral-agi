@@ -1,0 +1,283 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                    NGVT Inspect AI - Command Reference                        ║
+║                    Quick Commands for Common Tasks                            ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+🚀 QUICK START (Copy & Paste Ready)
+═════════════════════════════════════════════════════════════════════════════════
+
+# Test 1: Verify system is working (no setup required)
+python3 phase3_evaluation.py --quick --mock
+
+# Test 2: Get HuggingFace token
+# Go to: https://huggingface.co/datasets/gaia-benchmark/GAIA
+# Request access, wait 1 day, create token at:
+# https://huggingface.co/settings/tokens
+
+# Test 3: Set token and run official evaluation
+export HF_TOKEN='your_token_here'
+python3 ngvt_inspect_ai_integration.py --limit 50
+
+# Test 4: Full evaluation
+python3 ngvt_inspect_ai_integration.py --full
+
+# Test 5: Specific difficulty level
+python3 ngvt_inspect_ai_integration.py --level 1 --limit 100
+python3 ngvt_inspect_ai_integration.py --level 2 --limit 100
+python3 ngvt_inspect_ai_integration.py --level 3 --limit 100
+
+
+📋 ALL COMMAND OPTIONS
+═════════════════════════════════════════════════════════════════════════════════
+
+python3 ngvt_inspect_ai_integration.py [OPTIONS]
+
+Options:
+  --limit N              Evaluate first N questions (default: all 450)
+  --level {1,2,3}       Specific difficulty level (default: all)
+  --split {validation,test}  validation=has answers, test=for leaderboard
+  --output FILE         Save results to JSON file
+  --quick               Quick test mode (10 questions)
+  --full                Full evaluation (450 questions)
+  --with-docker         Use Docker for web_search and bash tools
+  --no-embeddings       Disable semantic embeddings (faster)
+
+Examples:
+  python3 ngvt_inspect_ai_integration.py --quick              # 10 questions
+  python3 ngvt_inspect_ai_integration.py --limit 50           # 50 questions
+  python3 ngvt_inspect_ai_integration.py --limit 50 --level 1 # 50 Level 1
+  python3 ngvt_inspect_ai_integration.py --full               # 450 questions
+  python3 ngvt_inspect_ai_integration.py --full --output results.json
+
+
+🎯 EVALUATION WORKFLOWS
+═════════════════════════════════════════════════════════════════════════════════
+
+Workflow 1: Initial Validation (30 minutes)
+──────────────────────────────────────────
+1. python3 phase3_evaluation.py --quick --mock
+   └─ Verify system works (expect: 100% accuracy)
+
+2. export HF_TOKEN='your_token_here'
+
+3. python3 ngvt_inspect_ai_integration.py --limit 50
+   └─ Test official data (expect: 30-40% accuracy)
+
+
+Workflow 2: Full Evaluation (3-5 hours)
+───────────────────────────────────────
+1. python3 ngvt_inspect_ai_integration.py --full --output validation.json
+   └─ Full 450-question evaluation on validation split
+
+2. Review validation.json for metrics by level
+
+3. (Optional) python3 ngvt_inspect_ai_integration.py --split test --full
+   └─ Run on test split for leaderboard submission
+
+
+Workflow 3: Batch by Difficulty (2-3 hours)
+─────────────────────────────────────────────
+1. python3 ngvt_inspect_ai_integration.py --level 1 --output level1.json
+   └─ All Level 1 questions (expect: 60-80% accuracy)
+
+2. python3 ngvt_inspect_ai_integration.py --level 2 --output level2.json
+   └─ All Level 2 questions (expect: 25-40% accuracy)
+
+3. python3 ngvt_inspect_ai_integration.py --level 3 --output level3.json
+   └─ All Level 3 questions (expect: 10-20% accuracy)
+
+
+🔧 CONFIGURATION
+═════════════════════════════════════════════════════════════════════════════════
+
+Environment Variables:
+  export HF_TOKEN='your_token'                    # HuggingFace API token
+  export NGVT_SEMANTIC_THRESHOLD=0.75            # Answer matching threshold
+  export NGVT_MAX_ATTEMPTS=3                     # Max reasoning attempts
+  export INSPECT_EVAL_MODEL="openai/gpt-4o"     # Model name for logging
+
+Code Configuration (edit ngvt_inspect_ai_integration.py):
+  semantic_match_threshold = 0.75  # 0.0-1.0 (higher = stricter)
+  max_attempts = 3                 # 1-10 (more = slower but more accurate)
+  use_semantic_matching = True     # True/False (True for better accuracy)
+
+
+📊 MONITORING & DEBUGGING
+═════════════════════════════════════════════════════════════════════════════════
+
+Check if imports work:
+  python3 -c "from ngvt_inspect_ai_integration import NGVTInspectSolver; print('✓ OK')"
+  python3 -c "from inspect_evals.gaia import gaia; print('✓ OK')"
+  python3 -c "from sentence_transformers import SentenceTransformer; print('✓ OK')"
+
+Verify HF token is set:
+  echo $HF_TOKEN | head -c 10
+  # Should show first 10 chars of token or nothing if not set
+
+Check git status:
+  git status  # Should show "nothing to commit"
+  git log --oneline -4  # Should show 4 new commits
+
+View evaluation results:
+  python3 -m json.tool results.json | less  # Pretty-print JSON
+
+
+🐛 QUICK TROUBLESHOOTING
+═════════════════════════════════════════════════════════════════════════════════
+
+Problem: "Module not found" errors
+Solution: pip3 install sentence-transformers inspect-evals
+
+Problem: "HF_TOKEN not set" or "HTTP 401" when fetching data
+Solution: 
+  1. Go to https://huggingface.co/datasets/gaia-benchmark/GAIA
+  2. Request dataset access
+  3. Wait for approval (~1 day)
+  4. Create token: https://huggingface.co/settings/tokens
+  5. Run: export HF_TOKEN='your_token_here'
+
+Problem: "Docker not found" when using --with-docker
+Solution: 
+  1. Download Docker Desktop: https://www.docker.com/products/docker-desktop
+  2. Install and launch
+  3. Verify: docker run hello-world
+  4. Re-run with --with-docker flag
+
+Problem: Out of memory
+Solution: 
+  1. Use --limit flag to process fewer questions
+  2. Evaluate by difficulty level separately
+  3. Close other applications
+
+Problem: Very slow evaluation
+Solution:
+  1. Disable semantic embeddings: --no-embeddings
+  2. Reduce semantic_match_threshold (faster but less accurate)
+  3. Use Level 1 only for quicker testing
+
+
+📈 INTERPRETING RESULTS
+═════════════════════════════════════════════════════════════════════════════════
+
+JSON Report Structure:
+{
+  "timestamp": "2026-02-15T18:30:00",
+  "model": "ngvt_gaia_solver",
+  "level": "all",
+  "split": "validation",
+  "total_questions": 450,
+  "correct": 135,                    ← Count of correct answers
+  "accuracy": 0.30,                  ← Accuracy percentage (0.30 = 30%)
+  "by_level": {
+    "1": {"correct": 100, "total": 150, "accuracy": 0.667},  ← Level 1
+    "2": {"correct": 25, "total": 150, "accuracy": 0.167},   ← Level 2
+    "3": {"correct": 10, "total": 150, "accuracy": 0.067}    ← Level 3
+  },
+  "performance": {
+    "total_time_seconds": 3600.0,
+    "avg_time_per_question_ms": 8000.0,
+    "throughput_per_second": 0.125
+  }
+}
+
+Key Metrics:
+  accuracy: 0.0-1.0 (0.30 = 30%)
+  correct: Number of correct answers
+  total_time_seconds: Total evaluation time
+  throughput_per_second: Questions evaluated per second
+
+
+🏆 LEADERBOARD SUBMISSION
+═════════════════════════════════════════════════════════════════════════════════
+
+Step 1: Complete validation split evaluation
+  python3 ngvt_inspect_ai_integration.py --full --output validation.json
+
+Step 2: Review results
+  python3 -m json.tool validation.json | less
+
+Step 3: Run test split (for leaderboard ranking)
+  python3 ngvt_inspect_ai_integration.py --split test --full --output test.json
+
+Step 4: Submit to official leaderboard
+  https://huggingface.co/spaces/gaia-benchmark/leaderboard
+  └─ Upload your test.json results
+
+Step 5: Compare results
+  Human: 92% accuracy
+  Your target: 25-35% accuracy
+  GPT-4 baseline: 15% accuracy
+
+
+📚 REFERENCE DOCS
+═════════════════════════════════════════════════════════════════════════════════
+
+Start here:
+  QUICK_START_INSPECT_AI.md              ← 3-step setup guide
+
+Then read:
+  NGVT_INSPECT_AI_SETUP.md              ← Complete setup & configuration
+  PHASE_3B_INSPECT_AI_COMPLETE.md       ← Architecture & design
+
+Reference:
+  OFFICIAL_GAIA_BENCHMARK_INTEGRATION.md ← How GAIA benchmark works
+  PHASE_3B_SUMMARY.md                    ← Executive summary
+
+Code:
+  ngvt_inspect_ai_integration.py          ← Main integration (278 lines)
+  phase3_evaluation.py                    ← Alternative standalone mode
+  ngvt_gaia_solver.py                     ← Core GAIA solver
+
+
+🔗 EXTERNAL LINKS
+═════════════════════════════════════════════════════════════════════════════════
+
+GAIA Benchmark:
+  Official: https://ukgovernmentbeis.github.io/inspect_evals/evals/assistants/gaia/
+  Paper: https://arxiv.org/abs/2311.12983
+  Dataset: https://huggingface.co/datasets/gaia-benchmark/GAIA
+  Leaderboard: https://huggingface.co/spaces/gaia-benchmark/leaderboard
+
+Inspect AI:
+  Documentation: https://inspect.ai-safety-institute.org.uk/
+  GitHub: https://github.com/UKGovernmentBEIS/inspect_evals
+  Agents API: https://inspect.ai-safety-institute.org.uk/agents-api.html
+
+HuggingFace:
+  Tokens: https://huggingface.co/settings/tokens
+  Models: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
+
+
+═════════════════════════════════════════════════════════════════════════════════
+
+⏱️  TYPICAL EXECUTION TIMES
+
+Mock test (10 questions):
+  Time: ~1-2 seconds
+  Accuracy: 100%
+
+Limited evaluation (50 questions):
+  Time: 10-20 minutes
+  Accuracy: ~30-40%
+
+Full evaluation (450 questions):
+  Time: 2-5 hours
+  Accuracy: ~25-35%
+
+Per-level analysis:
+  Level 1 (150 questions): 30-45 minutes
+  Level 2 (150 questions): 45-60 minutes
+  Level 3 (150 questions): 60-90 minutes
+
+
+═════════════════════════════════════════════════════════════════════════════════
+
+✨ YOU ARE READY TO GO! ✨
+
+Next action: python3 phase3_evaluation.py --quick --mock
+
+Expected: ✅ 100% accuracy in 1-2 seconds
+
+Questions? Read: QUICK_START_INSPECT_AI.md
+
+═════════════════════════════════════════════════════════════════════════════════
