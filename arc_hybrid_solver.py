@@ -97,19 +97,24 @@ def format_task_prompt(task: Dict, test_idx: int = 0, include_answer: bool = Fal
 class NeuralARCSolver:
     """Neural network based ARC solver using OctoTetrahedral model"""
     
-    def __init__(self, checkpoint_path: str = 'checkpoints/best.pt', device: str = None):
+    _DEFAULT_CHECKPOINT = str(Path(__file__).parent /
+        'Archived_Projects/octotetrahedral_agi/checkpoints/arc/arc_step_2500.pt')
+
+    def __init__(self, checkpoint_path: str = None, device: str = None):
         self.config = get_config()
         self.device = device or self.config.device
-        
+
         # Load model
         self.model = OctoTetrahedralModel(self.config)
-        
-        if Path(checkpoint_path).exists():
-            checkpoint = torch.load(checkpoint_path, map_location=self.device)
-            self.model.load_state_dict(checkpoint['model_state_dict'])
-            print(f"Loaded checkpoint from {checkpoint_path}")
+
+        resolved = checkpoint_path or self._DEFAULT_CHECKPOINT
+        if Path(resolved).exists():
+            checkpoint = torch.load(resolved, map_location=self.device)
+            result = self.model.load_state_dict(checkpoint['model_state_dict'], strict=False)
+            matched = len(self.model.state_dict()) - len(result.missing_keys)
+            print(f"Loaded checkpoint from {resolved} ({matched}/{len(self.model.state_dict())} layers matched)")
         else:
-            print(f"Warning: Checkpoint not found, using random initialization")
+            print(f"Warning: Checkpoint not found at {resolved}, using random initialization")
         
         self.model.to(self.device)
         self.model.eval()
@@ -118,54 +123,69 @@ class NeuralARCSolver:
         self.tokenizer = get_tokenizer()
     
     def generate(
-        self, 
-        prompt: str, 
-        max_new_tokens: int = 200,
-        temperature: float = 0.3
+        self,
+        prompt: str,
+        max_new_tokens: int = 100,
+        temperature: float = 0.3,
+        time_budget: float = 3.0
     ) -> str:
-        """Generate output from prompt"""
+        """Generate output from prompt with a hard time budget (seconds)"""
+        import time
+        deadline = time.time() + time_budget
+
         input_tokens = self.tokenizer.encode(prompt)
+        # Truncate prompt if too long
+        if len(input_tokens) > 400:
+            input_tokens = input_tokens[-400:]
         input_ids = torch.tensor([input_tokens]).to(self.device)
-        
+
         generated = input_ids.clone()
-        
+
         with torch.no_grad():
             for _ in range(max_new_tokens):
+                if time.time() > deadline:
+                    break
+
                 if generated.shape[1] > 512:
                     context = generated[:, -512:]
                 else:
                     context = generated
-                
+
                 output = self.model(input_ids=context)
                 logits = output['logits'][:, -1, :] / temperature
-                
+
                 # Top-k sampling
                 top_k = 50
                 v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
                 logits[logits < v[:, [-1]]] = float('-inf')
-                
+
                 probs = F.softmax(logits, dim=-1)
                 next_token = torch.multinomial(probs, num_samples=1)
-                
+
                 generated = torch.cat([generated, next_token], dim=1)
-                
+
                 # Stop at ] which marks end of grid
                 decoded = self.tokenizer.decode([next_token.item()])
                 if ']' in decoded:
                     break
-        
+
         # Return only generated part
         generated_text = self.tokenizer.decode(generated[0, len(input_tokens):].tolist())
         return generated_text.strip()
-    
-    def solve(self, task: Dict, test_idx: int = 0) -> Optional[List[List[int]]]:
-        """Solve a single ARC task"""
+
+    def solve(self, task: Dict, test_idx: int = 0, time_budget: float = 2.0) -> Optional[List[List[int]]]:
+        """Solve a single ARC task within time_budget seconds"""
+        import time
+        deadline = time.time() + time_budget
         prompt = format_task_prompt(task, test_idx, include_answer=False)
-        
-        # Generate multiple candidates
+
+        # Generate multiple candidates — stop early if time runs out
         candidates = []
-        for temp in [0.1, 0.3, 0.5]:
-            output = self.generate(prompt, temperature=temp)
+        for temp in [0.1, 0.3]:
+            remaining = deadline - time.time()
+            if remaining <= 0.3:
+                break
+            output = self.generate(prompt, temperature=temp, time_budget=min(remaining - 0.1, 1.5))
             grid = text_to_grid(output)
             if grid is not None:
                 candidates.append(grid)
@@ -186,17 +206,17 @@ class NeuralARCSolver:
 
 class HybridARCSolver:
     """Hybrid solver combining DSL and neural approaches"""
-    
+
     def __init__(
-        self, 
-        neural_checkpoint: str = 'checkpoints/best.pt',
+        self,
+        neural_checkpoint: str = None,
         use_neural_fallback: bool = True,
         device: str = None
     ):
         # DSL solver
         self.dsl_solver = ARCSolver()
         self.hint_gen = HintGenerator()
-        
+
         # Neural solver (optional)
         self.use_neural = use_neural_fallback
         if use_neural_fallback:
@@ -208,18 +228,19 @@ class HybridARCSolver:
                 self.neural_solver = None
         else:
             self.neural_solver = None
-    
+
     def solve(self, task: Dict) -> List[List[List[int]]]:
         """Solve task, return up to 2 predictions"""
+        import time
         train = task['train']
         test_input = task['test'][0]['input']
-        
+
         predictions = []
-        
+
         # 1. Try DSL solver first
         dsl_preds = self.dsl_solver.solve(task)
         predictions.extend(dsl_preds)
-        
+
         # 2. Analyze task complexity
         hints = self.hint_gen.analyze(train)
         is_simple = (
@@ -228,14 +249,19 @@ class HybridARCSolver:
             hints['symmetry'] is not None or
             hints['fill_pattern'] is not None
         )
-        
-        # 3. If DSL didn't find a solution and task is complex, try neural
-        if not is_simple and self.use_neural and self.neural_solver:
+
+        # 3. Only try neural when DSL fell back to returning the input unchanged
+        #    (i.e., it found no real solution). Budget is tight to keep eval fast.
+        dsl_gave_up = (
+            len(predictions) == 0 or
+            (len(predictions) == 1 and predictions[0] == test_input)
+        )
+        if dsl_gave_up and self.use_neural and self.neural_solver:
             try:
-                neural_pred = self.neural_solver.solve(task)
+                neural_pred = self.neural_solver.solve(task, time_budget=2.0)
                 if neural_pred is not None and neural_pred not in predictions:
                     predictions.append(neural_pred)
-            except Exception as e:
+            except Exception:
                 pass  # Neural failed, stick with DSL predictions
         
         # 4. Deduplicate
@@ -311,7 +337,7 @@ def main():
     parser.add_argument('--data-dir', default=str(Path.home() / 'ARC_AMD_TRANSFER/data/ARC-AGI/data'))
     parser.add_argument('--max-tasks', type=int, default=100)
     parser.add_argument('--split', default='training')
-    parser.add_argument('--neural-checkpoint', default='checkpoints/best.pt')
+    parser.add_argument('--neural-checkpoint', default=None)
     parser.add_argument('--no-neural', action='store_true', help='Disable neural fallback')
     args = parser.parse_args()
     
