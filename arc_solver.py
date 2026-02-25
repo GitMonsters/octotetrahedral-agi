@@ -3851,6 +3851,60 @@ def stripe_2pt(grid, **kw):
     return out
 
 
+def cross_product_5s(grid, **kw):
+    """2281f1f4: mark intersections of row-0 5-cols × last-col 5-rows with 2"""
+    H, W = len(grid), len(grid[0])
+    row0_cols = [c for c in range(W) if grid[0][c] == 5]
+    lastcol_rows = [r for r in range(H) if grid[r][W-1] == 5]
+    out = [row[:] for row in grid]
+    for r in lastcol_rows:
+        for c in row0_cols:
+            if out[r][c] == 0:
+                out[r][c] = 2
+    return out
+
+
+def cross_at_midpoint_1s(grid, **kw):
+    """e9614598: place 3-cross at midpoint of two 1-cells"""
+    H, W = len(grid), len(grid[0])
+    ones = [(r, c) for r in range(H) for c in range(W) if grid[r][c] == 1]
+    if len(ones) != 2:
+        return grid
+    (r1, c1), (r2, c2) = ones
+    mr, mc = (r1 + r2) // 2, (c1 + c2) // 2
+    out = [row[:] for row in grid]
+    for dr, dc in [(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)]:
+        nr, nc = mr + dr, mc + dc
+        if 0 <= nr < H and 0 <= nc < W and out[nr][nc] == 0:
+            out[nr][nc] = 3
+    return out
+
+
+def recolor_5_components_by_size(grid, **kw):
+    """d2abd087: recolor connected components of 5: 6-cell → 2, else → 1"""
+    H, W = len(grid), len(grid[0])
+    out = [[0] * W for _ in range(H)]
+    visited = set()
+    for r in range(H):
+        for c in range(W):
+            if grid[r][c] == 5 and (r, c) not in visited:
+                comp = []
+                queue = [(r, c)]
+                visited.add((r, c))
+                while queue:
+                    cr, cc = queue.pop(0)
+                    comp.append((cr, cc))
+                    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                        nr, nc = cr + dr, cc + dc
+                        if 0 <= nr < H and 0 <= nc < W and (nr, nc) not in visited and grid[nr][nc] == 5:
+                            visited.add((nr, nc))
+                            queue.append((nr, nc))
+                color = 2 if len(comp) == 6 else 1
+                for cr, cc in comp:
+                    out[cr][cc] = color
+    return out
+
+
 OPERATIONS = {
     # Basic transforms
     'identity': identity,
@@ -4104,6 +4158,9 @@ OPERATIONS = {
     'list_colors_by_appearance': list_colors_by_appearance,
     'shift_cross_by_5count': shift_cross_by_5count,
     'stripe_2pt': stripe_2pt,
+    'cross_product_5s': cross_product_5s,
+    'cross_at_midpoint_1s': cross_at_midpoint_1s,
+    'recolor_5_components_by_size': recolor_5_components_by_size,
 }
 
 INVERSE_TRANSFORMS = {
@@ -4395,6 +4452,7 @@ class ProgramSynthesizer:
             'or_hsplit_sep', 'fill_enclosed_4', 'or_vsplit_mirror_right',
             'sort_colors_by_freq_desc', 'list_colors_by_appearance',
             'shift_cross_by_5count', 'stripe_2pt',
+            'cross_product_5s', 'cross_at_midpoint_1s', 'recolor_5_components_by_size',
             # Objects
             'extract_largest_object', 'extract_smallest_object', 'count_objects',
             'remove_small_objects', 'keep_n_largest_objects',
