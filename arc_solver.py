@@ -1169,6 +1169,201 @@ def decode_block_hole_pattern(grid, **kw):
     return [[vals[r] for _ in range(3)] for r in range(3)]
 
 
+def fill_3x3_blocks_at_5(grid, **kw):
+    """ce22a75a: replace each 5 with a 3x3 block of 1s centered at that 5."""
+    R, C = len(grid), len(grid[0])
+    out = [[0] * C for _ in range(R)]
+    for r in range(R):
+        for c in range(C):
+            if grid[r][c] == 5:
+                for dr in (-1, 0, 1):
+                    for dc in (-1, 0, 1):
+                        nr, nc = r + dr, c + dc
+                        if 0 <= nr < R and 0 <= nc < C:
+                            out[nr][nc] = 1
+    return out
+
+
+def scatter_diamond_halos(grid, **kw):
+    """b60334d2: replace each 5 with 3x3 halo (corners=5, edges=1, center=0)."""
+    R, C = len(grid), len(grid[0])
+    out = [[0] * C for _ in range(R)]
+    halo = [(-1,-1,5),(-1,0,1),(-1,1,5),(0,-1,1),(0,0,0),(0,1,1),(1,-1,5),(1,0,1),(1,1,5)]
+    for r in range(R):
+        for c in range(C):
+            if grid[r][c] == 5:
+                for dr, dc, v in halo:
+                    nr, nc = r + dr, c + dc
+                    if v != 0 and 0 <= nr < R and 0 <= nc < C:
+                        out[nr][nc] = v
+    return out
+
+
+def color_extreme_columns(grid, **kw):
+    """a61f2674: tallest 5-column -> 1, shortest -> 2, others vanish."""
+    R, C = len(grid), len(grid[0])
+    # find columns that have any 5
+    col_heights = {}
+    for c in range(C):
+        h = sum(1 for r in range(R) if grid[r][c] == 5)
+        if h > 0:
+            col_heights[c] = h
+    if len(col_heights) < 2:
+        return grid
+    max_h = max(col_heights.values())
+    min_h = min(col_heights.values())
+    out = [[0] * C for _ in range(R)]
+    for c, h in col_heights.items():
+        if h == max_h:
+            color = 1
+        elif h == min_h:
+            color = 2
+        else:
+            continue
+        for r in range(R):
+            if grid[r][c] == 5:
+                out[r][c] = color
+    return out
+
+
+def stamp_shape_at_5(grid, **kw):
+    """88a10436: stamp non-5 shape at 5-position using max-neighbor cell as anchor."""
+    R, C = len(grid), len(grid[0])
+    shape_cells = [(r, c, grid[r][c]) for r in range(R) for c in range(C)
+                   if grid[r][c] not in (0, 5)]
+    five_cells = [(r, c) for r in range(R) for c in range(C) if grid[r][c] == 5]
+    if not shape_cells or not five_cells:
+        return grid
+    shape_pos = {(r, c) for r, c, _ in shape_cells}
+
+    def count_nbrs(r, c):
+        return sum(1 for dr in (-1, 0, 1) for dc in (-1, 0, 1)
+                   if (dr, dc) != (0, 0) and (r + dr, c + dc) in shape_pos)
+
+    anchor = max(shape_pos, key=lambda p: count_nbrs(*p))
+    out = [row[:] for row in grid]
+    for fr, fc in five_cells:
+        out[fr][fc] = 0
+        dr, dc = fr - anchor[0], fc - anchor[1]
+        for r, c, v in shape_cells:
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < R and 0 <= nc < C:
+                out[nr][nc] = v
+    return out
+
+
+def extract_most_ones_shape(grid, **kw):
+    """ae4f1146: return the 3x3 region of 8s/1s with the most 1s."""
+    R, C = len(grid), len(grid[0])
+    best, best_cnt = None, -1
+    for r in range(R - 2):
+        for c in range(C - 2):
+            region = [[grid[r + i][c + j] for j in range(3)] for i in range(3)]
+            if (all(region[i][j] in (8, 1) for i in range(3) for j in range(3))
+                    and any(region[i][j] == 1 for i in range(3) for j in range(3))):
+                cnt = sum(region[i][j] == 1 for i in range(3) for j in range(3))
+                if cnt > best_cnt:
+                    best_cnt = cnt
+                    best = region
+    return best if best is not None else grid
+
+
+def color_3_pattern_by_palette(grid, **kw):
+    """7c008303: find 8-sep row+col, 2x2 palette in small corner, color 3s by palette."""
+    R, C = len(grid), len(grid[0])
+    sep_row = next((r for r in range(R) if all(grid[r][c] == 8 for c in range(C))), None)
+    sep_col = next((c for c in range(C) if all(grid[r][c] == 8 for r in range(R))), None)
+    if sep_row is None or sep_col is None:
+        return grid
+    sizes = {
+        'TL': sep_row * sep_col,
+        'TR': sep_row * (C - sep_col - 1),
+        'BL': (R - sep_row - 1) * sep_col,
+        'BR': (R - sep_row - 1) * (C - sep_col - 1),
+    }
+    palette_quad = min(sizes, key=sizes.get)
+    pattern_quad = max(sizes, key=sizes.get)
+
+    def q_bounds(q):
+        r0 = 0 if q in ('TL', 'TR') else sep_row + 1
+        r1 = sep_row if q in ('TL', 'TR') else R
+        c0 = 0 if q in ('TL', 'BL') else sep_col + 1
+        c1 = sep_col if q in ('TL', 'BL') else C
+        return r0, r1, c0, c1
+
+    pr0, pr1, pc0, pc1 = q_bounds(palette_quad)
+    palette = [[grid[r][c] for c in range(pc0, pc1)] for r in range(pr0, pr1)]
+    qr0, qr1, qc0, qc1 = q_bounds(pattern_quad)
+    QH, QW = qr1 - qr0, qc1 - qc0
+    ph, pw = len(palette), len(palette[0])
+    if ph == 0 or pw == 0:
+        return grid
+    block_h, block_w = QH // ph, QW // pw
+    out = [[0] * QW for _ in range(QH)]
+    for r in range(QH):
+        for c in range(QW):
+            if grid[qr0 + r][qc0 + c] == 3:
+                qi, qj = r // block_h, c // block_w
+                out[r][c] = palette[qi][qj]
+    return out
+
+
+def extend_periodic_rows(grid, **kw):
+    """d8c310e9: detect period of each partial row and tile it to fill the full width."""
+    R, C = len(grid), len(grid[0])
+    out = [row[:] for row in grid]
+    for r, row in enumerate(grid):
+        nz_end = next((c for c in range(C - 1, -1, -1) if row[c] != 0), -1)
+        if nz_end < 0:
+            continue
+        nz = nz_end + 1
+        period = None
+        for p in range(1, nz + 1):
+            template = row[0:p]
+            if all(row[c] == template[c % p] for c in range(nz)):
+                period = p
+                break
+        if period is None:
+            continue
+        template = row[0:period]
+        out[r] = [template[c % period] for c in range(C)]
+    return out
+
+
+def fill_shape_bbox_with_7(grid, **kw):
+    """60b61512: fill the bounding box interior of each 4-shape (8-connected) with 7."""
+    R, C = len(grid), len(grid[0])
+    from collections import deque
+    visited = [[False] * C for _ in range(R)]
+    out = [row[:] for row in grid]
+    for sr in range(R):
+        for sc in range(C):
+            if grid[sr][sc] == 4 and not visited[sr][sc]:
+                cells = []
+                q = deque([(sr, sc)])
+                visited[sr][sc] = True
+                while q:
+                    r, c = q.popleft()
+                    cells.append((r, c))
+                    for dr in (-1, 0, 1):
+                        for dc in (-1, 0, 1):
+                            if dr == 0 and dc == 0:
+                                continue
+                            nr, nc = r + dr, c + dc
+                            if 0 <= nr < R and 0 <= nc < C and not visited[nr][nc] and grid[nr][nc] == 4:
+                                visited[nr][nc] = True
+                                q.append((nr, nc))
+                r0 = min(r for r, c in cells)
+                r1 = max(r for r, c in cells)
+                c0 = min(c for r, c in cells)
+                c1 = max(c for r, c in cells)
+                for r in range(r0, r1 + 1):
+                    for c in range(c0, c1 + 1):
+                        if out[r][c] == 0:
+                            out[r][c] = 7
+    return out
+
+
 def clockwise_spiral_grid(grid, **kw):
     """28e73c20: fill all-zero grid with clockwise inward 3-spiral."""
     R, C = len(grid), len(grid[0])
@@ -1250,20 +1445,21 @@ def trail_shape_diagonally(grid, **kw):
     c1 = max(c for r, c in shape_cells)
     if r1 == r0 or c1 == c0:
         return grid
-    dr_sign = 1 if r2 == r1 else -1
-    dc_sign = 1 if c2 == c1 else -1
+    noncol_cells = [(r, c) for r, c in shape_cells if grid[r][c] != 2]
+    dirs = [(1 if r2 == r1 else -1, 1 if c2 == c1 else -1) for r2, c2 in two_pos]
     out = [[0] * C for _ in range(R)]
-    k = 0
-    while True:
-        any_in_bounds = False
-        for r, c in shape_cells:
-            nr, nc = r + k * dr_sign, c + k * dc_sign
-            if 0 <= nr < R and 0 <= nc < C:
-                out[nr][nc] = color
-                any_in_bounds = True
-        if not any_in_bounds:
-            break
-        k += 1
+    for dr_sign, dc_sign in dirs:
+        k = 0
+        while True:
+            any_in_bounds = False
+            for r, c in shape_cells:
+                nr, nc = r + k * dr_sign, c + k * dc_sign
+                if 0 <= nr < R and 0 <= nc < C:
+                    out[nr][nc] = color
+                    any_in_bounds = True
+            if not any_in_bounds:
+                break
+            k += 1
     return out
 
 
@@ -4219,6 +4415,217 @@ def extend_to_block(grid, **kw):
     return out
 
 
+def spiral_3s(grid, **kw):
+    """28e73c20: draw clockwise rectangular spiral of 3s on an all-zero grid."""
+    H = len(grid); W = len(grid[0])
+    if any(v != 0 for row in grid for v in row): return grid
+    out = [[0]*W for _ in range(H)]
+    spiral = []
+    top, bot, left, right = 0, H-1, 0, W-1
+    while top <= bot and left <= right:
+        for c in range(left, right+1): spiral.append((top, c))
+        top += 1
+        for r in range(top, bot+1): spiral.append((r, right))
+        right -= 1
+        if top <= bot:
+            for c in range(right, left-1, -1): spiral.append((bot, c))
+            bot -= 1
+        if left <= right:
+            for r in range(bot, top-1, -1): spiral.append((r, left))
+            left += 1
+    ring_cells = {}
+    for idx, (r, c) in enumerate(spiral):
+        ring = min(r, c, H-1-r, W-1-c)
+        ring_cells.setdefault(ring, []).append(idx)
+    max_ring = max(ring_cells.keys())
+    for ring_num, indices in ring_cells.items():
+        val = 3 if ring_num % 2 == 0 else 0
+        next_val = 3 if (ring_num + 1) % 2 == 0 else 0
+        for i, idx in enumerate(indices):
+            r, c = spiral[idx]
+            is_last = (i == len(indices) - 1)
+            if is_last and ring_num < max_ring:
+                out[r][c] = next_val
+            elif is_last and ring_num == max_ring and val == 0 and len(indices) > 1:
+                out[r][c] = 3
+            else:
+                out[r][c] = val
+    return out
+
+
+def fill_rect_interior_2(grid, **kw):
+    """af902bf9: fill interior of rectangles defined by 4 corner cells with 2."""
+    H = len(grid); W = len(grid[0])
+    corners = [(r, c) for r in range(H) for c in range(W) if grid[r][c] != 0]
+    if len(corners) % 4 != 0: return grid
+    out = [row[:] for row in grid]
+    row_cols = {}
+    for r, c in corners:
+        row_cols.setdefault(r, []).append(c)
+    rows = sorted(row_cols.keys())
+    for i in range(len(rows)):
+        for j in range(i+1, len(rows)):
+            r1, r2 = rows[i], rows[j]
+            common_cols = sorted(set(row_cols[r1]) & set(row_cols[r2]))
+            for ci in range(len(common_cols)):
+                for cj in range(ci+1, len(common_cols)):
+                    c1, c2 = common_cols[ci], common_cols[cj]
+                    for r in range(r1+1, r2):
+                        for c in range(c1+1, c2):
+                            out[r][c] = 2
+    return out
+
+
+def fill_l_concavity_7(grid, **kw):
+    """60b61512: fill concavity of L-shapes (8-connected components) with 7."""
+    H = len(grid); W = len(grid[0])
+    out = [row[:] for row in grid]
+    visited = set()
+    for r in range(H):
+        for c in range(W):
+            if grid[r][c] != 0 and (r,c) not in visited:
+                comp = []
+                queue = [(r,c)]
+                visited.add((r,c))
+                while queue:
+                    cr, cc = queue.pop(0)
+                    comp.append((cr,cc))
+                    for dr in [-1,0,1]:
+                        for dc in [-1,0,1]:
+                            if dr == 0 and dc == 0: continue
+                            nr, nc = cr+dr, cc+dc
+                            if 0<=nr<H and 0<=nc<W and (nr,nc) not in visited and grid[nr][nc] != 0:
+                                visited.add((nr,nc))
+                                queue.append((nr,nc))
+                if len(comp) <= 1: continue
+                r0 = min(r for r,c in comp); r1 = max(r for r,c in comp)
+                c0 = min(c for r,c in comp); c1 = max(c for r,c in comp)
+                for r in range(r0, r1+1):
+                    for c in range(c0, c1+1):
+                        if grid[r][c] == 0:
+                            out[r][c] = 7
+    return out
+
+
+def fill_comp_bbox_2(grid, **kw):
+    """6d75e8bb: fill bbox of 4-connected components (>1 cell) with color 2."""
+    H = len(grid); W = len(grid[0])
+    out = [row[:] for row in grid]
+    visited = set()
+    for r in range(H):
+        for c in range(W):
+            if grid[r][c] != 0 and (r,c) not in visited:
+                comp = []
+                queue = [(r,c)]
+                visited.add((r,c))
+                while queue:
+                    cr, cc = queue.pop(0)
+                    comp.append((cr,cc))
+                    for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+                        nr, nc = cr+dr, cc+dc
+                        if 0<=nr<H and 0<=nc<W and (nr,nc) not in visited and grid[nr][nc] != 0:
+                            visited.add((nr,nc))
+                            queue.append((nr,nc))
+                if len(comp) <= 1: continue
+                r0 = min(r for r,c in comp); r1 = max(r for r,c in comp)
+                c0 = min(c for r,c in comp); c1 = max(c for r,c in comp)
+                for r in range(r0, r1+1):
+                    for c in range(c0, c1+1):
+                        if grid[r][c] == 0:
+                            out[r][c] = 2
+    return out
+
+
+def connect_same_color_hv(grid, **kw):
+    """ded97339: connect same-colored cells with H+V lines using their own color."""
+    H = len(grid); W = len(grid[0])
+    out = [row[:] for row in grid]
+    for r in range(H):
+        nz = [(c, grid[r][c]) for c in range(W) if grid[r][c] != 0]
+        for i in range(len(nz)):
+            for j in range(i+1, len(nz)):
+                if nz[i][1] == nz[j][1]:
+                    for c in range(nz[i][0]+1, nz[j][0]):
+                        if out[r][c] == 0: out[r][c] = nz[i][1]
+    for col in range(W):
+        nz = [(r, grid[r][col]) for r in range(H) if grid[r][col] != 0]
+        for i in range(len(nz)):
+            for j in range(i+1, len(nz)):
+                if nz[i][1] == nz[j][1]:
+                    for r in range(nz[i][0]+1, nz[j][0]):
+                        if out[r][col] == 0: out[r][col] = nz[i][1]
+    return out
+
+
+def connect_8s_with_3(grid, **kw):
+    """253bf280: connect pairs of same-color cells with 3s (H+V)."""
+    H = len(grid); W = len(grid[0])
+    out = [row[:] for row in grid]
+    for r in range(H):
+        nz = [(c, grid[r][c]) for c in range(W) if grid[r][c] != 0]
+        for i in range(len(nz)):
+            for j in range(i+1, len(nz)):
+                if nz[i][1] == nz[j][1]:
+                    for c in range(nz[i][0]+1, nz[j][0]):
+                        if out[r][c] == 0: out[r][c] = 3
+    for col in range(W):
+        nz = [(r, grid[r][col]) for r in range(H) if grid[r][col] != 0]
+        for i in range(len(nz)):
+            for j in range(i+1, len(nz)):
+                if nz[i][1] == nz[j][1]:
+                    for r in range(nz[i][0]+1, nz[j][0]):
+                        if out[r][col] == 0: out[r][col] = 3
+    return out
+
+
+def connect_blocks_with_9(grid, **kw):
+    """ef135b50: connect horizontally adjacent blocks of 2s with 9s."""
+    H = len(grid); W = len(grid[0])
+    out = [row[:] for row in grid]
+    visited = set()
+    comps = []
+    for r in range(H):
+        for c in range(W):
+            if grid[r][c] != 0 and (r,c) not in visited:
+                comp = []
+                queue = [(r,c)]
+                visited.add((r,c))
+                while queue:
+                    cr, cc = queue.pop(0)
+                    comp.append((cr,cc))
+                    for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+                        nr, nc = cr+dr, cc+dc
+                        if 0<=nr<H and 0<=nc<W and (nr,nc) not in visited and grid[nr][nc] != 0:
+                            visited.add((nr,nc))
+                            queue.append((nr,nc))
+                comps.append(comp)
+    bboxes = []
+    for comp in comps:
+        r0 = min(r for r,c in comp); r1 = max(r for r,c in comp)
+        c0 = min(c for r,c in comp); c1 = max(c for r,c in comp)
+        bboxes.append((r0, r1, c0, c1))
+    for i in range(len(bboxes)):
+        for j in range(i+1, len(bboxes)):
+            r0a, r1a, c0a, c1a = bboxes[i]
+            r0b, r1b, c0b, c1b = bboxes[j]
+            row_overlap = (max(r0a, r0b), min(r1a, r1b))
+            if row_overlap[0] <= row_overlap[1]:
+                if c1a < c0b:
+                    gap_c0, gap_c1 = c1a+1, c0b-1
+                elif c1b < c0a:
+                    gap_c0, gap_c1 = c1b+1, c0a-1
+                else: continue
+                if gap_c0 > gap_c1: continue
+                clear = all(grid[r][c] == 0
+                           for r in range(row_overlap[0], row_overlap[1]+1)
+                           for c in range(gap_c0, gap_c1+1))
+                if clear:
+                    for r in range(row_overlap[0], row_overlap[1]+1):
+                        for c in range(gap_c0, gap_c1+1):
+                            out[r][c] = 9
+    return out
+
+
 OPERATIONS = {
     # Basic transforms
     'identity': identity,
@@ -4315,6 +4722,12 @@ OPERATIONS = {
     'mark_period6_junctions': mark_period6_junctions,
     'tile2x_diagonal_8s': tile2x_diagonal_8s,
     'decode_block_hole_pattern': decode_block_hole_pattern,
+    'extend_periodic_rows': extend_periodic_rows,
+    'fill_shape_bbox_with_7': fill_shape_bbox_with_7,
+    'clockwise_spiral_grid': clockwise_spiral_grid,
+    'extend_rows_by_template': extend_rows_by_template,
+    'alternating_fill_from_cell': alternating_fill_from_cell,
+    'trail_shape_diagonally': trail_shape_diagonally,
     'slide_shape_to_separator': slide_shape_to_separator,
     'propagate_block_patterns': propagate_block_patterns,
     'draw_row_col_cross_by_color': draw_row_col_cross_by_color,
@@ -4482,6 +4895,13 @@ OPERATIONS = {
     'most_common_color_2x2': most_common_color_2x2,
     'complete_4fold_symmetry': complete_4fold_symmetry,
     'extend_to_block': extend_to_block,
+    'spiral_3s': spiral_3s,
+    'fill_rect_interior_2': fill_rect_interior_2,
+    'fill_l_concavity_7': fill_l_concavity_7,
+    'fill_comp_bbox_2': fill_comp_bbox_2,
+    'connect_same_color_hv': connect_same_color_hv,
+    'connect_8s_with_3': connect_8s_with_3,
+    'connect_blocks_with_9': connect_blocks_with_9,
 }
 
 INVERSE_TRANSFORMS = {
@@ -4711,6 +5131,12 @@ class ProgramSynthesizer:
             'fill_gaps_between_1s', 'triangle_above_below_2s',
             'extract_shape_from_markers', 'center_shape_in_markers',
             'align_blocks_vertically',
+            'fill_3x3_blocks_at_5', 'scatter_diamond_halos',
+            'color_extreme_columns', 'stamp_shape_at_5',
+            'extract_most_ones_shape', 'color_3_pattern_by_palette',
+            'extend_periodic_rows', 'fill_shape_bbox_with_7',
+            'clockwise_spiral_grid', 'extend_rows_by_template',
+            'alternating_fill_from_cell', 'trail_shape_diagonally',
             'slide_shape_to_separator', 'propagate_block_patterns',
             'draw_row_col_cross_by_color', 'count_empty_bucket_rows',
             'diagonal_exit_from_frame',
@@ -4777,6 +5203,9 @@ class ProgramSynthesizer:
             'cross_product_5s', 'cross_at_midpoint_1s', 'recolor_5_components_by_size',
             'tile_row_model', 'sort_nondominant_by_freq_desc', 'most_common_color_2x2',
             'complete_4fold_symmetry', 'extend_to_block',
+            'spiral_3s', 'fill_rect_interior_2', 'fill_l_concavity_7',
+            'fill_comp_bbox_2', 'connect_same_color_hv', 'connect_8s_with_3',
+            'connect_blocks_with_9',
             # Objects
             'extract_largest_object', 'extract_smallest_object', 'count_objects',
             'remove_small_objects', 'keep_n_largest_objects',
