@@ -1169,6 +1169,229 @@ def decode_block_hole_pattern(grid, **kw):
     return [[vals[r] for _ in range(3)] for r in range(3)]
 
 
+def clockwise_spiral_grid(grid, **kw):
+    """28e73c20: fill all-zero grid with clockwise inward 3-spiral."""
+    R, C = len(grid), len(grid[0])
+    if any(grid[r][c] != 0 for r in range(R) for c in range(C)):
+        return grid
+    N = R
+    out = [[0] * C for _ in range(R)]
+    dirs = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+    di = 0
+    r, c = 0, 0
+    arms = [N]
+    n = N - 1
+    while n > 0:
+        arms.append(n)
+        arms.append(n)
+        n -= 2
+    for length in arms:
+        if length <= 0:
+            break
+        dr, dc = dirs[di]
+        for _ in range(length):
+            if 0 <= r < R and 0 <= c < C:
+                out[r][c] = 3
+            r += dr
+            c += dc
+        di = (di + 1) % 4
+        r = r - dr + dirs[di][0]
+        c = c - dc + dirs[di][1]
+    return out
+
+
+def extend_rows_by_template(grid, **kw):
+    """82819916: extend partial rows using full-width template row with color mapping."""
+    R, C = len(grid), len(grid[0])
+    template = next((row for row in grid if all(v != 0 for v in row)), None)
+    if template is None:
+        return grid
+    out = [row[:] for row in grid]
+    for r, row in enumerate(grid):
+        if all(v == 0 for v in row) or all(v != 0 for v in row):
+            continue
+        partial = [v for v in row if v != 0]
+        n = len(partial)
+        color_map = {}
+        for i in range(n):
+            color_map[template[i]] = partial[i]
+        out[r] = [color_map.get(template[c], template[c]) for c in range(C)]
+    return out
+
+
+def alternating_fill_from_cell(grid, **kw):
+    """97999447: from each non-zero cell, fill rest of its row alternating color/5."""
+    R, C = len(grid), len(grid[0])
+    out = [row[:] for row in grid]
+    for r in range(R):
+        for c in range(C):
+            v = grid[r][c]
+            if v != 0:
+                for dc in range(C - c):
+                    out[r][c + dc] = v if dc % 2 == 0 else 5
+    return out
+
+
+def trail_shape_diagonally(grid, **kw):
+    """1f0c79e5: trail shape diagonally away from 2-marker."""
+    R, C = len(grid), len(grid[0])
+    two_pos = [(r, c) for r in range(R) for c in range(C) if grid[r][c] == 2]
+    if not two_pos:
+        return grid
+    r2, c2 = two_pos[0]
+    colors = set(grid[r][c] for r in range(R) for c in range(C) if grid[r][c] not in (0, 2))
+    if not colors:
+        return grid
+    color = next(iter(colors))
+    shape_cells = [(r, c) for r in range(R) for c in range(C) if grid[r][c] in (color, 2)]
+    r0 = min(r for r, c in shape_cells)
+    r1 = max(r for r, c in shape_cells)
+    c0 = min(c for r, c in shape_cells)
+    c1 = max(c for r, c in shape_cells)
+    if r1 == r0 or c1 == c0:
+        return grid
+    dr_sign = 1 if r2 == r1 else -1
+    dc_sign = 1 if c2 == c1 else -1
+    out = [[0] * C for _ in range(R)]
+    k = 0
+    while True:
+        any_in_bounds = False
+        for r, c in shape_cells:
+            nr, nc = r + k * dr_sign, c + k * dc_sign
+            if 0 <= nr < R and 0 <= nc < C:
+                out[nr][nc] = color
+                any_in_bounds = True
+        if not any_in_bounds:
+            break
+        k += 1
+    return out
+
+
+def slide_shape_to_separator(grid, **kw):
+    """56dc2b01: slide 3-shape to be adjacent to 2-separator, add 8-line on other side."""
+    R, C = len(grid), len(grid[0])
+    sep_row = next((r for r in range(R) if all(grid[r][c] == 2 for c in range(C))), None)
+    sep_col = next((c for c in range(C) if all(grid[r][c] == 2 for r in range(R))), None)
+    shape_cells = [(r, c) for r in range(R) for c in range(C) if grid[r][c] == 3]
+    if not shape_cells:
+        return grid
+    out = [[0] * C for _ in range(R)]
+    if sep_col is not None:
+        sc0 = min(c for r, c in shape_cells)
+        sc1 = max(c for r, c in shape_cells)
+        if sc0 < sep_col:
+            new_sc1 = sep_col - 1
+            new_sc0 = new_sc1 - (sc1 - sc0)
+            eight_col = new_sc0 - 1
+        else:
+            new_sc0 = sep_col + 1
+            new_sc1 = new_sc0 + (sc1 - sc0)
+            eight_col = new_sc1 + 1
+        dc = new_sc0 - sc0
+        for r, c in shape_cells:
+            nc = c + dc
+            if 0 <= nc < C:
+                out[r][nc] = 3
+        for r in range(R):
+            out[r][sep_col] = 2
+        if 0 <= eight_col < C:
+            for r in range(R):
+                out[r][eight_col] = 8
+    elif sep_row is not None:
+        sr0 = min(r for r, c in shape_cells)
+        sr1 = max(r for r, c in shape_cells)
+        if sr0 < sep_row:
+            new_sr1 = sep_row - 1
+            new_sr0 = new_sr1 - (sr1 - sr0)
+            eight_row = new_sr0 - 1
+        else:
+            new_sr0 = sep_row + 1
+            new_sr1 = new_sr0 + (sr1 - sr0)
+            eight_row = new_sr1 + 1
+        dr = new_sr0 - sr0
+        for r, c in shape_cells:
+            nr = r + dr
+            if 0 <= nr < R:
+                out[nr][c] = 3
+        for c in range(C):
+            out[sep_row][c] = 2
+        if 0 <= eight_row < R:
+            for c in range(C):
+                out[eight_row][c] = 8
+    return out
+
+
+def propagate_block_patterns(grid, **kw):
+    """cbded52d: in blocked grid, propagate special patterns across blocks in same row/col."""
+    R, C = len(grid), len(grid[0])
+    sep_rows = [r for r in range(R) if all(grid[r][c] == 0 for c in range(C))]
+    sep_cols = [c for c in range(C) if all(grid[r][c] == 0 for r in range(R))]
+    if not sep_rows or not sep_cols:
+        return grid
+    row_groups = []
+    prev = 0
+    for sr in sep_rows + [R]:
+        if sr > prev:
+            row_groups.append((prev, sr))
+        prev = sr + 1
+    col_groups = []
+    prev = 0
+    for sc in sep_cols + [C]:
+        if sc > prev:
+            col_groups.append((prev, sc))
+        prev = sc + 1
+    out = [row[:] for row in grid]
+    NR = len(row_groups)
+    NC = len(col_groups)
+    def get_special(br, bc):
+        r0, r1 = row_groups[br]
+        c0, c1 = col_groups[bc]
+        specials = {}
+        for r in range(r0, r1):
+            for c in range(c0, c1):
+                v = grid[r][c]
+                if v != 0 and v != 1:
+                    specials[(r - r0, c - c0)] = v
+        return specials
+    def add_special(br, bc, pos, val):
+        r0, r1 = row_groups[br]
+        c0, c1 = col_groups[bc]
+        dr, dc = pos
+        out[r0 + dr][c0 + dc] = val
+    # Collect all specials
+    all_specials = {}
+    for br in range(NR):
+        for bc in range(NC):
+            all_specials[(br, bc)] = get_special(br, bc)
+    # Propagate within block rows
+    for br in range(NR):
+        patterns = {}
+        for bc in range(NC):
+            for pos, val in all_specials[(br, bc)].items():
+                key = (pos, val)
+                if key not in patterns:
+                    patterns[key] = 0
+                patterns[key] += 1
+        for (pos, val), cnt in patterns.items():
+            if cnt >= 2:
+                for bc in range(NC):
+                    add_special(br, bc, pos, val)
+    # Propagate within block cols
+    for bc in range(NC):
+        patterns = {}
+        for br in range(NR):
+            for pos, val in all_specials[(br, bc)].items():
+                key = (pos, val)
+                if key not in patterns:
+                    patterns[key] = 0
+                patterns[key] += 1
+        for (pos, val), cnt in patterns.items():
+            if cnt >= 2:
+                for br in range(NR):
+                    add_special(br, bc, pos, val)
+    return out
+
+
 def draw_row_col_cross_by_color(grid, **kw):
     """178fcbfb: non-2 cells draw full row; 2-cells draw full column; rows override cols."""
     R, C = len(grid), len(grid[0])
@@ -3905,6 +4128,97 @@ def recolor_5_components_by_size(grid, **kw):
     return out
 
 
+def tile_row_model(grid, **kw):
+    """82819916: find fully non-zero model row, derive color map from partial rows, tile."""
+    H = len(grid); W = len(grid[0])
+    model_row = None
+    for r in range(H):
+        if all(grid[r][c] != 0 for c in range(W)):
+            model_row = grid[r]; break
+    if model_row is None: return grid
+    out = [row[:] for row in grid]
+    for r in range(H):
+        if all(grid[r][c] != 0 for c in range(W)): continue
+        prefix = [grid[r][c] for c in range(W) if grid[r][c] != 0]
+        if not prefix: continue
+        cmap = {}
+        for c in range(len(prefix)):
+            mc = model_row[c]; pc = prefix[c]
+            if mc not in cmap: cmap[mc] = pc
+        out[r] = [cmap.get(model_row[c], model_row[c]) for c in range(W)]
+    return out
+
+
+def sort_nondominant_by_freq_desc(grid, **kw):
+    """f8b3ba0a: sort non-zero colors excluding the most common, by freq desc → column vector."""
+    from collections import Counter
+    counts = Counter(v for row in grid for v in row if v != 0)
+    if not counts: return grid
+    dominant = counts.most_common(1)[0][0]
+    others = {c: n for c, n in counts.items() if c != dominant}
+    return [[c] for c in sorted(others.keys(), key=lambda c: -others[c])]
+
+
+def most_common_color_2x2(grid, **kw):
+    """445eab21: output 2x2 solid block of most common non-zero color."""
+    from collections import Counter
+    counts = Counter(v for row in grid for v in row if v != 0)
+    if not counts: return grid
+    mc = counts.most_common(1)[0][0]
+    return [[mc, mc], [mc, mc]]
+
+
+def complete_4fold_symmetry(grid, **kw):
+    """11852cab: complete 4-fold rotational symmetry of diamond pattern."""
+    H = len(grid); W = len(grid[0])
+    nz = [(r, c) for r in range(H) for c in range(W) if grid[r][c] != 0]
+    if not nz: return grid
+    r0 = min(r for r, c in nz); r1 = max(r for r, c in nz)
+    c0 = min(c for r, c in nz); c1 = max(c for r, c in nz)
+    cr = (r0 + r1) / 2; cc = (c0 + c1) / 2
+    if cr != int(cr) or cc != int(cc): return grid
+    cr = int(cr); cc = int(cc)
+    out = [row[:] for row in grid]
+    for r, c in nz:
+        dr = r - cr; dc = c - cc
+        color = grid[r][c]
+        for nr, nc in [(cr + dc, cc - dr), (cr - dr, cc - dc), (cr - dc, cc + dr)]:
+            if 0 <= nr < H and 0 <= nc < W and out[nr][nc] == 0:
+                out[nr][nc] = color
+    return out
+
+
+def extend_to_block(grid, **kw):
+    """2c608aff: extend isolated cells toward the rectangular block face."""
+    from collections import Counter
+    H = len(grid); W = len(grid[0])
+    counts = Counter(v for row in grid for v in row)
+    bg = counts.most_common(1)[0][0]
+    color_cells = {}
+    for r in range(H):
+        for c in range(W):
+            if grid[r][c] != bg:
+                color_cells.setdefault(grid[r][c], []).append((r, c))
+    if not color_cells: return grid
+    block_color = max(color_cells, key=lambda col: len(color_cells[col]))
+    block_cells = color_cells[block_color]
+    br0 = min(r for r, c in block_cells); br1 = max(r for r, c in block_cells)
+    bc0 = min(c for r, c in block_cells); bc1 = max(c for r, c in block_cells)
+    out = [row[:] for row in grid]
+    for color, cells in color_cells.items():
+        if color == block_color: continue
+        for r, c in cells:
+            if br0 <= r <= br1 and c > bc1:
+                for nc in range(bc1 + 1, c): out[r][nc] = color
+            elif br0 <= r <= br1 and c < bc0:
+                for nc in range(c + 1, bc0): out[r][nc] = color
+            elif bc0 <= c <= bc1 and r > br1:
+                for nr in range(br1 + 1, r): out[nr][c] = color
+            elif bc0 <= c <= bc1 and r < br0:
+                for nr in range(r + 1, br0): out[nr][c] = color
+    return out
+
+
 OPERATIONS = {
     # Basic transforms
     'identity': identity,
@@ -4001,6 +4315,8 @@ OPERATIONS = {
     'mark_period6_junctions': mark_period6_junctions,
     'tile2x_diagonal_8s': tile2x_diagonal_8s,
     'decode_block_hole_pattern': decode_block_hole_pattern,
+    'slide_shape_to_separator': slide_shape_to_separator,
+    'propagate_block_patterns': propagate_block_patterns,
     'draw_row_col_cross_by_color': draw_row_col_cross_by_color,
     'count_empty_bucket_rows': count_empty_bucket_rows,
     'diagonal_exit_from_frame': diagonal_exit_from_frame,
@@ -4161,6 +4477,11 @@ OPERATIONS = {
     'cross_product_5s': cross_product_5s,
     'cross_at_midpoint_1s': cross_at_midpoint_1s,
     'recolor_5_components_by_size': recolor_5_components_by_size,
+    'tile_row_model': tile_row_model,
+    'sort_nondominant_by_freq_desc': sort_nondominant_by_freq_desc,
+    'most_common_color_2x2': most_common_color_2x2,
+    'complete_4fold_symmetry': complete_4fold_symmetry,
+    'extend_to_block': extend_to_block,
 }
 
 INVERSE_TRANSFORMS = {
@@ -4390,6 +4711,7 @@ class ProgramSynthesizer:
             'fill_gaps_between_1s', 'triangle_above_below_2s',
             'extract_shape_from_markers', 'center_shape_in_markers',
             'align_blocks_vertically',
+            'slide_shape_to_separator', 'propagate_block_patterns',
             'draw_row_col_cross_by_color', 'count_empty_bucket_rows',
             'diagonal_exit_from_frame',
             'scale_diagonal_blocks',
@@ -4453,6 +4775,8 @@ class ProgramSynthesizer:
             'sort_colors_by_freq_desc', 'list_colors_by_appearance',
             'shift_cross_by_5count', 'stripe_2pt',
             'cross_product_5s', 'cross_at_midpoint_1s', 'recolor_5_components_by_size',
+            'tile_row_model', 'sort_nondominant_by_freq_desc', 'most_common_color_2x2',
+            'complete_4fold_symmetry', 'extend_to_block',
             # Objects
             'extract_largest_object', 'extract_smallest_object', 'count_objects',
             'remove_small_objects', 'keep_n_largest_objects',
