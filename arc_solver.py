@@ -4626,6 +4626,232 @@ def connect_blocks_with_9(grid, **kw):
     return out
 
 
+def mark_2x2_corners(grid, **kw):
+    """For each 2x2 block of 5s, place 1,2,3,4 at the four diagonal corners."""
+    H, W = len(grid), len(grid[0])
+    out = [row[:] for row in grid]
+    for r in range(H - 1):
+        for c in range(W - 1):
+            if grid[r][c] == 5 and grid[r][c+1] == 5 and grid[r+1][c] == 5 and grid[r+1][c+1] == 5:
+                if r - 1 >= 0 and c - 1 >= 0: out[r-1][c-1] = 1
+                if r - 1 >= 0 and c + 2 < W: out[r-1][c+2] = 2
+                if r + 2 < H and c - 1 >= 0: out[r+2][c-1] = 3
+                if r + 2 < H and c + 2 < W: out[r+2][c+2] = 4
+    return out
+
+
+def extend_diagonal_tails(grid, **kw):
+    """Find a 2x2 block with diagonal tail cells; extend each tail to grid edge."""
+    H, W = len(grid), len(grid[0])
+    out = [row[:] for row in grid]
+    color = None
+    cells = set()
+    for r in range(H):
+        for c in range(W):
+            if grid[r][c] != 0:
+                color = grid[r][c]
+                cells.add((r, c))
+    if not cells or color is None:
+        return grid
+    block = set()
+    for r, c in cells:
+        for dr, dc in [(0, 0), (0, -1), (-1, 0), (-1, -1)]:
+            r0, c0 = r + dr, c + dc
+            if all((r0 + rr, c0 + cc) in cells for rr in range(2) for cc in range(2)):
+                for rr in range(2):
+                    for cc in range(2):
+                        block.add((r0 + rr, c0 + cc))
+    tails = cells - block
+    for tr, tc in tails:
+        best = None
+        for br, bc in block:
+            if abs(br - tr) == 1 and abs(bc - tc) == 1:
+                best = (br, bc)
+                break
+        if best:
+            dr = tr - best[0]
+            dc = tc - best[1]
+            r, c = tr + dr, tc + dc
+            while 0 <= r < H and 0 <= c < W:
+                out[r][c] = color
+                r += dr; c += dc
+    return out
+
+
+def cross_overlap_fix(grid, **kw):
+    """Two perpendicular bars; swap the intersection color to the other bar's color."""
+    H, W = len(grid), len(grid[0])
+    out = [row[:] for row in grid]
+    from collections import Counter as _C
+    vert_cols = {}
+    for c in range(W):
+        colors = [grid[r][c] for r in range(H) if grid[r][c] != 0]
+        if len(colors) >= H * 0.5:
+            mc = max(set(colors), key=colors.count)
+            if colors.count(mc) >= H * 0.5:
+                vert_cols[c] = mc
+    horiz_rows = {}
+    for r in range(H):
+        colors = [grid[r][c] for c in range(W) if grid[r][c] != 0]
+        if len(colors) >= W * 0.5:
+            mc = max(set(colors), key=colors.count)
+            if colors.count(mc) >= W * 0.5:
+                horiz_rows[r] = mc
+    for r in horiz_rows:
+        for c in vert_cols:
+            if grid[r][c] == vert_cols[c]:
+                out[r][c] = horiz_rows[r]
+            elif grid[r][c] == horiz_rows[r]:
+                out[r][c] = vert_cols[c]
+    return out
+
+
+def connect_same_color_diagonal(grid, **kw):
+    """Connect same-color cell pairs along diagonals with their own color."""
+    H, W = len(grid), len(grid[0])
+    out = [row[:] for row in grid]
+    from collections import defaultdict as _dd
+    color_cells = _dd(list)
+    for r in range(H):
+        for c in range(W):
+            if grid[r][c] != 0:
+                color_cells[grid[r][c]].append((r, c))
+    for color, cells in color_cells.items():
+        for i in range(len(cells)):
+            for j in range(i + 1, len(cells)):
+                r1, c1 = cells[i]; r2, c2 = cells[j]
+                dr = r2 - r1; dc = c2 - c1
+                if abs(dr) == abs(dc) and dr != 0:
+                    sr = 1 if dr > 0 else -1
+                    sc = 1 if dc > 0 else -1
+                    r, c = r1 + sr, c1 + sc
+                    while (r, c) != (r2, c2):
+                        if out[r][c] == 0:
+                            out[r][c] = color
+                        r += sr; c += sc
+    return out
+
+
+def fill_rect_between_pairs(grid, **kw):
+    """For each color with exactly 2 cells, fill the rectangle between them."""
+    H, W = len(grid), len(grid[0])
+    out = [row[:] for row in grid]
+    from collections import defaultdict as _dd
+    by_color = _dd(list)
+    for r in range(H):
+        for c in range(W):
+            if grid[r][c] != 0:
+                by_color[grid[r][c]].append((r, c))
+    for color, cells in by_color.items():
+        if len(cells) == 2:
+            (r1, c1), (r2, c2) = cells
+            for r in range(min(r1, r2), max(r1, r2) + 1):
+                for c in range(min(c1, c2), max(c1, c2) + 1):
+                    out[r][c] = color
+    return out
+
+
+def draw_l_path_pairs(grid, **kw):
+    """For each color with exactly 2 cells, draw L-shaped path (horiz then vert)."""
+    H, W = len(grid), len(grid[0])
+    out = [row[:] for row in grid]
+    from collections import defaultdict as _dd
+    by_color = _dd(list)
+    for r in range(H):
+        for c in range(W):
+            if grid[r][c] != 0:
+                by_color[grid[r][c]].append((r, c))
+    for color, cells in by_color.items():
+        if len(cells) == 2:
+            (r1, c1), (r2, c2) = cells
+            for c in range(min(c1, c2), max(c1, c2) + 1):
+                if out[r1][c] == 0: out[r1][c] = color
+            for r in range(min(r1, r2), max(r1, r2) + 1):
+                if out[r][c2] == 0: out[r][c2] = color
+    return out
+
+
+def count_2x2_blocks_color1(grid, **kw):
+    """Count 2x2 blocks of color 1; return 1xN row of that many 1s padded with 0s."""
+    H, W = len(grid), len(grid[0])
+    count = 0
+    for r in range(H - 1):
+        for c in range(W - 1):
+            if grid[r][c] == 1 and grid[r][c+1] == 1 and grid[r+1][c] == 1 and grid[r+1][c+1] == 1:
+                count += 1
+    return [[1] * count + [0] * (5 - count)]
+
+
+def region_with_most_markers(grid, **kw):
+    """Grid partitioned into solid regions; find region with most 'marker' color cells."""
+    H, W = len(grid), len(grid[0])
+    from collections import Counter as _C
+    freq = _C(v for row in grid for v in row if v != 0)
+    if not freq:
+        return grid
+    marker = freq.most_common()[-1][0]
+    region_counts = _C()
+    for r in range(H):
+        for c in range(W):
+            if grid[r][c] == marker:
+                neighbors = []
+                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    nr, nc = r + dr, c + dc
+                    if 0 <= nr < H and 0 <= nc < W and grid[nr][nc] != marker and grid[nr][nc] != 0:
+                        neighbors.append(grid[nr][nc])
+                if neighbors:
+                    region_color = max(set(neighbors), key=neighbors.count)
+                    region_counts[region_color] += 1
+    if not region_counts:
+        return grid
+    winner = region_counts.most_common(1)[0][0]
+    return [[winner]]
+
+
+def extend_2x2_by_color_diagonal(grid, **kw):
+    """Color-1 blocks extend up-left diagonal; color-2 blocks extend down-right."""
+    H, W = len(grid), len(grid[0])
+    out = [row[:] for row in grid]
+    used = set()
+    for r in range(H - 1):
+        for c in range(W - 1):
+            v = grid[r][c]
+            if v != 0 and (r, c) not in used and grid[r][c+1] == v and grid[r+1][c] == v and grid[r+1][c+1] == v:
+                used.update([(r, c), (r, c+1), (r+1, c), (r+1, c+1)])
+                if v == 1:
+                    nr, nc = r - 1, c - 1
+                    while nr >= 0 and nc >= 0:
+                        if out[nr][nc] == 0: out[nr][nc] = 1
+                        nr -= 1; nc -= 1
+                elif v == 2:
+                    nr, nc = r + 2, c + 2
+                    while nr < H and nc < W:
+                        if out[nr][nc] == 0: out[nr][nc] = 2
+                        nr += 1; nc += 1
+    return out
+
+
+def extend_blocks_by_unique_colors(grid, **kw):
+    """For each 2x2 block, extend N rows of 3s below it, where N = unique colors in block."""
+    H, W = len(grid), len(grid[0])
+    out = [row[:] for row in grid]
+    used = set()
+    for r in range(H - 1):
+        for c in range(W - 1):
+            if (r, c) in used:
+                continue
+            vals = [grid[r][c], grid[r][c+1], grid[r+1][c], grid[r+1][c+1]]
+            if all(v != 0 for v in vals):
+                unique = len(set(vals))
+                used.update([(r, c), (r, c+1), (r+1, c), (r+1, c+1)])
+                for dr in range(1, unique + 1):
+                    nr = r + 1 + dr
+                    if nr < H:
+                        out[nr][c] = 3
+                        out[nr][c+1] = 3
+    return out
+
+
 OPERATIONS = {
     # Basic transforms
     'identity': identity,
@@ -4902,6 +5128,16 @@ OPERATIONS = {
     'connect_same_color_hv': connect_same_color_hv,
     'connect_8s_with_3': connect_8s_with_3,
     'connect_blocks_with_9': connect_blocks_with_9,
+    'mark_2x2_corners': mark_2x2_corners,
+    'extend_diagonal_tails': extend_diagonal_tails,
+    'cross_overlap_fix': cross_overlap_fix,
+    'connect_same_color_diagonal': connect_same_color_diagonal,
+    'fill_rect_between_pairs': fill_rect_between_pairs,
+    'draw_l_path_pairs': draw_l_path_pairs,
+    'count_2x2_blocks_color1': count_2x2_blocks_color1,
+    'region_with_most_markers': region_with_most_markers,
+    'extend_2x2_by_color_diagonal': extend_2x2_by_color_diagonal,
+    'extend_blocks_by_unique_colors': extend_blocks_by_unique_colors,
 }
 
 INVERSE_TRANSFORMS = {
@@ -5206,6 +5442,11 @@ class ProgramSynthesizer:
             'spiral_3s', 'fill_rect_interior_2', 'fill_l_concavity_7',
             'fill_comp_bbox_2', 'connect_same_color_hv', 'connect_8s_with_3',
             'connect_blocks_with_9',
+            'mark_2x2_corners', 'extend_diagonal_tails', 'cross_overlap_fix',
+            'connect_same_color_diagonal', 'fill_rect_between_pairs',
+            'draw_l_path_pairs', 'count_2x2_blocks_color1',
+            'region_with_most_markers', 'extend_2x2_by_color_diagonal',
+            'extend_blocks_by_unique_colors',
             # Objects
             'extract_largest_object', 'extract_smallest_object', 'count_objects',
             'remove_small_objects', 'keep_n_largest_objects',
