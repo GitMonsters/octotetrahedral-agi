@@ -1169,6 +1169,269 @@ def decode_block_hole_pattern(grid, **kw):
     return [[vals[r] for _ in range(3)] for r in range(3)]
 
 
+def draw_row_col_cross_by_color(grid, **kw):
+    """178fcbfb: non-2 cells draw full row; 2-cells draw full column; rows override cols."""
+    R, C = len(grid), len(grid[0])
+    cells = [(r, c, grid[r][c]) for r in range(R) for c in range(C) if grid[r][c] != 0]
+    out = [[0] * C for _ in range(R)]
+    for r, c, color in cells:
+        if color == 2:
+            for r2 in range(R):
+                out[r2][c] = 2
+    for r, c, color in cells:
+        if color != 2:
+            for c2 in range(C):
+                out[r][c2] = color
+    return out
+
+
+def count_empty_bucket_rows(grid, **kw):
+    """b0c4d837: count empty rows in 5-bucket → place n 8s clockwise around 3x3."""
+    R, C = len(grid), len(grid[0])
+    # Find bottom bar row: a row with consecutive 5s (3+) that has 5s above it in same col
+    bottom_bar_row = wall_left = wall_right = None
+    for r in range(R - 1, -1, -1):
+        five_cols = [c for c in range(C) if grid[r][c] == 5]
+        if len(five_cols) >= 3 and five_cols[-1] - five_cols[0] + 1 == len(five_cols):
+            lc, rc = five_cols[0], five_cols[-1]
+            if any(grid[r2][lc] == 5 for r2 in range(r)):
+                bottom_bar_row, wall_left, wall_right = r, lc, rc
+                break
+    if bottom_bar_row is None:
+        return grid
+    wall_start_row = next((r for r in range(bottom_bar_row) if grid[r][wall_left] == 5), None)
+    if wall_start_row is None:
+        return grid
+    n_empty = sum(
+        1 for r in range(wall_start_row, bottom_bar_row)
+        if all(grid[r][c] != 8 for c in range(wall_left + 1, wall_right))
+    )
+    border = [(0, 0), (0, 1), (0, 2), (1, 2), (2, 2), (2, 1), (2, 0), (1, 0)]
+    out = [[0] * 3 for _ in range(3)]
+    for i in range(min(n_empty, 8)):
+        out[border[i][0]][border[i][1]] = 8
+    return out
+
+
+def diagonal_exit_from_frame(grid, **kw):
+    """ec883f72: stray block (density=1) exits diagonally from frame's concave corners."""
+    R, C = len(grid), len(grid[0])
+    from collections import Counter
+    counts = Counter(grid[r][c] for r in range(R) for c in range(C) if grid[r][c] != 0)
+    if len(counts) < 2:
+        return grid
+    stray_color = frame_color = None
+    for color in counts:
+        cells = [(r, c) for r in range(R) for c in range(C) if grid[r][c] == color]
+        r0 = min(r for r, c in cells); r1 = max(r for r, c in cells)
+        c0 = min(c for r, c in cells); c1 = max(c for r, c in cells)
+        if len(cells) == (r1 - r0 + 1) * (c1 - c0 + 1):
+            stray_color = color
+        else:
+            frame_color = color
+    if stray_color is None or frame_color is None:
+        return grid
+    frame_cells = set((r, c) for r in range(R) for c in range(C) if grid[r][c] == frame_color)
+    stray_cells = [(r, c) for r in range(R) for c in range(C) if grid[r][c] == stray_color]
+    # Find concave corners: frame cells with both horizontal and vertical frame neighbors
+    corners = [
+        (r, c) for (r, c) in frame_cells
+        if ((r, c - 1) in frame_cells or (r, c + 1) in frame_cells)
+        and ((r - 1, c) in frame_cells or (r + 1, c) in frame_cells)
+    ]
+    if not corners:
+        return grid
+    stray_cr = sum(r for r, c in stray_cells) / len(stray_cells)
+    stray_cc = sum(c for r, c in stray_cells) / len(stray_cells)
+    out = [row[:] for row in grid]
+    for (cr, cc) in corners:
+        dr_raw = cr - stray_cr
+        dc_raw = cc - stray_cc
+        dr = 1 if dr_raw > 0.001 else (-1 if dr_raw < -0.001 else 0)
+        dc = 1 if dc_raw > 0.001 else (-1 if dc_raw < -0.001 else 0)
+        if dr == 0 or dc == 0:
+            continue
+        r, c = cr + dr, cc + dc
+        while 0 <= r < R and 0 <= c < C:
+            out[r][c] = stray_color
+            r += dr
+            c += dc
+    return out
+
+
+def fill_gaps_between_1s(grid, **kw):
+    """a699fb00: fill 0 cells between two 1s (same row, adjacent) with 2."""
+    R, C = len(grid), len(grid[0])
+    out = [row[:] for row in grid]
+    for r in range(R):
+        for c in range(1, C - 1):
+            if grid[r][c] == 0 and grid[r][c - 1] == 1 and grid[r][c + 1] == 1:
+                out[r][c] = 2
+    return out
+
+
+def triangle_above_below_2s(grid, **kw):
+    """a65b410d: row of 2s → 3s triangle above (width increases), 1s below (decreases)."""
+    R, C = len(grid), len(grid[0])
+    # find the row of 2s
+    row2 = None
+    for r in range(R):
+        if 2 in grid[r]:
+            row2 = r
+            break
+    if row2 is None:
+        return grid
+    W = sum(1 for v in grid[row2] if v == 2)
+    out = [row[:] for row in grid]
+    for r in range(R):
+        d = abs(r - row2)
+        if r < row2:
+            w = W + (row2 - r)
+            for c in range(min(w, C)):
+                out[r][c] = 3
+        elif r > row2:
+            w = W - (r - row2)
+            if w > 0:
+                for c in range(min(w, C)):
+                    out[r][c] = 1
+    return out
+
+
+def extract_shape_from_markers(grid, **kw):
+    """3de23699: 4 corner markers define a rectangle; extract inner shape with marker color."""
+    R, C = len(grid), len(grid[0])
+    from collections import Counter
+    counts = Counter(grid[r][c] for r in range(R) for c in range(C) if grid[r][c] != 0)
+    if len(counts) < 2:
+        return grid
+    # find marker color: appears exactly 4 times and forms corners of a rectangle
+    marker_color = None
+    for color, cnt in counts.items():
+        if cnt == 4:
+            cells = [(r, c) for r in range(R) for c in range(C) if grid[r][c] == color]
+            rows = sorted(set(r for r, c in cells))
+            cols = sorted(set(c for r, c in cells))
+            if len(rows) == 2 and len(cols) == 2:
+                marker_color = color
+                break
+    if marker_color is None:
+        return grid
+    cells = [(r, c) for r in range(R) for c in range(C) if grid[r][c] == marker_color]
+    rows = sorted(set(r for r, c in cells))
+    cols = sorted(set(c for r, c in cells))
+    r0, r1 = rows[0], rows[1]
+    c0, c1 = cols[0], cols[1]
+    # inner rectangle
+    inner_R = r1 - r0 - 1
+    inner_C = c1 - c0 - 1
+    if inner_R <= 0 or inner_C <= 0:
+        return grid
+    out = [[0] * inner_C for _ in range(inner_R)]
+    for dr in range(inner_R):
+        for dc in range(inner_C):
+            v = grid[r0 + 1 + dr][c0 + 1 + dc]
+            if v != 0 and v != marker_color:
+                out[dr][dc] = marker_color
+    return out
+
+
+def center_shape_in_markers(grid, **kw):
+    """a1570a43: center the 2-shape within the 4 corner markers' bounding rectangle."""
+    R, C = len(grid), len(grid[0])
+    from collections import Counter
+    counts = Counter(grid[r][c] for r in range(R) for c in range(C) if grid[r][c] != 0)
+    # find marker color (4 cells, corners of rectangle)
+    marker_color = None
+    for color, cnt in counts.items():
+        if cnt == 4:
+            cells = [(r, c) for r in range(R) for c in range(C) if grid[r][c] == color]
+            rows = sorted(set(r for r, c in cells))
+            cols = sorted(set(c for r, c in cells))
+            if len(rows) == 2 and len(cols) == 2:
+                marker_color = color
+                break
+    if marker_color is None:
+        return grid
+    cells = [(r, c) for r in range(R) for c in range(C) if grid[r][c] == marker_color]
+    marker_rows = sorted(set(r for r, c in cells))
+    marker_cols = sorted(set(c for r, c in cells))
+    rect_cr = (marker_rows[0] + marker_rows[1]) / 2.0
+    rect_cc = (marker_cols[0] + marker_cols[1]) / 2.0
+    # find 2-cells bounding box
+    shape_cells = [(r, c) for r in range(R) for c in range(C) if grid[r][c] == 2]
+    if not shape_cells:
+        return grid
+    sr0 = min(r for r, c in shape_cells)
+    sr1 = max(r for r, c in shape_cells)
+    sc0 = min(c for r, c in shape_cells)
+    sc1 = max(c for r, c in shape_cells)
+    bbox_cr = (sr0 + sr1) / 2.0
+    bbox_cc = (sc0 + sc1) / 2.0
+    dr = round(rect_cr - bbox_cr)
+    dc = round(rect_cc - bbox_cc)
+    out = [[0] * C for _ in range(R)]
+    # place markers
+    for r, c in cells:
+        out[r][c] = marker_color
+    # place shifted 2-cells
+    for r, c in shape_cells:
+        nr, nc = r + dr, c + dc
+        if 0 <= nr < R and 0 <= nc < C:
+            out[nr][nc] = 2
+    return out
+
+
+def align_blocks_vertically(grid, **kw):
+    """1caeab9d: align all colored blocks to the row range of the block with most overlaps."""
+    R, C = len(grid), len(grid[0])
+    from collections import defaultdict
+    # find cells per color
+    color_cells = defaultdict(list)
+    for r in range(R):
+        for c in range(C):
+            if grid[r][c] != 0:
+                color_cells[grid[r][c]].append((r, c))
+    if len(color_cells) < 2:
+        return grid
+    # for each color, compute row range
+    color_rows = {}
+    for color, cells in color_cells.items():
+        rows = [r for r, c in cells]
+        color_rows[color] = (min(rows), max(rows))
+    colors = list(color_rows.keys())
+    # count overlapping rows with all other blocks
+    def overlap_count(c1):
+        r0, r1 = color_rows[c1]
+        total = 0
+        for c2 in colors:
+            if c2 == c1:
+                continue
+            s0, s1 = color_rows[c2]
+            overlap = min(r1, s1) - max(r0, s0) + 1
+            if overlap > 0:
+                total += overlap
+        return total
+    scores = {c: overlap_count(c) for c in colors}
+    max_score = max(scores.values())
+    if max_score == 0:
+        # no overlaps: use bottom-most block
+        target_color = max(colors, key=lambda c: color_rows[c][1])
+    else:
+        # among those with max score, use bottom-most
+        candidates = [c for c in colors if scores[c] == max_score]
+        target_color = max(candidates, key=lambda c: color_rows[c][1])
+    T = color_rows[target_color][0]  # target top row
+    out = [[0] * C for _ in range(R)]
+    for color, cells in color_cells.items():
+        top = color_rows[color][0]
+        shift = T - top
+        for r, c in cells:
+            nr = r + shift
+            if 0 <= nr < R:
+                out[nr][c] = color
+    return out
+
+
 def ring_1s_around_5(grid, **kw):
     """4258a5f9: place 1s in 8-neighbors of each 5; don't overwrite 5s."""
     R, C = len(grid), len(grid[0])
@@ -3463,6 +3726,131 @@ def swap_colors_5_8(grid, **kw):
     return [[5 if v == 8 else (8 if v == 5 else v) for v in row] for row in grid]
 
 
+def or_hsplit_sep(grid, **kw):
+    """e98196ab: split by horizontal separator row, OR top over bottom"""
+    H, W = len(grid), len(grid[0])
+    for r in range(H):
+        if len(set(grid[r])) == 1 and grid[r][0] != 0:
+            top, bot = grid[:r], grid[r+1:]
+            if len(top) == len(bot):
+                return [[top[i][c] if top[i][c] != 0 else bot[i][c]
+                         for c in range(W)] for i in range(len(top))]
+    return grid
+
+
+def fill_enclosed_4(grid, **kw):
+    """00d62c1b: flood-fill enclosed zeros (not reachable from border) with 4"""
+    H, W = len(grid), len(grid[0])
+    exterior = set()
+    queue = []
+    for r in range(H):
+        for c in range(W):
+            if (r == 0 or r == H-1 or c == 0 or c == W-1) and grid[r][c] == 0:
+                exterior.add((r, c)); queue.append((r, c))
+    while queue:
+        r, c = queue.pop(0)
+        for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+            nr, nc = r+dr, c+dc
+            if 0 <= nr < H and 0 <= nc < W and (nr, nc) not in exterior and grid[nr][nc] == 0:
+                exterior.add((nr, nc)); queue.append((nr, nc))
+    out = [row[:] for row in grid]
+    for r in range(H):
+        for c in range(W):
+            if grid[r][c] == 0 and (r, c) not in exterior:
+                out[r][c] = 4
+    return out
+
+
+def or_vsplit_mirror_right(grid, **kw):
+    """e3497940: split by vertical separator col, mirror right half, OR left over mirrored-right"""
+    H, W = len(grid), len(grid[0])
+    for c in range(W):
+        col = [grid[r][c] for r in range(H)]
+        if len(set(col)) == 1 and col[0] != 0:
+            lw, rw = c, W - c - 1
+            if lw == rw:
+                return [[grid[r][cc] if grid[r][cc] != 0 else grid[r][W-1-cc]
+                         for cc in range(c)] for r in range(H)]
+    return grid
+
+
+def sort_colors_by_freq_desc(grid, **kw):
+    """f8ff0b80: sort non-zero colors by frequency descending → column vector"""
+    from collections import Counter
+    counts = Counter(v for row in grid for v in row if v != 0)
+    return [[c] for c in sorted(counts.keys(), key=lambda c: -counts[c])]
+
+
+def list_colors_by_appearance(grid, **kw):
+    """4be741c5: list unique non-zero colors by first appearance; row if W>=H else column"""
+    H, W = len(grid), len(grid[0])
+    seen = []
+    for r in range(H):
+        for c in range(W):
+            v = grid[r][c]
+            if v != 0 and v not in seen:
+                seen.append(v)
+    return [seen] if W >= H else [[c] for c in seen]
+
+
+def shift_cross_by_5count(grid, **kw):
+    """e48d4e1a: find cross, count 5s, shift center down by n5 and left by n5"""
+    H, W = len(grid), len(grid[0])
+    colors = set(v for row in grid for v in row) - {0, 5}
+    if not colors:
+        return grid
+    cc = list(colors)[0]
+    n5 = sum(1 for row in grid for v in row if v == 5)
+    cross_row = cross_col = None
+    for r in range(H):
+        if all(grid[r][c] == cc for c in range(W)):
+            cross_row = r; break
+    for c in range(W):
+        if all(grid[r][c] == cc for r in range(H)):
+            cross_col = c; break
+    if cross_row is None or cross_col is None:
+        return grid
+    nr, nc = cross_row + n5, cross_col - n5
+    out = [[0] * W for _ in range(H)]
+    if 0 <= nr < H:
+        for c in range(W):
+            out[nr][c] = cc
+    if 0 <= nc < W:
+        for r in range(H):
+            out[r][nc] = cc
+    return out
+
+
+def stripe_2pt(grid, **kw):
+    """0a938d79: two non-zero points define alternating stripe pattern filling grid"""
+    H, W = len(grid), len(grid[0])
+    nz = [(r, c, grid[r][c]) for r in range(H) for c in range(W) if grid[r][c] != 0]
+    if len(nz) != 2:
+        return grid
+    r1, c1, v1 = nz[0]; r2, c2, v2 = nz[1]
+    dr, dc = r2 - r1, c2 - c1
+    out = [[0] * W for _ in range(H)]
+    if dc > 0 and (dr == 0 or W > H):
+        period = 2 * dc
+        for k in range(200):
+            col1, col2 = c1 + k * period, c2 + k * period
+            if col1 >= W and col2 >= W:
+                break
+            for r in range(H):
+                if col1 < W: out[r][col1] = v1
+                if col2 < W: out[r][col2] = v2
+    elif dr > 0:
+        period = 2 * dr
+        for k in range(200):
+            row1, row2 = r1 + k * period, r2 + k * period
+            if row1 >= H and row2 >= H:
+                break
+            for c in range(W):
+                if row1 < H: out[row1][c] = v1
+                if row2 < H: out[row2][c] = v2
+    return out
+
+
 OPERATIONS = {
     # Basic transforms
     'identity': identity,
@@ -3559,6 +3947,14 @@ OPERATIONS = {
     'mark_period6_junctions': mark_period6_junctions,
     'tile2x_diagonal_8s': tile2x_diagonal_8s,
     'decode_block_hole_pattern': decode_block_hole_pattern,
+    'draw_row_col_cross_by_color': draw_row_col_cross_by_color,
+    'count_empty_bucket_rows': count_empty_bucket_rows,
+    'diagonal_exit_from_frame': diagonal_exit_from_frame,
+    'fill_gaps_between_1s': fill_gaps_between_1s,
+    'triangle_above_below_2s': triangle_above_below_2s,
+    'extract_shape_from_markers': extract_shape_from_markers,
+    'center_shape_in_markers': center_shape_in_markers,
+    'align_blocks_vertically': align_blocks_vertically,
     'ring_1s_around_5': ring_1s_around_5,
     'cross_lines_two_cells': cross_lines_two_cells,
     'colparity_5s_to_3s': colparity_5s_to_3s,
@@ -3701,6 +4097,13 @@ OPERATIONS = {
     'replace_6_with_2': replace_6_with_2,
     'replace_7_with_5': replace_7_with_5,
     'swap_colors_5_8': swap_colors_5_8,
+    'or_hsplit_sep': or_hsplit_sep,
+    'fill_enclosed_4': fill_enclosed_4,
+    'or_vsplit_mirror_right': or_vsplit_mirror_right,
+    'sort_colors_by_freq_desc': sort_colors_by_freq_desc,
+    'list_colors_by_appearance': list_colors_by_appearance,
+    'shift_cross_by_5count': shift_cross_by_5count,
+    'stripe_2pt': stripe_2pt,
 }
 
 INVERSE_TRANSFORMS = {
@@ -3927,6 +4330,11 @@ class ProgramSynthesizer:
             'ring_1s_around_5', 'cross_lines_two_cells', 'colparity_5s_to_3s',
             'mark_cshape_gap', 'rotate_rings_outward', 'draw_8_template_blocks',
             'recover_missing_tile',
+            'fill_gaps_between_1s', 'triangle_above_below_2s',
+            'extract_shape_from_markers', 'center_shape_in_markers',
+            'align_blocks_vertically',
+            'draw_row_col_cross_by_color', 'count_empty_bucket_rows',
+            'diagonal_exit_from_frame',
             'scale_diagonal_blocks',
             # Basic transforms
             'identity', 'rotate_90', 'rotate_180', 'rotate_270',
@@ -3984,6 +4392,9 @@ class ProgramSynthesizer:
             'count_1s_fill_2s', 'diagonal_bounce_path', 'diagonal_bounce_fill_8',
             'wave_from_7_column', 'recolor_with_bottom_left', 'radiate_diagonal_from_nz',
             'sort_rows_by_length_right_align', 'mark_l_open_corner',
+            'or_hsplit_sep', 'fill_enclosed_4', 'or_vsplit_mirror_right',
+            'sort_colors_by_freq_desc', 'list_colors_by_appearance',
+            'shift_cross_by_5count', 'stripe_2pt',
             # Objects
             'extract_largest_object', 'extract_smallest_object', 'count_objects',
             'remove_small_objects', 'keep_n_largest_objects',
