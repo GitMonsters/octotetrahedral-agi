@@ -1169,6 +1169,235 @@ def decode_block_hole_pattern(grid, **kw):
     return [[vals[r] for _ in range(3)] for r in range(3)]
 
 
+def ring_1s_around_5(grid, **kw):
+    """4258a5f9: place 1s in 8-neighbors of each 5; don't overwrite 5s."""
+    R, C = len(grid), len(grid[0])
+    out = [row[:] for row in grid]
+    for r in range(R):
+        for c in range(C):
+            if grid[r][c] == 5:
+                for dr in [-1, 0, 1]:
+                    for dc in [-1, 0, 1]:
+                        if dr == 0 and dc == 0:
+                            continue
+                        nr, nc = r + dr, c + dc
+                        if 0 <= nr < R and 0 <= nc < C and grid[nr][nc] != 5:
+                            out[nr][nc] = 1
+    return out
+
+
+def cross_lines_two_cells(grid, **kw):
+    """23581191: two non-zero cells A, B; draw full row+col for each; intersections → 2."""
+    R, C = len(grid), len(grid[0])
+    cells = [(r, c, grid[r][c]) for r in range(R) for c in range(C) if grid[r][c] != 0]
+    if len(cells) != 2:
+        return grid
+    (rA, cA, vA), (rB, cB, vB) = cells
+    out = [[0] * C for _ in range(R)]
+    for c in range(C):
+        out[rA][c] = vA
+    for r in range(R):
+        out[r][cA] = vA
+    for c in range(C):
+        if out[rB][c] == 0:
+            out[rB][c] = vB
+        elif out[rB][c] != vB:
+            out[rB][c] = 2
+    for r in range(R):
+        if out[r][cB] == 0:
+            out[r][cB] = vB
+        elif out[r][cB] != vB:
+            out[r][cB] = 2
+    out[rA][cA] = vA
+    out[rB][cB] = vB
+    return out
+
+
+def colparity_5s_to_3s(grid, **kw):
+    """d406998b: 5s at 'wrong' column parity become 3; parity = W % 2 stays."""
+    R, C = len(grid), len(grid[0])
+    keep_parity = C % 2  # even cols stay when C even; odd cols stay when C odd
+    out = [row[:] for row in grid]
+    for r in range(R):
+        for c in range(C):
+            if grid[r][c] == 5:
+                if c % 2 != keep_parity:
+                    out[r][c] = 3
+    return out
+
+
+def mark_cshape_gap(grid, **kw):
+    """54d82841: for each C-shaped bracket, mark its open column with 4 at bottom row."""
+    R, C = len(grid), len(grid[0])
+    out = [row[:] for row in grid]
+    visited = [[False] * C for _ in range(R)]
+
+    def bfs(sr, sc, color):
+        cells = []
+        queue = [(sr, sc)]
+        visited[sr][sc] = True
+        while queue:
+            r, c = queue.pop()
+            cells.append((r, c))
+            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < R and 0 <= nc < C and not visited[nr][nc] and grid[nr][nc] == color:
+                    visited[nr][nc] = True
+                    queue.append((nr, nc))
+        return cells
+
+    for r in range(R):
+        for c in range(C):
+            if grid[r][c] != 0 and not visited[r][c]:
+                cells = bfs(r, c, grid[r][c])
+                max_r = max(row for row, col in cells)
+                bottom_cols = sorted(col for row, col in cells if row == max_r)
+                if len(bottom_cols) >= 2:
+                    gap = (bottom_cols[0] + bottom_cols[-1]) // 2
+                    out[R - 1][gap] = 4
+    return out
+
+
+def rotate_rings_outward(grid, **kw):
+    """bda2d7a6: concentric rings shift outward; unique color cycle rotates by 1."""
+    R, C = len(grid), len(grid[0])
+
+    def ring_level(r, c):
+        return min(r, c, R - 1 - r, C - 1 - c)
+
+    level_colors = {}
+    for r in range(R):
+        for c in range(C):
+            lv = ring_level(r, c)
+            level_colors[lv] = grid[r][c]
+
+    # Build unique color cycle from outermost inward, stop on first repeat
+    cycle = []
+    seen = set()
+    for lv in sorted(level_colors.keys()):
+        color = level_colors[lv]
+        if color in seen:
+            break
+        cycle.append(color)
+        seen.add(color)
+    n = len(cycle)
+    # Rotate cycle: new[k] = old[(k-1) % n] (rightward shift)
+    new_cycle = [cycle[(k - 1) % n] for k in range(n)]
+
+    # Map each ring level to its cycle position (wrap if more levels than cycle)
+    out = [[0] * C for _ in range(R)]
+    for r in range(R):
+        for c in range(C):
+            lv = ring_level(r, c)
+            pos = lv % n
+            out[r][c] = new_cycle[pos]
+    return out
+
+
+def draw_8_template_blocks(grid, **kw):
+    """b190f7f5: 8-cells form template; non-8 non-zero cells define block positions."""
+    R, C = len(grid), len(grid[0])
+    eight_cells = [(r, c) for r in range(R) for c in range(C) if grid[r][c] == 8]
+    block_cells = [(r, c, grid[r][c]) for r in range(R) for c in range(C)
+                   if grid[r][c] not in (0, 8)]
+    if not eight_cells or not block_cells:
+        return grid
+    t_min_r = min(r for r, c in eight_cells)
+    t_max_r = max(r for r, c in eight_cells)
+    t_min_c = min(c for r, c in eight_cells)
+    t_max_c = max(c for r, c in eight_cells)
+    H = t_max_r - t_min_r + 1
+    W = t_max_c - t_min_c + 1
+    template = [(r - t_min_r, c - t_min_c) for r, c in eight_cells]
+    if t_min_c > 0 or t_max_c < C - 1:
+        # Column split: template doesn't span full width
+        col_offset = 0 if t_min_c > 0 else t_max_c + 1
+        row_offset = 0
+        bm_rows, bm_cols = R, C - W
+    else:
+        # Row split: template spans full width
+        col_offset = 0
+        row_offset = 0 if t_min_r > 0 else t_max_r + 1
+        bm_rows, bm_cols = R - H, C
+    out = [[0] * (bm_cols * W) for _ in range(bm_rows * H)]
+    for br_raw, bc_raw, color in block_cells:
+        br = br_raw - row_offset
+        bc = bc_raw - col_offset
+        for dr, dc in template:
+            r_out = br * H + dr
+            c_out = bc * W + dc
+            if 0 <= r_out < bm_rows * H and 0 <= c_out < bm_cols * W:
+                out[r_out][c_out] = color
+    return out
+
+
+def recover_missing_tile(grid, **kw):
+    """f9012d9b: grid has a rectangular zero region; reconstruct from repeating tile pattern."""
+    R, C = len(grid), len(grid[0])
+    zero_cells = [(r, c) for r in range(R) for c in range(C) if grid[r][c] == 0]
+    if not zero_cells or len(zero_cells) >= R * C // 2:
+        return grid
+    z_min_r = min(r for r, c in zero_cells)
+    z_max_r = max(r for r, c in zero_cells)
+    z_min_c = min(c for r, c in zero_cells)
+    z_max_c = max(c for r, c in zero_cells)
+    zh = z_max_r - z_min_r + 1
+    zw = z_max_c - z_min_c + 1
+    # Verify zero region is a proper rectangle
+    if len(zero_cells) != zh * zw:
+        return grid
+
+    def find_period_rows():
+        for p in range(1, R + 1):
+            valid = True
+            for r in range(p, R):
+                ref = r % p
+                for c in range(C):
+                    if grid[r][c] != 0 and grid[ref][c] != 0 and grid[r][c] != grid[ref][c]:
+                        valid = False
+                        break
+                if not valid:
+                    break
+            if valid:
+                return p
+        return R
+
+    def find_period_cols():
+        for p in range(1, C + 1):
+            valid = True
+            for c in range(p, C):
+                ref = c % p
+                for r in range(R):
+                    if grid[r][c] != 0 and grid[r][ref] != 0 and grid[r][c] != grid[r][ref]:
+                        valid = False
+                        break
+                if not valid:
+                    break
+            if valid:
+                return p
+        return C
+
+    P_r = find_period_rows()
+    P_c = find_period_cols()
+    out = [[0] * zw for _ in range(zh)]
+    for dr in range(zh):
+        for dc in range(zw):
+            r, c = z_min_r + dr, z_min_c + dc
+            val = grid[r % P_r][c % P_c]
+            if val == 0:
+                # fallback: search nearby
+                for shift_r in range(P_r):
+                    for shift_c in range(P_c):
+                        v = grid[(r - shift_r) % P_r][(c - shift_c) % P_c]
+                        if v != 0:
+                            val = v
+                            break
+                    if val != 0:
+                        break
+            out[dr][dc] = val
+    return out
+
+
 def classify_3x3_shape(grid, **kw):
     """27a28665: output shape ID for 3x3 binary shapes"""
     R, C = len(grid), len(grid[0])
@@ -3141,6 +3370,99 @@ def difference(grid1, grid2):
     return result
 
 
+def fill_down_columns(grid, **kw):
+    """d037b0a7: propagate non-zero values downward through each column"""
+    H, W = len(grid), len(grid[0])
+    out = [row[:] for row in grid]
+    for c in range(W):
+        last = 0
+        for r in range(H):
+            if out[r][c] != 0:
+                last = out[r][c]
+            elif last != 0:
+                out[r][c] = last
+    return out
+
+
+def mirror_v_concat(grid, **kw):
+    """4c4377d9: vertically reversed input concatenated with original"""
+    return grid[::-1] + grid
+
+
+def fill_between_1s_with_2(grid, **kw):
+    """a699fb00: fill gaps between 1s on each row with 2"""
+    out = [row[:] for row in grid]
+    for r in range(len(out)):
+        ones = [c for c in range(len(out[r])) if out[r][c] == 1]
+        if len(ones) >= 2:
+            for c in range(min(ones), max(ones)):
+                if out[r][c] == 0:
+                    out[r][c] = 2
+    return out
+
+
+def extend_row_period_2x(grid, **kw):
+    """963e52fc: find row period, extend each row to double width"""
+    H, W = len(grid), len(grid[0])
+    out_w = W * 2
+    result = []
+    for r in range(H):
+        row = grid[r]
+        if all(v == 0 for v in row):
+            result.append([0] * out_w)
+        else:
+            for p in range(1, W + 1):
+                if all(row[c] == row[c % p] for c in range(W)):
+                    break
+            result.append([row[c % p] for c in range(out_w)])
+    return result
+
+
+def scale_up_3x(grid, **kw):
+    """9172f3a0: scale each cell to a 3x3 block"""
+    H, W = len(grid), len(grid[0])
+    return [[grid[r // 3][c // 3] for c in range(W * 3)] for r in range(H * 3)]
+
+
+def dominant_color_per_block_no5(grid, **kw):
+    """5614dbcf: 9x9 → 3x3, dominant non-zero non-5 color per 3x3 block"""
+    from collections import Counter
+    H, W = len(grid), len(grid[0])
+    if H % 3 != 0 or W % 3 != 0:
+        return grid
+    bh, bw = H // 3, W // 3
+    out = [[0] * 3 for _ in range(3)]
+    for br in range(3):
+        for bc in range(3):
+            colors = [grid[br * bh + r][bc * bw + c]
+                      for r in range(bh) for c in range(bw)
+                      if grid[br * bh + r][bc * bw + c] not in (0, 5)]
+            if colors:
+                out[br][bc] = Counter(colors).most_common(1)[0][0]
+    return out
+
+
+def color_swap_3456(grid, **kw):
+    """0d3d703e: swap color pairs (3,4),(1,5),(2,6),(8,9)"""
+    m = {3: 4, 4: 3, 1: 5, 5: 1, 2: 6, 6: 2, 8: 9, 9: 8, 0: 0, 7: 7}
+    return [[m.get(v, v) for v in row] for row in grid]
+
+
+def replace_6_with_2(grid, **kw):
+    """b1948b0a: replace all 6s with 2"""
+    return [[2 if v == 6 else v for v in row] for row in grid]
+
+
+def replace_7_with_5(grid, **kw):
+    """c8f0f002: replace all 7s with 5"""
+    return [[5 if v == 7 else v for v in row] for row in grid]
+
+
+def swap_colors_5_8(grid, **kw):
+    """d511f180: swap colors 5 and 8"""
+    return [[5 if v == 8 else (8 if v == 5 else v) for v in row] for row in grid]
+
+
 OPERATIONS = {
     # Basic transforms
     'identity': identity,
@@ -3237,6 +3559,13 @@ OPERATIONS = {
     'mark_period6_junctions': mark_period6_junctions,
     'tile2x_diagonal_8s': tile2x_diagonal_8s,
     'decode_block_hole_pattern': decode_block_hole_pattern,
+    'ring_1s_around_5': ring_1s_around_5,
+    'cross_lines_two_cells': cross_lines_two_cells,
+    'colparity_5s_to_3s': colparity_5s_to_3s,
+    'mark_cshape_gap': mark_cshape_gap,
+    'rotate_rings_outward': rotate_rings_outward,
+    'draw_8_template_blocks': draw_8_template_blocks,
+    'recover_missing_tile': recover_missing_tile,
     'nor_vertical_split_to_3': nor_vertical_split_to_3,
     'expand_row_colors_cycling': expand_row_colors_cycling,
     'select_densest_3x3_group': select_densest_3x3_group,
@@ -3362,6 +3691,16 @@ OPERATIONS = {
     'halves_xor_col': halves_xor_col,
     'halves_xor_row': halves_xor_row,
     'mark_active_cols_tile_2x2': mark_active_cols_tile_2x2,
+    'fill_down_columns': fill_down_columns,
+    'mirror_v_concat': mirror_v_concat,
+    'fill_between_1s_with_2': fill_between_1s_with_2,
+    'extend_row_period_2x': extend_row_period_2x,
+    'scale_up_3x': scale_up_3x,
+    'dominant_color_per_block_no5': dominant_color_per_block_no5,
+    'color_swap_3456': color_swap_3456,
+    'replace_6_with_2': replace_6_with_2,
+    'replace_7_with_5': replace_7_with_5,
+    'swap_colors_5_8': swap_colors_5_8,
 }
 
 INVERSE_TRANSFORMS = {
@@ -3585,6 +3924,9 @@ class ProgramSynthesizer:
             'overlay_three_blocks_priority', 'mark_diagonal_zigzag_4s',
             'mirror_8s_by_4s_direction', 'staircase_color_expand',
             'mark_period6_junctions', 'tile2x_diagonal_8s', 'decode_block_hole_pattern',
+            'ring_1s_around_5', 'cross_lines_two_cells', 'colparity_5s_to_3s',
+            'mark_cshape_gap', 'rotate_rings_outward', 'draw_8_template_blocks',
+            'recover_missing_tile',
             'scale_diagonal_blocks',
             # Basic transforms
             'identity', 'rotate_90', 'rotate_180', 'rotate_270',
@@ -3618,6 +3960,9 @@ class ProgramSynthesizer:
             'invert_binary_tile_2x2',
             'halves_and_col', 'halves_xor_col', 'halves_xor_row',
             'mark_active_cols_tile_2x2',
+            'fill_down_columns', 'mirror_v_concat', 'fill_between_1s_with_2',
+            'extend_row_period_2x', 'scale_up_3x', 'dominant_color_per_block_no5',
+            'color_swap_3456', 'replace_6_with_2', 'replace_7_with_5', 'swap_colors_5_8',
             'scale_up_by_nz_count', 'scale_up_by_color_count', 'diagonal_expand',
             'bounce_tile_v', 'color_frequency_histogram', 'least_common_nonzero_color',
             'diagonal_rings_from_hole', 'nz_count_to_1d_row',
