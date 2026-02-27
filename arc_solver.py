@@ -6704,6 +6704,125 @@ def extract_hflip_fill(grid, **kw):
     return result
 
 
+def checkerboard_middle_row(grid, **kw):
+    """3bdb4ada: 3-row solid rectangles → middle row alternates color/0."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    result = copy.deepcopy(grid)
+    changed = False
+    visited = set()
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] == 0 or (r, c) in visited:
+                continue
+            color = grid[r][c]
+            group = set()
+            queue = [(r, c)]
+            visited.add((r, c))
+            while queue:
+                cr, cc = queue.pop(0)
+                group.add((cr, cc))
+                for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                    nr, nc = cr+dr, cc+dc
+                    if 0 <= nr < h and 0 <= nc < w and (nr, nc) not in visited and grid[nr][nc] == color:
+                        visited.add((nr, nc))
+                        queue.append((nr, nc))
+            rows = sorted(set(r for r, c in group))
+            cols = sorted(set(c for r, c in group))
+            if len(rows) != 3:
+                continue
+            r0, r1 = rows[0], rows[-1]
+            c0, c1 = cols[0], cols[-1]
+            if (r1 - r0 + 1) * (c1 - c0 + 1) != len(group):
+                continue
+            mid = rows[1]
+            for cc in range(c0, c1+1):
+                if (cc - c0) % 2 == 1:
+                    result[mid][cc] = 0
+            changed = True
+    return result if changed else None
+
+
+def antidiag_from_column(grid, **kw):
+    """3bd67248: Left column of one color → anti-diagonal of 2, bottom row of 4."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    col0_vals = set(grid[r][0] for r in range(h))
+    if len(col0_vals) != 1 or 0 in col0_vals:
+        return None
+    col_color = col0_vals.pop()
+    if not all(grid[r][c] == 0 for r in range(h) for c in range(1, w)):
+        return None
+    result = copy.deepcopy(grid)
+    for i in range(h):
+        c = w - 1 - i
+        if c >= 1:
+            result[i][c] = 2
+    for c in range(1, w):
+        result[h-1][c] = 4
+    return result
+
+
+def closed_1rect_to_3(grid, **kw):
+    """810b9b61: Closed rectangle borders of 1s → change to 3."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    one_cells = set((r, c) for r in range(h) for c in range(w) if grid[r][c] == 1)
+    if len(one_cells) < 4:
+        return None
+    visited = set()
+    result = copy.deepcopy(grid)
+    changed = False
+    for r, c in sorted(one_cells):
+        if (r, c) in visited:
+            continue
+        group = set()
+        queue = [(r, c)]
+        visited.add((r, c))
+        while queue:
+            cr, cc = queue.pop(0)
+            group.add((cr, cc))
+            for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                nr, nc = cr+dr, cc+dc
+                if (nr, nc) in one_cells and (nr, nc) not in visited:
+                    visited.add((nr, nc))
+                    queue.append((nr, nc))
+        rows = [r for r, c in group]
+        cols = [c for r, c in group]
+        r0, r1, c0, c1 = min(rows), max(rows), min(cols), max(cols)
+        border = set()
+        for rr in range(r0, r1+1):
+            border.add((rr, c0)); border.add((rr, c1))
+        for cc in range(c0, c1+1):
+            border.add((r0, cc)); border.add((r1, cc))
+        if group == border and r1 - r0 >= 1 and c1 - c0 >= 1:
+            for rr, cc in group:
+                result[rr][cc] = 3
+            changed = True
+    return result if changed else None
+
+
+def tile_pattern_vertically(grid, **kw):
+    """8eb1be9a: Non-zero row pattern tiles vertically to fill grid."""
+    h, w = len(grid), len(grid[0])
+    non_zero_rows = [r for r in range(h) if any(grid[r][c] != 0 for c in range(w))]
+    if not non_zero_rows or len(non_zero_rows) > h // 2:
+        return None
+    start = non_zero_rows[0]
+    end = non_zero_rows[-1]
+    k = end - start + 1
+    if k != len(non_zero_rows):
+        return None
+    if k < 2 or k > 5:
+        return None
+    pattern = [grid[r][:] for r in range(start, end + 1)]
+    result = [[0]*w for _ in range(h)]
+    for r in range(h):
+        pi = (r - start) % k
+        result[r] = pattern[pi][:]
+    return result
+
+
 OPERATIONS = {
     # Basic transforms
     'identity': identity,
@@ -7049,6 +7168,11 @@ OPERATIONS = {
     'unique_quadrant': unique_quadrant,
     'fill_row_col_by_parity': fill_row_col_by_parity,
     'extract_hflip_fill': extract_hflip_fill,
+    # Batch 9
+    'checkerboard_middle_row': checkerboard_middle_row,
+    'antidiag_from_column': antidiag_from_column,
+    'closed_1rect_to_3': closed_1rect_to_3,
+    'tile_pattern_vertically': tile_pattern_vertically,
 }
 
 INVERSE_TRANSFORMS = {
@@ -7394,6 +7518,9 @@ class ProgramSynthesizer:
             'extract_swap_border_fill', 'rotate_concentric_rings_out',
             'unique_quadrant', 'fill_row_col_by_parity',
             'extract_hflip_fill',
+            # Batch 9
+            'checkerboard_middle_row', 'antidiag_from_column',
+            'closed_1rect_to_3', 'tile_pattern_vertically',
             # Objects
             'extract_largest_object', 'extract_smallest_object', 'count_objects',
             'remove_small_objects', 'keep_n_largest_objects',
