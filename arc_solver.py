@@ -5361,6 +5361,244 @@ def extend_1_away_2_toward_separator(grid, **kw):
     return result
 
 
+def col_2_bottom_half_to_8(grid, **kw):
+    """ce9e57f2: Columns of 2s; bottom floor(height/2) cells become 8."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    colors = set(c for row in grid for c in row) - {0}
+    if colors != {2}:
+        return None
+    result = copy.deepcopy(grid)
+    for c in range(w):
+        col_cells = [(r, grid[r][c]) for r in range(h) if grid[r][c] == 2]
+        if not col_cells:
+            continue
+        height = len(col_cells)
+        n8 = height // 2
+        for i in range(height - n8, height):
+            r = col_cells[i][0]
+            result[r][c] = 8
+    return result
+
+
+def stamp_pattern_at_5(grid, **kw):
+    """88a10436: Copy multi-color pattern centered on single 5 cell."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    fives = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == 5]
+    if len(fives) != 1:
+        return None
+    pattern_cells = [(r, c, grid[r][c]) for r in range(h) for c in range(w) if grid[r][c] not in (0, 5)]
+    if len(pattern_cells) < 2:
+        return None
+    colors = set(v for _, _, v in pattern_cells)
+    if len(colors) < 2:
+        return None
+    pr = [r for r, c, v in pattern_cells]
+    pc = [c for r, c, v in pattern_cells]
+    min_r, max_r = min(pr), max(pr)
+    min_c, max_c = min(pc), max(pc)
+    center_r = (min_r + max_r) / 2.0
+    center_c = (min_c + max_c) / 2.0
+    fr, fc = fives[0]
+    dr = fr - center_r
+    dc = fc - center_c
+    result = copy.deepcopy(grid)
+    result[fr][fc] = 0
+    for r, c, v in pattern_cells:
+        nr = round(r + dr)
+        nc = round(c + dc)
+        if 0 <= nr < h and 0 <= nc < w:
+            result[nr][nc] = v
+    return result
+
+
+def replace_8_with_template(grid, **kw):
+    """321b1fc6: Find colored template shape + 8-copies. Replace 8s with template colors, remove template."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    template_cells = [(r, c, grid[r][c]) for r in range(h) for c in range(w) if grid[r][c] not in (0, 8)]
+    eight_cells = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == 8]
+    if not template_cells or not eight_cells:
+        return None
+    if len(set(v for _, _, v in template_cells)) < 2:
+        return None
+    tr = [r for r, c, v in template_cells]
+    tc = [c for r, c, v in template_cells]
+    t_min_r, t_min_c = min(tr), min(tc)
+    rel_pattern = {}
+    for r, c, v in template_cells:
+        rel_pattern[(r - t_min_r, c - t_min_c)] = v
+    visited = [[False]*w for _ in range(h)]
+    groups = []
+    for r, c in eight_cells:
+        if visited[r][c]:
+            continue
+        group = []
+        queue = [(r, c)]
+        visited[r][c] = True
+        while queue:
+            cr, cc = queue.pop(0)
+            group.append((cr, cc))
+            for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                nr, nc = cr+dr, cc+dc
+                if 0 <= nr < h and 0 <= nc < w and not visited[nr][nc] and grid[nr][nc] == 8:
+                    visited[nr][nc] = True
+                    queue.append((nr, nc))
+        groups.append(group)
+    result = copy.deepcopy(grid)
+    for r, c, v in template_cells:
+        result[r][c] = 0
+    for group in groups:
+        gr = [r for r, c in group]
+        gc = [c for r, c in group]
+        g_min_r, g_min_c = min(gr), min(gc)
+        for r, c in group:
+            key = (r - g_min_r, c - g_min_c)
+            if key in rel_pattern:
+                result[r][c] = rel_pattern[key]
+    return result
+
+
+def replace_5_block_with_template(grid, **kw):
+    """e76a88a6: Find colored template + 5-blocks of same size. Replace 5-blocks with template, keep template."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    template_cells = [(r, c, grid[r][c]) for r in range(h) for c in range(w) if grid[r][c] not in (0, 5)]
+    five_cells = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == 5]
+    if not template_cells or not five_cells:
+        return None
+    if len(set(v for _, _, v in template_cells)) < 2:
+        return None
+    tr = [r for r, c, v in template_cells]
+    tc = [c for r, c, v in template_cells]
+    t_min_r, t_max_r = min(tr), max(tr)
+    t_min_c, t_max_c = min(tc), max(tc)
+    th = t_max_r - t_min_r + 1
+    tw = t_max_c - t_min_c + 1
+    template = [[0]*tw for _ in range(th)]
+    for r, c, v in template_cells:
+        template[r - t_min_r][c - t_min_c] = v
+    visited = [[False]*w for _ in range(h)]
+    groups = []
+    for r, c in five_cells:
+        if visited[r][c]:
+            continue
+        group = []
+        queue = [(r, c)]
+        visited[r][c] = True
+        while queue:
+            cr, cc = queue.pop(0)
+            group.append((cr, cc))
+            for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                nr, nc = cr+dr, cc+dc
+                if 0 <= nr < h and 0 <= nc < w and not visited[nr][nc] and grid[nr][nc] == 5:
+                    visited[nr][nc] = True
+                    queue.append((nr, nc))
+        groups.append(group)
+    result = copy.deepcopy(grid)
+    for group in groups:
+        gr = [r for r, c in group]
+        gc = [c for r, c in group]
+        g_min_r, g_min_c = min(gr), min(gc)
+        g_h = max(gr) - g_min_r + 1
+        g_w = max(gc) - g_min_c + 1
+        if g_h != th or g_w != tw:
+            continue
+        for dr in range(th):
+            for dc in range(tw):
+                if template[dr][dc] != 0:
+                    result[g_min_r + dr][g_min_c + dc] = template[dr][dc]
+    return result
+
+
+def reflect_across_2_line(grid, **kw):
+    """2bcee788: Reflect shape across 2-line boundary. Background becomes 3."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    two_cells = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == 2]
+    shape_cells = [(r, c, grid[r][c]) for r in range(h) for c in range(w) if grid[r][c] not in (0, 2)]
+    if not two_cells or not shape_cells:
+        return None
+    shape_color = shape_cells[0][2]
+    if not all(v == shape_color for _, _, v in shape_cells):
+        return None
+    sr = [r for r, c, v in shape_cells]
+    sc = [c for r, c, v in shape_cells]
+    s_min_r, s_max_r = min(sr), max(sr)
+    s_min_c, s_max_c = min(sc), max(sc)
+    tr = [r for r, c in two_cells]
+    tc = [c for r, c in two_cells]
+    t_min_r, t_max_r = min(tr), max(tr)
+    t_min_c, t_max_c = min(tc), max(tc)
+    result = [[3]*w for _ in range(h)]
+    for r, c, v in shape_cells:
+        result[r][c] = v
+    vertical = (t_min_c == t_max_c)
+    horizontal = (t_min_r == t_max_r)
+    if vertical:
+        tc_val = t_min_c
+        if s_max_c < tc_val:
+            axis = tc_val - 0.5
+        else:
+            axis = tc_val + 0.5
+        for r, c, v in shape_cells:
+            nc = round(2 * axis - c)
+            if 0 <= nc < w:
+                result[r][nc] = v
+        for r, c in two_cells:
+            result[r][c] = shape_color
+    elif horizontal:
+        tr_val = t_min_r
+        if s_max_r < tr_val:
+            axis = tr_val - 0.5
+        else:
+            axis = tr_val + 0.5
+        for r, c, v in shape_cells:
+            nr = round(2 * axis - r)
+            if 0 <= nr < h:
+                result[nr][c] = v
+        for r, c in two_cells:
+            result[r][c] = shape_color
+    else:
+        return None
+    return result
+
+
+def extend_2_cols_with_5_deflect(grid, **kw):
+    """d9f24cd1: Bottom row 2-columns extend up. 5s deflect column to col+1."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    bottom = grid[h-1]
+    col_starts = [c for c in range(w) if bottom[c] == 2]
+    if not col_starts:
+        return None
+    fives = {(r, c) for r in range(h) for c in range(w) if grid[r][c] == 5}
+    if not fives:
+        return None
+    non_zero = set(v for row in grid for v in row) - {0}
+    if non_zero != {2, 5}:
+        return None
+    result = copy.deepcopy(grid)
+    def process_column(col, start_row):
+        five_row = None
+        for r in range(start_row, -1, -1):
+            if (r, col) in fives:
+                five_row = r
+                break
+        if five_row is not None:
+            for r in range(five_row + 1, start_row + 1):
+                result[r][col] = 2
+            if col + 1 < w:
+                process_column(col + 1, five_row + 1)
+        else:
+            for r in range(0, start_row + 1):
+                result[r][col] = 2
+    for c in col_starts:
+        process_column(c, h - 2)
+    return result
+
+
 OPERATIONS = {
     # Basic transforms
     'identity': identity,
@@ -5665,6 +5903,13 @@ OPERATIONS = {
     'color_5_groups_by_length_142': color_5_groups_by_length_142,
     'two_dots_frame': two_dots_frame,
     'extend_1_away_2_toward_separator': extend_1_away_2_toward_separator,
+    # Batch 3 2026-02-27
+    'col_2_bottom_half_to_8': col_2_bottom_half_to_8,
+    'stamp_pattern_at_5': stamp_pattern_at_5,
+    'replace_8_with_template': replace_8_with_template,
+    'replace_5_block_with_template': replace_5_block_with_template,
+    'reflect_across_2_line': reflect_across_2_line,
+    'extend_2_cols_with_5_deflect': extend_2_cols_with_5_deflect,
 }
 
 INVERSE_TRANSFORMS = {
@@ -5985,6 +6230,10 @@ class ProgramSynthesizer:
             'cross_halo_1_2786', 'fill_rect_gap_extend',
             'color_5_groups_by_length_142', 'two_dots_frame',
             'extend_1_away_2_toward_separator',
+            # Batch 3 2026-02-27
+            'col_2_bottom_half_to_8', 'stamp_pattern_at_5',
+            'replace_8_with_template', 'replace_5_block_with_template',
+            'reflect_across_2_line', 'extend_2_cols_with_5_deflect',
             # Objects
             'extract_largest_object', 'extract_smallest_object', 'count_objects',
             'remove_small_objects', 'keep_n_largest_objects',
