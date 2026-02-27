@@ -5753,6 +5753,245 @@ def color_5_blocks_by_nearest_row0_dot(grid, **kw):
     return result
 
 
+def fill_max_dot_section(grid, **kw):
+    """29623171: 5-line grid → 3x3 sections. Fill section(s) with max dot count."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    # Find horizontal and vertical 5-lines
+    hlines = [r for r in range(h) if all(grid[r][c] == 5 for c in range(w))]
+    vlines = [c for c in range(w) if all(grid[r][c] == 5 for r in range(h))]
+    if len(hlines) != 2 or len(vlines) != 2:
+        return None
+    row_ranges = [(0, hlines[0]-1), (hlines[0]+1, hlines[1]-1), (hlines[1]+1, h-1)]
+    col_ranges = [(0, vlines[0]-1), (vlines[0]+1, vlines[1]-1), (vlines[1]+1, w-1)]
+    # Count colored dots per section
+    sections = []
+    for ri, (r0, r1) in enumerate(row_ranges):
+        for ci, (c0, c1) in enumerate(col_ranges):
+            count = 0
+            color = 0
+            for r in range(r0, r1+1):
+                for c in range(c0, c1+1):
+                    if grid[r][c] != 0 and grid[r][c] != 5:
+                        count += 1
+                        color = grid[r][c]
+            sections.append((ri, ci, r0, r1, c0, c1, count, color))
+    max_count = max(s[6] for s in sections)
+    if max_count == 0:
+        return None
+    result = copy.deepcopy(grid)
+    for ri, ci, r0, r1, c0, c1, count, color in sections:
+        if count == max_count:
+            for r in range(r0, r1+1):
+                for c in range(c0, c1+1):
+                    result[r][c] = color
+        else:
+            for r in range(r0, r1+1):
+                for c in range(c0, c1+1):
+                    result[r][c] = 0
+    return result
+
+
+def l_path_4_from_8_to_2(grid, **kw):
+    """d4a91cb9: L-path of 4s from 8 to 2. Vertical in 8's col, then horizontal in 2's row."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    pos8 = pos2 = None
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] == 8:
+                if pos8 is not None: return None
+                pos8 = (r, c)
+            elif grid[r][c] == 2:
+                if pos2 is not None: return None
+                pos2 = (r, c)
+            elif grid[r][c] != 0:
+                return None
+    if pos8 is None or pos2 is None:
+        return None
+    r1, c1 = pos8  # 8 position
+    r2, c2 = pos2  # 2 position
+    result = copy.deepcopy(grid)
+    # Vertical segment in 8's column from 8 toward 2's row
+    dr = 1 if r2 > r1 else -1
+    r = r1 + dr
+    while r != r2:
+        result[r][c1] = 4
+        r += dr
+    result[r2][c1] = 4  # corner
+    # Horizontal segment in 2's row from 8's col toward 2's col
+    dc = 1 if c2 > c1 else -1
+    c = c1 + dc
+    while c != c2:
+        result[r2][c] = 4
+        c += dc
+    return result
+
+
+def fill_square_5frame_interior(grid, **kw):
+    """44d8ac46: 5-frames with square interior of 0s → fill with 2."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    five_cells = set((r, c) for r in range(h) for c in range(w) if grid[r][c] == 5)
+    if len(five_cells) < 8:
+        return None
+    visited = set()
+    frames = []
+    for r, c in five_cells:
+        if (r, c) in visited:
+            continue
+        group = []
+        queue = [(r, c)]
+        visited.add((r, c))
+        while queue:
+            cr, cc = queue.pop(0)
+            group.append((cr, cc))
+            for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                nr, nc = cr+dr, cc+dc
+                if (nr, nc) in five_cells and (nr, nc) not in visited:
+                    visited.add((nr, nc))
+                    queue.append((nr, nc))
+        frames.append(group)
+    has_interior = False
+    result = copy.deepcopy(grid)
+    for group in frames:
+        rows = [r for r, c in group]
+        cols = [c for r, c in group]
+        r0, r1 = min(rows), max(rows)
+        c0, c1 = min(cols), max(cols)
+        # Find interior 0-cells
+        interior = []
+        for r in range(r0+1, r1):
+            for c in range(c0+1, c1):
+                if grid[r][c] == 0:
+                    interior.append((r, c))
+        if not interior:
+            continue
+        has_interior = True
+        ir = [r for r, c in interior]
+        ic = [c for r, c in interior]
+        ih = max(ir) - min(ir) + 1
+        iw = max(ic) - min(ic) + 1
+        if ih != iw:
+            continue
+        if len(interior) != ih * iw:
+            continue
+        for r, c in interior:
+            result[r][c] = 2
+    return result if has_interior else None
+
+
+def complete_shifted_checkerboard(grid, **kw):
+    """caa06a1f: Checkerboard with fill region → complete shifted pattern."""
+    h, w = len(grid), len(grid[0])
+    fill_color = grid[h-1][w-1]
+    # Extract non-fill row prefixes
+    row_prefixes = []
+    for r in range(h):
+        prefix = []
+        for c in range(w):
+            if grid[r][c] == fill_color:
+                break
+            prefix.append(grid[r][c])
+        if not prefix:
+            break
+        row_prefixes.append(prefix)
+    if len(row_prefixes) < 2:
+        return None
+    # Detect column period from row 0
+    p0 = row_prefixes[0]
+    col_period = None
+    for p in range(2, len(p0)+1):
+        if all(p0[i] == p0[i % p] for i in range(len(p0))):
+            col_period = p
+            break
+    if col_period is None:
+        return None
+    # Detect row period
+    row_period = None
+    for rp in range(1, len(row_prefixes)+1):
+        match = True
+        for r in range(len(row_prefixes)):
+            for c in range(min(len(row_prefixes[r]), len(row_prefixes[r % rp]))):
+                if row_prefixes[r][c] != row_prefixes[r % rp][c]:
+                    match = False
+                    break
+            if not match:
+                break
+        if match:
+            row_period = rp
+            break
+    if row_period is None:
+        return None
+    # Build tile
+    tile = []
+    for r in range(row_period):
+        tile.append(row_prefixes[r][:col_period])
+    # Shift tile by 1 column
+    shifted = []
+    for r in range(row_period):
+        shifted.append([tile[r][(c+1) % col_period] for c in range(col_period)])
+    # Generate output
+    result = []
+    for r in range(h):
+        row = [shifted[r % row_period][c % col_period] for c in range(w)]
+        result.append(row)
+    return result
+
+
+def slide_2_to_8_block(grid, **kw):
+    """05f2a901: Slide 2-shape toward 8-block until adjacent."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    twos = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == 2]
+    eights = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == 8]
+    if not twos or not eights:
+        return None
+    # Check only 2s and 8s exist (plus 0s)
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] not in (0, 2, 8):
+                return None
+    t_r0 = min(r for r, c in twos)
+    t_r1 = max(r for r, c in twos)
+    t_c0 = min(c for r, c in twos)
+    t_c1 = max(c for r, c in twos)
+    e_r0 = min(r for r, c in eights)
+    e_r1 = max(r for r, c in eights)
+    e_c0 = min(c for r, c in eights)
+    e_c1 = max(c for r, c in eights)
+    # Determine overlap
+    row_overlap = t_r0 <= e_r1 and e_r0 <= t_r1
+    col_overlap = t_c0 <= e_c1 and e_c0 <= t_c1
+    if row_overlap == col_overlap:
+        return None  # Need exactly one dimension overlapping
+    dr, dc = 0, 0
+    if col_overlap:
+        # Slide vertically
+        if t_r1 < e_r0:
+            dr = (e_r0 - 1) - t_r1
+        else:
+            dr = (e_r1 + 1) - t_r0
+    else:
+        # Slide horizontally
+        if t_c1 < e_c0:
+            dc = (e_c0 - 1) - t_c1
+        else:
+            dc = (e_c1 + 1) - t_c0
+    result = copy.deepcopy(grid)
+    # Clear old 2 positions
+    for r, c in twos:
+        result[r][c] = 0
+    # Place at new positions
+    for r, c in twos:
+        nr, nc = r + dr, c + dc
+        if 0 <= nr < h and 0 <= nc < w:
+            result[nr][nc] = 2
+        else:
+            return None
+    return result
+
+
 OPERATIONS = {
     # Basic transforms
     'identity': identity,
@@ -6069,6 +6308,12 @@ OPERATIONS = {
     'dots_line_to_3_block': dots_line_to_3_block,
     'nearest_border_color_for_3': nearest_border_color_for_3,
     'color_5_blocks_by_nearest_row0_dot': color_5_blocks_by_nearest_row0_dot,
+    # Batch 5 2026-02-27
+    'fill_max_dot_section': fill_max_dot_section,
+    'l_path_4_from_8_to_2': l_path_4_from_8_to_2,
+    'fill_square_5frame_interior': fill_square_5frame_interior,
+    'complete_shifted_checkerboard': complete_shifted_checkerboard,
+    'slide_2_to_8_block': slide_2_to_8_block,
 }
 
 INVERSE_TRANSFORMS = {
@@ -6396,6 +6641,10 @@ class ProgramSynthesizer:
             # Batch 4 2026-02-27
             'unique_color_3x3_frame', 'dots_line_to_3_block',
             'nearest_border_color_for_3', 'color_5_blocks_by_nearest_row0_dot',
+            # Batch 5 2026-02-27
+            'fill_max_dot_section', 'l_path_4_from_8_to_2',
+            'fill_square_5frame_interior', 'complete_shifted_checkerboard',
+            'slide_2_to_8_block',
             # Objects
             'extract_largest_object', 'extract_smallest_object', 'count_objects',
             'remove_small_objects', 'keep_n_largest_objects',
