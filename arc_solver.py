@@ -6823,6 +6823,192 @@ def tile_pattern_vertically(grid, **kw):
     return result
 
 
+def extend_0_through_section(grid, **kw):
+    """855e0971: 0-dot in uniform-color section → extends as line through section."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    # Try horizontal sections first
+    row_colors = []
+    for r in range(h):
+        vals = set(grid[r][c] for c in range(w))
+        vals.discard(0)
+        row_colors.append(vals.pop() if len(vals) == 1 else None)
+    sections = []
+    i = 0
+    while i < h:
+        if row_colors[i] is not None:
+            color = row_colors[i]
+            start = i
+            while i < h and row_colors[i] == color:
+                i += 1
+            sections.append(('h', start, i-1, color))
+        else:
+            i += 1
+    if len(sections) >= 2:
+        result = copy.deepcopy(grid)
+        changed = False
+        for orient, s, e, color in sections:
+            for r in range(s, e+1):
+                for c in range(w):
+                    if grid[r][c] == 0:
+                        for rr in range(s, e+1):
+                            result[rr][c] = 0
+                        changed = True
+        if changed:
+            return result
+    # Try vertical sections
+    col_colors = []
+    for c in range(w):
+        vals = set(grid[r][c] for r in range(h))
+        vals.discard(0)
+        col_colors.append(vals.pop() if len(vals) == 1 else None)
+    sections = []
+    i = 0
+    while i < w:
+        if col_colors[i] is not None:
+            color = col_colors[i]
+            start = i
+            while i < w and col_colors[i] == color:
+                i += 1
+            sections.append(('v', start, i-1, color))
+        else:
+            i += 1
+    if len(sections) >= 2:
+        result = copy.deepcopy(grid)
+        changed = False
+        for orient, s, e, color in sections:
+            for c in range(s, e+1):
+                for r in range(h):
+                    if grid[r][c] == 0:
+                        for cc in range(s, e+1):
+                            result[r][cc] = 0
+                        changed = True
+        if changed:
+            return result
+    return None
+
+
+def enclosed_by_8_to_3(grid, **kw):
+    """32597951: Non-8 cells inside bounding box of 8-cells → change to 3."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    eights = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == 8]
+    if len(eights) < 3:
+        return None
+    r_min = min(r for r, c in eights)
+    r_max = max(r for r, c in eights)
+    c_min = min(c for r, c in eights)
+    c_max = max(c for r, c in eights)
+    if r_max - r_min < 2 or c_max - c_min < 2:
+        return None
+    result = copy.deepcopy(grid)
+    changed = False
+    for r in range(r_min, r_max + 1):
+        for c in range(c_min, c_max + 1):
+            if grid[r][c] != 8:
+                result[r][c] = 3
+                changed = True
+    return result if changed else None
+
+
+def stray_dots_to_lines(grid, **kw):
+    """1a07d186: Stray dots move adjacent to their matching-color line."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    # Find horizontal lines (full rows of one color)
+    h_lines = {}  # color -> row
+    for r in range(h):
+        vals = set(grid[r])
+        vals.discard(0)
+        if len(vals) == 1:
+            c = vals.pop()
+            if all(grid[r][cc] == c for cc in range(w)):
+                h_lines[c] = r
+    # Find vertical lines (full cols of one color)
+    v_lines = {}  # color -> col
+    for c in range(w):
+        vals = set(grid[r][c] for r in range(h))
+        vals.discard(0)
+        if len(vals) == 1:
+            clr = vals.pop()
+            if all(grid[rr][c] == clr for rr in range(h)):
+                v_lines[clr] = c
+    line_colors = set(h_lines.keys()) | set(v_lines.keys())
+    if not line_colors:
+        return None
+    # Find stray dots (non-0, not on a line)
+    h_line_rows = set(h_lines.values())
+    v_line_cols = set(v_lines.values())
+    strays = []
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] != 0 and r not in h_line_rows and c not in v_line_cols:
+                strays.append((r, c, grid[r][c]))
+    if not strays:
+        return None
+    result = copy.deepcopy(grid)
+    for r, c, clr in strays:
+        result[r][c] = 0
+    for r, c, clr in strays:
+        if clr not in line_colors:
+            continue
+        if clr in h_lines:
+            lr = h_lines[clr]
+            nr = lr - 1 if r < lr else lr + 1
+            result[nr][c] = clr
+        if clr in v_lines:
+            lc = v_lines[clr]
+            nc = lc - 1 if c < lc else lc + 1
+            result[r][nc] = clr
+    return result
+
+
+def repair_tiled_pattern(grid, **kw):
+    """29ec7d0e: Fill 0-holes in a periodically tiled pattern."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    zero_count = sum(1 for r in range(h) for c in range(w) if grid[r][c] == 0)
+    if zero_count == 0 or zero_count > h * w * 0.3:
+        return None
+    best = None
+    best_score = 0
+    for th in range(2, h):
+        if h % th != 0 and h > th:
+            pass
+        for tw in range(2, w):
+            if w % tw != 0 and w > tw:
+                pass
+            tile = [[None] * tw for _ in range(th)]
+            ok = True
+            for r in range(h):
+                for c in range(w):
+                    tr, tc = r % th, c % tw
+                    v = grid[r][c]
+                    if v != 0:
+                        if tile[tr][tc] is None:
+                            tile[tr][tc] = v
+                        elif tile[tr][tc] != v:
+                            ok = False
+                            break
+                if not ok:
+                    break
+            if not ok:
+                continue
+            if any(tile[r][c] is None for r in range(th) for c in range(tw)):
+                continue
+            score = th * tw
+            if score > best_score:
+                best_score = score
+                best = tile
+    if best is None:
+        return None
+    th, tw = len(best), len(best[0])
+    result = [[best[r % th][c % tw] for c in range(w)] for r in range(h)]
+    if result == [row[:] for row in grid]:
+        return None
+    return result
+
+
 OPERATIONS = {
     # Basic transforms
     'identity': identity,
@@ -7173,6 +7359,11 @@ OPERATIONS = {
     'antidiag_from_column': antidiag_from_column,
     'closed_1rect_to_3': closed_1rect_to_3,
     'tile_pattern_vertically': tile_pattern_vertically,
+    # Batch 10
+    'extend_0_through_section': extend_0_through_section,
+    'enclosed_by_8_to_3': enclosed_by_8_to_3,
+    'stray_dots_to_lines': stray_dots_to_lines,
+    'repair_tiled_pattern': repair_tiled_pattern,
 }
 
 INVERSE_TRANSFORMS = {
@@ -7521,6 +7712,9 @@ class ProgramSynthesizer:
             # Batch 9
             'checkerboard_middle_row', 'antidiag_from_column',
             'closed_1rect_to_3', 'tile_pattern_vertically',
+            # Batch 10
+            'extend_0_through_section', 'enclosed_by_8_to_3',
+            'stray_dots_to_lines', 'repair_tiled_pattern',
             # Objects
             'extract_largest_object', 'extract_smallest_object', 'count_objects',
             'remove_small_objects', 'keep_n_largest_objects',
