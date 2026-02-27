@@ -6473,6 +6473,237 @@ def dot_halo_color_map(grid, **kw):
     return result
 
 
+def fill_solid_rect_interior_8(grid, **kw):
+    """50cb2852: Solid colored rectangles → fill interior 1 cell in with 8."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    visited = set()
+    result = copy.deepcopy(grid)
+    changed = False
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] == 0 or (r, c) in visited:
+                continue
+            color = grid[r][c]
+            group = set()
+            queue = [(r, c)]
+            visited.add((r, c))
+            while queue:
+                cr, cc = queue.pop(0)
+                group.add((cr, cc))
+                for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                    nr, nc = cr+dr, cc+dc
+                    if 0 <= nr < h and 0 <= nc < w and (nr, nc) not in visited and grid[nr][nc] == color:
+                        visited.add((nr, nc))
+                        queue.append((nr, nc))
+            rows = [r for r, c in group]
+            cols = [c for r, c in group]
+            r0, r1, c0, c1 = min(rows), max(rows), min(cols), max(cols)
+            if (r1-r0+1) * (c1-c0+1) != len(group):
+                continue
+            if r1 - r0 < 2 or c1 - c0 < 2:
+                continue
+            for rr in range(r0+1, r1):
+                for cc in range(c0+1, c1):
+                    result[rr][cc] = 8
+            changed = True
+    return result if changed else None
+
+
+def fill_2rect_interior_with_1(grid, **kw):
+    """a5313dff: 2-bordered rectangle → keep border, fill interior 0s with 1."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    two_cells = set((r, c) for r in range(h) for c in range(w) if grid[r][c] == 2)
+    if len(two_cells) < 4:
+        return None
+    visited = set()
+    result = copy.deepcopy(grid)
+    changed = False
+    for r, c in sorted(two_cells):
+        if (r, c) in visited:
+            continue
+        group = set()
+        queue = [(r, c)]
+        visited.add((r, c))
+        while queue:
+            cr, cc = queue.pop(0)
+            group.add((cr, cc))
+            for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                nr, nc = cr+dr, cc+dc
+                if (nr, nc) in two_cells and (nr, nc) not in visited:
+                    visited.add((nr, nc))
+                    queue.append((nr, nc))
+        rows = [r for r, c in group]
+        cols = [c for r, c in group]
+        r0, r1, c0, c1 = min(rows), max(rows), min(cols), max(cols)
+        for rr in range(r0+1, r1):
+            for cc in range(c0+1, c1):
+                if grid[rr][cc] == 0:
+                    result[rr][cc] = 1
+                    changed = True
+    return result if changed else None
+
+
+def extract_swap_border_fill(grid, **kw):
+    """b94a9452: Extract block, swap the two non-zero colors."""
+    h, w = len(grid), len(grid[0])
+    non_zero = [(r, c, grid[r][c]) for r in range(h) for c in range(w) if grid[r][c] != 0]
+    if len(non_zero) < 4:
+        return None
+    rows = [r for r, c, v in non_zero]
+    cols = [c for r, c, v in non_zero]
+    r0, r1, c0, c1 = min(rows), max(rows), min(cols), max(cols)
+    colors = set(v for r, c, v in non_zero)
+    if len(colors) != 2:
+        return None
+    a, b = sorted(colors)
+    oh = r1 - r0 + 1
+    ow = c1 - c0 + 1
+    result = [[0]*ow for _ in range(oh)]
+    for rr in range(r0, r1+1):
+        for cc in range(c0, c1+1):
+            v = grid[rr][cc]
+            if v == a:
+                result[rr-r0][cc-c0] = b
+            elif v == b:
+                result[rr-r0][cc-c0] = a
+            else:
+                result[rr-r0][cc-c0] = v
+    return result
+
+
+def rotate_concentric_rings_out(grid, **kw):
+    """bda2d7a6: Concentric rings → rotate colors outward by 1 step."""
+    h, w = len(grid), len(grid[0])
+    if h != w or h < 2:
+        return None
+    rings = []
+    half = (h + 1) // 2
+    for d in range(half):
+        color = grid[d][d]
+        ok = True
+        for c in range(d, w-d):
+            if grid[d][c] != color or grid[h-1-d][c] != color:
+                ok = False; break
+        if ok:
+            for r in range(d, h-d):
+                if grid[r][d] != color or grid[r][w-1-d] != color:
+                    ok = False; break
+        if not ok:
+            return None
+        rings.append(color)
+    if len(rings) < 2:
+        return None
+    rotated = [rings[-1]] + rings[:-1]
+    result = [[0]*w for _ in range(h)]
+    for d in range(half):
+        color = rotated[d]
+        for c in range(d, w-d):
+            result[d][c] = color
+            result[h-1-d][c] = color
+        for r in range(d, h-d):
+            result[r][d] = color
+            result[r][w-1-d] = color
+    return result
+
+
+def unique_quadrant(grid, **kw):
+    """88a62173: Grid split by 0-line → output the unique quadrant."""
+    h, w = len(grid), len(grid[0])
+    sep_row = None
+    for r in range(h):
+        if all(grid[r][c] == 0 for c in range(w)):
+            sep_row = r; break
+    if sep_row is None:
+        return None
+    top_rows = list(range(sep_row))
+    bot_rows = list(range(sep_row+1, h))
+    if not top_rows or not bot_rows:
+        return None
+    th = len(top_rows)
+    bh = len(bot_rows)
+    if th != bh:
+        return None
+    qh = th
+    # Find column split: for each row, find 0 column
+    # Actually columns may not be split by 0 — maybe rows split by 0
+    # Check if top-left == top-right, etc.
+    # Try column halves
+    sep_col = None
+    for c in range(w):
+        if all(grid[r][c] == 0 for r in range(h)):
+            sep_col = c; break
+    if sep_col is not None:
+        left_cols = list(range(sep_col))
+        right_cols = list(range(sep_col+1, w))
+    else:
+        # No col separator; split in half
+        left_cols = list(range(w//2))
+        right_cols = list(range(w//2, w))
+    qw = len(left_cols)
+    if len(right_cols) != qw:
+        return None
+    quads = []
+    for rs, cs in [(top_rows, left_cols), (top_rows, right_cols),
+                   (bot_rows, left_cols), (bot_rows, right_cols)]:
+        q = [[grid[r][c] for c in cs] for r in rs]
+        quads.append(q)
+    from collections import Counter
+    quad_strs = [str(q) for q in quads]
+    counts = Counter(quad_strs)
+    for i, qs in enumerate(quad_strs):
+        if counts[qs] == 1:
+            return quads[i]
+    return None
+
+
+def fill_row_col_by_parity(grid, **kw):
+    """178fcbfb: Even-colored dots fill columns, odd-colored dots fill rows."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    dots = [(r, c, grid[r][c]) for r in range(h) for c in range(w) if grid[r][c] != 0]
+    if not dots or len(dots) > 6:
+        return None
+    result = [[0]*w for _ in range(h)]
+    # Fill columns first (even colors)
+    for dr, dc, color in dots:
+        if color % 2 == 0:
+            for r in range(h):
+                result[r][dc] = color
+    # Fill rows (odd colors) — overwrite column fills
+    for dr, dc, color in dots:
+        if color % 2 == 1:
+            for c in range(w):
+                result[dr][c] = color
+    return result
+
+
+def extract_hflip_fill(grid, **kw):
+    """7468f01a: Extract bounding box of non-zero cells, flip horizontally, fill 0→dominant."""
+    h, w = len(grid), len(grid[0])
+    non_zero = [(r, c) for r in range(h) for c in range(w) if grid[r][c] != 0]
+    if len(non_zero) < 4:
+        return None
+    rows = [r for r, c in non_zero]
+    cols = [c for r, c in non_zero]
+    r0, r1, c0, c1 = min(rows), max(rows), min(cols), max(cols)
+    block = [[grid[r][c] for c in range(c0, c1+1)] for r in range(r0, r1+1)]
+    from collections import Counter
+    vals = [v for row in block for v in row if v != 0]
+    if not vals:
+        return None
+    dominant = Counter(vals).most_common(1)[0][0]
+    bh = r1 - r0 + 1
+    bw = c1 - c0 + 1
+    result = [[0]*bw for _ in range(bh)]
+    for r in range(bh):
+        for c in range(bw):
+            v = block[r][bw - 1 - c]
+            result[r][c] = v if v != 0 else dominant
+    return result
+
+
 OPERATIONS = {
     # Basic transforms
     'identity': identity,
@@ -6810,6 +7041,14 @@ OPERATIONS = {
     'stamp_template_at_dots': stamp_template_at_dots,
     'extend_bordered_rect_to_8': extend_bordered_rect_to_8,
     'dot_halo_color_map': dot_halo_color_map,
+    # Batch 8
+    'fill_solid_rect_interior_8': fill_solid_rect_interior_8,
+    'fill_2rect_interior_with_1': fill_2rect_interior_with_1,
+    'extract_swap_border_fill': extract_swap_border_fill,
+    'rotate_concentric_rings_out': rotate_concentric_rings_out,
+    'unique_quadrant': unique_quadrant,
+    'fill_row_col_by_parity': fill_row_col_by_parity,
+    'extract_hflip_fill': extract_hflip_fill,
 }
 
 INVERSE_TRANSFORMS = {
@@ -7150,6 +7389,11 @@ class ProgramSynthesizer:
             'project_dots_onto_8block', 'quadrant_dots_to_8block',
             'stamp_template_at_dots', 'extend_bordered_rect_to_8',
             'dot_halo_color_map',
+            # Batch 8
+            'fill_solid_rect_interior_8', 'fill_2rect_interior_with_1',
+            'extract_swap_border_fill', 'rotate_concentric_rings_out',
+            'unique_quadrant', 'fill_row_col_by_parity',
+            'extract_hflip_fill',
             # Objects
             'extract_largest_object', 'extract_smallest_object', 'count_objects',
             'remove_small_objects', 'keep_n_largest_objects',
