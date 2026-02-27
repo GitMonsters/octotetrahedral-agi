@@ -5599,6 +5599,160 @@ def extend_2_cols_with_5_deflect(grid, **kw):
     return result
 
 
+def unique_color_3x3_frame(grid, **kw):
+    """31aa019c: Find color appearing exactly once. Place 3x3 frame of 2s around it, rest=0."""
+    h, w = len(grid), len(grid[0])
+    from collections import Counter
+    color_counts = Counter()
+    color_pos = {}
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] != 0:
+                color_counts[grid[r][c]] += 1
+                color_pos.setdefault(grid[r][c], []).append((r, c))
+    unique_colors = [c for c, cnt in color_counts.items() if cnt == 1]
+    if len(unique_colors) != 1:
+        return None
+    if len(color_counts) < 5:
+        return None
+    uc = unique_colors[0]
+    ur, uc_col = color_pos[uc][0]
+    result = [[0]*w for _ in range(h)]
+    for dr in range(-1, 2):
+        for dc in range(-1, 2):
+            nr, nc = ur + dr, uc_col + dc
+            if 0 <= nr < h and 0 <= nc < w:
+                if dr == 0 and dc == 0:
+                    result[nr][nc] = uc
+                else:
+                    result[nr][nc] = 2
+    return result
+
+
+def dots_line_to_3_block(grid, **kw):
+    """d43fd935: 2x2 block of 3s. Aligned dots draw lines toward block."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    block_cells = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == 3]
+    if len(block_cells) != 4:
+        return None
+    br = [r for r, c in block_cells]
+    bc = [c for r, c in block_cells]
+    min_br, max_br = min(br), max(br)
+    min_bc, max_bc = min(bc), max(bc)
+    if max_br - min_br != 1 or max_bc - min_bc != 1:
+        return None
+    block_rows = set(range(min_br, max_br + 1))
+    block_cols = set(range(min_bc, max_bc + 1))
+    dots = [(r, c, grid[r][c]) for r in range(h) for c in range(w) if grid[r][c] not in (0, 3)]
+    result = copy.deepcopy(grid)
+    for r, c, v in dots:
+        if r in block_rows and c not in block_cols:
+            if c < min_bc:
+                for cc in range(c + 1, min_bc):
+                    result[r][cc] = v
+            elif c > max_bc:
+                for cc in range(max_bc + 1, c):
+                    result[r][cc] = v
+        elif c in block_cols and r not in block_rows:
+            if r < min_br:
+                for rr in range(r + 1, min_br):
+                    result[rr][c] = v
+            elif r > max_br:
+                for rr in range(max_br + 1, r):
+                    result[rr][c] = v
+    return result
+
+
+def nearest_border_color_for_3(grid, **kw):
+    """2204b7a8: Two colored borders (rows or cols). Each 3 → color of nearest border."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    border1_color = border2_color = None
+    border1_pos = border2_pos = None
+    if grid[0][0] != 0 and grid[0][1] != 0 and all(grid[0][c] == grid[0][0] for c in range(w)):
+        border1_color = grid[0][0]
+        border1_pos = ('row', 0)
+    if grid[h-1][0] != 0 and all(grid[h-1][c] == grid[h-1][0] for c in range(w)):
+        c = grid[h-1][0]
+        if c != border1_color:
+            border2_color = c
+            border2_pos = ('row', h-1)
+    if all(grid[r][0] == grid[0][0] for r in range(h)) and grid[0][0] != 0:
+        c = grid[0][0]
+        if border1_color is None:
+            border1_color = c
+            border1_pos = ('col', 0)
+        elif c != border1_color and border2_color is None:
+            border2_color = c
+            border2_pos = ('col', 0)
+    if all(grid[r][w-1] == grid[0][w-1] for r in range(h)) and grid[0][w-1] != 0:
+        c = grid[0][w-1]
+        if border1_color is None:
+            border1_color = c
+            border1_pos = ('col', w-1)
+        elif c != border1_color and border2_color is None:
+            border2_color = c
+            border2_pos = ('col', w-1)
+    if border1_color is None or border2_color is None:
+        return None
+    threes = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == 3]
+    if not threes:
+        return None
+    result = copy.deepcopy(grid)
+    for r, c in threes:
+        if border1_pos[0] == 'row':
+            d1 = abs(r - border1_pos[1])
+            d2 = abs(r - border2_pos[1])
+        else:
+            d1 = abs(c - border1_pos[1])
+            d2 = abs(c - border2_pos[1])
+        result[r][c] = border1_color if d1 <= d2 else border2_color
+    return result
+
+
+def color_5_blocks_by_nearest_row0_dot(grid, **kw):
+    """ddf7fa4f: Row 0 has colored dots. Each 5-block → nearest dot's color."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    dots = [(c, grid[0][c]) for c in range(w) if grid[0][c] != 0]
+    if len(dots) < 2:
+        return None
+    five_cells = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == 5]
+    if not five_cells:
+        return None
+    visited = [[False]*w for _ in range(h)]
+    groups = []
+    for r, c in five_cells:
+        if visited[r][c]:
+            continue
+        group = []
+        queue = [(r, c)]
+        visited[r][c] = True
+        while queue:
+            cr, cc = queue.pop(0)
+            group.append((cr, cc))
+            for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                nr, nc = cr+dr, cc+dc
+                if 0 <= nr < h and 0 <= nc < w and not visited[nr][nc] and grid[nr][nc] == 5:
+                    visited[nr][nc] = True
+                    queue.append((nr, nc))
+        groups.append(group)
+    result = copy.deepcopy(grid)
+    for group in groups:
+        min_dist = float('inf')
+        best_color = 0
+        for r, c in group:
+            for dc, dv in dots:
+                d = abs(c - dc)
+                if d < min_dist:
+                    min_dist = d
+                    best_color = dv
+        for r, c in group:
+            result[r][c] = best_color
+    return result
+
+
 OPERATIONS = {
     # Basic transforms
     'identity': identity,
@@ -5910,6 +6064,11 @@ OPERATIONS = {
     'replace_5_block_with_template': replace_5_block_with_template,
     'reflect_across_2_line': reflect_across_2_line,
     'extend_2_cols_with_5_deflect': extend_2_cols_with_5_deflect,
+    # Batch 4 2026-02-27
+    'unique_color_3x3_frame': unique_color_3x3_frame,
+    'dots_line_to_3_block': dots_line_to_3_block,
+    'nearest_border_color_for_3': nearest_border_color_for_3,
+    'color_5_blocks_by_nearest_row0_dot': color_5_blocks_by_nearest_row0_dot,
 }
 
 INVERSE_TRANSFORMS = {
@@ -6234,6 +6393,9 @@ class ProgramSynthesizer:
             'col_2_bottom_half_to_8', 'stamp_pattern_at_5',
             'replace_8_with_template', 'replace_5_block_with_template',
             'reflect_across_2_line', 'extend_2_cols_with_5_deflect',
+            # Batch 4 2026-02-27
+            'unique_color_3x3_frame', 'dots_line_to_3_block',
+            'nearest_border_color_for_3', 'color_5_blocks_by_nearest_row0_dot',
             # Objects
             'extract_largest_object', 'extract_smallest_object', 'count_objects',
             'remove_small_objects', 'keep_n_largest_objects',
