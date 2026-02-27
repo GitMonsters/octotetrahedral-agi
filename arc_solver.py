@@ -5992,6 +5992,231 @@ def slide_2_to_8_block(grid, **kw):
     return result
 
 
+def fill_5frame_by_size(grid, **kw):
+    """c0f76784: 5-frames → fill interior with color = side_length + 5."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    five_cells = set((r, c) for r in range(h) for c in range(w) if grid[r][c] == 5)
+    if len(five_cells) < 4:
+        return None
+    visited = set()
+    frames = []
+    for r, c in five_cells:
+        if (r, c) in visited:
+            continue
+        group = set()
+        queue = [(r, c)]
+        visited.add((r, c))
+        while queue:
+            cr, cc = queue.pop(0)
+            group.add((cr, cc))
+            for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                nr, nc = cr+dr, cc+dc
+                if (nr, nc) in five_cells and (nr, nc) not in visited:
+                    visited.add((nr, nc))
+                    queue.append((nr, nc))
+        frames.append(group)
+    if not frames:
+        return None
+    result = copy.deepcopy(grid)
+    changed = False
+    for group in frames:
+        rows = [r for r, c in group]
+        cols = [c for r, c in group]
+        r0, r1 = min(rows), max(rows)
+        c0, c1 = min(cols), max(cols)
+        interior = []
+        for r in range(r0+1, r1):
+            for c in range(c0+1, c1):
+                if grid[r][c] == 0:
+                    interior.append((r, c))
+        if not interior:
+            continue
+        ir = [r for r, c in interior]
+        ic = [c for r, c in interior]
+        ih = max(ir) - min(ir) + 1
+        iw = max(ic) - min(ic) + 1
+        if ih != iw or len(interior) != ih * iw:
+            continue
+        color = ih + 5
+        for r, c in interior:
+            result[r][c] = color
+        changed = True
+    return result if changed else None
+
+
+def expand_cross_pattern(grid, **kw):
+    """0962bcdd: Cross (center + 4 ring) → expand ring cardinal + center diagonal."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    result = copy.deepcopy(grid)
+    changed = False
+    for r in range(1, h-1):
+        for c in range(1, w-1):
+            center = grid[r][c]
+            if center == 0:
+                continue
+            up, down, left, right = grid[r-1][c], grid[r+1][c], grid[r][c-1], grid[r][c+1]
+            if up == down == left == right and up != 0 and up != center:
+                ring = up
+                # Extend ring cardinal (distance 2)
+                for d in range(1, 3):
+                    for dr, dc in [(-d,0),(d,0),(0,-d),(0,d)]:
+                        nr, nc = r+dr, c+dc
+                        if 0 <= nr < h and 0 <= nc < w and result[nr][nc] == 0:
+                            result[nr][nc] = ring
+                # Place center at diagonals (distance 1 and 2)
+                for d in range(1, 3):
+                    for dr, dc in [(-d,-d),(-d,d),(d,-d),(d,d)]:
+                        nr, nc = r+dr, c+dc
+                        if 0 <= nr < h and 0 <= nc < w and result[nr][nc] == 0:
+                            result[nr][nc] = center
+                changed = True
+    return result if changed else None
+
+
+def replace_5_with_col0(grid, **kw):
+    """c9f8e694: Replace 5-blocks with the color from column 0 at each row."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    has_5 = any(grid[r][c] == 5 for r in range(h) for c in range(w))
+    if not has_5:
+        return None
+    col0_colors = set(grid[r][0] for r in range(h)) - {0}
+    if len(col0_colors) < 2:
+        return None
+    result = copy.deepcopy(grid)
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] == 5:
+                result[r][c] = grid[r][0]
+    return result
+
+
+def reflect_frame_corners_out(grid, **kw):
+    """952a094c: Frame with 4 corner colors → reflect them diagonally outside."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    # Find the frame color: a non-zero color forming a rectangular border
+    from collections import Counter
+    colors = Counter()
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] != 0:
+                colors[grid[r][c]] += 1
+    frame_color = None
+    r0 = r1 = c0 = c1 = 0
+    for color, _ in colors.most_common():
+        cells = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == color]
+        rows = [r for r, c in cells]
+        cols = [c for r, c in cells]
+        mr0, mr1, mc0, mc1 = min(rows), max(rows), min(cols), max(cols)
+        border = set()
+        for rr in range(mr0, mr1+1):
+            border.add((rr, mc0))
+            border.add((rr, mc1))
+        for cc in range(mc0, mc1+1):
+            border.add((mr0, cc))
+            border.add((mr1, cc))
+        if set(cells) == border and len(cells) >= 8:
+            frame_color = color
+            r0, r1, c0, c1 = mr0, mr1, mc0, mc1
+            break
+    if frame_color is None:
+        return None
+    # Find corner colors in interior
+    corners = {}
+    for r in range(r0+1, r1):
+        for c in range(c0+1, c1):
+            if grid[r][c] != 0 and grid[r][c] != frame_color:
+                corners[(r, c)] = grid[r][c]
+    if len(corners) != 4:
+        return None
+    result = copy.deepcopy(grid)
+    for (r, c) in corners:
+        result[r][c] = 0
+    # Map inner corners to outer diagonal positions
+    tl = corners.get((r0+1, c0+1))
+    tr = corners.get((r0+1, c1-1))
+    bl = corners.get((r1-1, c0+1))
+    br = corners.get((r1-1, c1-1))
+    if not all([tl, tr, bl, br]):
+        return None
+    if r1+1 < h and c1+1 < w: result[r1+1][c1+1] = tl
+    if r1+1 < h and c0-1 >= 0: result[r1+1][c0-1] = tr
+    if r0-1 >= 0 and c1+1 < w: result[r0-1][c1+1] = bl
+    if r0-1 >= 0 and c0-1 >= 0: result[r0-1][c0-1] = br
+    return result
+
+
+def fill_8grid_sections_fixed(grid, **kw):
+    """272f95fa: 8-line grid → fill sections with fixed color scheme by position."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    hlines = [r for r in range(h) if all(grid[r][c] == 8 for c in range(w))]
+    vlines = [c for c in range(w) if all(grid[r][c] == 8 for r in range(h))]
+    if len(hlines) != 2 or len(vlines) != 2:
+        return None
+    # Color scheme: position → color
+    # top-mid=2, mid-left=4, mid-mid=6, mid-right=3, bot-mid=1, else=0
+    color_map = {
+        (0,1): 2, (1,0): 4, (1,1): 6, (1,2): 3, (2,1): 1
+    }
+    row_ranges = [(0, hlines[0]-1), (hlines[0]+1, hlines[1]-1), (hlines[1]+1, h-1)]
+    col_ranges = [(0, vlines[0]-1), (vlines[0]+1, vlines[1]-1), (vlines[1]+1, w-1)]
+    result = copy.deepcopy(grid)
+    filled = False
+    for ri, (r0, r1) in enumerate(row_ranges):
+        for ci, (c0, c1) in enumerate(col_ranges):
+            color = color_map.get((ri, ci), 0)
+            if color == 0:
+                continue
+            for r in range(r0, r1+1):
+                for c in range(c0, c1+1):
+                    if grid[r][c] == 0:
+                        result[r][c] = color
+                        filled = True
+    return result if filled else None
+
+
+def reverse_concentric_rings(grid, **kw):
+    """85c4e7cd: Concentric rings → reverse ring order."""
+    h, w = len(grid), len(grid[0])
+    if h != w or h < 2 or h % 2 != 0:
+        return None
+    # Detect concentric rings
+    rings = []
+    half = h // 2
+    for d in range(half):
+        color = grid[d][d]
+        if color == 0:
+            return None
+        # Verify this ring is uniform
+        ok = True
+        for c in range(d, w-d):
+            if grid[d][c] != color or grid[h-1-d][c] != color:
+                ok = False
+                break
+        for r in range(d, h-d):
+            if grid[r][d] != color or grid[r][w-1-d] != color:
+                ok = False
+                break
+        if not ok:
+            return None
+        rings.append(color)
+    reversed_rings = rings[::-1]
+    result = [[0]*w for _ in range(h)]
+    for d in range(half):
+        color = reversed_rings[d]
+        for c in range(d, w-d):
+            result[d][c] = color
+            result[h-1-d][c] = color
+        for r in range(d, h-d):
+            result[r][d] = color
+            result[r][w-1-d] = color
+    return result
+
+
 OPERATIONS = {
     # Basic transforms
     'identity': identity,
@@ -6314,6 +6539,13 @@ OPERATIONS = {
     'fill_square_5frame_interior': fill_square_5frame_interior,
     'complete_shifted_checkerboard': complete_shifted_checkerboard,
     'slide_2_to_8_block': slide_2_to_8_block,
+    # Batch 6 2026-02-27
+    'fill_5frame_by_size': fill_5frame_by_size,
+    'expand_cross_pattern': expand_cross_pattern,
+    'replace_5_with_col0': replace_5_with_col0,
+    'reflect_frame_corners_out': reflect_frame_corners_out,
+    'fill_8grid_sections_fixed': fill_8grid_sections_fixed,
+    'reverse_concentric_rings': reverse_concentric_rings,
 }
 
 INVERSE_TRANSFORMS = {
@@ -6645,6 +6877,10 @@ class ProgramSynthesizer:
             'fill_max_dot_section', 'l_path_4_from_8_to_2',
             'fill_square_5frame_interior', 'complete_shifted_checkerboard',
             'slide_2_to_8_block',
+            # Batch 6 2026-02-27
+            'fill_5frame_by_size', 'expand_cross_pattern',
+            'replace_5_with_col0', 'reflect_frame_corners_out',
+            'fill_8grid_sections_fixed', 'reverse_concentric_rings',
             # Objects
             'extract_largest_object', 'extract_smallest_object', 'count_objects',
             'remove_small_objects', 'keep_n_largest_objects',
