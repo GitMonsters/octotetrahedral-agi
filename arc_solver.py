@@ -4852,6 +4852,515 @@ def extend_blocks_by_unique_colors(grid, **kw):
     return out
 
 
+# ============================================================================
+# Batch 2026-02-27: New task handlers
+# ============================================================================
+
+def mark_3x3_blocks_at_5(grid, **kw):
+    """ce22a75a: 9x9 grid with 5s marking 3x3 block positions. Fill those blocks with 1."""
+    h, w = len(grid), len(grid[0])
+    if h != 9 or w != 9:
+        return None
+    result = [[0]*w for _ in range(h)]
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] == 5:
+                br, bc = (r // 3) * 3, (c // 3) * 3
+                for dr in range(3):
+                    for dc in range(3):
+                        result[br+dr][bc+dc] = 1
+    return result
+
+
+def fill_two_rects_by_size(grid, **kw):
+    """694f12f3: Two solid rectangles of color 4. Fill interior: larger→2, smaller→1."""
+    h, w = len(grid), len(grid[0])
+    colors_present = set(c for row in grid for c in row) - {0}
+    if colors_present != {4}:
+        return None
+    visited = [[False]*w for _ in range(h)]
+    rects = []
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] == 4 and not visited[r][c]:
+                cells = []
+                queue = [(r, c)]
+                visited[r][c] = True
+                while queue:
+                    cr, cc = queue.pop(0)
+                    cells.append((cr, cc))
+                    for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                        nr, nc = cr+dr, cc+dc
+                        if 0 <= nr < h and 0 <= nc < w and not visited[nr][nc] and grid[nr][nc] == 4:
+                            visited[nr][nc] = True
+                            queue.append((nr, nc))
+                rects.append(cells)
+    if len(rects) != 2:
+        return None
+    import copy
+    result = copy.deepcopy(grid)
+    rect_info = []
+    for cells in rects:
+        min_r = min(r for r, c in cells)
+        max_r = max(r for r, c in cells)
+        min_c = min(c for r, c in cells)
+        max_c = max(c for r, c in cells)
+        rect_info.append((cells, min_r, max_r, min_c, max_c, len(cells)))
+    rect_info.sort(key=lambda x: x[5], reverse=True)
+    fill_colors = [2, 1]
+    for idx, (cells, min_r, max_r, min_c, max_c, area) in enumerate(rect_info):
+        fc = fill_colors[idx]
+        for r in range(min_r+1, max_r):
+            for c in range(min_c+1, max_c):
+                if grid[r][c] == 4:
+                    result[r][c] = fc
+    return result
+
+
+def fill_5_rect_interior(grid, **kw):
+    """bb43febb: Solid rectangles of 5s. Fill interior cells with 2."""
+    h, w = len(grid), len(grid[0])
+    colors_present = set(c for row in grid for c in row) - {0}
+    if colors_present != {5}:
+        return None
+    visited = [[False]*w for _ in range(h)]
+    import copy
+    result = copy.deepcopy(grid)
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] == 5 and not visited[r][c]:
+                cells = []
+                queue = [(r, c)]
+                visited[r][c] = True
+                while queue:
+                    cr, cc = queue.pop(0)
+                    cells.append((cr, cc))
+                    for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                        nr, nc = cr+dr, cc+dc
+                        if 0 <= nr < h and 0 <= nc < w and not visited[nr][nc] and grid[nr][nc] == 5:
+                            visited[nr][nc] = True
+                            queue.append((nr, nc))
+                min_r = min(r for r, c in cells)
+                max_r = max(r for r, c in cells)
+                min_c = min(c for r, c in cells)
+                max_c = max(c for r, c in cells)
+                for rr in range(min_r+1, max_r):
+                    for cc in range(min_c+1, max_c):
+                        if grid[rr][cc] == 5:
+                            result[rr][cc] = 2
+    return result
+
+
+def fill_5_rect_concentric(grid, **kw):
+    """b6afb2da: Solid rectangles of 5s → corners=1, border edges=4, interior=2."""
+    h, w = len(grid), len(grid[0])
+    colors_present = set(c for row in grid for c in row) - {0}
+    if colors_present != {5}:
+        return None
+    visited = [[False]*w for _ in range(h)]
+    import copy
+    result = copy.deepcopy(grid)
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] == 5 and not visited[r][c]:
+                cells = []
+                queue = [(r, c)]
+                visited[r][c] = True
+                while queue:
+                    cr, cc = queue.pop(0)
+                    cells.append((cr, cc))
+                    for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                        nr, nc = cr+dr, cc+dc
+                        if 0 <= nr < h and 0 <= nc < w and not visited[nr][nc] and grid[nr][nc] == 5:
+                            visited[nr][nc] = True
+                            queue.append((nr, nc))
+                min_r = min(r for r, c in cells)
+                max_r = max(r for r, c in cells)
+                min_c = min(c for r, c in cells)
+                max_c = max(c for r, c in cells)
+                for rr, cc in cells:
+                    is_top = rr == min_r
+                    is_bot = rr == max_r
+                    is_left = cc == min_c
+                    is_right = cc == max_c
+                    is_corner = (is_top or is_bot) and (is_left or is_right)
+                    is_border = is_top or is_bot or is_left or is_right
+                    if is_corner:
+                        result[rr][cc] = 1
+                    elif is_border:
+                        result[rr][cc] = 4
+                    else:
+                        result[rr][cc] = 2
+    return result
+
+
+def hollow_square_to_cross_2(grid, **kw):
+    """6c434453: Find 3x3 hollow squares of 1s, replace with cross of 2s. Other shapes stay."""
+    h, w = len(grid), len(grid[0])
+    import copy
+    result = copy.deepcopy(grid)
+    for r in range(h - 2):
+        for c in range(w - 2):
+            block = [[grid[r+dr][c+dc] for dc in range(3)] for dr in range(3)]
+            if block == [[1,1,1],[1,0,1],[1,1,1]]:
+                result[r][c] = 0; result[r][c+1] = 2; result[r][c+2] = 0
+                result[r+1][c] = 2; result[r+1][c+1] = 2; result[r+1][c+2] = 2
+                result[r+2][c] = 0; result[r+2][c+1] = 2; result[r+2][c+2] = 0
+    return result
+
+
+def tallest_col_1_shortest_col_2(grid, **kw):
+    """a61f2674: Columns of 5s from bottom. Tallest→all 1, shortest→all 2, others removed."""
+    h, w = len(grid), len(grid[0])
+    col_heights = {}
+    for c in range(w):
+        height = sum(1 for r in range(h) if grid[r][c] == 5)
+        if height > 0:
+            col_heights[c] = height
+    if len(col_heights) < 2:
+        return None
+    tallest_col = max(col_heights, key=col_heights.get)
+    shortest_col = min(col_heights, key=col_heights.get)
+    result = [[0]*w for _ in range(h)]
+    for r in range(h):
+        if grid[r][tallest_col] == 5:
+            result[r][tallest_col] = 1
+        if grid[r][shortest_col] == 5:
+            result[r][shortest_col] = 2
+    return result
+
+
+def diamond_halo_at_5(grid, **kw):
+    """b60334d2: Each 5 gets a 3x3 halo: cardinal=1, diagonal=5, center=0."""
+    h, w = len(grid), len(grid[0])
+    fives = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == 5]
+    if not fives:
+        return None
+    result = [[0]*w for _ in range(h)]
+    for r, c in fives:
+        for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+            nr, nc = r+dr, c+dc
+            if 0 <= nr < h and 0 <= nc < w:
+                result[nr][nc] = 1
+        for dr, dc in [(-1,-1),(-1,1),(1,-1),(1,1)]:
+            nr, nc = r+dr, c+dc
+            if 0 <= nr < h and 0 <= nc < w:
+                result[nr][nc] = 5
+    return result
+
+
+def self_tile_3x3_in_9x9(grid, **kw):
+    """8f2ea7aa: 9x9 grid with one 3x3 shape. Self-tile: stamp shape at each NZ cell's block position."""
+    h, w = len(grid), len(grid[0])
+    if h != 9 or w != 9:
+        return None
+    shape = None
+    for br in range(3):
+        for bc in range(3):
+            block = [[grid[br*3+dr][bc*3+dc] for dc in range(3)] for dr in range(3)]
+            if any(cell != 0 for row in block for cell in row):
+                if shape is None:
+                    shape = block
+                else:
+                    return None
+    if shape is None:
+        return None
+    nz_positions = [(r, c) for r in range(3) for c in range(3) if shape[r][c] != 0]
+    result = [[0]*9 for _ in range(9)]
+    for br, bc in nz_positions:
+        for dr in range(3):
+            for dc in range(3):
+                result[br*3+dr][bc*3+dc] = shape[dr][dc]
+    return result
+
+
+def color_shapes_by_uniqueness(grid, **kw):
+    """b230c067: Connected components of 8s. Duplicate shapes→1, unique shape→2."""
+    h, w = len(grid), len(grid[0])
+    colors_present = set(c for row in grid for c in row) - {0}
+    if colors_present != {8}:
+        return None
+    visited = [[False]*w for _ in range(h)]
+    components = []
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] == 8 and not visited[r][c]:
+                cells = []
+                queue = [(r, c)]
+                visited[r][c] = True
+                while queue:
+                    cr, cc = queue.pop(0)
+                    cells.append((cr, cc))
+                    for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                        nr, nc = cr+dr, cc+dc
+                        if 0 <= nr < h and 0 <= nc < w and not visited[nr][nc] and grid[nr][nc] == 8:
+                            visited[nr][nc] = True
+                            queue.append((nr, nc))
+                components.append(cells)
+    if len(components) < 2:
+        return None
+    def normalize(cells):
+        min_r = min(r for r, c in cells)
+        min_c = min(c for r, c in cells)
+        return tuple(sorted((r - min_r, c - min_c) for r, c in cells))
+    shapes = [normalize(comp) for comp in components]
+    shape_counts = Counter(shapes)
+    import copy
+    result = copy.deepcopy(grid)
+    for i, comp in enumerate(components):
+        color = 1 if shape_counts[shapes[i]] > 1 else 2
+        for r, c in comp:
+            result[r][c] = color
+    return result
+
+
+def color_5_groups_by_size(grid, **kw):
+    """6e82a1ae: Connected components of 5s recolored by size: largest→1, middle→2, smallest→3."""
+    h, w = len(grid), len(grid[0])
+    colors_present = set(c for row in grid for c in row) - {0}
+    if colors_present != {5}:
+        return None
+    visited = [[False]*w for _ in range(h)]
+    components = []
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] == 5 and not visited[r][c]:
+                cells = []
+                queue = [(r, c)]
+                visited[r][c] = True
+                while queue:
+                    cr, cc = queue.pop(0)
+                    cells.append((cr, cc))
+                    for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                        nr, nc = cr+dr, cc+dc
+                        if 0 <= nr < h and 0 <= nc < w and not visited[nr][nc] and grid[nr][nc] == 5:
+                            visited[nr][nc] = True
+                            queue.append((nr, nc))
+                components.append(cells)
+    if not components:
+        return None
+    sizes = sorted(set(len(c) for c in components), reverse=True)
+    size_to_color = {s: i+1 for i, s in enumerate(sizes)}
+    import copy
+    result = copy.deepcopy(grid)
+    for comp in components:
+        color = size_to_color[len(comp)]
+        for r, c in comp:
+            result[r][c] = color
+    return result
+
+
+def fill_grid_diagonal_sections(grid, **kw):
+    """941d9a10: Grid divided by 5-lines into sections. Fill 3 diagonal sections with 1,2,3."""
+    h, w = len(grid), len(grid[0])
+    h_seps = [r for r in range(h) if all(grid[r][c] == 5 for c in range(w))]
+    v_seps = [c for c in range(w) if all(grid[r][c] == 5 for r in range(h))]
+    if not h_seps and not v_seps:
+        return None
+    row_groups = []
+    prev = 0
+    for s in h_seps:
+        if s > prev:
+            row_groups.append((prev, s - 1))
+        prev = s + 1
+    if prev < h:
+        row_groups.append((prev, h - 1))
+    col_groups = []
+    prev = 0
+    for s in v_seps:
+        if s > prev:
+            col_groups.append((prev, s - 1))
+        prev = s + 1
+    if prev < w:
+        col_groups.append((prev, w - 1))
+    nrows = len(row_groups)
+    ncols = len(col_groups)
+    if nrows < 2 or ncols < 2:
+        return None
+    import copy
+    result = copy.deepcopy(grid)
+    diagonal = [(0, 0), (nrows//2, ncols//2), (nrows-1, ncols-1)]
+    for color_idx, (ri, ci) in enumerate(diagonal):
+        color = color_idx + 1
+        r_start, r_end = row_groups[ri]
+        c_start, c_end = col_groups[ci]
+        for r in range(r_start, r_end + 1):
+            for c in range(c_start, c_end + 1):
+                if grid[r][c] != 5:
+                    result[r][c] = color
+    return result
+
+
+def cross_halo_1_2786(grid, **kw):
+    """d364b489: Each 1 gets cardinal neighbors: up=2, down=8, left=7, right=6."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    ones = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == 1]
+    if not ones:
+        return None
+    colors_present = set(c for row in grid for c in row) - {0}
+    if colors_present != {1}:
+        return None
+    result = copy.deepcopy(grid)
+    for r, c in ones:
+        if r > 0 and result[r-1][c] == 0: result[r-1][c] = 2
+        if r < h-1 and result[r+1][c] == 0: result[r+1][c] = 8
+        if c > 0 and result[r][c-1] == 0: result[r][c-1] = 7
+        if c < w-1 and result[r][c+1] == 0: result[r][c+1] = 6
+    return result
+
+
+def fill_rect_gap_extend(grid, **kw):
+    """d4f3cd78: Rectangle of 5s with one gap. Fill interior with 8, extend through gap to edge."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    fives = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == 5]
+    if not fives:
+        return None
+    colors_present = set(c for row in grid for c in row) - {0}
+    if colors_present != {5}:
+        return None
+    min_r = min(r for r, c in fives)
+    max_r = max(r for r, c in fives)
+    min_c = min(c for r, c in fives)
+    max_c = max(c for r, c in fives)
+    border_cells = set()
+    for r in range(min_r, max_r + 1):
+        for c in range(min_c, max_c + 1):
+            if r == min_r or r == max_r or c == min_c or c == max_c:
+                border_cells.add((r, c))
+    five_set = set(fives)
+    gaps = [cell for cell in border_cells if cell not in five_set]
+    if len(gaps) != 1:
+        return None
+    gap_r, gap_c = gaps[0]
+    result = copy.deepcopy(grid)
+    for r in range(min_r + 1, max_r):
+        for c in range(min_c + 1, max_c):
+            result[r][c] = 8
+    result[gap_r][gap_c] = 8
+    if gap_r == min_r:
+        for r in range(0, min_r):
+            result[r][gap_c] = 8
+    elif gap_r == max_r:
+        for r in range(max_r + 1, h):
+            result[r][gap_c] = 8
+    elif gap_c == min_c:
+        for c in range(0, min_c):
+            result[gap_r][c] = 8
+    elif gap_c == max_c:
+        for c in range(max_c + 1, w):
+            result[gap_r][c] = 8
+    return result
+
+
+def color_5_groups_by_length_142(grid, **kw):
+    """ea32f347: Three groups of 5s colored by length: longest→1, second→4, shortest→2."""
+    h, w = len(grid), len(grid[0])
+    visited = [[False]*w for _ in range(h)]
+    components = []
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] == 5 and not visited[r][c]:
+                cells = []
+                queue = [(r, c)]
+                visited[r][c] = True
+                while queue:
+                    cr, cc = queue.pop(0)
+                    cells.append((cr, cc))
+                    for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                        nr, nc = cr+dr, cc+dc
+                        if 0 <= nr < h and 0 <= nc < w and not visited[nr][nc] and grid[nr][nc] == 5:
+                            visited[nr][nc] = True
+                            queue.append((nr, nc))
+                components.append(cells)
+    if len(components) != 3:
+        return None
+    components.sort(key=len, reverse=True)
+    color_map = [1, 4, 2]
+    import copy
+    result = copy.deepcopy(grid)
+    for i, comp in enumerate(components):
+        for r, c in comp:
+            result[r][c] = color_map[i]
+    return result
+
+
+def two_dots_frame(grid, **kw):
+    """1bfc4729: Two colored dots in 10x10. Draw rectangular frames partitioning the grid."""
+    h, w = len(grid), len(grid[0])
+    dots = [(r, c, grid[r][c]) for r in range(h) for c in range(w) if grid[r][c] != 0]
+    if len(dots) != 2:
+        return None
+    dots.sort(key=lambda x: x[0])
+    r1, c1, col1 = dots[0]
+    r2, c2, col2 = dots[1]
+    if col1 == col2:
+        return None
+    mid = (r1 + r2) // 2
+    result = [[0]*w for _ in range(h)]
+    for r in range(0, mid + 1):
+        if r == 0 or r == r1:
+            for c in range(w):
+                result[r][c] = col1
+        else:
+            result[r][0] = col1
+            result[r][w-1] = col1
+    for r in range(mid + 1, h):
+        if r == r2 or r == h - 1:
+            for c in range(w):
+                result[r][c] = col2
+        else:
+            result[r][0] = col2
+            result[r][w-1] = col2
+    return result
+
+
+def extend_1_away_2_toward_separator(grid, **kw):
+    """8d510a79: Grid with horizontal 5-separator. 1s extend away, 2s extend toward separator."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    sep_row = None
+    for r in range(h):
+        if all(grid[r][c] == 5 for c in range(w)):
+            sep_row = r
+            break
+    if sep_row is None:
+        return None
+    result = copy.deepcopy(grid)
+    for r in range(h):
+        if r == sep_row:
+            continue
+        for c in range(w):
+            if grid[r][c] == 1:
+                if r < sep_row:
+                    for nr in range(r - 1, -1, -1):
+                        if grid[nr][c] == 0:
+                            result[nr][c] = 1
+                        else:
+                            break
+                else:
+                    for nr in range(r + 1, h):
+                        if grid[nr][c] == 0:
+                            result[nr][c] = 1
+                        else:
+                            break
+            elif grid[r][c] == 2:
+                if r < sep_row:
+                    for nr in range(r + 1, sep_row):
+                        if grid[nr][c] == 0:
+                            result[nr][c] = 2
+                        else:
+                            break
+                else:
+                    for nr in range(r - 1, sep_row, -1):
+                        if grid[nr][c] == 0:
+                            result[nr][c] = 2
+                        else:
+                            break
+    return result
+
+
 OPERATIONS = {
     # Basic transforms
     'identity': identity,
@@ -5138,6 +5647,24 @@ OPERATIONS = {
     'region_with_most_markers': region_with_most_markers,
     'extend_2x2_by_color_diagonal': extend_2x2_by_color_diagonal,
     'extend_blocks_by_unique_colors': extend_blocks_by_unique_colors,
+    # Batch 2026-02-27
+    'mark_3x3_blocks_at_5': mark_3x3_blocks_at_5,
+    'fill_two_rects_by_size': fill_two_rects_by_size,
+    'fill_5_rect_interior': fill_5_rect_interior,
+    'fill_5_rect_concentric': fill_5_rect_concentric,
+    'hollow_square_to_cross_2': hollow_square_to_cross_2,
+    'tallest_col_1_shortest_col_2': tallest_col_1_shortest_col_2,
+    'diamond_halo_at_5': diamond_halo_at_5,
+    'self_tile_3x3_in_9x9': self_tile_3x3_in_9x9,
+    'color_shapes_by_uniqueness': color_shapes_by_uniqueness,
+    'color_5_groups_by_size': color_5_groups_by_size,
+    'fill_grid_diagonal_sections': fill_grid_diagonal_sections,
+    # Batch 2 2026-02-27
+    'cross_halo_1_2786': cross_halo_1_2786,
+    'fill_rect_gap_extend': fill_rect_gap_extend,
+    'color_5_groups_by_length_142': color_5_groups_by_length_142,
+    'two_dots_frame': two_dots_frame,
+    'extend_1_away_2_toward_separator': extend_1_away_2_toward_separator,
 }
 
 INVERSE_TRANSFORMS = {
@@ -5447,6 +5974,17 @@ class ProgramSynthesizer:
             'draw_l_path_pairs', 'count_2x2_blocks_color1',
             'region_with_most_markers', 'extend_2x2_by_color_diagonal',
             'extend_blocks_by_unique_colors',
+            # Batch 2026-02-27
+            'mark_3x3_blocks_at_5', 'fill_two_rects_by_size',
+            'fill_5_rect_interior', 'fill_5_rect_concentric',
+            'hollow_square_to_cross_2', 'tallest_col_1_shortest_col_2',
+            'diamond_halo_at_5', 'self_tile_3x3_in_9x9',
+            'color_shapes_by_uniqueness', 'color_5_groups_by_size',
+            'fill_grid_diagonal_sections',
+            # Batch 2 2026-02-27
+            'cross_halo_1_2786', 'fill_rect_gap_extend',
+            'color_5_groups_by_length_142', 'two_dots_frame',
+            'extend_1_away_2_toward_separator',
             # Objects
             'extract_largest_object', 'extract_smallest_object', 'count_objects',
             'remove_small_objects', 'keep_n_largest_objects',
