@@ -6217,6 +6217,262 @@ def reverse_concentric_rings(grid, **kw):
     return result
 
 
+def rect_2_interior_to_3(grid, **kw):
+    """d5d6de2d: 2-bordered rectangles → remove border, fill interior with 3."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    two_cells = set((r, c) for r in range(h) for c in range(w) if grid[r][c] == 2)
+    if not two_cells:
+        return None
+    visited = set()
+    result = copy.deepcopy(grid)
+    changed = False
+    for r, c in sorted(two_cells):
+        if (r, c) in visited:
+            continue
+        group = set()
+        queue = [(r, c)]
+        visited.add((r, c))
+        while queue:
+            cr, cc = queue.pop(0)
+            group.add((cr, cc))
+            for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                nr, nc = cr+dr, cc+dc
+                if (nr, nc) in two_cells and (nr, nc) not in visited:
+                    visited.add((nr, nc))
+                    queue.append((nr, nc))
+        rows = [r for r, c in group]
+        cols = [c for r, c in group]
+        r0, r1, c0, c1 = min(rows), max(rows), min(cols), max(cols)
+        border = set()
+        for rr in range(r0, r1+1):
+            border.add((rr, c0)); border.add((rr, c1))
+        for cc in range(c0, c1+1):
+            border.add((r0, cc)); border.add((r1, cc))
+        if group != border:
+            continue
+        for rr, cc in group:
+            result[rr][cc] = 0
+        for rr in range(r0+1, r1):
+            for cc in range(c0+1, c1):
+                result[rr][cc] = 3
+        changed = True
+    return result if changed else None
+
+
+def fill_1rect_interior_by_parity(grid, **kw):
+    """868de0fa: 1-bordered rectangles → fill interior with 7 (odd side) or 2 (even side)."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    one_cells = set((r, c) for r in range(h) for c in range(w) if grid[r][c] == 1)
+    if len(one_cells) < 4:
+        return None
+    visited = set()
+    result = copy.deepcopy(grid)
+    changed = False
+    for r, c in sorted(one_cells):
+        if (r, c) in visited:
+            continue
+        group = set()
+        queue = [(r, c)]
+        visited.add((r, c))
+        while queue:
+            cr, cc = queue.pop(0)
+            group.add((cr, cc))
+            for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+                nr, nc = cr+dr, cc+dc
+                if (nr, nc) in one_cells and (nr, nc) not in visited:
+                    visited.add((nr, nc))
+                    queue.append((nr, nc))
+        rows = [r for r, c in group]
+        cols = [c for r, c in group]
+        r0, r1, c0, c1 = min(rows), max(rows), min(cols), max(cols)
+        border = set()
+        for rr in range(r0, r1+1):
+            border.add((rr, c0)); border.add((rr, c1))
+        for cc in range(c0, c1+1):
+            border.add((r0, cc)); border.add((r1, cc))
+        if group != border:
+            continue
+        ih = r1 - r0 - 1
+        iw = c1 - c0 - 1
+        if ih <= 0 or iw <= 0:
+            continue
+        fill_color = 7 if (ih % 2 == 1) else 2
+        for rr in range(r0+1, r1):
+            for cc in range(c0+1, c1):
+                result[rr][cc] = fill_color
+        changed = True
+    return result if changed else None
+
+
+def project_dots_onto_8block(grid, **kw):
+    """1f642eb9: Colored dots project onto nearest face of 8-block."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    block = set((r, c) for r in range(h) for c in range(w) if grid[r][c] == 8)
+    if len(block) < 2:
+        return None
+    brows = [r for r, c in block]
+    bcols = [c for r, c in block]
+    br0, br1 = min(brows), max(brows)
+    bc0, bc1 = min(bcols), max(bcols)
+    dots = [(r, c, grid[r][c]) for r in range(h) for c in range(w)
+            if grid[r][c] != 0 and grid[r][c] != 8 and (r, c) not in block]
+    if not dots:
+        return None
+    result = copy.deepcopy(grid)
+    changed = False
+    for dr, dc, color in dots:
+        target = None
+        if bc0 <= dc <= bc1:
+            if dr < br0:
+                target = (br0, dc)
+            elif dr > br1:
+                target = (br1, dc)
+        if br0 <= dr <= br1:
+            if dc < bc0:
+                target = (dr, bc0)
+            elif dc > bc1:
+                target = (dr, bc1)
+        if target and target in block:
+            result[target[0]][target[1]] = color
+            changed = True
+    return result if changed else None
+
+
+def quadrant_dots_to_8block(grid, **kw):
+    """d89b689b: 4 colored dots at quadrant positions → replace 2x2 8-block corners."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    block = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == 8]
+    if len(block) != 4:
+        return None
+    brows = [r for r, c in block]
+    bcols = [c for r, c in block]
+    br0, br1 = min(brows), max(brows)
+    bc0, bc1 = min(bcols), max(bcols)
+    if br1 - br0 != 1 or bc1 - bc0 != 1:
+        return None
+    cr, cc = (br0 + br1) / 2, (bc0 + bc1) / 2
+    dots = [(r, c, grid[r][c]) for r in range(h) for c in range(w)
+            if grid[r][c] != 0 and grid[r][c] != 8]
+    if len(dots) != 4:
+        return None
+    result = [[0]*w for _ in range(h)]
+    for r in range(h):
+        for c in range(w):
+            result[r][c] = 0
+    for dr, dc, color in dots:
+        tr = br0 if dr < cr else br1
+        tc = bc0 if dc < cc else bc1
+        result[tr][tc] = color
+    return result
+
+
+def stamp_template_at_dots(grid, **kw):
+    """363442ee: Stamp 3-row template at 1-dot positions in 3-col sections."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    div_col = None
+    for c in range(w):
+        if all(grid[r][c] == 5 for r in range(h)):
+            div_col = c
+            break
+    if div_col is None:
+        return None
+    th = 3
+    tw = div_col
+    if tw < 1 or tw > 5:
+        return None
+    template = [grid[r][:tw] for r in range(th)]
+    if all(v == 0 for row in template for v in row):
+        return None
+    dots = [(r, c) for r in range(h) for c in range(div_col+1, w) if grid[r][c] == 1]
+    if not dots:
+        return None
+    result = copy.deepcopy(grid)
+    for dr, dc in dots:
+        row_section = (dr // th) * th
+        col_section = dc - ((dc - (div_col + 1)) % tw)
+        for tr in range(th):
+            for tc in range(tw):
+                nr, nc = row_section + tr, col_section + tc
+                if 0 <= nr < h and 0 <= nc < w:
+                    result[nr][nc] = template[tr][tc]
+    return result
+
+
+def extend_bordered_rect_to_8(grid, **kw):
+    """b548a754: Bordered rectangle extends toward 8-dot."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    eight_pos = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == 8]
+    if len(eight_pos) != 1:
+        return None
+    er, ec = eight_pos[0]
+    non_zero = {}
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] != 0 and grid[r][c] != 8:
+                non_zero[(r, c)] = grid[r][c]
+    if len(non_zero) < 8:
+        return None
+    colors = set(non_zero.values())
+    if len(colors) != 2:
+        return None
+    from collections import Counter
+    cc = Counter(non_zero.values())
+    outer_color = cc.most_common(1)[0][0]
+    inner_color = [c for c in colors if c != outer_color][0]
+    outer_cells = [(r, c) for (r, c), v in non_zero.items() if v == outer_color]
+    or0 = min(r for r, c in outer_cells)
+    or1 = max(r for r, c in outer_cells)
+    oc0 = min(c for r, c in outer_cells)
+    oc1 = max(c for r, c in outer_cells)
+    result = copy.deepcopy(grid)
+    result[er][ec] = 0
+    if er < or0:
+        new_r0 = er; new_r1 = or1
+    elif er > or1:
+        new_r0 = or0; new_r1 = er
+    else:
+        new_r0 = or0; new_r1 = or1
+    if ec < oc0:
+        new_c0 = ec; new_c1 = oc1
+    elif ec > oc1:
+        new_c0 = oc0; new_c1 = ec
+    else:
+        new_c0 = oc0; new_c1 = oc1
+    for r in range(or0, or1+1):
+        for c in range(oc0, oc1+1):
+            result[r][c] = 0
+    for r in range(new_r0, new_r1+1):
+        for c in range(new_c0, new_c1+1):
+            if r == new_r0 or r == new_r1 or c == new_c0 or c == new_c1:
+                result[r][c] = outer_color
+            else:
+                result[r][c] = inner_color
+    return result
+
+
+def dot_halo_color_map(grid, **kw):
+    """913fb3ed: Each colored dot gets a 3x3 halo (even→color/2, odd→color*2)."""
+    import copy
+    h, w = len(grid), len(grid[0])
+    dots = [(r, c, grid[r][c]) for r in range(h) for c in range(w) if grid[r][c] != 0]
+    if not dots or len(dots) > 5:
+        return None
+    result = copy.deepcopy(grid)
+    for dr, dc, color in dots:
+        halo = (color // 2) if (color % 2 == 0) else (color * 2)
+        for rr in range(dr-1, dr+2):
+            for cc in range(dc-1, dc+2):
+                if 0 <= rr < h and 0 <= cc < w and result[rr][cc] == 0:
+                    result[rr][cc] = halo
+    return result
+
+
 OPERATIONS = {
     # Basic transforms
     'identity': identity,
@@ -6546,6 +6802,14 @@ OPERATIONS = {
     'reflect_frame_corners_out': reflect_frame_corners_out,
     'fill_8grid_sections_fixed': fill_8grid_sections_fixed,
     'reverse_concentric_rings': reverse_concentric_rings,
+    # Batch 7
+    'rect_2_interior_to_3': rect_2_interior_to_3,
+    'fill_1rect_interior_by_parity': fill_1rect_interior_by_parity,
+    'project_dots_onto_8block': project_dots_onto_8block,
+    'quadrant_dots_to_8block': quadrant_dots_to_8block,
+    'stamp_template_at_dots': stamp_template_at_dots,
+    'extend_bordered_rect_to_8': extend_bordered_rect_to_8,
+    'dot_halo_color_map': dot_halo_color_map,
 }
 
 INVERSE_TRANSFORMS = {
@@ -6881,6 +7145,11 @@ class ProgramSynthesizer:
             'fill_5frame_by_size', 'expand_cross_pattern',
             'replace_5_with_col0', 'reflect_frame_corners_out',
             'fill_8grid_sections_fixed', 'reverse_concentric_rings',
+            # Batch 7
+            'rect_2_interior_to_3', 'fill_1rect_interior_by_parity',
+            'project_dots_onto_8block', 'quadrant_dots_to_8block',
+            'stamp_template_at_dots', 'extend_bordered_rect_to_8',
+            'dot_halo_color_map',
             # Objects
             'extract_largest_object', 'extract_smallest_object', 'count_objects',
             'remove_small_objects', 'keep_n_largest_objects',
