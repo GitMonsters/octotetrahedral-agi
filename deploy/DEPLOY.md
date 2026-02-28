@@ -34,35 +34,54 @@
 - For 7B MoE: **1× GPU** is sufficient
 - For 70B MoE: **4-8× GPUs** (XL config)
 - OS: Ubuntu 22.04 (NVIDIA drivers pre-installed)
+- **Firewall**: Allow port 443 (HTTPS) + 22 (SSH from your IP). Block 8000.
 
-### 2. Deploy
+### 2. DNS Setup
+
+Point `api.transcendplexity.ai` to your VM's public IP:
+- IONOS Domains → `transcendplexity.ai` → DNS → Add A Record:
+  - Host: `api`
+  - Points to: `<your VM IP>`
+  - TTL: 3600
+
+### 3. Deploy
 
 SSH into your VM and run:
 
 ```bash
-# One-liner setup
-curl -sSL https://raw.githubusercontent.com/GitMonsters/octotetrahedral-agi/main/deploy/ionos_setup.sh | bash
-
-# Or with a specific model config
-MODEL_CONFIG=70b bash deploy/ionos_setup.sh
+# Full deploy with TLS + API auth
+DOMAIN=api.transcendplexity.ai \
+OCTO_API_KEYS=your-secret-key-here \
+MODEL_CONFIG=7b \
+bash <(curl -sSL https://raw.githubusercontent.com/GitMonsters/octotetrahedral-agi/main/deploy/ionos_setup.sh)
 ```
 
-### 3. Test
+### 4. Test
 
 ```bash
 # Health check
-curl http://<your-ip>:8000/health
+curl https://api.transcendplexity.ai/health
 
 # Model info
-curl http://<your-ip>:8000/info
+curl https://api.transcendplexity.ai/info
 
 # Generate text
-curl -X POST http://<your-ip>:8000/generate \
+curl -X POST https://api.transcendplexity.ai/generate \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your-secret-key-here" \
   -d '{"prompt": "The OctoTetrahedral architecture", "max_tokens": 100}'
 
+# Streaming
+curl -N -X POST https://api.transcendplexity.ai/generate/stream \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-secret-key-here" \
+  -d '{"prompt": "Hello", "max_tokens": 50}'
+
+# Metrics (internal only)
+curl http://localhost:8000/metrics
+
 # Interactive docs
-open http://<your-ip>:8000/docs
+open https://api.transcendplexity.ai/docs
 ```
 
 ## Model Configs
@@ -111,20 +130,34 @@ pip install tensorrt-llm
 ## Files
 
 ```
-serve.py                  — FastAPI inference server
+serve.py                  — FastAPI inference server (auth + metrics)
+train_arc_moe.py          — ARC training pipeline (real + synthetic data)
+eval_arc_moe.py           — ARC-AGI benchmark evaluation
+train_distributed.py      — FSDP distributed training
 deploy/
   Dockerfile.gpu          — NVIDIA GPU container image
-  ionos_setup.sh          — One-click IONOS VM provisioner
+  ionos_setup.sh          — One-click IONOS VM provisioner (nginx + TLS)
+  nginx.conf              — Reverse proxy with rate limiting
   DEPLOY.md               — This file
 configs/
   octo_7b_moe.py          — 7B MoE config (single GPU)
   octo_70b_moe.py         — 70B MoE config (multi-GPU)
   octo_1_72t.py           — 1.72T MoE config (multi-node)
-train_distributed.py      — FSDP distributed training
 ```
+
+## Domain
+
+Primary API domain: `api.transcendplexity.ai`
+
+Available domains:
+- transcendplexity.ai (expires 11/2027) — primary
+- transcendplexity.com/.org/.io/.tech/.info/.store (expire 11/2026)
 
 ## Security Notes
 
-- Add a reverse proxy (nginx/caddy) with TLS for production
-- Restrict port 8000 to your IP in IONOS firewall rules
+- TLS is auto-configured via Let's Encrypt when `DOMAIN` is set
+- API keys required when `OCTO_API_KEYS` env var is set (comma-separated for multiple keys)
+- nginx rate limits at 10 req/s per IP (burst 20)
+- `/metrics` endpoint restricted to localhost only
+- Restrict port 8000 in IONOS firewall — only expose 443 (HTTPS) + 22 (SSH)
 - Set `NVIDIA_API_KEY` as environment variable, not in code
