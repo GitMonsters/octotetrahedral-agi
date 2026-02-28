@@ -61,7 +61,8 @@ class Trainer:
         config: Config,
         train_dataloader,
         val_dataloader=None,
-        device: str = None
+        device: str = None,
+        gradient_checkpointing: bool = False,
     ):
         self.model = model
         self.config = config
@@ -71,6 +72,10 @@ class Trainer:
         # Device
         self.device = device or config.device
         self.model.to(self.device)
+        
+        # Enable gradient checkpointing for memory efficiency with large models
+        if gradient_checkpointing:
+            self._enable_gradient_checkpointing()
         
         # Optimizer
         self.optimizer = self._create_optimizer()
@@ -90,6 +95,29 @@ class Trainer:
         # Checkpointing
         self.checkpoint_dir = Path("checkpoints")
         self.checkpoint_dir.mkdir(exist_ok=True)
+
+    def _enable_gradient_checkpointing(self):
+        """Enable gradient checkpointing on transformer layers for memory savings.
+        
+        Note: With MoE, gradient checkpointing wraps only the attention sub-block
+        since MoE routing is non-deterministic and incompatible with recomputation.
+        For MoE models, consider using FSDP activation offloading instead.
+        """
+        if self.config.moe.enabled:
+            logger.warning(
+                "Gradient checkpointing with MoE may cause issues due to "
+                "non-deterministic routing. Using standard checkpointing on "
+                "attention blocks only."
+            )
+        from torch.utils.checkpoint import checkpoint
+        for layer in self.model.core.layers:
+            layer._original_forward = layer.forward
+            def make_ckpt_forward(mod):
+                def ckpt_forward(*args, **kwargs):
+                    return checkpoint(mod._original_forward, *args, use_reentrant=False, **kwargs)
+                return ckpt_forward
+            layer.forward = make_ckpt_forward(layer)
+        logger.info(f"Gradient checkpointing enabled on {len(self.model.core.layers)} layers")
     
     def _create_optimizer(self) -> AdamW:
         """Create AdamW optimizer with weight decay"""
@@ -156,6 +184,9 @@ class Trainer:
         
         loss = output['loss']
         
+        # Collect MoE metrics for logging
+        moe_aux_loss = output.get('moe_aux_loss')
+        
         # Backward pass
         loss.backward()
         
@@ -185,7 +216,8 @@ class Trainer:
             'loss': loss.item(),
             'lr': self.scheduler.get_last_lr()[0],
             'confidences': output.get('confidences', {}),
-            'synced': sync_result is not None
+            'synced': sync_result is not None,
+            'moe_aux_loss': moe_aux_loss.item() if moe_aux_loss is not None else None,
         }
     
     @torch.no_grad()
@@ -247,7 +279,13 @@ class Trainer:
         max_steps = max_steps or self.config.training.max_steps
         
         logger.info(f"Starting training for {max_steps} steps")
-        logger.info(f"Model has {self.model.get_num_params():,} parameters")
+        logger.info(f"Model has {self.model.get_num_params():,} total parameters")
+        if self.config.moe.enabled:
+            logger.info(
+                f"MoE: {self.config.moe.num_experts} experts, "
+                f"top-{self.config.moe.top_k} routing, "
+                f"~{self.model.get_active_params():,} active params/token"
+            )
         logger.info(f"Device: {self.device}")
         
         start_time = time.time()
@@ -274,6 +312,11 @@ class Trainer:
                         f"LR: {step_result['lr']:.2e} | "
                         f"Speed: {steps_per_sec:.1f} steps/s"
                     )
+                    
+                    if step_result.get('moe_aux_loss') is not None:
+                        logger.info(
+                            f"  MoE aux loss: {step_result['moe_aux_loss']:.4f}"
+                        )
                     
                     if step_result.get('confidences'):
                         conf = step_result['confidences']
