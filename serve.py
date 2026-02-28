@@ -17,14 +17,16 @@ Usage:
 
 import argparse
 import logging
+import os
 import time
 from contextlib import asynccontextmanager
 from typing import Optional, List
 
 import torch
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Security
 from fastapi.responses import StreamingResponse
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -158,6 +160,36 @@ def detokenize(token_ids: List[int]) -> str:
 # Parse args before creating app so lifespan can use them
 _args = None
 
+# API key auth
+API_KEY_HEADER = APIKeyHeader(name="X-API-Key", auto_error=False)
+_api_keys: set = set()
+
+
+def _load_api_keys():
+    """Load API keys from OCTO_API_KEYS env var (comma-separated)."""
+    keys = os.environ.get("OCTO_API_KEYS", "")
+    if keys:
+        _api_keys.update(k.strip() for k in keys.split(",") if k.strip())
+        logger.info(f"Loaded {len(_api_keys)} API key(s)")
+
+
+async def verify_api_key(api_key: Optional[str] = Security(API_KEY_HEADER)):
+    """Verify API key if auth is enabled."""
+    if not _api_keys:
+        return  # Auth disabled when no keys configured
+    if api_key not in _api_keys:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+
+
+# Simple request metrics
+_metrics = {
+    "requests_total": 0,
+    "requests_generate": 0,
+    "requests_stream": 0,
+    "total_tokens_generated": 0,
+    "total_generation_time_ms": 0.0,
+}
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="OctoTetrahedral Inference Server")
@@ -177,6 +209,7 @@ async def lifespan(app: FastAPI):
     global _args
     if _args is None:
         _args = parse_args()
+    _load_api_keys()
     target_device = _args.device
     if target_device is None:
         target_device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -214,7 +247,7 @@ async def info():
     return ModelInfoResponse(**model_info)
 
 
-@app.post("/generate", response_model=GenerateResponse)
+@app.post("/generate", response_model=GenerateResponse, dependencies=[Security(verify_api_key)])
 async def generate(req: GenerateRequest):
     if model is None:
         raise HTTPException(503, "Model not loaded")
@@ -241,6 +274,11 @@ async def generate(req: GenerateRequest):
     text = detokenize(new_tokens)
     tps = len(new_tokens) / (elapsed_ms / 1000) if elapsed_ms > 0 else 0
 
+    _metrics["requests_total"] += 1
+    _metrics["requests_generate"] += 1
+    _metrics["total_tokens_generated"] += len(new_tokens)
+    _metrics["total_generation_time_ms"] += elapsed_ms
+
     return GenerateResponse(
         text=text,
         tokens_generated=len(new_tokens),
@@ -249,7 +287,7 @@ async def generate(req: GenerateRequest):
     )
 
 
-@app.post("/generate/stream")
+@app.post("/generate/stream", dependencies=[Security(verify_api_key)])
 async def generate_stream(req: GenerateRequest):
     """Stream tokens via Server-Sent Events."""
     if model is None:
@@ -284,7 +322,51 @@ async def generate_stream(req: GenerateRequest):
 
         yield "data: [DONE]\n\n"
 
+    _metrics["requests_total"] += 1
+    _metrics["requests_stream"] += 1
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus-compatible metrics endpoint."""
+    gpu_mem_used = gpu_mem_total = gpu_util = None
+    if torch.cuda.is_available():
+        gpu_mem_used = torch.cuda.memory_allocated() / 1e9
+        gpu_mem_total = torch.cuda.get_device_properties(0).total_mem / 1e9
+
+    avg_latency = 0.0
+    avg_tps = 0.0
+    if _metrics["requests_generate"] > 0:
+        avg_latency = _metrics["total_generation_time_ms"] / _metrics["requests_generate"]
+        if _metrics["total_generation_time_ms"] > 0:
+            avg_tps = _metrics["total_tokens_generated"] / (_metrics["total_generation_time_ms"] / 1000)
+
+    lines = [
+        f'# HELP octo_requests_total Total API requests',
+        f'# TYPE octo_requests_total counter',
+        f'octo_requests_total {_metrics["requests_total"]}',
+        f'octo_requests_generate_total {_metrics["requests_generate"]}',
+        f'octo_requests_stream_total {_metrics["requests_stream"]}',
+        f'# HELP octo_tokens_generated_total Total tokens generated',
+        f'# TYPE octo_tokens_generated_total counter',
+        f'octo_tokens_generated_total {_metrics["total_tokens_generated"]}',
+        f'# HELP octo_avg_latency_ms Average generation latency',
+        f'# TYPE octo_avg_latency_ms gauge',
+        f'octo_avg_latency_ms {avg_latency:.1f}',
+        f'# HELP octo_avg_tokens_per_second Average tokens/second',
+        f'# TYPE octo_avg_tokens_per_second gauge',
+        f'octo_avg_tokens_per_second {avg_tps:.1f}',
+    ]
+    if gpu_mem_used is not None:
+        lines.extend([
+            f'# HELP octo_gpu_memory_used_gb GPU memory used',
+            f'# TYPE octo_gpu_memory_used_gb gauge',
+            f'octo_gpu_memory_used_gb {gpu_mem_used:.2f}',
+            f'octo_gpu_memory_total_gb {gpu_mem_total:.2f}',
+        ])
+    lines.append(f'octo_model_loaded {1 if model is not None else 0}')
+    return "\n".join(lines) + "\n"
 
 
 # ---------------------------------------------------------------------------
