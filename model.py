@@ -118,12 +118,22 @@ class OctoTetrahedralModel(nn.Module):
         )
         
         # === Tetrahedral Core (Main Transformer) ===
+        moe_dict = None
+        if self.config.moe.enabled:
+            moe_dict = {
+                "enabled": True,
+                "num_experts": self.config.moe.num_experts,
+                "top_k": self.config.moe.top_k,
+                "expert_ffn_dim": self.config.moe.expert_ffn_dim,
+                "jitter_noise": self.config.moe.jitter_noise,
+            }
         self.core = TetrahedralCore(
             hidden_dim=self.hidden_dim,
             num_heads=self.num_heads,
             num_layers=self.num_layers,
             ffn_dim=self.config.model.ffn_dim,
-            dropout=self.config.model.dropout
+            dropout=self.config.model.dropout,
+            moe_config=moe_dict,
         )
         
         # === Geometric Physics Layer (Fuller/Lloyd/Morphogenesis/TPMS/QbitNexus/ParallelUniverse) ===
@@ -387,6 +397,7 @@ class OctoTetrahedralModel(nn.Module):
         )
         core_output = core_result['hidden_states']
         reasoning_state = core_result['reasoning_state']
+        moe_aux_loss = core_result.get('aux_loss', torch.tensor(0.0, device=core_output.device))
         # core_output: [batch, seq_len, hidden_dim]
         
         # === 3.5 Geometric Physics Layer (NEW) ===
@@ -506,6 +517,10 @@ class OctoTetrahedralModel(nn.Module):
                 # Add physics-informed losses from GeometricPhysicsLayer
                 if self.use_geometric_physics and physics_loss is not None:
                     loss = loss + physics_loss
+                
+                # Add MoE load-balancing auxiliary loss
+                if self.config.moe.enabled:
+                    loss = loss + self.config.moe.load_balance_weight * moe_aux_loss
         
         # === Build Output ===
         output = {
@@ -514,6 +529,7 @@ class OctoTetrahedralModel(nn.Module):
             'hidden_states': reasoned,
             'reasoning_state': reasoning_state,
             'physics_loss': physics_loss if self.use_geometric_physics else None,
+            'moe_aux_loss': moe_aux_loss if self.config.moe.enabled else None,
             'geometric_physics_info': geometric_physics_info if self.use_geometric_physics else None
         }
         
@@ -640,10 +656,23 @@ class OctoTetrahedralModel(nn.Module):
         return None
     
     def get_num_params(self, trainable_only: bool = False) -> int:
-        """Get parameter count"""
+        """Get total parameter count"""
         if trainable_only:
             return sum(p.numel() for p in self.parameters() if p.requires_grad)
         return sum(p.numel() for p in self.parameters())
+
+    def get_active_params(self) -> int:
+        """Get active parameters per forward pass (accounts for MoE top-k routing)."""
+        if not self.config.moe.enabled:
+            return self.get_num_params()
+        total = self.get_num_params()
+        # Subtract inactive expert params: (E - K) experts × params_per_expert × L layers
+        from core.moe import MoELayer
+        for module in self.modules():
+            if isinstance(module, MoELayer):
+                inactive = module.total_params() - module.active_params()
+                total -= inactive
+        return total
     
     def get_stats(self) -> Dict[str, Any]:
         """Get model statistics"""

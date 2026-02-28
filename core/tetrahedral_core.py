@@ -16,6 +16,7 @@ from typing import Optional, Tuple, Dict, Any
 
 from .tetrahedral_geometry import TetrahedralGeometry
 from .tetrahedral_attention import TetrahedralAttention
+from .moe import MoELayer
 
 
 class FeedForward(nn.Module):
@@ -50,7 +51,7 @@ class TetrahedralTransformerLayer(nn.Module):
     
     Structure:
     1. LayerNorm -> Tetrahedral Attention -> Residual
-    2. LayerNorm -> FFN -> Residual
+    2. LayerNorm -> FFN (dense or MoE) -> Residual
     """
     
     def __init__(
@@ -59,9 +60,11 @@ class TetrahedralTransformerLayer(nn.Module):
         num_heads: int = 8,
         ffn_dim: int = 1024,
         dropout: float = 0.1,
-        use_geometric_bias: bool = True
+        use_geometric_bias: bool = True,
+        moe_config: Optional[Dict[str, Any]] = None,
     ):
         super().__init__()
+        self.use_moe = moe_config is not None and moe_config.get("enabled", False)
         
         # Pre-norm architecture
         self.norm1 = nn.LayerNorm(hidden_dim)
@@ -73,11 +76,21 @@ class TetrahedralTransformerLayer(nn.Module):
         )
         
         self.norm2 = nn.LayerNorm(hidden_dim)
-        self.ffn = FeedForward(
-            hidden_dim=hidden_dim,
-            ffn_dim=ffn_dim,
-            dropout=dropout
-        )
+        if self.use_moe:
+            self.ffn = MoELayer(
+                hidden_dim=hidden_dim,
+                ffn_dim=moe_config.get("expert_ffn_dim", ffn_dim),
+                num_experts=moe_config.get("num_experts", 64),
+                top_k=moe_config.get("top_k", 8),
+                dropout=dropout,
+                jitter_noise=moe_config.get("jitter_noise", 0.01),
+            )
+        else:
+            self.ffn = FeedForward(
+                hidden_dim=hidden_dim,
+                ffn_dim=ffn_dim,
+                dropout=dropout
+            )
         
         self.dropout = nn.Dropout(dropout)
     
@@ -87,7 +100,7 @@ class TetrahedralTransformerLayer(nn.Module):
         geometric_bias: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
         head_gates: Optional[torch.Tensor] = None
-    ) -> torch.Tensor:
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Forward pass through transformer layer.
         
@@ -98,7 +111,7 @@ class TetrahedralTransformerLayer(nn.Module):
             head_gates: Optional head gating from RNA editing
             
         Returns:
-            Output tensor [batch, seq_len, hidden_dim]
+            Tuple of (output tensor, auxiliary MoE loss)
         """
         # Attention block with residual
         residual = x
@@ -114,10 +127,14 @@ class TetrahedralTransformerLayer(nn.Module):
         # FFN block with residual
         residual = x
         x = self.norm2(x)
-        x = self.ffn(x)
+        aux_loss = torch.tensor(0.0, device=x.device)
+        if self.use_moe:
+            x, aux_loss = self.ffn(x)
+        else:
+            x = self.ffn(x)
         x = residual + x
         
-        return x
+        return x, aux_loss
 
 
 class TetrahedralCore(nn.Module):
@@ -139,7 +156,8 @@ class TetrahedralCore(nn.Module):
         ffn_dim: int = 1024,
         dropout: float = 0.1,
         max_seq_len: int = 512,
-        device: str = 'cpu'
+        device: str = 'cpu',
+        moe_config: Optional[Dict[str, Any]] = None,
     ):
         super().__init__()
         
@@ -158,7 +176,8 @@ class TetrahedralCore(nn.Module):
                 num_heads=num_heads,
                 ffn_dim=ffn_dim,
                 dropout=dropout,
-                use_geometric_bias=True
+                use_geometric_bias=True,
+                moe_config=moe_config,
             )
             for _ in range(num_layers)
         ])
@@ -201,15 +220,17 @@ class TetrahedralCore(nn.Module):
         _, _, geometric_bias = self.geometry()
         
         layer_outputs = []
+        total_aux_loss = torch.tensor(0.0, device=x.device)
         
         # Process through transformer layers
         for layer in self.layers:
-            x = layer(
+            x, aux_loss = layer(
                 x,
                 geometric_bias=geometric_bias,
                 attention_mask=attention_mask,
                 head_gates=head_gates
             )
+            total_aux_loss = total_aux_loss + aux_loss
             if return_all_layers:
                 layer_outputs.append(x)
         
@@ -240,6 +261,7 @@ class TetrahedralCore(nn.Module):
         output = {
             'hidden_states': hidden_states,
             'reasoning_state': reasoning_state,
+            'aux_loss': total_aux_loss,
         }
         
         if return_all_layers:

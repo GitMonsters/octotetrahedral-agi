@@ -211,6 +211,17 @@ class GeometricPhysicsConfig:
 
 
 @dataclass
+class MoEConfig:
+    """Mixture-of-Experts configuration for scaled models"""
+    enabled: bool = False  # When False, use standard dense FFN
+    num_experts: int = 64
+    top_k: int = 8
+    expert_ffn_dim: int = 28672  # Per-expert FFN intermediate dim
+    jitter_noise: float = 0.01  # Router exploration noise during training
+    load_balance_weight: float = 0.01  # Auxiliary loss weight
+
+
+@dataclass
 class QuantumCouplingConfig:
     """Configuration for quantum coupling between limbs"""
     # Coupling parameters (z = z³ + 7 → zero-point energy)
@@ -268,6 +279,7 @@ class Config:
     rna_editing: RNAEditingConfig = field(default_factory=RNAEditingConfig)
     limb: LimbConfig = field(default_factory=LimbConfig)
     sync: SyncConfig = field(default_factory=SyncConfig)
+    moe: MoEConfig = field(default_factory=MoEConfig)
     geometric_physics: GeometricPhysicsConfig = field(default_factory=GeometricPhysicsConfig)
     quantum_coupling: QuantumCouplingConfig = field(default_factory=QuantumCouplingConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
@@ -302,6 +314,7 @@ class Config:
             'rna_editing': self.rna_editing.__dict__,
             'limb': self.limb.__dict__,
             'sync': self.sync.__dict__,
+            'moe': self.moe.__dict__,
             'geometric_physics': self.geometric_physics.__dict__,
             'quantum_coupling': self.quantum_coupling.__dict__,
             'training': {**self.training.__dict__, 'betas': self.training.betas},
