@@ -1,0 +1,48 @@
+# OctoTetrahedral AGI — GPU Inference Container
+# Built on NVIDIA NGC PyTorch base for CUDA + cuDNN + NCCL support
+#
+# Build:
+#   docker build -f deploy/Dockerfile.gpu -t octotetrahedral:7b-moe .
+#
+# Run (single GPU):
+#   docker run --gpus all -p 8000:8000 octotetrahedral:7b-moe
+#
+# Run (specific config):
+#   docker run --gpus all -p 8000:8000 octotetrahedral:7b-moe \
+#       python serve.py --config 70b --device cuda:0
+#
+# Run with checkpoint volume:
+#   docker run --gpus all -p 8000:8000 \
+#       -v /path/to/checkpoints:/app/checkpoints \
+#       octotetrahedral:7b-moe \
+#       python serve.py --config 7b --checkpoint checkpoints/best.pt
+
+FROM nvcr.io/nvidia/pytorch:24.12-py3
+
+WORKDIR /app
+
+# Install serving dependencies
+RUN pip install --no-cache-dir \
+    fastapi>=0.104.0 \
+    uvicorn[standard]>=0.24.0 \
+    tiktoken>=0.5.0 \
+    pydantic>=2.0.0
+
+# Copy model code
+COPY config.py model.py serve.py train_distributed.py requirements.txt ./
+COPY core/ core/
+COPY adaptation/ adaptation/
+COPY limbs/ limbs/
+COPY sync/ sync/
+COPY physics/ physics/
+COPY cognition.py ./
+COPY configs/ configs/
+
+# Health check via /health endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+
+EXPOSE 8000
+
+# Default: serve 7B MoE on first available GPU
+CMD ["python", "serve.py", "--config", "7b", "--device", "cuda:0"]
