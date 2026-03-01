@@ -72,13 +72,14 @@ class Trainer:
         
         # Device
         self.device = device or config.device
-        self.model.to(self.device)
         
-        # Mixed precision (AMP)
+        # Mixed precision: cast model to bfloat16 to halve optimizer state memory
         self.mixed_precision = mixed_precision
-        self.scaler = torch.amp.GradScaler('cuda') if mixed_precision else None
         if mixed_precision:
-            logger.info("Mixed precision (bfloat16) training enabled")
+            logger.info("Casting model to bfloat16 for memory-efficient training")
+            self.model = self.model.to(torch.bfloat16)
+        
+        self.model.to(self.device)
         
         # Enable gradient checkpointing for memory efficiency with large models
         if gradient_checkpointing:
@@ -126,27 +127,34 @@ class Trainer:
             layer.forward = make_ckpt_forward(layer)
         logger.info(f"Gradient checkpointing enabled on {len(self.model.core.layers)} layers")
     
-    def _create_optimizer(self) -> AdamW:
-        """Create AdamW optimizer with weight decay"""
+    def _create_optimizer(self):
+        """Create optimizer with weight decay. Uses SGD+momentum in low-memory mode."""
         # Separate parameters for weight decay
         no_decay = ['bias', 'LayerNorm.weight', 'layer_norm.weight']
         
-        optimizer_grouped_parameters = [
-            {
-                'params': [
-                    p for n, p in self.model.named_parameters()
-                    if not any(nd in n for nd in no_decay) and p.requires_grad
-                ],
-                'weight_decay': self.config.training.weight_decay
-            },
-            {
-                'params': [
-                    p for n, p in self.model.named_parameters()
-                    if any(nd in n for nd in no_decay) and p.requires_grad
-                ],
-                'weight_decay': 0.0
-            }
+        decay_params = [
+            p for n, p in self.model.named_parameters()
+            if not any(nd in n for nd in no_decay) and p.requires_grad
         ]
+        no_decay_params = [
+            p for n, p in self.model.named_parameters()
+            if any(nd in n for nd in no_decay) and p.requires_grad
+        ]
+        
+        optimizer_grouped_parameters = [
+            {'params': decay_params, 'weight_decay': self.config.training.weight_decay},
+            {'params': no_decay_params, 'weight_decay': 0.0}
+        ]
+        
+        # Use SGD for large models to save GPU memory (1 state vs 2 per param)
+        if self.mixed_precision:
+            logger.info("Using SGD+momentum optimizer (memory-efficient for large bf16 models)")
+            return torch.optim.SGD(
+                optimizer_grouped_parameters,
+                lr=self.config.training.learning_rate * 10,  # SGD needs higher LR
+                momentum=0.9,
+                nesterov=True,
+            )
         
         return AdamW(
             optimizer_grouped_parameters,
@@ -171,7 +179,7 @@ class Trainer:
         return LambdaLR(self.optimizer, lr_lambda)
     
     def train_step(self, batch: Dict[str, torch.Tensor]) -> Dict[str, float]:
-        """Single training step with optional mixed precision"""
+        """Single training step with optional bfloat16"""
         self.model.train()
         
         # Move batch to device
@@ -181,40 +189,30 @@ class Trainer:
         if attention_mask is not None:
             attention_mask = attention_mask.to(self.device)
         
-        # Forward pass (with optional AMP)
-        amp_ctx = torch.amp.autocast('cuda', dtype=torch.bfloat16) if self.mixed_precision else torch.amp.autocast('cuda', enabled=False)
-        with amp_ctx:
-            output = self.model(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                labels=labels,
-                return_confidences=True
-            )
-            loss = output['loss']
+        # Forward pass
+        output = self.model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            labels=labels,
+            return_confidences=True
+        )
+        loss = output['loss']
         
         # Collect MoE metrics for logging
         moe_aux_loss = output.get('moe_aux_loss')
         
-        # Backward pass (with optional scaler)
-        if self.scaler is not None:
-            self.scaler.scale(loss).backward()
-            if self.config.training.max_grad_norm > 0:
-                self.scaler.unscale_(self.optimizer)
-                torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(),
-                    self.config.training.max_grad_norm
-                )
-            self.scaler.step(self.optimizer)
-            self.scaler.update()
-        else:
-            loss.backward()
-            if self.config.training.max_grad_norm > 0:
-                torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(),
-                    self.config.training.max_grad_norm
-                )
-            self.optimizer.step()
+        # Backward pass
+        loss.backward()
         
+        # Gradient clipping
+        if self.config.training.max_grad_norm > 0:
+            torch.nn.utils.clip_grad_norm_(
+                self.model.parameters(),
+                self.config.training.max_grad_norm
+            )
+        
+        # Optimizer step
+        self.optimizer.step()
         self.scheduler.step()
         self.optimizer.zero_grad()
         
