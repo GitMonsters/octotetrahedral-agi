@@ -63,6 +63,7 @@ class Trainer:
         val_dataloader=None,
         device: str = None,
         gradient_checkpointing: bool = False,
+        mixed_precision: bool = False,
     ):
         self.model = model
         self.config = config
@@ -72,6 +73,12 @@ class Trainer:
         # Device
         self.device = device or config.device
         self.model.to(self.device)
+        
+        # Mixed precision (AMP)
+        self.mixed_precision = mixed_precision
+        self.scaler = torch.amp.GradScaler('cuda') if mixed_precision else None
+        if mixed_precision:
+            logger.info("Mixed precision (bfloat16) training enabled")
         
         # Enable gradient checkpointing for memory efficiency with large models
         if gradient_checkpointing:
@@ -164,7 +171,7 @@ class Trainer:
         return LambdaLR(self.optimizer, lr_lambda)
     
     def train_step(self, batch: Dict[str, torch.Tensor]) -> Dict[str, float]:
-        """Single training step"""
+        """Single training step with optional mixed precision"""
         self.model.train()
         
         # Move batch to device
@@ -174,31 +181,40 @@ class Trainer:
         if attention_mask is not None:
             attention_mask = attention_mask.to(self.device)
         
-        # Forward pass
-        output = self.model(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            labels=labels,
-            return_confidences=True
-        )
-        
-        loss = output['loss']
+        # Forward pass (with optional AMP)
+        amp_ctx = torch.amp.autocast('cuda', dtype=torch.bfloat16) if self.mixed_precision else torch.amp.autocast('cuda', enabled=False)
+        with amp_ctx:
+            output = self.model(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                labels=labels,
+                return_confidences=True
+            )
+            loss = output['loss']
         
         # Collect MoE metrics for logging
         moe_aux_loss = output.get('moe_aux_loss')
         
-        # Backward pass
-        loss.backward()
+        # Backward pass (with optional scaler)
+        if self.scaler is not None:
+            self.scaler.scale(loss).backward()
+            if self.config.training.max_grad_norm > 0:
+                self.scaler.unscale_(self.optimizer)
+                torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(),
+                    self.config.training.max_grad_norm
+                )
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+        else:
+            loss.backward()
+            if self.config.training.max_grad_norm > 0:
+                torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(),
+                    self.config.training.max_grad_norm
+                )
+            self.optimizer.step()
         
-        # Gradient clipping
-        if self.config.training.max_grad_norm > 0:
-            torch.nn.utils.clip_grad_norm_(
-                self.model.parameters(),
-                self.config.training.max_grad_norm
-            )
-        
-        # Optimizer step
-        self.optimizer.step()
         self.scheduler.step()
         self.optimizer.zero_grad()
         

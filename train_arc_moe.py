@@ -270,7 +270,11 @@ def main():
         model.load_state_dict(ckpt['model_state_dict'], strict=False)
 
     # Train
-    trainer = Trainer(model, config, train_dl, val_dl)
+    trainer = Trainer(
+        model, config, train_dl, val_dl,
+        gradient_checkpointing=True,
+        mixed_precision=(args.device.startswith('cuda')),
+    )
 
     Path(args.checkpoint_dir).mkdir(exist_ok=True)
 
