@@ -19,7 +19,7 @@ set -euo pipefail
 
 API="https://cloud.lambdalabs.com/api/v1"
 LAMBDA_API_KEY="${LAMBDA_API_KEY:-}"
-INSTANCE_TYPE="${INSTANCE_TYPE:-gpu_1x_h100_sxm5}"
+INSTANCE_TYPE="${INSTANCE_TYPE:-gpu_1x_gh200}"
 REGION="${REGION:-}"  # auto-select if empty
 DOMAIN="${DOMAIN:-api.transcendplexity.ai}"
 
@@ -93,12 +93,13 @@ if [ -z "$AVAILABLE_REGION" ]; then
     echo "$TYPES" | python3 -c "
 import sys, json
 data = json.load(sys.stdin).get('data', {})
-for name, info in data.items():
+for name, info in sorted(data.items()):
     regions = info.get('regions_with_capacity_available', [])
-    if regions and 'h100' in name.lower():
+    if regions:
         desc = info.get('instance_type', {})
         price = desc.get('price_cents_per_hour', 0) / 100
-        print(f'  Available: {name} at \${price:.2f}/hr in {regions[0][\"name\"]}')
+        avail = ', '.join(r['name'] for r in regions)
+        print(f'  ✅ {name:35s} \${price:.2f}/hr  [{avail}]')
 "
     exit 1
 fi
