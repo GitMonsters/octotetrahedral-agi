@@ -201,20 +201,26 @@ def main():
     from train_distributed import load_config
     from model import OctoTetrahedralModel
 
-    config = load_config(args.config)
+    # Load checkpoint first to detect config
+    logger.info(f"Loading checkpoint from {args.checkpoint}...")
+    ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
+
+    # Determine config: checkpoint may store a string name or a dict
+    config_name = args.config
+    if 'config' in ckpt:
+        saved = ckpt['config']
+        if isinstance(saved, str) and config_name == "default":
+            config_name = saved
+        elif isinstance(saved, dict) and config_name == "default":
+            config_name = saved.get('name', config_name)
+
+    config = load_config(config_name)
     device = args.device or config.device
     config.device = device
 
-    logger.info(f"Loading {args.config} model from {args.checkpoint}...")
-
-    # Use checkpoint's saved config if available
-    ckpt = torch.load(args.checkpoint, map_location="cpu")
-    if 'config' in ckpt and args.config == "default":
-        from config import Config
-        config = Config.from_dict(ckpt['config']) if hasattr(Config, 'from_dict') else config
-        # Rebuild config from saved dict
+    # Apply saved dict overrides if checkpoint stored a config dict
+    if 'config' in ckpt and isinstance(ckpt['config'], dict):
         saved = ckpt['config']
-        config = load_config(args.config)
         if 'model' in saved:
             for k, v in saved['model'].items():
                 if hasattr(config.model, k):
@@ -225,32 +231,57 @@ def main():
                     setattr(config.moe, k, v)
 
     config.device = device
+    logger.info(f"Building {config_name} model...")
     model = OctoTetrahedralModel(config, use_geometric_physics=False)
 
     # Filter state dict to skip size mismatches
     model_state = model.state_dict()
     pretrained = ckpt['model_state_dict']
     filtered = {}
+    skipped = 0
     for k, v in pretrained.items():
         if k in model_state and model_state[k].shape == v.shape:
             filtered[k] = v
         elif k in model_state:
             logger.warning(f"Skipping {k}: shape mismatch {v.shape} vs {model_state[k].shape}")
+            skipped += 1
     model.load_state_dict(filtered, strict=False)
+    logger.info(f"Loaded {len(filtered)}/{len(model_state)} params ({skipped} skipped)")
+
+    # Cast to bf16 if checkpoint was trained in bf16 (saves memory on eval too)
+    if device != "cpu" and any(v.dtype == torch.bfloat16 for v in pretrained.values()):
+        model = model.to(torch.bfloat16)
+        logger.info("Model cast to bfloat16 (matching checkpoint)")
+
     model = model.to(device)
     model.eval()
 
     total = model.get_num_params()
     active = model.get_active_params()
     logger.info(f"Model: {total/1e9:.2f}B total, {active/1e9:.2f}B active")
+    if 'step' in ckpt:
+        logger.info(f"Checkpoint from step {ckpt['step']}"
+                     + (f", val_loss={ckpt['val_loss']:.4f}" if 'val_loss' in ckpt else ""))
 
     tokenizer = tiktoken.get_encoding("cl100k_base")
 
-    # Load ARC tasks
-    arc_dir = Path.home() / "ARC_AMD_TRANSFER" / "data" / "ARC-AGI" / "data"
-    task_dir = arc_dir / args.split
-    if not task_dir.exists():
-        logger.error(f"ARC data not found: {task_dir}")
+    # Load ARC tasks — search multiple locations
+    arc_candidates = [
+        Path.home() / "ARC_AMD_TRANSFER" / "data" / "ARC-AGI" / "data",
+        Path.cwd() / "ARC_AMD_TRANSFER" / "data" / "ARC-AGI" / "data",
+        Path.cwd() / "data" / "ARC-AGI" / "data",
+    ]
+    task_dir = None
+    for arc_dir in arc_candidates:
+        candidate = arc_dir / args.split
+        if candidate.exists():
+            task_dir = candidate
+            break
+
+    if task_dir is None:
+        logger.error(f"ARC {args.split} data not found. Searched:")
+        for c in arc_candidates:
+            logger.error(f"  {c / args.split}")
         return
 
     tasks = {}
