@@ -1,14 +1,13 @@
 #!/bin/bash
 # ================================================================
-# OctoTetrahedral AGI — IONOS GPU VM Setup Script
+# OctoTetrahedral AGI — GPU VM Setup Script
 #
-# Provisions an IONOS H100/H200 Cloud GPU VM for model serving.
-# Run as root on a fresh Ubuntu 22.04/24.04 IONOS GPU VM.
+# Sets up a GPU VM for model training/serving. Cloud-agnostic:
+# works on Lambda Labs, RunPod, IONOS, or any Ubuntu VM with NVIDIA GPU.
+# Run as root on a fresh Ubuntu 22.04/24.04 GPU VM.
 #
 # Usage:
-#   curl -sSL https://raw.githubusercontent.com/.../ionos_setup.sh | bash
-#   # or
-#   scp deploy/ionos_setup.sh root@<ionos-ip>:~ && ssh root@<ionos-ip> bash ionos_setup.sh
+#   scp deploy/ionos_setup.sh root@<ip>:~ && ssh root@<ip> bash ionos_setup.sh
 # ================================================================
 
 set -euo pipefail
@@ -21,7 +20,7 @@ DOMAIN="${DOMAIN:-}"               # Set for TLS: DOMAIN=api.example.com
 OCTO_API_KEYS="${OCTO_API_KEYS:-}" # Comma-separated API keys
 
 echo "============================================"
-echo " OctoTetrahedral AGI — IONOS GPU VM Setup"
+echo " OctoTetrahedral AGI — GPU VM Setup"
 echo " Config: ${MODEL_CONFIG}"
 echo " Domain: ${DOMAIN:-none (HTTP only)}"
 echo "============================================"

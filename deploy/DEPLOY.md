@@ -4,7 +4,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                 IONOS Cloud (EU)                     │
+│            GPU Cloud (Lambda / RunPod / IONOS)       │
 │                                                      │
 │  ┌──────────────────────────────────────────────┐   │
 │  │  H100/H200 GPU VM                            │   │
@@ -25,15 +25,43 @@
 └─────────────────────────────────────────────────────┘
 ```
 
-## Quick Start
+## Quick Start — Choose Your Cloud
 
-### 1. Provision IONOS GPU VM
+### Option A: Lambda Labs (Recommended — $2.49/hr H100, no egress fees)
 
-- Log into [IONOS Cloud Console](https://dcd.ionos.com)
-- Create a **Cloud GPU VM** → choose **H100 80GB** (or H200 141GB)
+```bash
+# 1. Sign up at https://lambda.ai
+# 2. Get API key from https://cloud.lambdalabs.com/api-keys
+export LAMBDA_API_KEY="your-key"
+bash deploy/provision_lambda.sh
+```
+
+### Option B: RunPod ($1.99-2.39/hr H100)
+
+```bash
+# 1. Sign up at https://runpod.io
+# 2. Get API key from Settings → API Keys
+export RUNPOD_API_KEY="your-key"
+bash deploy/provision_runpod.sh
+```
+
+### Option C: IONOS Cloud (EU, H200 available)
+
+> ⚠️ Requires IONOS Cloud Unlimited Access approval.
+
+```bash
+# 1. Get token from DCD → Management → Token Manager
+export IONOS_TOKEN="your-token"
+bash deploy/provision_ionos.sh
+```
+
+### 1. Provision GPU VM
+
+- **Lambda Labs**: 1× H100 SXM 80GB, Ubuntu pre-installed, SSH ready
+- **RunPod**: 1× H100 80GB pod, PyTorch pre-installed
+- **IONOS**: H100/H200 Cloud GPU VM, Ubuntu 22.04
 - For 7B MoE: **1× GPU** is sufficient
-- For 70B MoE: **4-8× GPUs** (XL config)
-- OS: Ubuntu 22.04 (NVIDIA drivers pre-installed)
+- For 70B MoE: **4-8× GPUs**
 - **Firewall**: Allow port 443 (HTTPS) + 22 (SSH from your IP). Block 8000.
 
 ### 2. DNS Setup
@@ -86,11 +114,11 @@ open https://api.transcendplexity.ai/docs
 
 ## Model Configs
 
-| Config | Total Params | Active/Token | IONOS VM | Est. Cost |
-|--------|-------------|-------------|----------|-----------|
-| `7b`   | 6.8B        | 2.6B        | 1× H100 (S) | ~$3/hr |
-| `70b`  | 70.6B       | 22.3B       | 4-8× H100 (XL) | ~$20-40/hr |
-| `1.72t`| 1.72T       | 275B        | Multi-node (not single-server) | Contact IONOS |
+| Config | Total Params | Active/Token | GPU Requirement | Lambda Labs | RunPod |
+|--------|-------------|-------------|-----------------|-------------|--------|
+| `7b`   | 6.8B        | 2.6B        | 1× H100 80GB   | ~$2.49/hr   | ~$1.99/hr |
+| `70b`  | 70.6B       | 22.3B       | 4-8× H100      | ~$10-20/hr  | ~$8-16/hr |
+| `1.72t`| 1.72T       | 275B        | Multi-node cluster | Contact provider | N/A |
 
 ## Using NVIDIA Dev Account
 
@@ -134,9 +162,14 @@ serve.py                  — FastAPI inference server (auth + metrics)
 train_arc_moe.py          — ARC training pipeline (real + synthetic data)
 eval_arc_moe.py           — ARC-AGI benchmark evaluation
 train_distributed.py      — FSDP distributed training
+finetune_targeted.py      — Targeted fine-tuning on weak ARC categories
+nim_export.py             — NVIDIA NIM export + TensorRT optimization
 deploy/
   Dockerfile.gpu          — NVIDIA GPU container image
-  ionos_setup.sh          — One-click IONOS VM provisioner (nginx + TLS)
+  provision_lambda.sh     — Lambda Labs H100 provisioner (recommended)
+  provision_runpod.sh     — RunPod H100 provisioner
+  provision_ionos.sh      — IONOS Cloud GPU provisioner
+  ionos_setup.sh          — One-click VM setup (nginx + TLS, cloud-agnostic)
   nginx.conf              — Reverse proxy with rate limiting
   DEPLOY.md               — This file
 configs/
