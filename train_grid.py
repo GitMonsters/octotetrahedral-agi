@@ -157,6 +157,8 @@ def main():
                         help="Freeze geometry (Fuller synergetics) params to prevent NaN gradients")
     parser.add_argument('--unfreeze-last-n', type=int, default=0,
                         help="Unfreeze last N transformer layers (use with --freeze-backbone to selectively unfreeze)")
+    parser.add_argument('--gradient-checkpointing', action='store_true',
+                        help="Enable gradient checkpointing to reduce memory (trades compute for memory)")
     parser.add_argument('--augment', action='store_true',
                         help="Enable data augmentation (rotations, reflections, color permutations)")
     parser.add_argument('--checkpoint-dir', type=str, default='checkpoints/grid')
@@ -229,6 +231,12 @@ def main():
                 p.requires_grad = False
                 geo_frozen += p.numel()
         logger.info(f"Geometry params frozen: {geo_frozen:,} (NaN source eliminated)")
+
+    # Enable gradient checkpointing
+    if args.gradient_checkpointing:
+        if hasattr(model, 'core') and hasattr(model.core, 'gradient_checkpointing'):
+            model.core.gradient_checkpointing = True
+            logger.info("Gradient checkpointing enabled for core transformer layers")
 
     # Grid prediction head
     grid_head = GridPredictionHead(

@@ -12,6 +12,7 @@ This is the central processing unit that:
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.checkpoint import checkpoint as grad_checkpoint
 from typing import Optional, Tuple, Dict, Any
 
 from .tetrahedral_geometry import TetrahedralGeometry
@@ -191,6 +192,9 @@ class TetrahedralCore(nn.Module):
         
         # Learnable query for extracting reasoning state
         self.reasoning_query = nn.Parameter(torch.randn(1, 1, hidden_dim))
+
+        # Gradient checkpointing flag (set externally to save memory)
+        self.gradient_checkpointing = False
         
     def forward(
         self,
@@ -224,12 +228,18 @@ class TetrahedralCore(nn.Module):
         
         # Process through transformer layers
         for layer in self.layers:
-            x, aux_loss = layer(
-                x,
-                geometric_bias=geometric_bias,
-                attention_mask=attention_mask,
-                head_gates=head_gates
-            )
+            if self.gradient_checkpointing and self.training:
+                x, aux_loss = grad_checkpoint(
+                    layer, x, geometric_bias, attention_mask, head_gates,
+                    use_reentrant=False
+                )
+            else:
+                x, aux_loss = layer(
+                    x,
+                    geometric_bias=geometric_bias,
+                    attention_mask=attention_mask,
+                    head_gates=head_gates
+                )
             total_aux_loss = total_aux_loss + aux_loss
             if return_all_layers:
                 layer_outputs.append(x)
