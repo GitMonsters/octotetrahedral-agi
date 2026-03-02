@@ -420,7 +420,11 @@ class OctoTetrahedralModel(nn.Module):
                 attention_mask=attention_mask,
                 return_components=False
             )
-            core_output = gp_result['output']  # Enhanced by physics principles
+            gp_output = gp_result['output']
+            # Clamp NaN from geometry layers to prevent downstream corruption
+            if torch.isnan(gp_output).any():
+                gp_output = torch.where(torch.isnan(gp_output), core_output, gp_output)
+            core_output = gp_output
             physics_loss = gp_result['physics_loss']
             geometric_physics_info = {
                 'physics_loss': physics_loss,
