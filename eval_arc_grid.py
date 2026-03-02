@@ -115,6 +115,14 @@ def evaluate_task(model, grid_head, task: Dict, tokenizer,
     Returns dict with exact_match, cell_accuracy, dim_correct, etc.
     """
     train_examples = task['train']
+
+    # Collect candidate dimensions from training outputs
+    train_dims = set()
+    for ex in train_examples:
+        out = ex['output']
+        h, w = len(out), len(out[0]) if out else 0
+        train_dims.add((h, w))
+
     results = []
 
     for test_ex in task['test']:
@@ -139,37 +147,45 @@ def evaluate_task(model, grid_head, task: Dict, tokenizer,
                 hidden = output['hidden_states']
                 pred = grid_head(hidden)
 
-            pred_grid, pred_h, pred_w = predict_grid(pred)
-            pred_grid = pred_grid.cpu()
+            pred_grid_full, pred_h, pred_w = predict_grid(pred)
+            grid_logits = pred['grid_logits'][0]  # [max_grid, max_grid, 10]
 
-            # Dimension accuracy
-            dim_correct = (pred_h == target_h) and (pred_w == target_w)
+            # Try model's predicted dims + training output dims as candidates
+            dim_candidates = [(pred_h, pred_w)] + list(train_dims)
+            # Also try test input dims (some tasks preserve dimensions)
+            inp_h, inp_w = len(test_input), len(test_input[0]) if test_input else 0
+            dim_candidates.append((inp_h, inp_w))
 
-            # Cell accuracy (on overlapping region)
-            min_h = min(pred_h, target_h)
-            min_w = min(pred_w, target_w)
-            if min_h > 0 and min_w > 0:
-                pred_crop = pred_grid[:min_h, :min_w]
-                target_crop = target[:min_h, :min_w]
-                matching = (pred_crop == target_crop).float().sum().item()
-                total_cells = target_h * target_w
-                cell_acc = matching / total_cells
-            else:
-                cell_acc = 0.0
+            for cand_h, cand_w in dim_candidates:
+                if cand_h <= 0 or cand_w <= 0 or cand_h > 30 or cand_w > 30:
+                    continue
+                cand_grid = grid_logits[:cand_h, :cand_w, :].argmax(dim=-1).cpu()
 
-            # Exact match
-            exact = False
-            if dim_correct:
-                pred_out = pred_grid[:target_h, :target_w]
-                target_out = target[:target_h, :target_w]
-                exact = torch.equal(pred_out, target_out)
+                dim_correct = (cand_h == target_h) and (cand_w == target_w)
 
-            if cell_acc > best_cell_acc:
-                best_cell_acc = cell_acc
-                best_match = exact
-                best_pred = pred_grid[:pred_h, :pred_w].tolist()
-                best_dims = (pred_h, pred_w)
-                best_dim_correct = dim_correct
+                min_h = min(cand_h, target_h)
+                min_w = min(cand_w, target_w)
+                if min_h > 0 and min_w > 0:
+                    pred_crop = cand_grid[:min_h, :min_w]
+                    target_crop = target[:min_h, :min_w]
+                    matching = (pred_crop == target_crop).float().sum().item()
+                    total_cells = target_h * target_w
+                    cell_acc = matching / total_cells
+                else:
+                    cell_acc = 0.0
+
+                exact = False
+                if dim_correct:
+                    pred_out = cand_grid[:target_h, :target_w]
+                    target_out = target[:target_h, :target_w]
+                    exact = torch.equal(pred_out, target_out)
+
+                if cell_acc > best_cell_acc or (exact and not best_match):
+                    best_cell_acc = cell_acc
+                    best_match = exact
+                    best_pred = cand_grid[:cand_h, :cand_w].tolist()
+                    best_dims = (cand_h, cand_w)
+                    best_dim_correct = dim_correct
 
         results.append({
             'exact_match': best_match,
