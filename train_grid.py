@@ -155,6 +155,8 @@ def main():
                         help="Freeze transformer backbone, only train grid head")
     parser.add_argument('--freeze-geometry', action='store_true',
                         help="Freeze geometry (Fuller synergetics) params to prevent NaN gradients")
+    parser.add_argument('--unfreeze-last-n', type=int, default=0,
+                        help="Unfreeze last N transformer layers (use with --freeze-backbone to selectively unfreeze)")
     parser.add_argument('--augment', action='store_true',
                         help="Enable data augmentation (rotations, reflections, color permutations)")
     parser.add_argument('--checkpoint-dir', type=str, default='checkpoints/grid')
@@ -196,10 +198,34 @@ def main():
             p.requires_grad = False
         logger.info("Backbone frozen — only training grid head")
 
+        # Selectively unfreeze last N layers
+        if args.unfreeze_last_n > 0:
+            unfrozen = 0
+            # Find transformer layer names and unfreeze last N
+            layer_names = set()
+            for name, _ in model.named_parameters():
+                # Match patterns like 'limbs.X.layers.Y' or 'reasoning.layers.Y'
+                parts = name.split('.')
+                for i, p in enumerate(parts):
+                    if p == 'layers' and i + 1 < len(parts) and parts[i+1].isdigit():
+                        layer_names.add('.'.join(parts[:i+2]))
+            sorted_layers = sorted(layer_names)
+            unfreeze_layers = sorted_layers[-args.unfreeze_last_n:]
+            logger.info(f"Selectively unfreezing layers: {unfreeze_layers}")
+            for name, p in model.named_parameters():
+                for ul in unfreeze_layers:
+                    if name.startswith(ul):
+                        # Skip geometry params even in unfrozen layers
+                        if 'geometric_physics' not in name and 'geodesic' not in name:
+                            p.requires_grad = True
+                            unfrozen += p.numel()
+                            break
+            logger.info(f"Unfrozen {unfrozen:,} params in last {args.unfreeze_last_n} layers")
+
     if args.freeze_geometry and not args.freeze_backbone:
         geo_frozen = 0
         for name, p in model.named_parameters():
-            if 'geometric_physics' in name or 'geometry' in name or 'geodesic' in name:
+            if 'geometric_physics' in name or 'geodesic' in name:
                 p.requires_grad = False
                 geo_frozen += p.numel()
         logger.info(f"Geometry params frozen: {geo_frozen:,} (NaN source eliminated)")
@@ -281,14 +307,12 @@ def main():
 
             # Forward through backbone + grid head
             with torch.autocast('cuda', dtype=torch.bfloat16, enabled=use_bf16):
-                if args.freeze_backbone:
+                if args.freeze_backbone and args.unfreeze_last_n == 0:
                     with torch.no_grad():
                         output = model(input_ids=input_ids, attention_mask=attn_mask)
                     hidden = output['hidden_states'].detach()
                 else:
                     output = model(input_ids=input_ids, attention_mask=attn_mask)
-                    # Detach hidden states to break backbone graph when not needed
-                    # Only keep gradient path through hidden_states
                     hidden = output['hidden_states']
                 pred = grid_head(hidden)
                 losses = grid_loss(pred, target_grid, target_h, target_w, grid_mask)
