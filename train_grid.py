@@ -278,9 +278,19 @@ def main():
             if micro_step % grad_accum != 0:
                 continue
 
-            torch.nn.utils.clip_grad_norm_(
-                list(model.parameters()) + list(grid_head.parameters()), 1.0
+            # NaN gradient check — skip step if any NaN
+            all_params = list(model.parameters()) + list(grid_head.parameters())
+            has_nan = any(
+                p.grad is not None and torch.isnan(p.grad).any()
+                for p in all_params
             )
+            if has_nan:
+                logger.warning(f"NaN gradient detected at step {global_step}, skipping")
+                optimizer.zero_grad()
+                micro_step = 0
+                continue
+
+            torch.nn.utils.clip_grad_norm_(all_params, 1.0)
             optimizer.step()
             scheduler.step()
             optimizer.zero_grad()

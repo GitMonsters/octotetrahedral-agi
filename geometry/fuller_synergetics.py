@@ -546,7 +546,12 @@ class GeodesicFrequency(nn.Module):
         
         Non-integer frequencies interpolate between adjacent levels.
         """
-        freq = torch.clamp(self.frequency.float(), 1.0, float(self.max_frequency))
+        raw = self.frequency.float().detach()
+        if torch.isnan(raw) or torch.isinf(raw):
+            with torch.no_grad():
+                self.frequency.fill_(1.0)
+            raw = self.frequency.float().detach()
+        freq = torch.clamp(raw, 1.0, float(self.max_frequency))
         floor_freq = int(torch.floor(freq).clamp(1, self.max_frequency).item())
         ceil_freq = min(floor_freq + 1, self.max_frequency)
         
@@ -968,7 +973,12 @@ class FullerSynergetics(nn.Module):
         
         # Combine all geometric outputs
         combined = sum(weighted_outputs)
+        # Guard against NaN from uninitialized weights
+        if torch.isnan(combined).any():
+            combined = torch.zeros_like(x)
         output = self.output_proj(combined)
+        if torch.isnan(output).any():
+            output = torch.zeros_like(x)
         output = self.norm(output + x)
         
         outputs['combined'] = output
