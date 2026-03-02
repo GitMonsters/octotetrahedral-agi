@@ -120,6 +120,7 @@ def evaluate_model(
     ttt_enabled: bool = False,
     ttt_steps: int = 10,
     ttt_lr: float = 1e-5,
+    gen_mode: str = 'autoregressive',
 ) -> Dict:
     """
     Evaluate model on ARC tasks.
@@ -168,12 +169,20 @@ def evaluate_model(
                 input_ids = torch.tensor([tokens], device=device)
 
                 with torch.no_grad():
-                    generated = model.generate(
-                        input_ids=input_ids,
-                        max_new_tokens=max_gen_tokens,
-                        temperature=max(t, 1e-8),
-                        do_sample=t > 0,
-                    )
+                    if gen_mode == 'diffusion':
+                        generated = model.generate_diffusion(
+                            input_ids=input_ids,
+                            num_tokens=max_gen_tokens,
+                            refine_steps=8,
+                            temperature=max(t, 0.01),
+                        )
+                    else:
+                        generated = model.generate(
+                            input_ids=input_ids,
+                            max_new_tokens=max_gen_tokens,
+                            temperature=max(t, 1e-8),
+                            do_sample=t > 0,
+                        )
 
                 new_tokens = generated[0, len(tokens):].tolist()
                 predicted = tokenizer.decode(new_tokens)
@@ -362,6 +371,8 @@ def main():
     parser.add_argument("--ttt", action="store_true", help="Enable test-time training (fine-tune on each task's train examples)")
     parser.add_argument("--ttt-steps", type=int, default=10, help="TTT gradient steps per task")
     parser.add_argument("--ttt-lr", type=float, default=1e-5, help="TTT learning rate")
+    parser.add_argument("--gen-mode", type=str, default="autoregressive",
+                        choices=["autoregressive", "diffusion"], help="Generation mode")
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--output", type=str, default=None, help="Output JSON path")
     args = parser.parse_args()
@@ -472,6 +483,7 @@ def main():
         ttt_enabled=args.ttt,
         ttt_steps=args.ttt_steps,
         ttt_lr=args.ttt_lr,
+        gen_mode=args.gen_mode,
     )
     elapsed = time.time() - t0
 

@@ -74,7 +74,7 @@ def get_config(name: str):
         return Config()
 
 
-def build_data(tokenizer, max_seq_len: int = 4096):
+def build_data(tokenizer, max_seq_len: int = 4096, curriculum: bool = False):
     """Load ARC-AGI-2 training data (1000 tasks, superset of AGI-1).
     
     IMPORTANT: Only includes samples that have actual target outputs.
@@ -93,9 +93,11 @@ def build_data(tokenizer, max_seq_len: int = 4096):
 
     if (arc_dir / "training").exists():
         arc_train = ARCDataset(data_dir=str(arc_dir), split="training",
-                               tokenizer=tokenizer, max_seq_len=max_seq_len)
+                               tokenizer=tokenizer, max_seq_len=max_seq_len,
+                               curriculum=curriculum)
         datasets.append(arc_train)
-        logger.info(f"ARC training: {len(arc_train)} samples from {arc_dir}")
+        logger.info(f"ARC training: {len(arc_train)} samples from {arc_dir}"
+                     + (" [curriculum: easy→hard]" if curriculum else ""))
 
     # Synthetic data — only if it has test outputs
     for search_dir in [Path.home(), Path.cwd()]:
@@ -149,7 +151,7 @@ def train(args):
     tokenizer = tiktoken.get_encoding("cl100k_base")
 
     # Data
-    train_ds, val_ds, collate_fn = build_data(tokenizer, args.max_seq_len)
+    train_ds, val_ds, collate_fn = build_data(tokenizer, args.max_seq_len, curriculum=args.curriculum)
     train_dl = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True,
                           num_workers=0, collate_fn=lambda b: collate_fn(b), drop_last=True)
     val_dl = None
@@ -382,7 +384,8 @@ if __name__ == "__main__":
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--lr", type=float, default=None)
     parser.add_argument("--warmup-steps", type=int, default=500)
-    parser.add_argument("--grad-accum", type=int, default=4, help="Gradient accumulation steps")
+    parser.add_argument("--grad-accum", type=int, default=8, help="Gradient accumulation steps")
+    parser.add_argument("--curriculum", action="store_true", help="Sort tasks easy→hard (curriculum learning)")
     parser.add_argument("--resume", type=str, default=None)
     parser.add_argument("--checkpoint-dir", default="checkpoints")
     parser.add_argument("--log-interval", type=int, default=50)

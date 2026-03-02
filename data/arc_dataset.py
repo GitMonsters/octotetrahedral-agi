@@ -199,7 +199,8 @@ class ARCDataset(Dataset):
         max_seq_len: int = 512,
         format_type: str = 'compact',  # 'compact' or 'verbose'
         augment: bool = True,
-        seed: int = 42
+        seed: int = 42,
+        curriculum: bool = False,
     ):
         self.data_dir = Path(data_dir)
         self.split = split
@@ -207,10 +208,15 @@ class ARCDataset(Dataset):
         self.max_seq_len = max_seq_len
         self.format_type = format_type
         self.augment = augment
+        self.curriculum = curriculum
         self.rng = random.Random(seed)
         
         # Load all tasks
         self.tasks = self._load_tasks()
+
+        # Curriculum: sort tasks easy→hard (by total grid cells across all examples)
+        if curriculum:
+            self.tasks.sort(key=lambda t: self._task_difficulty(t))
         
         # Create flat list of (task, test_idx) pairs
         self.samples = []
@@ -230,6 +236,20 @@ class ARCDataset(Dataset):
             tasks.append(task)
         
         return tasks
+
+    @staticmethod
+    def _task_difficulty(task: ARCTask) -> int:
+        """Score task difficulty by total grid cells + number of unique colors.
+        Smaller grids with fewer colors = easier."""
+        total_cells = 0
+        colors = set()
+        for ex in task.train_examples:
+            for grid in [ex['input'], ex['output']]:
+                h, w = len(grid), len(grid[0]) if grid else 0
+                total_cells += h * w
+                for row in grid:
+                    colors.update(row)
+        return total_cells + len(colors) * 10
     
     def __len__(self) -> int:
         return len(self.samples)
