@@ -266,8 +266,13 @@ def main():
 
             # Forward through backbone + grid head
             with torch.autocast('cuda', dtype=torch.bfloat16, enabled=use_bf16):
-                output = model(input_ids=input_ids, attention_mask=attn_mask)
-                hidden = output['hidden_states']
+                if args.freeze_backbone:
+                    with torch.no_grad():
+                        output = model(input_ids=input_ids, attention_mask=attn_mask)
+                    hidden = output['hidden_states'].detach()
+                else:
+                    output = model(input_ids=input_ids, attention_mask=attn_mask)
+                    hidden = output['hidden_states']
                 pred = grid_head(hidden)
                 losses = grid_loss(pred, target_grid, target_h, target_w, grid_mask)
                 loss = losses['total'] / grad_accum
