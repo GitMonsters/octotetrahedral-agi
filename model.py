@@ -505,21 +505,20 @@ class OctoTetrahedralModel(nn.Module):
         # === Compute Loss if Labels Provided ===
         loss = None
         if labels is not None:
-            # Shift for causal LM loss
-            shift_logits = logits[..., :-1, :].contiguous()
-            shift_labels = labels[..., 1:].contiguous()
-            
-            # Cross entropy loss
+            # Labels are PRE-SHIFTED by the dataset:
+            #   input_ids = full_tokens[:-1], labels = full_tokens[1:]
+            # So labels[i] is already the next token after input_ids[i].
+            # No additional shift needed — CE(logits[i], labels[i]) is correct.
             loss = F.cross_entropy(
-                shift_logits.view(-1, self.vocab_size),
-                shift_labels.view(-1),
+                logits.view(-1, self.vocab_size),
+                labels.view(-1),
                 ignore_index=-100
             )
             
             # Add information gain bonus (curiosity)
             if self.training:
                 info_gain = self._compute_information_gain(
-                    shift_logits, editing_info
+                    logits, editing_info
                 )
                 loss = loss - self.config.training.information_gain_weight * info_gain
                 

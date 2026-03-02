@@ -76,7 +76,7 @@ class ModelConfig:
     head_dim: int = 32  # hidden_dim // num_heads
     
     # Sequence
-    max_seq_len: int = 512
+    max_seq_len: int = 4096
     
     # Regularization
     dropout: float = 0.1
