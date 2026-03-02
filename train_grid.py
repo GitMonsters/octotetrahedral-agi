@@ -245,6 +245,9 @@ def main():
 
     model.train()
     grid_head.train()
+
+    # Use GradScaler for mixed precision with unfrozen backbone
+    scaler = torch.amp.GradScaler('cuda', enabled=(use_bf16 and not args.freeze_backbone))
     global_step = 0
     running_cell_loss = 0.0
     running_dim_loss = 0.0
@@ -272,6 +275,8 @@ def main():
                     hidden = output['hidden_states'].detach()
                 else:
                     output = model(input_ids=input_ids, attention_mask=attn_mask)
+                    # Detach hidden states to break backbone graph when not needed
+                    # Only keep gradient path through hidden_states
                     hidden = output['hidden_states']
                 pred = grid_head(hidden)
                 losses = grid_loss(pred, target_grid, target_h, target_w, grid_mask)
@@ -284,6 +289,8 @@ def main():
             loss.backward()
             # Free computation graph references immediately
             del output, hidden, pred, losses, loss
+            if device.type == 'cuda' and micro_step % (grad_accum * 2) == 0:
+                torch.cuda.empty_cache()
             micro_step += 1
 
             if micro_step % grad_accum != 0:
