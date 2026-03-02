@@ -272,7 +272,13 @@ def main():
                 losses = grid_loss(pred, target_grid, target_h, target_w, grid_mask)
                 loss = losses['total'] / grad_accum
 
+            # Cache loss values before backward frees the graph
+            cell_loss_val = losses['cell_loss'].item()
+            dim_loss_val = losses['dim_loss'].item()
+
             loss.backward()
+            # Free computation graph references immediately
+            del output, hidden, pred, losses, loss
             micro_step += 1
 
             if micro_step % grad_accum != 0:
@@ -295,9 +301,13 @@ def main():
             scheduler.step()
             optimizer.zero_grad()
 
-            running_cell_loss += losses['cell_loss'].item()
-            running_dim_loss += losses['dim_loss'].item()
+            running_cell_loss += cell_loss_val
+            running_dim_loss += dim_loss_val
             global_step += 1
+
+            # Periodic GPU cache cleanup
+            if global_step % 100 == 0 and device.type == 'cuda':
+                torch.cuda.empty_cache()
 
             # Logging
             if global_step % args.log_interval == 0:
