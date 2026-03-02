@@ -421,11 +421,12 @@ class OctoTetrahedralModel(nn.Module):
                 return_components=False
             )
             gp_output = gp_result['output']
-            # Clamp NaN from geometry layers to prevent downstream corruption
-            if torch.isnan(gp_output).any():
-                gp_output = torch.where(torch.isnan(gp_output), core_output, gp_output)
-            core_output = gp_output
+            # Skip geometry entirely when NaN detected (prevents gradient contamination)
+            if not torch.isnan(gp_output).any():
+                core_output = gp_output
             physics_loss = gp_result['physics_loss']
+            if torch.isnan(physics_loss):
+                physics_loss = torch.tensor(0.0, device=core_output.device)
             geometric_physics_info = {
                 'physics_loss': physics_loss,
                 'physics_losses': gp_result.get('physics_losses', {}),
