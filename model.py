@@ -50,6 +50,7 @@ from limbs.language_limb import LanguageLimb
 from limbs.spatial_limb import SpatialLimb
 from limbs.metacognition_limb import MetaCognitionLimb
 from sync.hub_sync import HubSync
+from core.compound_braid import CompoundBraid
 from cognition import AGICognition, CognitionConfig
 
 # Import new geometric physics modules
@@ -244,6 +245,15 @@ class OctoTetrahedralModel(nn.Module):
             lora_rank=self.config.lora.rank,
             lora_alpha=self.config.lora.alpha,
             buffer_size=self.config.limb.buffer_size
+        )
+        
+        # === Compound Braid (Cross-Limb Information Exchange) ===
+        self.compound_braid = CompoundBraid(
+            hidden_dim=self.hidden_dim,
+            num_limbs=4,  # memory, spatial, language, metacognition
+            num_heads=self.num_heads // 4,
+            dropout=self.config.model.dropout,
+            braid_strength=0.3,
         )
         
         # === Reasoning Limb (Pattern Processing) ===
@@ -451,12 +461,11 @@ class OctoTetrahedralModel(nn.Module):
         # MetaCognition: Self-monitoring and strategy selection
         meta_out, meta_conf, _ = self.metacognition(memory_enhanced)
         
-        # Combine limb outputs with gating based on metacognition
-        # Stack the outputs: [batch, seq, hidden, 3]
-        limb_outputs = torch.stack([memory_out, spatial_out, language_out], dim=-1)
-        
-        # Simple average for now (can be learned gating later)
-        combined_limbs = limb_outputs.mean(dim=-1)  # [batch, seq, hidden]
+        # Compound Braid: cross-limb information exchange via learned cross-attention
+        combined_limbs, braid_info = self.compound_braid(
+            [memory_out, spatial_out, language_out, meta_out],
+            attention_mask=attention_mask,
+        )
         
         # Blend with memory_enhanced
         multi_limb_output = memory_enhanced + 0.3 * combined_limbs
@@ -528,6 +537,7 @@ class OctoTetrahedralModel(nn.Module):
             'loss': loss,
             'hidden_states': reasoned,
             'reasoning_state': reasoning_state,
+            'braid_info': braid_info,
             'physics_loss': physics_loss if self.use_geometric_physics else None,
             'moe_aux_loss': moe_aux_loss if self.config.moe.enabled else None,
             'geometric_physics_info': geometric_physics_info if self.use_geometric_physics else None
@@ -536,13 +546,19 @@ class OctoTetrahedralModel(nn.Module):
         if return_confidences:
             self._last_confidences = {
                 'perception': perception_conf or 0.0,
+                'memory': memory_conf or 0.0,
+                'spatial': spatial_conf or 0.0,
+                'language': language_conf or 0.0,
+                'metacognition': meta_conf or 0.0,
                 'reasoning': reasoning_conf or 0.0,
                 'action': action_conf or 0.0,
                 'overall': (
                     (perception_conf or 0.5) * 
                     (reasoning_conf or 0.5) * 
                     (action_conf or 0.5)
-                ) ** (1/3)  # Geometric mean
+                ) ** (1/3),  # Geometric mean
+                'braid_gates': braid_info.get('gate_values', {}),
+                'braid_weights': braid_info.get('combine_weights', {}),
             }
             output['confidences'] = self._last_confidences
         

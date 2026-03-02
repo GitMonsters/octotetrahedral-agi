@@ -1,0 +1,170 @@
+"""
+Compound Braiding Module
+
+Implements cross-limb information braiding where multiple processing limbs
+exchange information mid-computation rather than running in isolation.
+
+Standard approach: limbs run in parallel → outputs averaged
+Braided approach:  limbs run → cross-attend to each other → gated combination
+
+This lets spatial reasoning inform language, memory inform reasoning, etc.
+The braid pattern is learned during training via cross-attention gates.
+"""
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from typing import Dict, List, Tuple, Optional
+
+
+class BraidCrossAttention(nn.Module):
+    """Single cross-attention head for one limb attending to all others."""
+
+    def __init__(self, hidden_dim: int, num_heads: int = 4, dropout: float = 0.1):
+        super().__init__()
+        self.num_heads = num_heads
+        self.head_dim = hidden_dim // num_heads
+        assert hidden_dim % num_heads == 0
+
+        self.q_proj = nn.Linear(hidden_dim, hidden_dim, bias=False)
+        self.k_proj = nn.Linear(hidden_dim, hidden_dim, bias=False)
+        self.v_proj = nn.Linear(hidden_dim, hidden_dim, bias=False)
+        self.out_proj = nn.Linear(hidden_dim, hidden_dim, bias=False)
+        self.dropout = nn.Dropout(dropout)
+        self.scale = self.head_dim ** -0.5
+
+    def forward(
+        self,
+        query: torch.Tensor,
+        context: torch.Tensor,
+        mask: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        """
+        Args:
+            query: [batch, seq, hidden] — the limb being updated
+            context: [batch, seq, hidden] — concatenated other limbs' outputs
+            mask: optional attention mask
+        Returns:
+            [batch, seq, hidden] — braided output for this limb
+        """
+        B, S, H = query.shape
+
+        q = self.q_proj(query).view(B, S, self.num_heads, self.head_dim).transpose(1, 2)
+        k = self.k_proj(context).view(B, -1, self.num_heads, self.head_dim).transpose(1, 2)
+        v = self.v_proj(context).view(B, -1, self.num_heads, self.head_dim).transpose(1, 2)
+
+        attn = torch.matmul(q, k.transpose(-2, -1)) * self.scale
+        if mask is not None:
+            attn = attn.masked_fill(~mask.unsqueeze(1).unsqueeze(2), float('-inf'))
+        attn = F.softmax(attn, dim=-1)
+        attn = self.dropout(attn)
+
+        out = torch.matmul(attn, v)
+        out = out.transpose(1, 2).contiguous().view(B, S, H)
+        return self.out_proj(out)
+
+
+class CompoundBraid(nn.Module):
+    """
+    Cross-limb braiding: each limb attends to all other limbs' outputs,
+    then a learned gate controls how much braided info to mix in.
+
+    Replaces naive averaging of parallel limb outputs with learned
+    cross-pollination between complementary processing streams.
+    """
+
+    LIMB_NAMES = ['memory', 'spatial', 'language', 'metacognition']
+
+    def __init__(
+        self,
+        hidden_dim: int,
+        num_limbs: int = 4,
+        num_heads: int = 4,
+        dropout: float = 0.1,
+        braid_strength: float = 0.3,
+    ):
+        super().__init__()
+        self.hidden_dim = hidden_dim
+        self.num_limbs = num_limbs
+        self.braid_strength = braid_strength
+
+        # Each limb gets its own cross-attention to attend to others
+        self.cross_attns = nn.ModuleList([
+            BraidCrossAttention(hidden_dim, num_heads, dropout)
+            for _ in range(num_limbs)
+        ])
+
+        # Per-limb gating: controls how much braided info mixes in
+        self.gates = nn.ModuleList([
+            nn.Sequential(
+                nn.Linear(hidden_dim * 2, hidden_dim),
+                nn.Sigmoid(),
+            )
+            for _ in range(num_limbs)
+        ])
+
+        # Final combination: learned weights for combining braided limbs
+        self.combine_weights = nn.Parameter(torch.ones(num_limbs) / num_limbs)
+
+        # Layer norm per limb after braiding
+        self.layer_norms = nn.ModuleList([
+            nn.LayerNorm(hidden_dim) for _ in range(num_limbs)
+        ])
+
+    def forward(
+        self,
+        limb_outputs: List[torch.Tensor],
+        attention_mask: Optional[torch.Tensor] = None,
+    ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
+        """
+        Braid limb outputs together via cross-attention.
+
+        Args:
+            limb_outputs: list of [batch, seq, hidden] tensors, one per limb
+            attention_mask: optional [batch, seq] mask
+
+        Returns:
+            combined: [batch, seq, hidden] — braided combination
+            braid_info: dict with per-limb gate values and attention stats
+        """
+        assert len(limb_outputs) == self.num_limbs
+
+        braided = []
+        gate_values = []
+
+        for i in range(self.num_limbs):
+            query = limb_outputs[i]
+
+            # Context = all OTHER limbs concatenated along seq dim
+            others = [limb_outputs[j] for j in range(self.num_limbs) if j != i]
+            context = torch.cat(others, dim=1)  # [batch, seq*(N-1), hidden]
+
+            # Cross-attend: this limb reads from all others
+            braided_out = self.cross_attns[i](query, context, mask=None)
+
+            # Gate: how much braided info to mix in
+            gate_input = torch.cat([query, braided_out], dim=-1)
+            gate = self.gates[i](gate_input)  # [batch, seq, hidden]
+            gate_values.append(gate.mean().detach())
+
+            # Mix: original + gated braided info
+            mixed = query + self.braid_strength * gate * braided_out
+            mixed = self.layer_norms[i](mixed)
+            braided.append(mixed)
+
+        # Combine with learned weights (softmax for valid distribution)
+        weights = F.softmax(self.combine_weights, dim=0)
+        combined = sum(w * out for w, out in zip(weights, braided))
+
+        braid_info = {
+            'gate_values': {
+                name: gv.item() for name, gv in
+                zip(self.LIMB_NAMES[:self.num_limbs], gate_values)
+            },
+            'combine_weights': {
+                name: w.item() for name, w in
+                zip(self.LIMB_NAMES[:self.num_limbs], weights)
+            },
+        }
+
+        return combined, braid_info
