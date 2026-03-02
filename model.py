@@ -652,6 +652,79 @@ class OctoTetrahedralModel(nn.Module):
                 # For now, just generate max_new_tokens
         
         return generated
+
+    def generate_diffusion(
+        self,
+        input_ids: torch.Tensor,
+        num_tokens: int = 64,
+        refine_steps: int = 8,
+        temperature: float = 0.7,
+        noise_schedule: str = 'cosine',
+    ) -> torch.Tensor:
+        """
+        Diffusion-style generation: start from noise tokens, iteratively refine.
+        
+        Instead of generating one token at a time, generates all output tokens
+        in parallel and refines them through multiple forward passes. Each step
+        uses the model's RNA editing (per-input weight modulation) to adapt.
+        
+        Args:
+            input_ids: Prompt token IDs [batch, prompt_len]
+            num_tokens: Number of tokens to generate
+            refine_steps: Number of refinement iterations
+            temperature: Sampling temperature (decreases per step)
+            noise_schedule: 'cosine' or 'linear' noise reduction
+        """
+        self.eval()
+        B = input_ids.size(0)
+        device = input_ids.device
+
+        # Initialize output tokens from uniform random (structured noise)
+        noisy_tokens = torch.randint(0, self.vocab_size, (B, num_tokens), device=device)
+        
+        with torch.no_grad():
+            for step in range(refine_steps):
+                # Decreasing temperature: more confident as we refine
+                if noise_schedule == 'cosine':
+                    progress = step / max(refine_steps - 1, 1)
+                    t = temperature * (0.5 * (1 + torch.cos(torch.tensor(progress * 3.14159)).item()))
+                else:
+                    t = temperature * (1.0 - step / refine_steps)
+                t = max(t, 0.01)
+
+                # Fraction of tokens to update this step (more early, fewer late)
+                update_frac = 1.0 - 0.5 * (step / max(refine_steps - 1, 1))
+
+                # Concatenate prompt + current noisy output
+                full_seq = torch.cat([input_ids, noisy_tokens], dim=1)
+                if full_seq.size(1) > self.config.model.max_seq_len:
+                    full_seq = full_seq[:, -self.config.model.max_seq_len:]
+
+                output = self.forward(input_ids=full_seq)
+                logits = output['logits']
+
+                # Get logits for the output positions only
+                output_logits = logits[:, -num_tokens:, :]  # [B, num_tokens, vocab]
+
+                # Compute confidence: how sure is the model about each position?
+                probs = F.softmax(output_logits / t, dim=-1)
+                confidence = probs.max(dim=-1).values  # [B, num_tokens]
+
+                # Select which positions to update (lowest confidence first)
+                num_update = max(1, int(num_tokens * update_frac))
+                _, update_indices = confidence.topk(num_update, dim=-1, largest=False)
+
+                # Sample new tokens for update positions
+                new_tokens = torch.multinomial(
+                    probs.view(-1, self.vocab_size), num_samples=1
+                ).view(B, num_tokens)
+
+                # Only update selected positions
+                mask = torch.zeros_like(noisy_tokens, dtype=torch.bool)
+                mask.scatter_(1, update_indices, True)
+                noisy_tokens = torch.where(mask, new_tokens, noisy_tokens)
+
+        return torch.cat([input_ids, noisy_tokens], dim=1)
     
     def sync_limbs(self, performance: float) -> Optional[Dict[str, Any]]:
         """

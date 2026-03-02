@@ -106,10 +106,31 @@ class CompoundBraid(nn.Module):
         # Final combination: learned weights for combining braided limbs
         self.combine_weights = nn.Parameter(torch.ones(num_limbs) / num_limbs)
 
+        # Phase angles per limb (QM-inspired: phase determines interference)
+        # Initialized to 0 so braiding starts identical to pre-phase behavior
+        self.phase_angles = nn.Parameter(torch.zeros(num_limbs))
+
         # Layer norm per limb after braiding
         self.layer_norms = nn.ModuleList([
             nn.LayerNorm(hidden_dim) for _ in range(num_limbs)
         ])
+
+    def _apply_phase_rotation(self, x: torch.Tensor, angle: torch.Tensor) -> torch.Tensor:
+        """Apply phase rotation by treating pairs of hidden dims as complex numbers.
+        
+        QM insight: phase relationships between basis states determine
+        constructive/destructive interference. This lets limbs cancel noise
+        and reinforce signal through learned phase offsets.
+        """
+        B, S, H = x.shape
+        x_pairs = x.view(B, S, H // 2, 2)
+        cos_a = torch.cos(angle)
+        sin_a = torch.sin(angle)
+        rotated = torch.stack([
+            cos_a * x_pairs[..., 0] - sin_a * x_pairs[..., 1],
+            sin_a * x_pairs[..., 0] + cos_a * x_pairs[..., 1],
+        ], dim=-1)
+        return rotated.view(B, S, H)
 
     def forward(
         self,
@@ -152,9 +173,12 @@ class CompoundBraid(nn.Module):
             mixed = self.layer_norms[i](mixed)
             braided.append(mixed)
 
-        # Combine with learned weights (softmax for valid distribution)
+        # Combine with learned weights and phase rotations
         weights = F.softmax(self.combine_weights, dim=0)
-        combined = sum(w * out for w, out in zip(weights, braided))
+        combined = sum(
+            w * self._apply_phase_rotation(out, self.phase_angles[i])
+            for i, (w, out) in enumerate(zip(weights, braided))
+        )
 
         braid_info = {
             'gate_values': {
@@ -164,6 +188,10 @@ class CompoundBraid(nn.Module):
             'combine_weights': {
                 name: w.item() for name, w in
                 zip(self.LIMB_NAMES[:self.num_limbs], weights)
+            },
+            'phase_angles': {
+                name: self.phase_angles[i].item() for i, name in
+                enumerate(self.LIMB_NAMES[:self.num_limbs])
             },
         }
 

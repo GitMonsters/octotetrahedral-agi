@@ -16,6 +16,7 @@ Usage:
 """
 
 import argparse
+import copy
 import json
 import logging
 import time
@@ -23,9 +24,87 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import torch
+import torch.nn.functional as F
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+
+def test_time_train(
+    model,
+    tokenizer,
+    task,
+    config,
+    device: str,
+    ttt_steps: int = 10,
+    ttt_lr: float = 1e-5,
+) -> torch.nn.Module:
+    """
+    Test-time training: fine-tune model on a task's train examples before predicting.
+    
+    Creates leave-one-out training pairs from the task's demonstrations,
+    runs a few gradient steps, then returns the adapted model.
+    The caller should save/restore original weights.
+    """
+    from data.arc_dataset import ARCTask, grid_to_tokens
+
+    model.train()
+    optimizer = torch.optim.AdamW(model.parameters(), lr=ttt_lr)
+
+    # Build training data from the task's train examples
+    # Each train example becomes: prompt (all OTHER train examples) + this input -> this output
+    train_examples = task.train_examples
+    if len(train_examples) < 2:
+        # Need at least 2 examples for leave-one-out
+        # Use single example as self-supervised target
+        pairs = [(train_examples, 0)]
+    else:
+        pairs = [(train_examples, i) for i in range(len(train_examples))]
+
+    for step in range(ttt_steps):
+        total_loss = 0.0
+        for examples, target_idx in pairs:
+            # Build prompt: all examples as context, target_idx as the "test"
+            parts = []
+            for j, ex in enumerate(examples):
+                if j == target_idx and len(examples) > 1:
+                    continue
+                inp_str = grid_to_tokens(ex['input'])
+                out_str = grid_to_tokens(ex['output'])
+                parts.append(f"[{inp_str}]->[{out_str}]")
+
+            target_ex = examples[target_idx]
+            inp_str = grid_to_tokens(target_ex['input'])
+            out_str = grid_to_tokens(target_ex['output'])
+            prompt = ' '.join(parts) + f" [{inp_str}]->["
+            target = out_str + "]"
+
+            # Tokenize
+            prompt_tokens = tokenizer.encode(prompt)
+            target_tokens = tokenizer.encode(target)
+            full_tokens = prompt_tokens + target_tokens
+
+            if len(full_tokens) > config.model.max_seq_len:
+                full_tokens = full_tokens[-config.model.max_seq_len:]
+                prompt_tokens = full_tokens[:max(1, len(full_tokens) - len(target_tokens))]
+                target_tokens = full_tokens[len(prompt_tokens):]
+
+            input_ids = torch.tensor([full_tokens[:-1]], device=device)
+            labels = torch.tensor([full_tokens[1:]], device=device)
+            # Mask prompt portion
+            labels[0, :len(prompt_tokens) - 1] = -100
+
+            output = model(input_ids=input_ids, labels=labels)
+            loss = output['loss']
+            total_loss += loss.item()
+
+            loss.backward()
+
+        optimizer.step()
+        optimizer.zero_grad()
+
+    model.eval()
+    return model
 
 
 def evaluate_model(
@@ -38,6 +117,9 @@ def evaluate_model(
     max_gen_tokens: int = 256,
     temperature: float = 0.0,
     num_attempts: int = 3,
+    ttt_enabled: bool = False,
+    ttt_steps: int = 10,
+    ttt_lr: float = 1e-5,
 ) -> Dict:
     """
     Evaluate model on ARC tasks.
@@ -61,6 +143,13 @@ def evaluate_model(
 
     for i, (task_id, task_data) in enumerate(task_list):
         task = ARCTask(task_id, task_data)
+
+        # Test-time training: adapt model to this task's train examples
+        saved_state = None
+        if ttt_enabled:
+            saved_state = copy.deepcopy(model.state_dict())
+            logger.info(f"  TTT: fine-tuning on {len(task.train_examples)} train examples for {ttt_steps} steps...")
+            test_time_train(model, tokenizer, task, config, device, ttt_steps, ttt_lr)
 
         for test_idx in range(task.num_test):
             total += 1
@@ -153,6 +242,11 @@ def evaluate_model(
                 f"cell={best_result['metrics']['cell_accuracy']:.2f} "
                 f"attempts={best_result['attempt']+1}"
             )
+
+        # Restore original weights after TTT for this task
+        if saved_state is not None:
+            model.load_state_dict(saved_state)
+            del saved_state
 
     accuracy = correct / total if total > 0 else 0.0
 
@@ -265,6 +359,9 @@ def main():
     parser.add_argument("--max-gen-tokens", type=int, default=256)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--num-attempts", type=int, default=3, help="Attempts per task (pass@k)")
+    parser.add_argument("--ttt", action="store_true", help="Enable test-time training (fine-tune on each task's train examples)")
+    parser.add_argument("--ttt-steps", type=int, default=10, help="TTT gradient steps per task")
+    parser.add_argument("--ttt-lr", type=float, default=1e-5, help="TTT learning rate")
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--output", type=str, default=None, help="Output JSON path")
     args = parser.parse_args()
@@ -372,6 +469,9 @@ def main():
         max_gen_tokens=args.max_gen_tokens,
         temperature=args.temperature,
         num_attempts=args.num_attempts,
+        ttt_enabled=args.ttt,
+        ttt_steps=args.ttt_steps,
+        ttt_lr=args.ttt_lr,
     )
     elapsed = time.time() - t0
 
