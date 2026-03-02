@@ -29,8 +29,9 @@ RUN pip install --no-cache-dir \
     pydantic>=2.0.0
 
 # Copy model code
-COPY config.py model.py serve.py train_distributed.py requirements.txt ./
+COPY config.py model.py serve.py train_distributed.py train_gpu.py eval_arc_moe.py requirements.txt ./
 COPY core/ core/
+COPY data/ data/
 COPY adaptation/ adaptation/
 COPY limbs/ limbs/
 COPY sync/ sync/
