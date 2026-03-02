@@ -129,10 +129,11 @@ if [ -z "$SSH_KEY_ID" ]; then
         exit 1
     fi
 
+    SSH_KEY_NAME="octotetrahedral"
     SSH_RESP=$(curl -sf -H "$AUTH" -H "$CT" -X POST "$API/ssh-keys" \
-        -d "{\"name\": \"octotetrahedral\", \"public_key\": \"${PUB_KEY}\"}")
+        -d "{\"name\": \"${SSH_KEY_NAME}\", \"public_key\": \"${PUB_KEY}\"}")
     SSH_KEY_ID=$(echo "$SSH_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['id'])")
-    echo "Added SSH key: ${SSH_KEY_ID}"
+    echo "Added SSH key: ${SSH_KEY_NAME} (${SSH_KEY_ID})"
 else
     SSH_KEY_NAME=$(echo "$SSH_KEYS" | python3 -c "import sys,json; print(json.load(sys.stdin)['data'][0]['name'])")
     echo "Using SSH key: ${SSH_KEY_NAME} (${SSH_KEY_ID})"
@@ -145,7 +146,7 @@ LAUNCH_RESP=$(curl -sf -H "$AUTH" -H "$CT" -X POST "$API/instance-operations/lau
     -d "{
         \"region_name\": \"${AVAILABLE_REGION}\",
         \"instance_type_name\": \"${INSTANCE_TYPE}\",
-        \"ssh_key_names\": [\"$(echo "$SSH_KEYS" | python3 -c "import sys,json; print(json.load(sys.stdin)['data'][0]['name'])")\"],
+        \"ssh_key_names\": [\"${SSH_KEY_NAME}\"],
         \"quantity\": 1,
         \"name\": \"octo-7b-moe\"
     }") || {

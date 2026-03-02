@@ -141,20 +141,38 @@ class Phase3Evaluator:
                 token=HF_TOKEN
             )
             
+            # Download file attachments from HuggingFace
+            from huggingface_hub import hf_hub_download
+            
             questions = []
             for item in dataset:
                 # Use correct field names from GAIA dataset
                 question_text = item.get('Question', '')
                 file_name = item.get('file_name', '')
+                file_path_field = item.get('file_path', '')
                 answer = item.get('Final answer', '')
                 level_num = item.get('Level', 1)
                 question_id = item.get('task_id', f"q_{len(questions)}")
+                
+                # Download file attachment if present
+                local_file_path = None
+                if file_name and file_path_field:
+                    try:
+                        local_file_path = hf_hub_download(
+                            repo_id='gaia-benchmark/GAIA',
+                            filename=file_path_field,
+                            repo_type='dataset',
+                            token=HF_TOKEN
+                        )
+                    except Exception as e:
+                        print(f"  Warning: Could not download file {file_name}: {e}")
+                        local_file_path = file_name  # Fallback to bare filename
                 
                 q = GAIAQuestion(
                     question_id=str(question_id),
                     question=question_text,
                     answer=answer,
-                    file=file_name if file_name else None,
+                    file=local_file_path,
                     level=int(level_num)  # Level comes as string from dataset
                 )
                 questions.append(q)
