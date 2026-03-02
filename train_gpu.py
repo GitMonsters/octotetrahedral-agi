@@ -197,11 +197,17 @@ def train(args):
         layer.forward = make_ckpt(orig)
     logger.info(f"Gradient checkpointing on {len(model.core.layers)} layers")
 
-    # Optimizer — SGD for memory efficiency (1 state vs Adam's 2)
-    lr = args.lr or (config.training.learning_rate * 10)
-    optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9,
-                                nesterov=True, weight_decay=0.01)
-    logger.info(f"SGD optimizer, lr={lr:.2e}")
+    # Optimizer — prefer Adam8bit > AdamW > SGD
+    lr = args.lr or config.training.learning_rate
+    try:
+        import bitsandbytes as bnb
+        optimizer = bnb.optim.Adam8bit(model.parameters(), lr=lr, weight_decay=0.01)
+        opt_name = "Adam8bit"
+    except ImportError:
+        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, betas=(0.9, 0.95),
+                                      weight_decay=0.01, fused=device.type == 'cuda')
+        opt_name = "AdamW"
+    logger.info(f"{opt_name} optimizer, lr={lr:.2e}")
 
     # LR scheduler: linear warmup + cosine decay
     warmup = args.warmup_steps
