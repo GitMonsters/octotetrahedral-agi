@@ -179,11 +179,10 @@ def train(args):
         model.load_state_dict(filtered, strict=False)
         logger.info(f"Loaded {len(filtered)}/{len(model_state)} params")
 
-    # BFloat16 for memory efficiency
+    # BFloat16 via autocast (avoids buffer dtype mismatch in geometry layers)
     use_bf16 = device.type == 'cuda'
     if use_bf16:
-        model = model.to(torch.bfloat16)
-        logger.info("Model cast to bfloat16")
+        logger.info("Using torch.autocast for bfloat16 training")
 
     model.to(device)
     if device.type == 'cuda':
@@ -253,9 +252,10 @@ def train(args):
             if attn_mask is not None:
                 attn_mask = attn_mask.to(device)
 
-            # Forward
-            output = model(input_ids=input_ids, attention_mask=attn_mask, labels=labels)
-            loss = output['loss'] / grad_accum  # Scale loss for accumulation
+            # Forward (autocast handles mixed bf16/fp32 buffers)
+            with torch.autocast('cuda', dtype=torch.bfloat16, enabled=use_bf16):
+                output = model(input_ids=input_ids, attention_mask=attn_mask, labels=labels)
+                loss = output['loss'] / grad_accum  # Scale loss for accumulation
 
             # Backward
             loss.backward()
