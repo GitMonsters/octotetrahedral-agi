@@ -300,9 +300,13 @@ def train(args):
                         f"transfer_efficiency={efficiency:.3f}"
                     )
 
+            # Only run logging/saving/eval right after an optimizer step
+            if micro_step % grad_accum != 0:
+                continue
+
             # Logging
             if global_step % args.log_interval == 0:
-                avg_loss = running_loss / args.log_interval
+                avg_loss = running_loss / max(1, args.log_interval)
                 elapsed = time.time() - start_time
                 sps = global_step / elapsed if elapsed > 0 else 0
                 lr_now = scheduler.get_last_lr()[0]
@@ -315,7 +319,7 @@ def train(args):
                 running_loss = 0.0
 
             # Save checkpoint
-            if global_step % args.save_interval == 0:
+            if global_step > 0 and global_step % args.save_interval == 0:
                 ckpt_path = ckpt_dir / f"arc_step_{global_step}.pt"
                 torch.save({
                     'model_state_dict': model.state_dict(),
@@ -327,11 +331,11 @@ def train(args):
                 logger.info(f"Saved checkpoint: {ckpt_path}")
 
             # Validation
-            if val_dl and global_step % args.eval_interval == 0:
+            if val_dl and global_step > 0 and global_step % args.eval_interval == 0:
                 model.eval()
                 val_loss = 0.0
                 val_count = 0
-                with torch.no_grad():
+                with torch.no_grad(), torch.autocast('cuda', dtype=torch.bfloat16, enabled=use_bf16):
                     for vb in val_dl:
                         vi = vb['input_ids'].to(device)
                         vl = vb['labels'].to(device)
