@@ -25,15 +25,53 @@ MAX_GRID = 30
 NUM_COLORS = 10
 
 
+def _rotate_grid_90(grid: List[List[int]]) -> List[List[int]]:
+    """Rotate grid 90 degrees clockwise."""
+    h, w = len(grid), len(grid[0]) if grid else 0
+    return [[grid[h - 1 - j][i] for j in range(h)] for i in range(w)]
+
+
+def _flip_grid_h(grid: List[List[int]]) -> List[List[int]]:
+    """Flip grid horizontally (left-right)."""
+    return [row[::-1] for row in grid]
+
+
+def _flip_grid_v(grid: List[List[int]]) -> List[List[int]]:
+    """Flip grid vertically (top-bottom)."""
+    return grid[::-1]
+
+
+def _permute_colors(grid: List[List[int]], perm: List[int]) -> List[List[int]]:
+    """Apply color permutation to grid."""
+    return [[perm[c] for c in row] for row in grid]
+
+
+def _apply_transform(grid: List[List[int]], rotation: int, flip_h: bool,
+                     flip_v: bool, color_perm: Optional[List[int]] = None) -> List[List[int]]:
+    """Apply geometric + color transform to a grid."""
+    g = grid
+    for _ in range(rotation):
+        g = _rotate_grid_90(g)
+    if flip_h:
+        g = _flip_grid_h(g)
+    if flip_v:
+        g = _flip_grid_v(g)
+    if color_perm is not None:
+        g = _permute_colors(g, color_perm)
+    return g
+
+
 class ARCGridDataset(Dataset):
     """ARC dataset that produces grid-level targets for direct prediction."""
 
     def __init__(self, data_dir: str, split: str = "training",
                  tokenizer=None, max_seq_len: int = 2048,
-                 max_grid: int = MAX_GRID, curriculum: bool = False):
+                 max_grid: int = MAX_GRID, curriculum: bool = False,
+                 augment: bool = False):
         self.max_seq_len = max_seq_len
         self.max_grid = max_grid
         self.tokenizer = tokenizer
+        self.augment = augment
         self.samples = []
 
         data_path = Path(data_dir) / split
@@ -122,8 +160,34 @@ class ARCGridDataset(Dataset):
     def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
         sample = self.samples[idx]
 
+        # Apply augmentation: transform ALL grids consistently
+        train_examples = sample['train']
+        test_input = sample['test_input']
+        test_output = sample['test_output']
+
+        if self.augment:
+            rotation = random.randint(0, 3)  # 0, 90, 180, 270
+            flip_h = random.random() < 0.5
+            flip_v = random.random() < 0.5
+            # Color permutation: keep 0 (background) fixed, permute 1-9
+            color_perm = list(range(10))
+            if random.random() < 0.5:
+                non_bg = list(range(1, 10))
+                random.shuffle(non_bg)
+                color_perm[1:] = non_bg
+
+            def xform(g):
+                return _apply_transform(g, rotation, flip_h, flip_v, color_perm)
+
+            train_examples = [
+                {'input': xform(ex['input']), 'output': xform(ex['output'])}
+                for ex in train_examples
+            ]
+            test_input = xform(test_input)
+            test_output = xform(test_output)
+
         # Format context as text and tokenize
-        context_text = self._format_context(sample['train'], sample['test_input'])
+        context_text = self._format_context(train_examples, test_input)
 
         if self.tokenizer is not None:
             tokens = self.tokenizer.encode(context_text)
@@ -148,14 +212,16 @@ class ARCGridDataset(Dataset):
         else:
             attention_mask = torch.ones(self.max_seq_len, dtype=torch.long)
 
-        # Target grid
-        target_grid, grid_mask = self._grid_to_tensor(sample['test_output'])
+        # Target grid (use potentially augmented output)
+        target_grid, grid_mask = self._grid_to_tensor(test_output)
+        out_h = len(test_output)
+        out_w = len(test_output[0]) if out_h > 0 else 0
 
         return {
             'input_ids': input_ids,
             'attention_mask': attention_mask,
             'target_grid': target_grid,
             'grid_mask': grid_mask,
-            'target_h': torch.tensor(sample['output_h'], dtype=torch.long),
-            'target_w': torch.tensor(sample['output_w'], dtype=torch.long),
+            'target_h': torch.tensor(out_h, dtype=torch.long),
+            'target_w': torch.tensor(out_w, dtype=torch.long),
         }

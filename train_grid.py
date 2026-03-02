@@ -32,7 +32,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
-def build_data(tokenizer, max_seq_len: int, curriculum: bool = False):
+def build_data(tokenizer, max_seq_len: int, curriculum: bool = False, augment: bool = False):
     """Build grid-level ARC datasets."""
     datasets = []
 
@@ -45,7 +45,7 @@ def build_data(tokenizer, max_seq_len: int, curriculum: bool = False):
         ds = ARCGridDataset(
             data_dir=str(arc_dir), split="training",
             tokenizer=tokenizer, max_seq_len=max_seq_len,
-            curriculum=curriculum
+            curriculum=curriculum, augment=augment
         )
         datasets.append(ds)
         logger.info(f"ARC training: {len(ds)} grid samples from {arc_dir}")
@@ -56,7 +56,7 @@ def build_data(tokenizer, max_seq_len: int, curriculum: bool = False):
         ds1 = ARCGridDataset(
             data_dir=str(arc1_dir), split="training",
             tokenizer=tokenizer, max_seq_len=max_seq_len,
-            curriculum=curriculum
+            curriculum=curriculum, augment=augment
         )
         datasets.append(ds1)
         logger.info(f"ARC-AGI-1 training: {len(ds1)} grid samples")
@@ -153,6 +153,10 @@ def main():
                         help="Resume from checkpoint (backbone weights)")
     parser.add_argument('--freeze-backbone', action='store_true',
                         help="Freeze transformer backbone, only train grid head")
+    parser.add_argument('--freeze-geometry', action='store_true',
+                        help="Freeze geometry (Fuller synergetics) params to prevent NaN gradients")
+    parser.add_argument('--augment', action='store_true',
+                        help="Enable data augmentation (rotations, reflections, color permutations)")
     parser.add_argument('--checkpoint-dir', type=str, default='checkpoints/grid')
     parser.add_argument('--device', type=str, default='auto')
     parser.add_argument('--log-interval', type=int, default=20)
@@ -192,6 +196,14 @@ def main():
             p.requires_grad = False
         logger.info("Backbone frozen — only training grid head")
 
+    if args.freeze_geometry and not args.freeze_backbone:
+        geo_frozen = 0
+        for name, p in model.named_parameters():
+            if 'geometric_physics' in name or 'geometry' in name or 'geodesic' in name:
+                p.requires_grad = False
+                geo_frozen += p.numel()
+        logger.info(f"Geometry params frozen: {geo_frozen:,} (NaN source eliminated)")
+
     # Grid prediction head
     grid_head = GridPredictionHead(
         hidden_dim=cfg.model.hidden_dim,
@@ -207,13 +219,13 @@ def main():
 
     # Data
     use_bf16 = device.type == 'cuda'
-    train_ds, val_ds = build_data(tokenizer, args.max_seq_len, args.curriculum)
+    train_ds, val_ds = build_data(tokenizer, args.max_seq_len, args.curriculum, args.augment)
     train_dl = DataLoader(train_ds, batch_size=args.batch_size, shuffle=not args.curriculum,
-                          num_workers=2, pin_memory=True, drop_last=True)
+                          num_workers=0, pin_memory=True, drop_last=True)
     val_dl = None
     if val_ds:
         val_dl = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False,
-                            num_workers=1, pin_memory=True)
+                            num_workers=0, pin_memory=True)
 
     logger.info(f"GPU memory after model load: "
                 f"{torch.cuda.memory_allocated()/1024**3:.2f}GB" if device.type == 'cuda' else "")
