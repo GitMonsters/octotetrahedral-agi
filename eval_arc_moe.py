@@ -156,6 +156,77 @@ def evaluate_model(
 
     accuracy = correct / total if total > 0 else 0.0
 
+    # Compound learning: track cross-limb patterns from eval results
+    compound_stats = {}
+    try:
+        from ngvt_compound_learning import CompoundLearningEngine, LearningExperience
+        from datetime import datetime
+
+        eval_engine = CompoundLearningEngine(max_patterns=5000, learning_rate=0.01)
+        limb_names = ['perception', 'reasoning', 'planning', 'language',
+                      'spatial', 'memory', 'metacognition', 'action']
+        for ln in limb_names:
+            eval_engine.register_model(ln, [ln])
+
+        # Record each eval result as a learning experience
+        for r in results:
+            eval_engine.record_experience(LearningExperience(
+                query=f"arc_eval_{r['task_id']}_t{r['test_idx']}",
+                response=f"exact={r['exact_match']:.0f} cell={r['cell_accuracy']:.2f}",
+                latency_ms=0,
+                success=r['correct'],
+                timestamp=datetime.now().isoformat(),
+                confidence=r['cell_accuracy'],
+                metadata={
+                    'task_id': r['task_id'],
+                    'confidences': r['confidences'],
+                },
+            ))
+
+            # Record cross-limb transfers: high-confidence limbs helping low ones
+            confs = r['confidences']
+            if len(confs) >= 2:
+                sorted_limbs = sorted(confs.items(), key=lambda x: x[1], reverse=True)
+                best_limb = sorted_limbs[0][0]
+                for other_limb, other_conf in sorted_limbs[1:]:
+                    if other_conf > 0:
+                        from ngvt_compound_learning import CompoundLearningPattern
+                        pattern = CompoundLearningPattern(
+                            pattern_id=f"{best_limb}_to_{other_limb}",
+                            query_hash=f"{r['task_id']}",
+                            response_template="cross_limb_transfer",
+                            accuracy=r['cell_accuracy'],
+                            frequency=1,
+                            avg_latency_ms=0,
+                        )
+                        transfer_score = min(1.0, confs[best_limb] / max(0.01, other_conf))
+                        eval_engine.record_cross_model_transfer(
+                            pattern, best_limb, other_limb,
+                            success=r['correct'],
+                        )
+
+        # Run learning cycle to extract patterns
+        cycle = eval_engine.compound_learning_cycle()
+        compound_stats = {
+            'total_patterns': cycle.get('total_patterns', 0),
+            'transfer_efficiency': cycle.get('transfer_efficiency', 0),
+            'cumulative_accuracy': cycle.get('cumulative_accuracy', 0),
+            'learning_stats': eval_engine.get_learning_stats(),
+        }
+
+        # Find complementary limbs
+        for limb in ['spatial', 'reasoning', 'perception']:
+            complementary = eval_engine.find_complementary_models(limb)
+            if complementary:
+                compound_stats[f'{limb}_best_partners'] = dict(
+                    sorted(complementary.items(), key=lambda x: x[1], reverse=True)[:3]
+                )
+
+        logger.info(f"Compound eval: {compound_stats.get('total_patterns', 0)} patterns, "
+                     f"transfer_eff={compound_stats.get('transfer_efficiency', 0):.3f}")
+    except Exception as e:
+        logger.warning(f"Compound learning analysis skipped: {e}")
+
     # Analyze limb contributions
     limb_stats = {}
     for limb in ['perception', 'reasoning', 'planning', 'language',
@@ -178,6 +249,7 @@ def evaluate_model(
         'accuracy_pct': f"{accuracy*100:.1f}%",
         'avg_cell_accuracy': avg_cell_acc,
         'limb_analysis': limb_stats,
+        'compound_learning': compound_stats,
         'results': results,
     }
 
@@ -265,9 +337,11 @@ def main():
 
     tokenizer = tiktoken.get_encoding("cl100k_base")
 
-    # Load ARC tasks — search multiple locations
+    # Load ARC tasks — search multiple locations (prefer AGI-2)
     arc_candidates = [
+        Path.home() / "ARC_AMD_TRANSFER" / "data" / "ARC-AGI-2" / "data",
         Path.home() / "ARC_AMD_TRANSFER" / "data" / "ARC-AGI" / "data",
+        Path.cwd() / "ARC_AMD_TRANSFER" / "data" / "ARC-AGI-2" / "data",
         Path.cwd() / "ARC_AMD_TRANSFER" / "data" / "ARC-AGI" / "data",
         Path.cwd() / "data" / "ARC-AGI" / "data",
     ]
