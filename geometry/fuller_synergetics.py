@@ -546,8 +546,8 @@ class GeodesicFrequency(nn.Module):
         
         Non-integer frequencies interpolate between adjacent levels.
         """
-        freq = torch.clamp(self.frequency, 1.0, float(self.max_frequency))
-        floor_freq = torch.floor(freq).long().item()
+        freq = torch.clamp(self.frequency.float(), 1.0, float(self.max_frequency))
+        floor_freq = int(torch.floor(freq).clamp(1, self.max_frequency).item())
         ceil_freq = min(floor_freq + 1, self.max_frequency)
         
         # Interpolation weight
