@@ -1722,6 +1722,202 @@ def infer_boolean_ops(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCandidat
     return rules
 
 
+def infer_ray_cast_fill(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCandidate]:
+    """Fill background cells at row/column intersections of same-colored lines."""
+    rules = []
+    for bg in range(10):
+        def make_ray_cast(bg_val):
+            def fn(g):
+                a = to_np(g).copy()
+                h, w = a.shape
+                for r in range(h):
+                    for c in range(w):
+                        if a[r, c] != bg_val:
+                            continue
+                        colors = []
+                        for dc in range(-1, -c - 1, -1):
+                            if a[r, c + dc] != bg_val:
+                                colors.append(int(a[r, c + dc]))
+                                break
+                        for dc in range(1, w - c):
+                            if a[r, c + dc] != bg_val:
+                                colors.append(int(a[r, c + dc]))
+                                break
+                        for dr in range(-1, -r - 1, -1):
+                            if a[r + dr, c] != bg_val:
+                                colors.append(int(a[r + dr, c]))
+                                break
+                        for dr in range(1, h - r):
+                            if a[r + dr, c] != bg_val:
+                                colors.append(int(a[r + dr, c]))
+                                break
+                        if len(colors) >= 2 and len(set(colors)) == 1:
+                            a[r, c] = colors[0]
+                return to_grid(a)
+            return fn
+        try:
+            fn = make_ray_cast(bg)
+            if all(grid_eq(fn(inp), out) for inp, out in train_pairs):
+                rules.append(RuleCandidate(f"ray_cast_fill(bg={bg})", fn, priority=8.0))
+        except Exception:
+            pass
+    return rules
+
+
+def infer_flood_enclosed(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCandidate]:
+    """Fill enclosed background regions with boundary color."""
+    rules = []
+    for bg in range(10):
+        def make_flood(bg_val):
+            def fn(g):
+                a = to_np(g).copy()
+                h, w = a.shape
+                visited = np.zeros_like(a, dtype=bool)
+                for r in range(h):
+                    for c in range(w):
+                        if a[r, c] != bg_val or visited[r, c]:
+                            continue
+                        region = []
+                        boundary = []
+                        stack = [(r, c)]
+                        touches_border = False
+                        while stack:
+                            rr, cc = stack.pop()
+                            if rr < 0 or rr >= h or cc < 0 or cc >= w:
+                                touches_border = True
+                                continue
+                            if visited[rr, cc]:
+                                continue
+                            if a[rr, cc] != bg_val:
+                                boundary.append(int(a[rr, cc]))
+                                continue
+                            visited[rr, cc] = True
+                            region.append((rr, cc))
+                            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                                stack.append((rr + dr, cc + dc))
+                        if not touches_border and boundary and region:
+                            from collections import Counter
+                            fill_c = Counter(boundary).most_common(1)[0][0]
+                            for rr, cc in region:
+                                a[rr, cc] = fill_c
+                return to_grid(a)
+            return fn
+        try:
+            fn = make_flood(bg)
+            if all(grid_eq(fn(inp), out) for inp, out in train_pairs):
+                rules.append(RuleCandidate(f"flood_enclosed(bg={bg})", fn, priority=7.5))
+        except Exception:
+            pass
+    return rules
+
+
+def infer_line_between_same_color(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCandidate]:
+    """Draw straight lines between pairs of same-colored cells."""
+    rules = []
+    for bg in range(10):
+        def make_lines(bg_val):
+            def fn(g):
+                a = to_np(g).copy()
+                h, w = a.shape
+                by_color = {}
+                for r in range(h):
+                    for c in range(w):
+                        if a[r, c] != bg_val:
+                            color = int(a[r, c])
+                            if color not in by_color:
+                                by_color[color] = []
+                            by_color[color].append((r, c))
+                for color, pts in by_color.items():
+                    for i in range(len(pts)):
+                        for j in range(i + 1, len(pts)):
+                            r1, c1 = pts[i]
+                            r2, c2 = pts[j]
+                            dr, dc = r2 - r1, c2 - c1
+                            if dr == 0:
+                                step = 1 if dc > 0 else -1
+                                for cc in range(c1 + step, c2, step):
+                                    if a[r1, cc] == bg_val:
+                                        a[r1, cc] = color
+                            elif dc == 0:
+                                step = 1 if dr > 0 else -1
+                                for rr in range(r1 + step, r2, step):
+                                    if a[rr, c1] == bg_val:
+                                        a[rr, c1] = color
+                            elif abs(dr) == abs(dc):
+                                sr = 1 if dr > 0 else -1
+                                sc = 1 if dc > 0 else -1
+                                for s in range(1, abs(dr)):
+                                    rr = r1 + s * sr
+                                    cc = c1 + s * sc
+                                    if a[rr, cc] == bg_val:
+                                        a[rr, cc] = color
+                return to_grid(a)
+            return fn
+        try:
+            fn = make_lines(bg)
+            if all(grid_eq(fn(inp), out) for inp, out in train_pairs):
+                rules.append(RuleCandidate(f"lines_between(bg={bg})", fn, priority=7.5))
+        except Exception:
+            pass
+    return rules
+
+
+def infer_diagonal_continuation(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCandidate]:
+    """Detect regular point pattern and extend with a new color."""
+    rules = []
+    for bg in range(10):
+        for ext_c in range(10):
+            if ext_c == bg:
+                continue
+            def make_diag_cont(bg_val, ext_color):
+                def fn(g):
+                    a = to_np(g).copy()
+                    h, w = a.shape
+                    by_color = {}
+                    for r in range(h):
+                        for c in range(w):
+                            if a[r, c] != bg_val:
+                                color = int(a[r, c])
+                                if color not in by_color:
+                                    by_color[color] = []
+                                by_color[color].append((r, c))
+                    for color, pts in by_color.items():
+                        if len(pts) < 2:
+                            continue
+                        pts.sort()
+                        dr = pts[1][0] - pts[0][0]
+                        dc = pts[1][1] - pts[0][1]
+                        if dr == 0 and dc == 0:
+                            continue
+                        regular = all(
+                            pts[i][0] - pts[i - 1][0] == dr and pts[i][1] - pts[i - 1][1] == dc
+                            for i in range(2, len(pts))
+                        )
+                        if regular:
+                            rr, cc = pts[-1][0] + dr, pts[-1][1] + dc
+                            while 0 <= rr < h and 0 <= cc < w:
+                                if a[rr, cc] == bg_val:
+                                    a[rr, cc] = ext_color
+                                rr += dr
+                                cc += dc
+                            rr, cc = pts[0][0] - dr, pts[0][1] - dc
+                            while 0 <= rr < h and 0 <= cc < w:
+                                if a[rr, cc] == bg_val:
+                                    a[rr, cc] = ext_color
+                                rr -= dr
+                                cc -= dc
+                    return to_grid(a)
+                return fn
+            try:
+                fn = make_diag_cont(bg, ext_c)
+                if all(grid_eq(fn(inp), out) for inp, out in train_pairs):
+                    rules.append(RuleCandidate(
+                        f"diag_cont(bg={bg},ext={ext_c})", fn, priority=8.0))
+            except Exception:
+                pass
+    return rules
+
+
 def infer_composition(train_pairs: List[Tuple[Grid, Grid]], base_rules: List[RuleCandidate]) -> List[RuleCandidate]:
     """Try composing two rules: rule2(rule1(input))."""
     rules = []
@@ -1864,6 +2060,19 @@ class ARCSynthesizer:
 
         # Unique subgrid among repeated blocks
         candidates.extend(infer_unique_subgrid(train_pairs))
+
+        # Ray cast fill (intersecting row/column lines)
+        candidates.extend(infer_ray_cast_fill(train_pairs))
+
+        # Flood fill enclosed regions
+        candidates.extend(infer_flood_enclosed(train_pairs))
+
+        # Lines between same-colored cells
+        candidates.extend(infer_line_between_same_color(train_pairs))
+
+        # Diagonal/linear pattern continuation
+        if time.time() - start < self.max_time * 0.3:
+            candidates.extend(infer_diagonal_continuation(train_pairs))
 
         # Per-cell rules
         if time.time() - start < self.max_time * 0.5:
