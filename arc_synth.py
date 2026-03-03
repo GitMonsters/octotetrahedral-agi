@@ -2148,6 +2148,228 @@ def infer_separator_center(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCan
     return rules
 
 
+def infer_extract_cc_most_colors(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCandidate]:
+    """9a4bb226: Extract the connected component with the most distinct colors."""
+    rules = []
+    for bg in range(3):
+        def make_fn(b):
+            def fn(g):
+                a = to_np(g)
+                h, w = a.shape
+                visited = np.zeros_like(a, dtype=bool)
+                ccs = []
+                for r in range(h):
+                    for c in range(w):
+                        if a[r, c] != b and not visited[r, c]:
+                            q = [(r, c)]; cells = []
+                            while q:
+                                rr, cc = q.pop()
+                                if 0 <= rr < h and 0 <= cc < w and not visited[rr, cc] and a[rr, cc] != b:
+                                    visited[rr, cc] = True; cells.append((rr, cc))
+                                    q.extend([(rr+1,cc),(rr-1,cc),(rr,cc+1),(rr,cc-1)])
+                            rmin = min(r2 for r2, c2 in cells)
+                            rmax = max(r2 for r2, c2 in cells)
+                            cmin = min(c2 for r2, c2 in cells)
+                            cmax = max(c2 for r2, c2 in cells)
+                            bbox = np.full((rmax-rmin+1, cmax-cmin+1), b, dtype=int)
+                            for r2, c2 in cells:
+                                bbox[r2-rmin, c2-cmin] = a[r2, c2]
+                            n_colors = len(set(a[r2, c2] for r2, c2 in cells) - {b})
+                            ccs.append((bbox, n_colors, len(cells)))
+                if not ccs:
+                    raise ValueError
+                best = sorted(ccs, key=lambda x: (-x[1], -x[2]))[0]
+                return to_grid(best[0])
+            return fn
+        try:
+            fn = make_fn(bg)
+            if all(grid_eq(fn(inp), out) for inp, out in train_pairs):
+                rules.append(RuleCandidate(f"extract_cc_most_colors_bg{bg}", fn, priority=7.0))
+        except Exception:
+            pass
+    return rules
+
+
+def infer_marker_swap(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCandidate]:
+    """d2acf2cb: Find 4-markers at grid edges, swap interior cells: 0↔8, 6↔7."""
+    rules = []
+    swap = {0: 8, 8: 0, 6: 7, 7: 6}
+    def fn(g):
+        a = to_np(g).copy()
+        h, w = a.shape
+        for r in range(h):
+            if a[r, 0] == 4 and a[r, w-1] == 4:
+                for c in range(1, w-1):
+                    if a[r, c] in swap:
+                        a[r, c] = swap[a[r, c]]
+        for c in range(w):
+            if a[0, c] == 4 and a[h-1, c] == 4:
+                for r in range(1, h-1):
+                    if a[r, c] in swap:
+                        a[r, c] = swap[a[r, c]]
+        return to_grid(a)
+    try:
+        if all(grid_eq(fn(inp), out) for inp, out in train_pairs):
+            rules.append(RuleCandidate("marker_swap", fn, priority=7.5))
+    except Exception:
+        pass
+    return rules
+
+
+def infer_shift_left_bg5(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCandidate]:
+    """32e9702f: Replace bg(0) with 5, shift each horizontal segment left by 1."""
+    rules = []
+    def fn(g):
+        a = to_np(g).copy()
+        h, w = a.shape
+        result = np.full((h, w), 5, dtype=int)
+        for r in range(h):
+            c = 0
+            while c < w:
+                if a[r, c] != 0:
+                    color = int(a[r, c])
+                    start = c
+                    while c < w and a[r, c] == color:
+                        c += 1
+                    for cc in range(start, c):
+                        new_c = cc - 1
+                        if 0 <= new_c < w:
+                            result[r, new_c] = color
+                else:
+                    c += 1
+        return to_grid(result)
+    try:
+        if all(grid_eq(fn(inp), out) for inp, out in train_pairs):
+            rules.append(RuleCandidate("shift_left_bg5", fn, priority=8.0))
+    except Exception:
+        pass
+    return rules
+
+
+def infer_remove_fewest_marker(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCandidate]:
+    """54db823b: Remove the CC with the fewest cells of a marker color (e.g., 9)."""
+    rules = []
+    for marker in range(10):
+        for bg in range(3):
+            def make_fn(m, b):
+                def fn(g):
+                    a = to_np(g).copy()
+                    h, w = a.shape
+                    visited = np.zeros_like(a, dtype=bool)
+                    ccs = []
+                    for r in range(h):
+                        for c in range(w):
+                            if a[r, c] != b and not visited[r, c]:
+                                q = [(r, c)]; cells = []
+                                while q:
+                                    rr, cc = q.pop()
+                                    if 0 <= rr < h and 0 <= cc < w and not visited[rr, cc] and a[rr, cc] != b:
+                                        visited[rr, cc] = True; cells.append((rr, cc))
+                                        q.extend([(rr+1,cc),(rr-1,cc),(rr,cc+1),(rr,cc-1)])
+                                ccs.append(cells)
+                    if len(ccs) <= 1:
+                        return to_grid(a)
+                    cc_markers = [(sum(1 for r, c in cells if a[r, c] == m), len(cells), idx)
+                                  for idx, cells in enumerate(ccs)]
+                    cc_markers.sort(key=lambda x: (x[0], x[1]))
+                    remove_idx = cc_markers[0][2]
+                    for r, c in ccs[remove_idx]:
+                        a[r, c] = b
+                    return to_grid(a)
+                return fn
+            try:
+                fn = make_fn(marker, bg)
+                if all(grid_eq(fn(inp), out) for inp, out in train_pairs):
+                    rules.append(RuleCandidate(f"remove_fewest_{marker}_bg{bg}", fn, priority=7.5))
+            except Exception:
+                pass
+    return rules
+
+
+def infer_fill_frames(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCandidate]:
+    """84f2aca1: Fill rectangular frame interiors: 1 cell→5, 2+→7."""
+    rules = []
+    def fn(g):
+        a = to_np(g).copy()
+        h, w = a.shape
+        visited = np.zeros_like(a, dtype=bool)
+        for r in range(h):
+            for c in range(w):
+                if a[r, c] != 0 and not visited[r, c]:
+                    color = int(a[r, c])
+                    q = [(r, c)]; cells = set()
+                    while q:
+                        rr, cc = q.pop()
+                        if 0 <= rr < h and 0 <= cc < w and (rr, cc) not in cells and a[rr, cc] == color:
+                            cells.add((rr, cc))
+                            q.extend([(rr+1,cc),(rr-1,cc),(rr,cc+1),(rr,cc-1)])
+                    for cell in cells:
+                        visited[cell] = True
+                    rmin = min(r2 for r2, c2 in cells)
+                    rmax = max(r2 for r2, c2 in cells)
+                    cmin = min(c2 for r2, c2 in cells)
+                    cmax = max(c2 for r2, c2 in cells)
+                    fh = rmax - rmin + 1; fw = cmax - cmin + 1
+                    if fh < 3 or fw < 3:
+                        continue
+                    border = set()
+                    for rr in range(rmin, rmax+1):
+                        for cc in range(cmin, cmax+1):
+                            if rr == rmin or rr == rmax or cc == cmin or cc == cmax:
+                                border.add((rr, cc))
+                    if cells == border:
+                        interior_area = (fh-2) * (fw-2)
+                        fill_color = 5 if interior_area == 1 else 7
+                        for rr in range(rmin+1, rmax):
+                            for cc in range(cmin+1, cmax):
+                                a[rr, cc] = fill_color
+        return to_grid(a)
+    try:
+        if all(grid_eq(fn(inp), out) for inp, out in train_pairs):
+            rules.append(RuleCandidate("fill_frames", fn, priority=7.0))
+    except Exception:
+        pass
+    return rules
+
+
+def infer_connect_pluses(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCandidate]:
+    """55059096: Connect 45°-aligned plus-shapes with diagonal color-2 lines."""
+    rules = []
+    from itertools import combinations as _combs
+    def fn(g):
+        a = to_np(g).copy()
+        h, w = a.shape
+        centers = []
+        plus_cells = set()
+        for r in range(1, h-1):
+            for c in range(1, w-1):
+                if a[r, c] != 0:
+                    col = int(a[r, c])
+                    if a[r-1,c]==col and a[r+1,c]==col and a[r,c-1]==col and a[r,c+1]==col:
+                        centers.append((r, c))
+                        plus_cells.update([(r,c),(r-1,c),(r+1,c),(r,c-1),(r,c+1)])
+        if len(centers) < 2:
+            return to_grid(a)
+        for i, j in _combs(range(len(centers)), 2):
+            r1, c1 = centers[i]; r2, c2 = centers[j]
+            dr = r2 - r1; dc = c2 - c1
+            if abs(dr) != abs(dc) or dr == 0:
+                continue
+            sr = 1 if dr > 0 else -1; sc = 1 if dc > 0 else -1
+            cr, cc = r1 + sr, c1 + sc
+            while (cr, cc) != (r2, c2):
+                if (cr, cc) not in plus_cells:
+                    a[cr, cc] = 2
+                cr += sr; cc += sc
+        return to_grid(a)
+    try:
+        if all(grid_eq(fn(inp), out) for inp, out in train_pairs):
+            rules.append(RuleCandidate("connect_pluses", fn, priority=7.5))
+    except Exception:
+        pass
+    return rules
+
+
 def infer_composition(train_pairs: List[Tuple[Grid, Grid]], base_rules: List[RuleCandidate]) -> List[RuleCandidate]:
     """Try composing two rules: rule2(rule1(input))."""
     rules = []
@@ -2320,6 +2542,25 @@ class ARCSynthesizer:
         # Path routing with CW/CCW markers
         if time.time() - start < self.max_time * 0.4 and not candidates:
             candidates.extend(infer_path_routing(train_pairs))
+
+        # Extract CC with most colors
+        candidates.extend(infer_extract_cc_most_colors(train_pairs))
+
+        # Marker swap (4 at grid edges)
+        candidates.extend(infer_marker_swap(train_pairs))
+
+        # Shift left + bg5
+        candidates.extend(infer_shift_left_bg5(train_pairs))
+
+        # Remove CC with fewest marker cells
+        if time.time() - start < self.max_time * 0.4:
+            candidates.extend(infer_remove_fewest_marker(train_pairs))
+
+        # Fill rectangular frame interiors
+        candidates.extend(infer_fill_frames(train_pairs))
+
+        # Connect plus shapes diagonally
+        candidates.extend(infer_connect_pluses(train_pairs))
 
         # Per-cell rules
         if time.time() - start < self.max_time * 0.5:
