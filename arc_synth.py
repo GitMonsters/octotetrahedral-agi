@@ -1918,6 +1918,236 @@ def infer_diagonal_continuation(train_pairs: List[Tuple[Grid, Grid]]) -> List[Ru
     return rules
 
 
+def infer_sudoku_completion(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCandidate]:
+    """Fill 0s in NxN grid so each row and column has each color exactly once."""
+    rules = []
+    inp0 = to_np(train_pairs[0][0])
+    out0 = to_np(train_pairs[0][1])
+    if inp0.shape != out0.shape: return rules
+    h, w = inp0.shape
+    if h != w or h > 9 or 0 not in inp0: return rules
+    target_colors = set(int(x) for x in out0.flatten())
+    if len(target_colors) != h: return rules
+
+    def solve(g, tc):
+        a = to_np(g).copy(); n = a.shape[0]
+        zeros = [(r, c) for r in range(n) for c in range(n) if a[r, c] == 0]
+        def possible(r, c):
+            return tc - set(int(x) for x in a[r, :]) - set(int(x) for x in a[:, c]) - {0}
+        def bt(idx):
+            if idx == len(zeros): return True
+            r, c = zeros[idx]
+            for color in sorted(possible(r, c)):
+                a[r, c] = color
+                if bt(idx + 1): return True
+                a[r, c] = 0
+            return False
+        return to_grid(a) if bt(0) else None
+
+    def fn(g):
+        result = solve(g, target_colors)
+        if result is None: raise ValueError
+        return result
+
+    try:
+        if all(grid_eq(fn(inp), out) for inp, out in train_pairs):
+            rules.append(RuleCandidate("sudoku_completion", fn, priority=9.0))
+    except Exception:
+        pass
+    return rules
+
+
+def infer_rotate_around_pivot(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCandidate]:
+    """Rotate colored line 90° CW/CCW around a pivot cell, recolor original."""
+    rules = []
+    if not all(to_np(inp).shape == to_np(out).shape for inp, out in train_pairs):
+        return rules
+
+    for pivot_color in range(10):
+        for recolor in range(10):
+            if recolor == pivot_color: continue
+            for direction in ['cw', 'ccw']:
+                def make_rotate(pc, rc, d):
+                    def fn(g):
+                        a = to_np(g).copy(); h, w = a.shape
+                        pivots = list(zip(*np.where(a == pc)))
+                        if len(pivots) != 1: raise ValueError
+                        pr, pcc = pivots[0]
+                        others = [(r, c, int(a[r, c])) for r in range(h) for c in range(w)
+                                  if a[r, c] != 0 and a[r, c] != pc]
+                        if not others: raise ValueError
+                        orig_color = others[0][2]
+                        if not all(c == orig_color for _, _, c in others): raise ValueError
+                        result = np.zeros_like(a)
+                        result[pr, pcc] = pc
+                        for r, c, _ in others:
+                            result[r, c] = rc
+                        for r, c, _ in others:
+                            dr, dc = r - pr, c - pcc
+                            if d == 'cw':
+                                nr, nc = pr + dc, pcc - dr
+                            else:
+                                nr, nc = pr - dc, pcc + dr
+                            if 0 <= nr < h and 0 <= nc < w:
+                                result[nr, nc] = orig_color
+                        return to_grid(result)
+                    return fn
+                try:
+                    fn = make_rotate(pivot_color, recolor, direction)
+                    if all(grid_eq(fn(inp), out) for inp, out in train_pairs):
+                        rules.append(RuleCandidate(
+                            f"rotate_{direction}(pivot={pivot_color},recolor={recolor})",
+                            fn, priority=8.5))
+                except Exception:
+                    pass
+    return rules
+
+
+def infer_path_routing(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCandidate]:
+    """Trace L-path with CW/CCW turn markers."""
+    rules = []
+    if not all(to_np(inp).shape == to_np(out).shape for inp, out in train_pairs):
+        return rules
+
+    _CW = {(0, 1): (1, 0), (1, 0): (0, -1), (0, -1): (-1, 0), (-1, 0): (0, 1)}
+    _CCW = {(0, 1): (-1, 0), (-1, 0): (0, -1), (0, -1): (1, 0), (1, 0): (0, 1)}
+
+    for path_color in range(10):
+        for cw_color in range(10):
+            for ccw_color in range(10):
+                if len({path_color, cw_color, ccw_color}) < 3: continue
+
+                def make_path(pc, cwc, ccwc):
+                    def fn(g):
+                        a = to_np(g).copy(); h, w = a.shape
+                        starts = list(zip(*np.where(a == pc)))
+                        if len(starts) != 1: raise ValueError
+                        sr, sc = starts[0]
+                        targets = {}
+                        for r in range(h):
+                            for c in range(w):
+                                if a[r, c] != 0 and a[r, c] != pc:
+                                    targets[(r, c)] = int(a[r, c])
+                        if not targets: raise ValueError
+                        dr, dc = 0, 1
+                        cr, cc = sr, sc
+                        for _ in range(200):
+                            nr, nc = cr + dr, cc + dc
+                            if (nr, nc) in targets:
+                                tc = targets[(nr, nc)]
+                                del targets[(nr, nc)]
+                                if tc == cwc:
+                                    dr, dc = _CW[(dr, dc)]
+                                elif tc == ccwc:
+                                    dr, dc = _CCW[(dr, dc)]
+                                else:
+                                    raise ValueError
+                                continue
+                            if nr < 0 or nr >= h or nc < 0 or nc >= w:
+                                break
+                            a[nr, nc] = pc
+                            cr, cc = nr, nc
+                        return to_grid(a)
+                    return fn
+
+                try:
+                    fn = make_path(path_color, cw_color, ccw_color)
+                    if all(grid_eq(fn(inp), out) for inp, out in train_pairs):
+                        rules.append(RuleCandidate(
+                            f"path_route({path_color},cw={cw_color},ccw={ccw_color})",
+                            fn, priority=8.5))
+                        return rules  # expensive search, return on first match
+                except Exception:
+                    pass
+    return rules
+
+
+def infer_diag_perp_extension(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCandidate]:
+    """Connect longest diagonal pair, extend on-line markers perpendicular."""
+    rules = []
+    if not all(to_np(inp).shape == to_np(out).shape for inp, out in train_pairs):
+        return rules
+
+    def fn(g):
+        a = to_np(g).copy(); h, w = a.shape
+        bg = int(np.bincount(a.flatten()).argmax())
+        from itertools import combinations as _comb
+        all_pts = [(r, c, int(a[r, c])) for r in range(h) for c in range(w) if a[r, c] != bg]
+        best_pair = None; best_len = 0
+        for (r1, c1, col1), (r2, c2, col2) in _comb(all_pts, 2):
+            if col1 != col2: continue
+            dr, dc = r2 - r1, c2 - c1
+            if dr == 0 or dc == 0 or abs(dr) != abs(dc): continue
+            if abs(dr) > best_len:
+                best_len = abs(dr)
+                best_pair = (r1, c1, r2, c2, col1)
+        if best_pair is None: raise ValueError
+        r1, c1, r2, c2, line_color = best_pair
+        sr = 1 if r2 - r1 > 0 else -1
+        sc = 1 if c2 - c1 > 0 else -1
+        steps = abs(r2 - r1)
+        for s in range(1, steps):
+            rr, cc = r1 + s * sr, c1 + s * sc
+            if 0 <= rr < h and 0 <= cc < w and a[rr, cc] == bg:
+                a[rr, cc] = line_color
+        for s in range(0, steps + 1):
+            rr, cc = r1 + s * sr, c1 + s * sc
+            if 0 <= rr < h and 0 <= cc < w:
+                cell_color = int(a[rr, cc])
+                if cell_color != bg and cell_color != line_color:
+                    for pdr, pdc in [(-sc, sr), (sc, -sr)]:
+                        pr, pc = rr + pdr, cc + pdc
+                        while 0 <= pr < h and 0 <= pc < w:
+                            if a[pr, pc] == bg:
+                                a[pr, pc] = cell_color
+                            elif a[pr, pc] != cell_color:
+                                break
+                            pr += pdr; pc += pdc
+        return to_grid(a)
+
+    try:
+        if all(grid_eq(fn(inp), out) for inp, out in train_pairs):
+            rules.append(RuleCandidate("diag_perp_extend", fn, priority=8.0))
+    except Exception:
+        pass
+    return rules
+
+
+def infer_separator_center(train_pairs: List[Tuple[Grid, Grid]]) -> List[RuleCandidate]:
+    """Place most-common color above separator at bottom center."""
+    rules = []
+
+    def find_sep_row(a):
+        h, w = a.shape
+        for r in range(h):
+            vals = set(a[r, :])
+            if len(vals) == 1 and list(vals)[0] != 0:
+                return r, int(list(vals)[0])
+        return None, None
+
+    def fn(g):
+        a = to_np(g).copy(); h, w = a.shape
+        sep_row, sep_color = find_sep_row(a)
+        if sep_row is None: raise ValueError
+        above_colors = []
+        for r in range(sep_row):
+            for c in range(w):
+                if a[r, c] != 0 and a[r, c] != sep_color:
+                    above_colors.append(int(a[r, c]))
+        if not above_colors: raise ValueError
+        from collections import Counter as _Counter
+        most_common = _Counter(above_colors).most_common(1)[0][0]
+        a[h - 1, w // 2] = most_common
+        return to_grid(a)
+
+    try:
+        if all(grid_eq(fn(inp), out) for inp, out in train_pairs):
+            rules.append(RuleCandidate("separator_center", fn, priority=8.0))
+    except Exception:
+        pass
+    return rules
+
+
 def infer_composition(train_pairs: List[Tuple[Grid, Grid]], base_rules: List[RuleCandidate]) -> List[RuleCandidate]:
     """Try composing two rules: rule2(rule1(input))."""
     rules = []
@@ -2073,6 +2303,23 @@ class ARCSynthesizer:
         # Diagonal/linear pattern continuation
         if time.time() - start < self.max_time * 0.3:
             candidates.extend(infer_diagonal_continuation(train_pairs))
+
+        # Sudoku-like completion
+        candidates.extend(infer_sudoku_completion(train_pairs))
+
+        # Rotate around pivot
+        if time.time() - start < self.max_time * 0.3:
+            candidates.extend(infer_rotate_around_pivot(train_pairs))
+
+        # Diagonal + perpendicular extension
+        candidates.extend(infer_diag_perp_extension(train_pairs))
+
+        # Separator + center placement
+        candidates.extend(infer_separator_center(train_pairs))
+
+        # Path routing with CW/CCW markers
+        if time.time() - start < self.max_time * 0.4 and not candidates:
+            candidates.extend(infer_path_routing(train_pairs))
 
         # Per-cell rules
         if time.time() - start < self.max_time * 0.5:
