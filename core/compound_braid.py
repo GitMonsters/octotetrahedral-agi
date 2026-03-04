@@ -9,6 +9,10 @@ Braided approach:  limbs run → cross-attend to each other → gated combinatio
 
 This lets spatial reasoning inform language, memory inform reasoning, etc.
 The braid pattern is learned during training via cross-attention gates.
+
+Compound MoE integration: braid gate patterns feed into MoE expert routing
+via a braid_signal vector, and MoE expert specialization feeds back to
+update braid combine weights.
 """
 
 import torch
@@ -82,11 +86,13 @@ class CompoundBraid(nn.Module):
         num_heads: int = 4,
         dropout: float = 0.1,
         braid_strength: float = 0.3,
+        moe_signal_dim: int = 0,
     ):
         super().__init__()
         self.hidden_dim = hidden_dim
         self.num_limbs = num_limbs
         self.braid_strength = braid_strength
+        self.moe_signal_dim = moe_signal_dim
 
         # Each limb gets its own cross-attention to attend to others
         self.cross_attns = nn.ModuleList([
@@ -115,6 +121,12 @@ class CompoundBraid(nn.Module):
             nn.LayerNorm(hidden_dim) for _ in range(num_limbs)
         ])
 
+        # Braid→MoE signal: project gate patterns into a routing hint vector
+        if moe_signal_dim > 0:
+            self.braid_to_moe = nn.Linear(num_limbs, moe_signal_dim, bias=False)
+        else:
+            self.braid_to_moe = None
+
     def _apply_phase_rotation(self, x: torch.Tensor, angle: torch.Tensor) -> torch.Tensor:
         """Apply phase rotation by treating pairs of hidden dims as complex numbers.
         
@@ -136,17 +148,21 @@ class CompoundBraid(nn.Module):
         self,
         limb_outputs: List[torch.Tensor],
         attention_mask: Optional[torch.Tensor] = None,
-    ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
+        moe_expert_loads: Optional[torch.Tensor] = None,
+    ) -> Tuple[torch.Tensor, Dict]:
         """
         Braid limb outputs together via cross-attention.
 
         Args:
             limb_outputs: list of [batch, seq, hidden] tensors, one per limb
             attention_mask: optional [batch, seq] mask
+            moe_expert_loads: optional [num_experts] expert load EMA from
+                              CompoundMoELayer — feeds back to adjust braid weights
 
         Returns:
             combined: [batch, seq, hidden] — braided combination
-            braid_info: dict with per-limb gate values and attention stats
+            braid_info: dict with per-limb gate values, attention stats,
+                        and braid_signal for MoE routing
         """
         assert len(limb_outputs) == self.num_limbs
 
@@ -173,12 +189,35 @@ class CompoundBraid(nn.Module):
             mixed = self.layer_norms[i](mixed)
             braided.append(mixed)
 
+        # MoE feedback: if expert loads are provided, modulate combine weights
+        # This creates a closed loop: braid → MoE → braid
+        if moe_expert_loads is not None and self.training:
+            # Expert load entropy as a modulation signal
+            load_prob = moe_expert_loads / (moe_expert_loads.sum() + 1e-8)
+            load_entropy = -(load_prob * (load_prob + 1e-8).log()).sum()
+            # Low entropy (expert collapse) → increase braid diversity
+            # High entropy (balanced) → keep current braid weights
+            diversity_boost = torch.clamp(1.0 - load_entropy / 4.0, 0.0, 0.2)
+            # Push combine_weights toward uniform when experts are collapsing
+            uniform = torch.ones_like(self.combine_weights) / self.num_limbs
+            effective_weights = F.softmax(
+                self.combine_weights + diversity_boost * (uniform - self.combine_weights),
+                dim=0,
+            )
+        else:
+            effective_weights = F.softmax(self.combine_weights, dim=0)
+
         # Combine with learned weights and phase rotations
-        weights = F.softmax(self.combine_weights, dim=0)
         combined = sum(
             w * self._apply_phase_rotation(out, self.phase_angles[i])
-            for i, (w, out) in enumerate(zip(weights, braided))
+            for i, (w, out) in enumerate(zip(effective_weights, braided))
         )
+
+        # Generate braid→MoE routing signal from gate pattern
+        gate_vector = torch.stack(gate_values)  # [num_limbs]
+        braid_signal = None
+        if self.braid_to_moe is not None:
+            braid_signal = self.braid_to_moe(gate_vector)  # [moe_signal_dim]
 
         braid_info = {
             'gate_values': {
@@ -187,12 +226,13 @@ class CompoundBraid(nn.Module):
             },
             'combine_weights': {
                 name: w.item() for name, w in
-                zip(self.LIMB_NAMES[:self.num_limbs], weights)
+                zip(self.LIMB_NAMES[:self.num_limbs], effective_weights)
             },
             'phase_angles': {
                 name: self.phase_angles[i].item() for i, name in
                 enumerate(self.LIMB_NAMES[:self.num_limbs])
             },
+            'braid_signal': braid_signal,
         }
 
         return combined, braid_info

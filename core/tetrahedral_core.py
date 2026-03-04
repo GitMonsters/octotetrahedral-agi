@@ -113,7 +113,8 @@ class TetrahedralTransformerLayer(nn.Module):
         x: torch.Tensor,
         geometric_bias: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
-        head_gates: Optional[torch.Tensor] = None
+        head_gates: Optional[torch.Tensor] = None,
+        braid_signal: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Forward pass through transformer layer.
@@ -123,6 +124,7 @@ class TetrahedralTransformerLayer(nn.Module):
             geometric_bias: Geometric attention bias [seq_len, seq_len]
             attention_mask: Optional attention mask
             head_gates: Optional head gating from RNA editing
+            braid_signal: Optional [num_experts] routing hint from CompoundBraid
             
         Returns:
             Tuple of (output tensor, auxiliary MoE loss)
@@ -142,7 +144,9 @@ class TetrahedralTransformerLayer(nn.Module):
         residual = x
         x = self.norm2(x)
         aux_loss = torch.tensor(0.0, device=x.device)
-        if self.use_moe or self.use_compound_moe:
+        if self.use_compound_moe:
+            x, aux_loss = self.ffn(x, braid_signal=braid_signal)
+        elif self.use_moe:
             x, aux_loss = self.ffn(x)
         else:
             x = self.ffn(x)
@@ -214,7 +218,8 @@ class TetrahedralCore(nn.Module):
         x: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
         head_gates: Optional[torch.Tensor] = None,
-        return_all_layers: bool = False
+        return_all_layers: bool = False,
+        braid_signal: Optional[torch.Tensor] = None,
     ) -> Dict[str, torch.Tensor]:
         """
         Process input through tetrahedral reasoning core.
@@ -224,6 +229,7 @@ class TetrahedralCore(nn.Module):
             attention_mask: Optional attention mask [batch, seq_len]
             head_gates: Optional per-head gating from RNA editing
             return_all_layers: Whether to return intermediate layer outputs
+            braid_signal: Optional [num_experts] routing hint from CompoundBraid
             
         Returns:
             Dictionary containing:
@@ -251,7 +257,8 @@ class TetrahedralCore(nn.Module):
                     x,
                     geometric_bias=geometric_bias,
                     attention_mask=attention_mask,
-                    head_gates=head_gates
+                    head_gates=head_gates,
+                    braid_signal=braid_signal,
                 )
             total_aux_loss = total_aux_loss + aux_loss
             if return_all_layers:

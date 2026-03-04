@@ -230,12 +230,17 @@ class CompoundMoELayer(nn.Module):
             self.transfer_up = nn.Linear(transfer_rank, hidden_dim, bias=False)
             self.transfer_gate = nn.Parameter(torch.tensor(0.0))
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self,
+        x: torch.Tensor,
+        braid_signal: Optional[torch.Tensor] = None,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Forward pass with compound learning integration.
 
         Args:
             x: [batch, seq_len, hidden_dim]
+            braid_signal: optional [num_experts] routing hint from CompoundBraid
         Returns:
             output: [batch, seq_len, hidden_dim]
             aux_loss: scalar (load balance + compound regularization)
@@ -250,6 +255,9 @@ class CompoundMoELayer(nn.Module):
         # Re-route with bias for better expert selection
         if self.training:
             bias = self.compound_bias(flat_x)
+            # Add braid signal as additional routing hint
+            if braid_signal is not None:
+                bias = bias + 0.1 * braid_signal.unsqueeze(0)
             biased_logits = self.router.gate(flat_x) + bias
             top_k_logits, top_k_indices = torch.topk(
                 biased_logits, self.top_k, dim=-1
@@ -311,6 +319,10 @@ class CompoundMoELayer(nn.Module):
         """
         if expert_rewards is not None:
             self.compound_bias.update_compound_bias(expert_rewards)
+
+    def get_expert_loads(self) -> torch.Tensor:
+        """Return current expert load EMA for braid feedback."""
+        return self.compound_tracker.expert_load_ema
 
     def get_compound_stats(self) -> Dict[str, Any]:
         """Return compound integration statistics."""

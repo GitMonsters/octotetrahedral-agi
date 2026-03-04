@@ -251,12 +251,14 @@ class OctoTetrahedralModel(nn.Module):
         )
         
         # === Compound Braid (Cross-Limb Information Exchange) ===
+        moe_signal_dim = self.config.moe.num_experts if self.config.moe.enabled and self.config.moe.compound_enabled else 0
         self.compound_braid = CompoundBraid(
             hidden_dim=self.hidden_dim,
             num_limbs=4,  # memory, spatial, language, metacognition
             num_heads=self.num_heads // 4,
             dropout=self.config.model.dropout,
             braid_strength=0.3,
+            moe_signal_dim=moe_signal_dim,
         )
         
         # === Reasoning Limb (Pattern Processing) ===
@@ -403,10 +405,13 @@ class OctoTetrahedralModel(nn.Module):
         # edited: [batch, seq_len, hidden_dim]
         
         # === 3. Tetrahedral Core: Main Processing ===
+        # Pass cached braid signal from previous step into MoE routing
+        braid_signal = getattr(self, '_cached_braid_signal', None)
         core_result = self.core(
             edited,
             attention_mask=attention_mask,
-            head_gates=editing_info['head_gates']
+            head_gates=editing_info['head_gates'],
+            braid_signal=braid_signal,
         )
         core_output = core_result['hidden_states']
         reasoning_state = core_result['reasoning_state']
@@ -470,10 +475,18 @@ class OctoTetrahedralModel(nn.Module):
         meta_out, meta_conf, _ = self.metacognition(memory_enhanced)
         
         # Compound Braid: cross-limb information exchange via learned cross-attention
+        # Feed MoE expert loads back to braid for closed-loop compound learning
+        moe_expert_loads = None
+        if self.config.moe.enabled and self.config.moe.compound_enabled:
+            moe_expert_loads = self._get_first_compound_moe_loads()
         combined_limbs, braid_info = self.compound_braid(
             [memory_out, spatial_out, language_out, meta_out],
             attention_mask=attention_mask,
+            moe_expert_loads=moe_expert_loads,
         )
+        # Cache braid signal for next forward pass → MoE routing
+        if braid_info.get('braid_signal') is not None:
+            self._cached_braid_signal = braid_info['braid_signal'].detach()
         
         # Blend with memory_enhanced
         multi_limb_output = memory_enhanced + 0.3 * combined_limbs
@@ -764,11 +777,20 @@ class OctoTetrahedralModel(nn.Module):
         total = self.get_num_params()
         # Subtract inactive expert params: (E - K) experts × params_per_expert × L layers
         from core.moe import MoELayer
+        from core.compound_moe import CompoundMoELayer
         for module in self.modules():
-            if isinstance(module, MoELayer):
+            if isinstance(module, (MoELayer, CompoundMoELayer)):
                 inactive = module.total_params() - module.active_params()
                 total -= inactive
         return total
+
+    def _get_first_compound_moe_loads(self) -> Optional[torch.Tensor]:
+        """Get expert loads from the first CompoundMoELayer for braid feedback."""
+        from core.compound_moe import CompoundMoELayer
+        for module in self.modules():
+            if isinstance(module, CompoundMoELayer):
+                return module.get_expert_loads()
+        return None
     
     def get_stats(self) -> Dict[str, Any]:
         """Get model statistics"""
