@@ -94,6 +94,9 @@ def get_1_72t_config(device: str = "cpu") -> Config:
             expert_ffn_dim=17920,       # 2.5× d_model per expert (SwiGLU)
             jitter_noise=0.01,
             load_balance_weight=0.01,
+            compound_enabled=True,      # Compounding integrations active
+            compound_bias_scale=0.1,
+            enable_cross_transfer=True,
         ),
         geometric_physics=GeometricPhysicsConfig(
             enable_fuller=True,

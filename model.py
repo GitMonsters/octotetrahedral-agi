@@ -127,6 +127,9 @@ class OctoTetrahedralModel(nn.Module):
                 "top_k": self.config.moe.top_k,
                 "expert_ffn_dim": self.config.moe.expert_ffn_dim,
                 "jitter_noise": self.config.moe.jitter_noise,
+                "compound_enabled": self.config.moe.compound_enabled,
+                "compound_bias_scale": self.config.moe.compound_bias_scale,
+                "enable_cross_transfer": self.config.moe.enable_cross_transfer,
             }
         self.core = TetrahedralCore(
             hidden_dim=self.hidden_dim,

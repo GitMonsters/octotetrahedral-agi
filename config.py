@@ -219,6 +219,10 @@ class MoEConfig:
     expert_ffn_dim: int = 28672  # Per-expert FFN intermediate dim
     jitter_noise: float = 0.01  # Router exploration noise during training
     load_balance_weight: float = 0.01  # Auxiliary loss weight
+    # Compounding integration settings
+    compound_enabled: bool = False  # Use CompoundMoELayer instead of base MoELayer
+    compound_bias_scale: float = 0.1  # Scale for adaptive routing bias
+    enable_cross_transfer: bool = True  # Cross-expert knowledge transfer
 
 
 @dataclass

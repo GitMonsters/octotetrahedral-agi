@@ -18,6 +18,7 @@ from typing import Optional, Tuple, Dict, Any
 from .tetrahedral_geometry import TetrahedralGeometry
 from .tetrahedral_attention import TetrahedralAttention
 from .moe import MoELayer
+from .compound_moe import CompoundMoELayer
 
 
 class FeedForward(nn.Module):
@@ -66,6 +67,7 @@ class TetrahedralTransformerLayer(nn.Module):
     ):
         super().__init__()
         self.use_moe = moe_config is not None and moe_config.get("enabled", False)
+        self.use_compound_moe = self.use_moe and moe_config.get("compound_enabled", False)
         
         # Pre-norm architecture
         self.norm1 = nn.LayerNorm(hidden_dim)
@@ -77,7 +79,18 @@ class TetrahedralTransformerLayer(nn.Module):
         )
         
         self.norm2 = nn.LayerNorm(hidden_dim)
-        if self.use_moe:
+        if self.use_compound_moe:
+            self.ffn = CompoundMoELayer(
+                hidden_dim=hidden_dim,
+                ffn_dim=moe_config.get("expert_ffn_dim", ffn_dim),
+                num_experts=moe_config.get("num_experts", 64),
+                top_k=moe_config.get("top_k", 8),
+                dropout=dropout,
+                jitter_noise=moe_config.get("jitter_noise", 0.01),
+                compound_bias_scale=moe_config.get("compound_bias_scale", 0.1),
+                enable_cross_transfer=moe_config.get("enable_cross_transfer", True),
+            )
+        elif self.use_moe:
             self.ffn = MoELayer(
                 hidden_dim=hidden_dim,
                 ffn_dim=moe_config.get("expert_ffn_dim", ffn_dim),
@@ -129,7 +142,7 @@ class TetrahedralTransformerLayer(nn.Module):
         residual = x
         x = self.norm2(x)
         aux_loss = torch.tensor(0.0, device=x.device)
-        if self.use_moe:
+        if self.use_moe or self.use_compound_moe:
             x, aux_loss = self.ffn(x)
         else:
             x = self.ffn(x)
