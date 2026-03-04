@@ -3103,6 +3103,551 @@ def keep_n_largest_objects(grid, n=1, **kwargs):
     return result
 
 
+def crop_to_bbox(grid, **kwargs):
+    """Crop grid to bounding box of all non-zero cells"""
+    h, w = len(grid), len(grid[0])
+    rmin, rmax, cmin, cmax = h, 0, w, 0
+    for i in range(h):
+        for j in range(w):
+            if grid[i][j] != 0:
+                rmin = min(rmin, i)
+                rmax = max(rmax, i)
+                cmin = min(cmin, j)
+                cmax = max(cmax, j)
+    if rmin > rmax:
+        return grid
+    return [row[cmin:cmax+1] for row in grid[rmin:rmax+1]]
+
+
+def symmetry_complete_h(grid, **kwargs):
+    """Complete horizontal symmetry: fill bg cells from their mirror position"""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    for i in range(h):
+        for j in range(w):
+            mj = w - 1 - j
+            if result[i][j] == 0 and result[i][mj] != 0:
+                result[i][j] = result[i][mj]
+            elif result[i][mj] == 0 and result[i][j] != 0:
+                result[i][mj] = result[i][j]
+    return result
+
+
+def symmetry_complete_v(grid, **kwargs):
+    """Complete vertical symmetry: fill bg cells from their mirror position"""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    for i in range(h):
+        mi = h - 1 - i
+        for j in range(w):
+            if result[i][j] == 0 and result[mi][j] != 0:
+                result[i][j] = result[mi][j]
+            elif result[mi][j] == 0 and result[i][j] != 0:
+                result[mi][j] = result[i][j]
+    return result
+
+
+def symmetry_complete_both(grid, **kwargs):
+    """Complete both horizontal and vertical symmetry"""
+    return symmetry_complete_v(symmetry_complete_h(grid))
+
+
+# ============================================================================
+# NEW: Grid Folding Operations (for 0.5x ratio eval tasks)
+# ============================================================================
+
+def fold_h_or(grid, **kwargs):
+    """Fold grid horizontally (top onto bottom) with OR merge"""
+    h, w = len(grid), len(grid[0])
+    half = h // 2
+    result = [[0]*w for _ in range(half)]
+    for i in range(half):
+        for j in range(w):
+            top = grid[i][j]
+            bot = grid[h - 1 - i][j]
+            result[i][j] = top if top != 0 else bot
+    return result
+
+def fold_h_xor(grid, **kwargs):
+    """Fold grid horizontally with XOR (keep differences)"""
+    h, w = len(grid), len(grid[0])
+    half = h // 2
+    result = [[0]*w for _ in range(half)]
+    for i in range(half):
+        for j in range(w):
+            top = grid[i][j]
+            bot = grid[h - 1 - i][j]
+            if top == bot:
+                result[i][j] = 0
+            else:
+                result[i][j] = top if top != 0 else bot
+    return result
+
+def fold_v_or(grid, **kwargs):
+    """Fold grid vertically (left onto right) with OR merge"""
+    h, w = len(grid), len(grid[0])
+    half = w // 2
+    result = [[0]*half for _ in range(h)]
+    for i in range(h):
+        for j in range(half):
+            left = grid[i][j]
+            right = grid[i][w - 1 - j]
+            result[i][j] = left if left != 0 else right
+    return result
+
+def fold_v_xor(grid, **kwargs):
+    """Fold grid vertically with XOR (keep differences)"""
+    h, w = len(grid), len(grid[0])
+    half = w // 2
+    result = [[0]*half for _ in range(h)]
+    for i in range(h):
+        for j in range(half):
+            left = grid[i][j]
+            right = grid[i][w - 1 - j]
+            if left == right:
+                result[i][j] = 0
+            else:
+                result[i][j] = left if left != 0 else right
+    return result
+
+def fold_h_and(grid, **kwargs):
+    """Fold grid horizontally, keep only cells present in both halves"""
+    h, w = len(grid), len(grid[0])
+    half = h // 2
+    result = [[0]*w for _ in range(half)]
+    for i in range(half):
+        for j in range(w):
+            top = grid[i][j]
+            bot = grid[h - 1 - i][j]
+            if top != 0 and bot != 0:
+                result[i][j] = top
+    return result
+
+def fold_v_and(grid, **kwargs):
+    """Fold grid vertically, keep only cells present in both halves"""
+    h, w = len(grid), len(grid[0])
+    half = w // 2
+    result = [[0]*half for _ in range(h)]
+    for i in range(h):
+        for j in range(half):
+            left = grid[i][j]
+            right = grid[i][w - 1 - j]
+            if left != 0 and right != 0:
+                result[i][j] = left
+    return result
+
+
+# ============================================================================
+# NEW: Per-cell Expansion / Zoom Operations (for scale-Nx tasks)
+# ============================================================================
+
+def zoom_nonzero_inverse(grid, **kwargs):
+    """Each nonzero cell at (r,c) creates a NxN inverted block at position (r*N, c*N).
+    In the block, the pattern is the inverse of the cell neighborhood."""
+    h, w = len(grid), len(grid[0])
+    factor = kwargs.get('factor', h)  # default: output is h*h
+    result = [[0]*(w*factor) for _ in range(h*factor)]
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] != 0:
+                color = grid[r][c]
+                # Place inverted NxN block: where input has 0, put color; where color, put 0 
+                for dr in range(h):
+                    for dc in range(w):
+                        out_r = r * factor + dr
+                        out_c = c * factor + dc
+                        if out_r < len(result) and out_c < len(result[0]):
+                            if grid[dr][dc] == 0:
+                                result[out_r][out_c] = color
+    return result
+
+def zoom_cell_pattern(grid, **kwargs):
+    """Each nonzero cell becomes a 2x2 [[1,2],[2,1]] block; zero stays zero."""
+    h, w = len(grid), len(grid[0])
+    result = [[0]*(w*2) for _ in range(h*2)]
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] != 0:
+                result[r*2][c*2] = 1
+                result[r*2][c*2+1] = 2
+                result[r*2+1][c*2] = 2
+                result[r*2+1][c*2+1] = 1
+    return result
+
+def zoom_cell_self(grid, **kwargs):
+    """Each cell becomes a copy of the entire input grid, scaled to fit.
+    Nonzero cells get the grid pattern; zero cells get empty blocks."""
+    h, w = len(grid), len(grid[0])
+    result = [[0]*(w*w) for _ in range(h*h)]
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] != 0:
+                for dr in range(h):
+                    for dc in range(w):
+                        result[r*h + dr][c*w + dc] = grid[dr][dc]
+    return result
+
+
+# ============================================================================
+# NEW: Subgrid / Block Operations (for block-structured tasks)
+# ============================================================================
+
+def split_to_subgrids(grid, bh, bw):
+    """Split grid into bh x bw equal subgrids. Returns 2D list of subgrids."""
+    h, w = len(grid), len(grid[0])
+    sh, sw = h // bh, w // bw
+    subgrids = []
+    for bi in range(bh):
+        row = []
+        for bj in range(bw):
+            sub = []
+            for i in range(sh):
+                sub.append(grid[bi*sh + i][bj*sw:(bj+1)*sw])
+            row.append(sub)
+        subgrids.append(row)
+    return subgrids
+
+def count_nonzero_per_block(grid, **kwargs):
+    """Divide grid into NxN blocks, output 1-cell per block with count of nonzero cells."""
+    h, w = len(grid), len(grid[0])
+    # Auto-detect block size from grid structure
+    for bs in [3, 4, 5, 2]:
+        if h % bs == 0 and w % bs == 0:
+            bh, bw = h // bs, w // bs
+            result = [[0]*bw for _ in range(bh)]
+            for bi in range(bh):
+                for bj in range(bw):
+                    count = 0
+                    for i in range(bs):
+                        for j in range(bs):
+                            if grid[bi*bs + i][bj*bs + j] != 0:
+                                count += 1
+                    result[bi][bj] = count
+            return result
+    return grid
+
+def block_count_to_color(grid, **kwargs):
+    """Divide grid into equal column blocks, count nonzero in each, map count to color.
+    Fill each block with the resulting color."""
+    h, w = len(grid), len(grid[0])
+    # Try splitting into 3 equal column blocks (common pattern)
+    for n_blocks in [3, 2, 4]:
+        if w % n_blocks == 0:
+            bw = w // n_blocks
+            counts = []
+            for bi in range(n_blocks):
+                count = sum(1 for i in range(h) for j in range(bw) 
+                           if grid[i][bi*bw + j] != 0)
+                counts.append(count)
+            # Map count to color (1-indexed)
+            result = [[0]*w for _ in range(h)]
+            for bi in range(n_blocks):
+                color = counts[bi]
+                for i in range(h):
+                    for j in range(bw):
+                        result[i][bi*bw + j] = color
+            return result
+    return grid
+
+def subgrid_or(grid, **kwargs):
+    """Split grid into 2x2 subgrids, OR them together to get one subgrid."""
+    h, w = len(grid), len(grid[0])
+    sh, sw = h // 2, w // 2
+    if h % 2 != 0 or w % 2 != 0:
+        return grid
+    result = [[0]*sw for _ in range(sh)]
+    for i in range(sh):
+        for j in range(sw):
+            vals = [grid[i][j], grid[i][j+sw], grid[i+sh][j], grid[i+sh][j+sw]]
+            nz = [v for v in vals if v != 0]
+            result[i][j] = nz[0] if nz else 0
+    return result
+
+def subgrid_xor(grid, **kwargs):
+    """Split grid into 2x2 subgrids, XOR them (keep cells unique to one quadrant)."""
+    h, w = len(grid), len(grid[0])
+    sh, sw = h // 2, w // 2
+    if h % 2 != 0 or w % 2 != 0:
+        return grid
+    result = [[0]*sw for _ in range(sh)]
+    for i in range(sh):
+        for j in range(sw):
+            vals = [grid[i][j], grid[i][j+sw], grid[i+sh][j], grid[i+sh][j+sw]]
+            nz = [v for v in vals if v != 0]
+            if len(nz) == 1:
+                result[i][j] = nz[0]
+    return result
+
+def subgrid_and(grid, **kwargs):
+    """Split grid into 2x2 subgrids, AND them (keep cells present in all quadrants)."""
+    h, w = len(grid), len(grid[0])
+    sh, sw = h // 2, w // 2
+    if h % 2 != 0 or w % 2 != 0:
+        return grid
+    result = [[0]*sw for _ in range(sh)]
+    for i in range(sh):
+        for j in range(sw):
+            vals = [grid[i][j], grid[i][j+sw], grid[i+sh][j], grid[i+sh][j+sw]]
+            nz = [v for v in vals if v != 0]
+            if len(nz) == 4:
+                result[i][j] = nz[0]
+    return result
+
+def subgrid_diff(grid, **kwargs):
+    """Split grid into left and right halves, output cells that differ."""
+    h, w = len(grid), len(grid[0])
+    if w % 2 != 0:
+        return grid
+    sw = w // 2
+    result = [[0]*sw for _ in range(h)]
+    for i in range(h):
+        for j in range(sw):
+            left = grid[i][j]
+            right = grid[i][j + sw]
+            if left != right:
+                result[i][j] = left if left != 0 else right
+    return result
+
+
+# ============================================================================
+# NEW: Marker Connectivity Operations (for path/line drawing tasks)
+# ============================================================================
+
+def connect_markers_l_path(grid, **kwargs):
+    """Find pairs of same-color markers and connect with L-shaped paths using a new color."""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    bg = kwargs.get('bg', max(set(c for row in grid for c in row), key=lambda c: sum(row.count(c) for row in grid)))
+    
+    # Find marker positions (non-background cells)
+    markers = {}
+    for i in range(h):
+        for j in range(w):
+            if grid[i][j] != bg:
+                color = grid[i][j]
+                if color not in markers:
+                    markers[color] = []
+                markers[color].append((i, j))
+    
+    # For each color with exactly 2 markers, draw L-path
+    path_color = kwargs.get('path_color', 8)
+    for color, positions in markers.items():
+        if len(positions) == 2:
+            (r1, c1), (r2, c2) = positions
+            # Draw vertical then horizontal
+            for r in range(min(r1, r2), max(r1, r2) + 1):
+                if result[r][c1] == bg:
+                    result[r][c1] = path_color
+            for c in range(min(c1, c2), max(c1, c2) + 1):
+                if result[r2][c] == bg:
+                    result[r2][c] = path_color
+    return result
+
+def draw_line_between_colors(grid, **kwargs):
+    """Draw straight lines (horizontal or vertical) between all pairs of same-color cells."""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    line_color = kwargs.get('line_color', 8)
+    
+    # Find all colored cells
+    by_color = {}
+    for i in range(h):
+        for j in range(w):
+            if grid[i][j] != 0:
+                c = grid[i][j]
+                if c not in by_color:
+                    by_color[c] = []
+                by_color[c].append((i, j))
+    
+    for color, positions in by_color.items():
+        for idx in range(len(positions)):
+            for jdx in range(idx + 1, len(positions)):
+                r1, c1 = positions[idx]
+                r2, c2 = positions[jdx]
+                if r1 == r2:  # same row - draw horizontal
+                    for c in range(min(c1, c2) + 1, max(c1, c2)):
+                        if result[r1][c] == 0:
+                            result[r1][c] = line_color
+                elif c1 == c2:  # same col - draw vertical
+                    for r in range(min(r1, r2) + 1, max(r1, r2)):
+                        if result[r][c1] == 0:
+                            result[r][c1] = line_color
+    return result
+
+
+# ============================================================================
+# NEW: Contour / Boundary Operations (for edge-labeling tasks)
+# ============================================================================
+
+def label_shape_edges(grid, **kwargs):
+    """Label cells of a shape by their edge direction. Left-edge=2, right-edge=8."""
+    h, w = len(grid), len(grid[0])
+    shape_color = kwargs.get('shape_color', 5)
+    left_color = kwargs.get('left_color', 2)
+    right_color = kwargs.get('right_color', 8)
+    result = [row[:] for row in grid]
+    
+    for i in range(h):
+        for j in range(w):
+            if grid[i][j] == shape_color:
+                # Check if left edge (cell to left is bg or boundary)
+                is_left = (j == 0 or grid[i][j-1] != shape_color)
+                # Check if right edge
+                is_right = (j == w-1 or grid[i][j+1] != shape_color)
+                # Check if top edge
+                is_top = (i == 0 or grid[i-1][j] != shape_color)
+                # Check if bottom edge
+                is_bottom = (i == h-1 or grid[i+1][j] != shape_color)
+                
+                if is_left or is_top:
+                    result[i][j] = left_color
+                else:
+                    result[i][j] = right_color
+    return result
+
+def outline_shape_bicolor(grid, **kwargs):
+    """Color shape cells based on whether they're on left/top (color1) or right/bottom (color2) edge."""
+    h, w = len(grid), len(grid[0])
+    # Find the shape color (most common non-zero non-background)
+    from collections import Counter
+    counts = Counter(c for row in grid for c in row if c != 0)
+    if not counts:
+        return grid
+    shape_color = counts.most_common(1)[0][0]
+    color1, color2 = 2, 8
+    result = [row[:] for row in grid]
+    
+    for i in range(h):
+        # Find leftmost and rightmost shape cell in this row
+        left_j = None
+        right_j = None
+        for j in range(w):
+            if grid[i][j] == shape_color:
+                if left_j is None:
+                    left_j = j
+                right_j = j
+        if left_j is not None:
+            for j in range(left_j, right_j + 1):
+                if grid[i][j] == shape_color:
+                    # Leftmost column of this contiguous segment
+                    if j == left_j or grid[i][j-1] != shape_color:
+                        result[i][j] = color1
+                    else:
+                        result[i][j] = color2
+    return result
+
+
+# ============================================================================
+# NEW: Pattern Induction Operations (for same-size tasks)
+# ============================================================================
+
+def apply_learned_color_map(grid, **kwargs):
+    """Apply a color mapping learned from training examples.
+    Maps each color to another based on provided mapping dict."""
+    color_map = kwargs.get('color_map', {})
+    result = [row[:] for row in grid]
+    for i in range(len(grid)):
+        for j in range(len(grid[0])):
+            c = grid[i][j]
+            if c in color_map:
+                result[i][j] = color_map[c]
+    return result
+
+def apply_neighborhood_rule(grid, **kwargs):
+    """Apply a rule based on cell neighborhoods (Moore or Von Neumann).
+    Common in cellular automata style ARC tasks."""
+    h, w = len(grid), len(grid[0])
+    rule = kwargs.get('rule', 'count_neighbors')
+    target_color = kwargs.get('target_color', 0)
+    result_color = kwargs.get('result_color', 1)
+    result = [row[:] for row in grid]
+    
+    for i in range(h):
+        for j in range(w):
+            neighbors = []
+            for di in [-1, 0, 1]:
+                for dj in [-1, 0, 1]:
+                    if di == 0 and dj == 0:
+                        continue
+                    ni, nj = i + di, j + dj
+                    if 0 <= ni < h and 0 <= nj < w:
+                        neighbors.append(grid[ni][nj])
+            
+            nz_count = sum(1 for n in neighbors if n != 0)
+            
+            if rule == 'count_neighbors':
+                if grid[i][j] == target_color and nz_count >= kwargs.get('threshold', 3):
+                    result[i][j] = result_color
+            elif rule == 'conway':
+                # Conway-like: alive stays if 2-3 neighbors, dead becomes alive if 3
+                if grid[i][j] != 0:
+                    if nz_count < 2 or nz_count > 3:
+                        result[i][j] = 0
+                else:
+                    if nz_count == 3:
+                        result[i][j] = result_color
+    return result
+
+def grow_regions(grid, **kwargs):
+    """Grow colored regions by one cell in all directions (flood/expand)."""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    for i in range(h):
+        for j in range(w):
+            if grid[i][j] == 0:
+                # Check neighbors for non-zero
+                for di, dj in [(-1,0),(1,0),(0,-1),(0,1)]:
+                    ni, nj = i + di, j + dj
+                    if 0 <= ni < h and 0 <= nj < w and grid[ni][nj] != 0:
+                        result[i][j] = grid[ni][nj]
+                        break
+    return result
+
+def shrink_regions(grid, **kwargs):
+    """Shrink colored regions by one cell (erode boundary cells)."""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    for i in range(h):
+        for j in range(w):
+            if grid[i][j] != 0:
+                # Check if any neighbor is 0 (boundary cell)
+                for di, dj in [(-1,0),(1,0),(0,-1),(0,1)]:
+                    ni, nj = i + di, j + dj
+                    if ni < 0 or ni >= h or nj < 0 or nj >= w or grid[ni][nj] == 0:
+                        result[i][j] = 0
+                        break
+    return result
+
+def flood_fill_enclosed(grid, **kwargs):
+    """Fill enclosed regions (surrounded by non-zero cells) with a specific color."""
+    h, w = len(grid), len(grid[0])
+    fill_color = kwargs.get('fill_color', 1)
+    
+    # Find cells reachable from border via 0-cells
+    visited = [[False]*w for _ in range(h)]
+    queue = []
+    for i in range(h):
+        for j in range(w):
+            if (i == 0 or i == h-1 or j == 0 or j == w-1) and grid[i][j] == 0:
+                queue.append((i, j))
+                visited[i][j] = True
+    
+    while queue:
+        ci, cj = queue.pop(0)
+        for di, dj in [(-1,0),(1,0),(0,-1),(0,1)]:
+            ni, nj = ci + di, cj + dj
+            if 0 <= ni < h and 0 <= nj < w and not visited[ni][nj] and grid[ni][nj] == 0:
+                visited[ni][nj] = True
+                queue.append((ni, nj))
+    
+    result = [row[:] for row in grid]
+    for i in range(h):
+        for j in range(w):
+            if grid[i][j] == 0 and not visited[i][j]:
+                result[i][j] = fill_color
+    return result
+
+
 # ============================================================================
 # NEW: Symmetry Operations
 # ============================================================================
@@ -7740,6 +8285,47 @@ OPERATIONS = {
     'copy_section_across_separator': copy_section_across_separator,
     'find_hollow_shape_color': find_hollow_shape_color,
     'section_dominant_color': section_dominant_color,
+
+    # New operations for unsolved task categories
+    'crop_to_bbox': crop_to_bbox,
+    'symmetry_complete_h': symmetry_complete_h,
+    'symmetry_complete_v': symmetry_complete_v,
+    'symmetry_complete_both': symmetry_complete_both,
+
+    # Grid folding operations
+    'fold_h_or': fold_h_or,
+    'fold_h_xor': fold_h_xor,
+    'fold_v_or': fold_v_or,
+    'fold_v_xor': fold_v_xor,
+    'fold_h_and': fold_h_and,
+    'fold_v_and': fold_v_and,
+
+    # Per-cell expansion operations
+    'zoom_nonzero_inverse': zoom_nonzero_inverse,
+    'zoom_cell_pattern': zoom_cell_pattern,
+    'zoom_cell_self': zoom_cell_self,
+
+    # Subgrid operations
+    'count_nonzero_per_block': count_nonzero_per_block,
+    'block_count_to_color': block_count_to_color,
+    'subgrid_or': subgrid_or,
+    'subgrid_xor': subgrid_xor,
+    'subgrid_and': subgrid_and,
+    'subgrid_diff': subgrid_diff,
+
+    # Marker connectivity
+    'connect_markers_l_path': connect_markers_l_path,
+    'draw_line_between_colors': draw_line_between_colors,
+
+    # Contour operations
+    'label_shape_edges': label_shape_edges,
+    'outline_shape_bicolor': outline_shape_bicolor,
+
+    # Pattern induction
+    'apply_neighborhood_rule': apply_neighborhood_rule,
+    'grow_regions': grow_regions,
+    'shrink_regions': shrink_regions,
+    'flood_fill_enclosed': flood_fill_enclosed,
 }
 
 INVERSE_TRANSFORMS = {
@@ -7940,8 +8526,93 @@ class ProgramSynthesizer:
                 if len(scored) >= 5:
                     break
         
+        # If no solution found and we have time, try exhaustive 2-op search
+        if not scored and time.time() - start_time < time_budget * 0.5:
+            extra = self._exhaustive_2op_search(examples, min(3.0, time_budget - (time.time() - start_time)))
+            scored.extend(extra)
+        
         scored.sort(key=lambda x: x[1], reverse=True)
         return scored[:10]
+    
+    def _exhaustive_2op_search(self, examples, time_budget):
+        """Systematic 2-op search with size pruning for efficiency."""
+        import time
+        start = time.time()
+        
+        # Get expected output size from first training example
+        ex0 = examples[0]
+        exp_h, exp_w = len(ex0['output']), len(ex0['output'][0])
+        
+        # Get a curated list of candidate first-ops (all simple ops without params)
+        first_ops = [
+            'identity', 'rotate_90', 'rotate_180', 'rotate_270',
+            'flip_h', 'flip_v', 'transpose',
+            'crop_to_object', 'trim', 'crop_to_bbox',
+            'fold_h_or', 'fold_v_or', 'fold_h_xor', 'fold_v_xor',
+            'fold_h_and', 'fold_v_and',
+            'subgrid_or', 'subgrid_xor', 'subgrid_and', 'subgrid_diff',
+            'grow_regions', 'shrink_regions',
+            'flood_fill_enclosed',
+            'extract_largest_object', 'extract_smallest_object',
+            'gravity_down', 'gravity_up', 'gravity_left', 'gravity_right',
+            'fill_interior', 'outline',
+            'enforce_h_symmetry', 'enforce_v_symmetry',
+            'symmetry_complete_h', 'symmetry_complete_v',
+            'most_common_fill', 'invert_colors', 'compress_colors',
+        ]
+        
+        second_ops = first_ops + [
+            'connect_markers_l_path', 'draw_line_between_colors',
+            'label_shape_edges', 'outline_shape_bicolor',
+            'flood_fill', 'flood_fill_smart', 'fill_between',
+            'zoom_nonzero_inverse', 'zoom_cell_pattern', 'zoom_cell_self',
+            'count_nonzero_per_block', 'block_count_to_color',
+        ]
+        
+        scored = []
+        
+        for op1_name in first_ops:
+            if time.time() - start > time_budget:
+                break
+            if op1_name not in OPERATIONS:
+                continue
+            
+            # Apply op1 to first training input — check if size is compatible
+            try:
+                mid = OPERATIONS[op1_name](copy.deepcopy(ex0['input']))
+                mid_h, mid_w = len(mid), len(mid[0])
+            except:
+                continue
+            
+            # Try each second op
+            for op2_name in second_ops:
+                if time.time() - start > time_budget:
+                    break
+                if op2_name not in OPERATIONS:
+                    continue
+                if op1_name == op2_name == 'identity':
+                    continue
+                
+                program = [(op1_name, {}), (op2_name, {})]
+                
+                # Quick check: apply to first example
+                try:
+                    result = OPERATIONS[op2_name](copy.deepcopy(mid))
+                    if len(result) != exp_h or len(result[0]) != exp_w:
+                        continue
+                    if result != ex0['output']:
+                        continue
+                except:
+                    continue
+                
+                # Full check: all examples
+                score = self._score_program(program, examples)
+                if score >= 0.99:
+                    scored.append((program, score))
+                    if len(scored) >= 3:
+                        return scored
+        
+        return scored
     
     def _enumerate_programs(self) -> List[List[Tuple[str, Dict]]]:
         """Enumerate candidate programs - EXPANDED for 85% target"""
@@ -8113,6 +8784,20 @@ class ProgramSynthesizer:
             'split_by_color', 'split_objects',
             # Grid analysis (output 1x1, usually not useful directly)
             # 'grid_width', 'grid_height', 'count_colors', 'dominant_color',
+            # NEW: Grid folding
+            'fold_h_or', 'fold_h_xor', 'fold_v_or', 'fold_v_xor',
+            'fold_h_and', 'fold_v_and',
+            # NEW: Per-cell expansion
+            'zoom_nonzero_inverse', 'zoom_cell_pattern', 'zoom_cell_self',
+            # NEW: Subgrid operations
+            'count_nonzero_per_block', 'block_count_to_color',
+            'subgrid_or', 'subgrid_xor', 'subgrid_and', 'subgrid_diff',
+            # NEW: Marker connectivity
+            'connect_markers_l_path', 'draw_line_between_colors',
+            # NEW: Contour operations
+            'label_shape_edges', 'outline_shape_bicolor',
+            # NEW: Pattern induction
+            'grow_regions', 'shrink_regions', 'flood_fill_enclosed',
         ]
         for op in simple_ops:
             programs.append([(op, {})])
@@ -8197,6 +8882,29 @@ class ProgramSynthesizer:
             for target_w in [3, 5, 7, 9, 10]:
                 programs.append([('scale_to', {'target_h': target_h, 'target_w': target_w})])
         
+        # NEW: Flood fill enclosed with different colors
+        for c in range(1, 10):
+            programs.append([('flood_fill_enclosed', {'fill_color': c})])
+        
+        # NEW: Connect markers with different path colors
+        for pc in [1, 2, 3, 4, 5, 8]:
+            programs.append([('connect_markers_l_path', {'path_color': pc})])
+        
+        # NEW: Draw lines with different colors
+        for lc in [1, 2, 3, 4, 5, 8]:
+            programs.append([('draw_line_between_colors', {'line_color': lc})])
+        
+        # NEW: Label edges with different color combos
+        for shape_c in [1, 2, 3, 4, 5]:
+            programs.append([('label_shape_edges', {'shape_color': shape_c, 'left_color': 2, 'right_color': 8})])
+            programs.append([('label_shape_edges', {'shape_color': shape_c, 'left_color': 1, 'right_color': 3})])
+        
+        # NEW: Neighborhood rules
+        for threshold in [2, 3, 4]:
+            for rc in [1, 2, 3, 8]:
+                programs.append([('apply_neighborhood_rule', {'rule': 'count_neighbors', 'threshold': threshold, 'result_color': rc})])
+        programs.append([('apply_neighborhood_rule', {'rule': 'conway', 'result_color': 1})])
+        
         # Two-operation compositions
         if self.max_depth >= 2:
             geo_ops = ['rotate_90', 'rotate_180', 'flip_h', 'flip_v', 'transpose']
@@ -8247,6 +8955,41 @@ class ProgramSynthesizer:
                 [('compress_colors', {}), ('recolor_by_size', {})],
                 [('sort_objects_by_size', {}), ('align_objects', {'axis': 'horizontal'})],
                 [('sort_objects_by_color', {}), ('align_objects', {'axis': 'horizontal'})],
+                # Bbox + transform combos
+                [('crop_to_bbox', {}), ('rotate_90', {})],
+                [('crop_to_bbox', {}), ('flip_h', {})],
+                [('crop_to_bbox', {}), ('flip_v', {})],
+                # Symmetry completion + crop
+                [('symmetry_complete_h', {}), ('crop_to_object', {})],
+                [('symmetry_complete_v', {}), ('crop_to_object', {})],
+                [('symmetry_complete_both', {}), ('crop_to_object', {})],
+                # Gravity + symmetry
+                [('gravity_down', {}), ('symmetry_complete_h', {})],
+                [('gravity_down', {}), ('symmetry_complete_v', {})],
+                [('flood_fill_smart', {}), ('symmetry_complete_both', {})],
+                # NEW: Fold + crop combos
+                [('fold_h_or', {}), ('crop_to_object', {})],
+                [('fold_v_or', {}), ('crop_to_object', {})],
+                [('fold_h_xor', {}), ('crop_to_object', {})],
+                [('fold_v_xor', {}), ('crop_to_object', {})],
+                # NEW: Grow/shrink + crop
+                [('grow_regions', {}), ('crop_to_object', {})],
+                [('shrink_regions', {}), ('crop_to_object', {})],
+                # NEW: Grow/shrink multiple times
+                [('grow_regions', {}), ('grow_regions', {})],
+                [('shrink_regions', {}), ('shrink_regions', {})],
+                # NEW: Flood fill enclosed + other
+                [('flood_fill_enclosed', {}), ('crop_to_object', {})],
+                [('flood_fill_enclosed', {}), ('label_shape_edges', {})],
+                # NEW: Zoom + crop
+                [('zoom_nonzero_inverse', {}), ('crop_to_object', {})],
+                [('zoom_cell_self', {}), ('crop_to_object', {})],
+                # NEW: Subgrid + fold combos
+                [('subgrid_or', {}), ('crop_to_object', {})],
+                [('subgrid_diff', {}), ('crop_to_object', {})],
+                # NEW: Connect + crop
+                [('connect_markers_l_path', {}), ('crop_to_object', {})],
+                [('draw_line_between_colors', {}), ('crop_to_object', {})],
             ]
             programs.extend(useful_combos)
             
@@ -8310,10 +9053,15 @@ class ARCSolver:
         self.transforms = ['identity', 'rotate_90', 'rotate_180', 'rotate_270',
                           'flip_h', 'flip_v', 'transpose']
     
-    def solve(self, task: Dict, max_time: float = 10.0) -> List[List[List[int]]]:
+    def solve(self, task: Dict, max_time: float = 10.0, test_idx: int = 0) -> List[List[List[int]]]:
         """Solve task with time limit, return up to 2 predictions"""
         import time
         start_time = time.time()
+        
+        # Normalize task so test[0] always refers to the target test input
+        if test_idx != 0:
+            task = dict(task)
+            task['test'] = [task['test'][test_idx]] + [t for i, t in enumerate(task['test']) if i != test_idx]
         
         train = task['train']
         test_input = task['test'][0]['input']
@@ -8364,6 +9112,103 @@ class ARCSolver:
                         predictions.append(pred)
             except:
                 pass
+        
+        # 2.5. Try CSP fill (Latin square, pattern extension, region fill)
+        try:
+            pred = self._try_csp_fill(task)
+            if pred is not None and pred not in predictions:
+                predictions.append(pred)
+        except:
+            pass
+        
+        # 2.6. Try spatial rule induction (neighborhood-based)
+        try:
+            pred = self._try_spatial_rule_induction(task)
+            if pred is not None and pred not in predictions:
+                predictions.append(pred)
+        except:
+            pass
+        
+        # 2.7. Try object-level solvers
+        try:
+            pred = self._try_object_extraction(task)
+            if pred is not None and pred not in predictions:
+                predictions.append(pred)
+        except:
+            pass
+        
+        try:
+            pred = self._try_shape_selection(task)
+            if pred is not None and pred not in predictions:
+                predictions.append(pred)
+        except:
+            pass
+        
+        try:
+            pred = self._try_grid_division_extraction(task)
+            if pred is not None and pred not in predictions:
+                predictions.append(pred)
+        except:
+            pass
+        
+        try:
+            pred = self._try_object_overlay(task)
+            if pred is not None and pred not in predictions:
+                predictions.append(pred)
+        except:
+            pass
+        
+        try:
+            pred = self._try_enclosed_fill(task)
+            if pred is not None and pred not in predictions:
+                predictions.append(pred)
+        except:
+            pass
+        
+        try:
+            pred = self._try_between_markers(task)
+            if pred is not None and pred not in predictions:
+                predictions.append(pred)
+        except:
+            pass
+        
+        try:
+            pred = self._try_gravity(task)
+            if pred is not None and pred not in predictions:
+                predictions.append(pred)
+        except:
+            pass
+        
+        try:
+            pred = self._try_object_delete(task)
+            if pred is not None and pred not in predictions:
+                predictions.append(pred)
+        except:
+            pass
+        
+        # 2.8. Try compositional program synthesis (chain 2 operations)
+        try:
+            pred = self._try_compositional_synthesis(task)
+            if pred is not None and pred not in predictions:
+                predictions.append(pred)
+        except:
+            pass
+        
+        # 2.9. Try color mapping with object awareness
+        try:
+            pred = self._try_color_object_mapping(task)
+            if pred is not None and pred not in predictions:
+                predictions.append(pred)
+        except:
+            pass
+        
+        # 2.10. Try pattern completion (fill missing parts)
+        try:
+            pred = self._try_pattern_completion(task)
+            if pred is not None and pred not in predictions:
+                predictions.append(pred)
+        except:
+            pass
         
         # 3. Try program synthesis with augmentation (time-bounded)
         remaining_time = max_time - (time.time() - start_time)
@@ -8473,6 +9318,1948 @@ class ARCSolver:
     def _apply_color_mapping(self, grid: List[List[int]], color_map: Dict[int, int]) -> List[List[int]]:
         """Apply learned color mapping to grid"""
         return [[color_map.get(c, c) for c in row] for row in grid]
+
+    def _try_csp_fill(self, task: Dict) -> Optional[List[List[int]]]:
+        """Detect and solve constraint-satisfaction fill tasks.
+        
+        Handles: Latin squares, pattern extension into 0-regions,
+        grid-line region coloring, connected component fills.
+        """
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        # Check: all examples have 0s in input, no 0s in output, same size, non-zeros preserved
+        for pair in train:
+            inp, out = pair['input'], pair['output']
+            if len(inp) != len(out) or len(inp[0]) != len(out[0]):
+                return None
+            has_zeros = any(inp[r][c] == 0 for r in range(len(inp)) for c in range(len(inp[0])))
+            if not has_zeros:
+                return None
+            for r in range(len(inp)):
+                for c in range(len(inp[0])):
+                    if inp[r][c] != 0 and inp[r][c] != out[r][c]:
+                        return None
+        
+        # Try Latin square
+        pred = self._try_latin_square(task)
+        if pred is not None:
+            return pred
+        
+        # Try pattern extension (fill 0-region by copying/mirroring adjacent pattern)
+        pred = self._try_pattern_extension(task)
+        if pred is not None:
+            return pred
+        
+        # Try grid-line region fill
+        pred = self._try_gridline_region_fill(task)
+        if pred is not None:
+            return pred
+        
+        # Try column-order coloring (isolated 0s get color by column rank)
+        pred = self._try_column_order_coloring(task)
+        if pred is not None:
+            return pred
+        
+        return None
+    
+    def _try_column_order_coloring(self, task: Dict) -> Optional[List[List[int]]]:
+        """0-cells get colors 1..K based on which column they're in (sorted left-to-right)."""
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        for pair in train:
+            inp, out = pair['input'], pair['output']
+            h, w = len(inp), len(inp[0])
+            
+            zeros = [(r, c) for r in range(h) for c in range(w) if inp[r][c] == 0]
+            if not zeros:
+                return None
+            
+            # Get distinct columns with 0s, sorted
+            zero_cols = sorted(set(c for _, c in zeros))
+            if len(zero_cols) > 9:
+                return None
+            col_to_color = {col: i + 1 for i, col in enumerate(zero_cols)}
+            
+            # Verify mapping
+            for r, c in zeros:
+                if out[r][c] != col_to_color[c]:
+                    return None
+        
+        # Apply to test
+        h, w = len(test_input), len(test_input[0])
+        zeros = [(r, c) for r in range(h) for c in range(w) if test_input[r][c] == 0]
+        zero_cols = sorted(set(c for _, c in zeros))
+        col_to_color = {col: i + 1 for i, col in enumerate(zero_cols)}
+        
+        result = [row[:] for row in test_input]
+        for r, c in zeros:
+            result[r][c] = col_to_color[c]
+        return result
+    
+    def _try_latin_square(self, task: Dict) -> Optional[List[List[int]]]:
+        """Solve Latin square completion: NxN grid, fill 0s so each row/col has {1..N}."""
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        # Validate: square grid, values in {0..N}, output has {1..N} per row/col
+        for pair in train:
+            inp, out = pair['input'], pair['output']
+            n = len(inp)
+            if n != len(inp[0]):
+                return None
+            vals = set(range(1, n + 1))
+            for row in out:
+                if set(row) != vals:
+                    return None
+            for c in range(n):
+                if set(out[r][c] for r in range(n)) != vals:
+                    return None
+        
+        # Verify we can solve training examples correctly
+        for pair in train:
+            solved = self._solve_latin(pair['input'])
+            if solved is None or solved != pair['output']:
+                return None
+        
+        # Solve test
+        return self._solve_latin(test_input)
+    
+    def _solve_latin(self, grid: List[List[int]]) -> Optional[List[List[int]]]:
+        """Solve a Latin square using constraint propagation + backtracking."""
+        import copy
+        n = len(grid)
+        if n != len(grid[0]):
+            return None
+        
+        vals = set(range(1, n + 1))
+        result = [row[:] for row in grid]
+        
+        # Build possible values for each empty cell
+        possible = {}
+        for r in range(n):
+            for c in range(n):
+                if result[r][c] == 0:
+                    row_vals = set(result[r])
+                    col_vals = set(result[rr][c] for rr in range(n))
+                    possible[(r, c)] = vals - row_vals - col_vals - {0}
+        
+        def propagate():
+            changed = True
+            while changed:
+                changed = False
+                for (r, c) in list(possible.keys()):
+                    if len(possible[(r, c)]) == 1:
+                        val = next(iter(possible[(r, c)]))
+                        result[r][c] = val
+                        del possible[(r, c)]
+                        changed = True
+                        # Remove from same row/col
+                        for (rr, cc) in list(possible.keys()):
+                            if rr == r or cc == c:
+                                possible[(rr, cc)].discard(val)
+                    elif len(possible[(r, c)]) == 0:
+                        return False
+            return True
+        
+        def solve_bt():
+            if not propagate():
+                return False
+            if not possible:
+                return True
+            # Pick cell with fewest possibilities (MRV heuristic)
+            cell = min(possible, key=lambda k: len(possible[k]))
+            r, c = cell
+            for val in list(possible[cell]):
+                # Save state
+                old_result = [row[:] for row in result]
+                old_possible = {k: set(v) for k, v in possible.items()}
+                
+                result[r][c] = val
+                del possible[(r, c)]
+                for (rr, cc) in list(possible.keys()):
+                    if rr == r or cc == c:
+                        possible[(rr, cc)].discard(val)
+                
+                if solve_bt():
+                    return True
+                
+                # Restore state
+                for rr in range(n):
+                    for cc in range(n):
+                        result[rr][cc] = old_result[rr][cc]
+                possible.clear()
+                possible.update(old_possible)
+            return False
+        
+        if solve_bt():
+            return result
+        return None
+    
+    def _try_pattern_extension(self, task: Dict) -> Optional[List[List[int]]]:
+        """Fill rectangular 0-regions by copying/repeating adjacent pattern."""
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        # Learn fill strategy from training examples
+        strategies = []
+        for pair in train:
+            inp, out = pair['input'], pair['output']
+            h, w = len(inp), len(inp[0])
+            
+            # Find 0-region bounding box
+            zeros = [(r, c) for r in range(h) for c in range(w) if inp[r][c] == 0]
+            if not zeros:
+                continue
+            min_r = min(r for r, c in zeros)
+            max_r = max(r for r, c in zeros)
+            min_c = min(c for r, c in zeros)
+            max_c = max(c for r, c in zeros)
+            rect_area = (max_r - min_r + 1) * (max_c - min_c + 1)
+            
+            if rect_area != len(zeros):
+                continue  # Not a clean rectangle of 0s
+            
+            # Extract the fill pattern from output
+            fill_h = max_r - min_r + 1
+            fill_w = max_c - min_c + 1
+            fill_pattern = []
+            for r in range(min_r, max_r + 1):
+                fill_pattern.append(out[r][min_c:max_c + 1])
+            
+            # Try to find matching source region
+            # Strategy 1: horizontal mirror (pattern exists to the left/right)
+            if min_c > 0:
+                src_w = min_c
+                src_pattern = [inp[r][0:src_w] for r in range(min_r, max_r + 1)]
+                strategies.append(('h_extend', min_r, max_r, min_c, max_c, src_pattern))
+            if max_c < w - 1:
+                src_w = w - max_c - 1
+                src_pattern = [inp[r][max_c + 1:w] for r in range(min_r, max_r + 1)]
+                strategies.append(('h_extend_right', min_r, max_r, min_c, max_c, src_pattern))
+            
+            # Strategy 2: vertical mirror
+            if min_r > 0:
+                src_pattern = [inp[r][min_c:max_c + 1] for r in range(0, min_r)]
+                strategies.append(('v_extend', min_r, max_r, min_c, max_c, src_pattern))
+        
+        if not strategies:
+            return None
+        
+        # For now, try row-by-row fill: each row's 0s filled with the pattern from non-zero part
+        # This handles cases like 62b74c02
+        pred = self._try_row_pattern_fill(task)
+        if pred is not None:
+            return pred
+        
+        # Try rectangular pattern copy from adjacent region
+        pred = self._try_rect_pattern_copy(task)
+        if pred is not None:
+            return pred
+        
+        return None
+    
+    def _try_row_pattern_fill(self, task: Dict) -> Optional[List[List[int]]]:
+        """Fill 0s row-by-row: pattern at one end, repeat at other end, fill gap with edge value."""
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        def fill_row(row_in):
+            w = len(row_in)
+            nz = [c for c in range(w) if row_in[c] != 0]
+            if not nz:
+                return None
+            if len(nz) == w:
+                return list(row_in)  # No zeros
+            
+            start, end = nz[0], nz[-1]
+            pattern = row_in[start:end + 1]
+            plen = len(pattern)
+            
+            if pattern[0] != pattern[-1]:
+                return None  # Edge values must match for fill
+            
+            fill_val = pattern[0]
+            result = [fill_val] * w
+            # Place pattern at start (position 0)
+            for i, v in enumerate(pattern):
+                result[i] = v
+            # Place pattern at end
+            for i, v in enumerate(pattern):
+                result[w - plen + i] = v
+            return result
+        
+        # Validate on training
+        for pair in train:
+            inp, out = pair['input'], pair['output']
+            for r in range(len(inp)):
+                filled = fill_row(inp[r])
+                if filled is None or filled != out[r]:
+                    return None
+        
+        # Apply to test
+        result = []
+        for r in range(len(test_input)):
+            filled = fill_row(test_input[r])
+            if filled is None:
+                return None
+            result.append(filled)
+        return result
+    
+    def _try_rect_pattern_copy(self, task: Dict) -> Optional[List[List[int]]]:
+        """Fill rectangular 0-regions by copying/transforming pattern from another region."""
+        from collections import Counter
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        def find_zero_rect(grid):
+            h, w = len(grid), len(grid[0])
+            zeros = [(r, c) for r in range(h) for c in range(w) if grid[r][c] == 0]
+            if not zeros:
+                return None
+            r0 = min(r for r, c in zeros)
+            r1 = max(r for r, c in zeros)
+            c0 = min(c for r, c in zeros)
+            c1 = max(c for r, c in zeros)
+            if (r1 - r0 + 1) * (c1 - c0 + 1) != len(zeros):
+                return None  # Not rectangular
+            return (r0, r1, c0, c1)
+        
+        def find_source_pattern(grid, bg, zero_rect):
+            """Find the non-background rectangular pattern excluding the 0-region."""
+            h, w = len(grid), len(grid[0])
+            zr0, zr1, zc0, zc1 = zero_rect
+            non_bg = [(r, c) for r in range(h) for c in range(w)
+                      if grid[r][c] != bg and grid[r][c] != 0]
+            if not non_bg:
+                return None, None
+            pr0 = min(r for r, c in non_bg)
+            pr1 = max(r for r, c in non_bg)
+            pc0 = min(c for r, c in non_bg)
+            pc1 = max(c for r, c in non_bg)
+            src = [grid[r][pc0:pc1 + 1] for r in range(pr0, pr1 + 1)]
+            return src, (pr0, pr1, pc0, pc1)
+        
+        TRANSFORMS = {
+            'copy': lambda s: s,
+            'hflip': lambda s: [row[::-1] for row in s],
+            'vflip': lambda s: s[::-1],
+            'rot180': lambda s: [row[::-1] for row in s[::-1]],
+        }
+        
+        # Learn transform from training
+        winning_transform = None
+        for pair in train:
+            inp, out = pair['input'], pair['output']
+            h, w = len(inp), len(inp[0])
+            
+            rect = find_zero_rect(inp)
+            if rect is None:
+                return None
+            zr0, zr1, zc0, zc1 = rect
+            
+            # Find background
+            vals = [inp[r][c] for r in range(h) for c in range(w) if inp[r][c] != 0]
+            if not vals:
+                return None
+            bg = Counter(vals).most_common(1)[0][0]
+            
+            src, _ = find_source_pattern(inp, bg, rect)
+            if src is None:
+                return None
+            
+            fill = [out[r][zc0:zc1 + 1] for r in range(zr0, zr1 + 1)]
+            
+            # Check size compatibility
+            if len(src) != len(fill) or (src and fill and len(src[0]) != len(fill[0])):
+                return None
+            
+            # Find which transform matches
+            matched = None
+            for tname, tfn in TRANSFORMS.items():
+                if tfn(src) == fill:
+                    matched = tname
+                    break
+            
+            if matched is None:
+                return None
+            if winning_transform is None:
+                winning_transform = matched
+            elif winning_transform != matched:
+                return None  # Inconsistent transform
+        
+        if winning_transform is None:
+            return None
+        
+        # Apply to test
+        h, w = len(test_input), len(test_input[0])
+        rect = find_zero_rect(test_input)
+        if rect is None:
+            return None
+        zr0, zr1, zc0, zc1 = rect
+        
+        vals = [test_input[r][c] for r in range(h) for c in range(w) if test_input[r][c] != 0]
+        if not vals:
+            return None
+        bg = Counter(vals).most_common(1)[0][0]
+        
+        src, _ = find_source_pattern(test_input, bg, rect)
+        if src is None:
+            return None
+        
+        fill_h = zr1 - zr0 + 1
+        fill_w = zc1 - zc0 + 1
+        if len(src) != fill_h or (src and len(src[0]) != fill_w):
+            return None
+        
+        transformed = TRANSFORMS[winning_transform](src)
+        result = [row[:] for row in test_input]
+        for r in range(zr0, zr1 + 1):
+            for c in range(zc0, zc1 + 1):
+                result[r][c] = transformed[r - zr0][c - zc0]
+        
+        return result
+    
+    def _try_gridline_region_fill(self, task: Dict) -> Optional[List[List[int]]]:
+        """Fill 0-regions in grids divided by lines: border-connected → color A, interior → color B."""
+        from collections import deque
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        def flood_fill_classify(grid):
+            """Classify 0-cells as border-connected or interior."""
+            h, w = len(grid), len(grid[0])
+            
+            # Find separator (most common non-zero value)
+            from collections import Counter
+            nonzero = [grid[r][c] for r in range(h) for c in range(w) if grid[r][c] != 0]
+            if not nonzero:
+                return None, None, None
+            sep = Counter(nonzero).most_common(1)[0][0]
+            
+            # Flood from border
+            border_connected = set()
+            queue = deque()
+            for r in range(h):
+                for c in range(w):
+                    if grid[r][c] == 0 and (r == 0 or r == h-1 or c == 0 or c == w-1):
+                        queue.append((r, c))
+                        border_connected.add((r, c))
+            while queue:
+                r, c = queue.popleft()
+                for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+                    nr, nc = r+dr, c+dc
+                    if 0 <= nr < h and 0 <= nc < w and (nr, nc) not in border_connected:
+                        if grid[nr][nc] == 0:
+                            border_connected.add((nr, nc))
+                            queue.append((nr, nc))
+            
+            all_zeros = {(r,c) for r in range(h) for c in range(w) if grid[r][c] == 0}
+            interior = all_zeros - border_connected
+            return sep, border_connected, interior
+        
+        # Learn colors from training
+        border_color = None
+        interior_color = None
+        
+        for pair in train:
+            inp, out = pair['input'], pair['output']
+            sep, border_cells, interior_cells = flood_fill_classify(inp)
+            if sep is None:
+                return None
+            
+            # Get unique colors for each class
+            bc = set(out[r][c] for r, c in border_cells) if border_cells else set()
+            ic = set(out[r][c] for r, c in interior_cells) if interior_cells else set()
+            
+            if len(bc) != 1 or len(ic) != 1:
+                return None  # Not uniformly colored
+            
+            bc_val = next(iter(bc))
+            ic_val = next(iter(ic))
+            
+            if border_color is None:
+                border_color = bc_val
+                interior_color = ic_val
+            elif border_color != bc_val or interior_color != ic_val:
+                return None  # Inconsistent across examples
+        
+        if border_color is None or interior_color is None:
+            return None
+        
+        # Apply to test
+        sep, border_cells, interior_cells = flood_fill_classify(test_input)
+        if sep is None:
+            return None
+        
+        result = [row[:] for row in test_input]
+        for r, c in border_cells:
+            result[r][c] = border_color
+        for r, c in interior_cells:
+            result[r][c] = interior_color
+        
+        return result
+
+    # ================================================================
+    # Object-level solvers
+    # ================================================================
+    
+    def _get_bg(self, grid: List[List[int]]) -> int:
+        """Detect background color (most common)."""
+        from collections import Counter
+        flat = [v for row in grid for v in row]
+        return Counter(flat).most_common(1)[0][0]
+    
+    def _get_objects_4(self, grid: List[List[int]], bg: Optional[int] = None) -> List[Dict]:
+        """Get connected components (4-connected), excluding background."""
+        from collections import Counter
+        h, w = len(grid), len(grid[0])
+        if bg is None:
+            bg = self._get_bg(grid)
+        visited = set()
+        objs = []
+        for r in range(h):
+            for c in range(w):
+                if grid[r][c] != bg and (r, c) not in visited:
+                    cells = set()
+                    stack = [(r, c)]
+                    while stack:
+                        cr, cc = stack.pop()
+                        if (cr, cc) in visited:
+                            continue
+                        visited.add((cr, cc))
+                        cells.add((cr, cc))
+                        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                            nr, nc = cr + dr, cc + dc
+                            if 0 <= nr < h and 0 <= nc < w and (nr, nc) not in visited and grid[nr][nc] != bg:
+                                stack.append((nr, nc))
+                    min_r = min(r for r, c in cells)
+                    max_r = max(r for r, c in cells)
+                    min_c = min(c for r, c in cells)
+                    max_c = max(c for r, c in cells)
+                    shape = tuple(
+                        tuple(grid[rr][cc] if (rr, cc) in cells else bg
+                              for cc in range(min_c, max_c + 1))
+                        for rr in range(min_r, max_r + 1)
+                    )
+                    binary = frozenset((r - min_r, c - min_c) for r, c in cells)
+                    objs.append({
+                        'cells': cells, 'size': len(cells),
+                        'bbox': (min_r, min_c, max_r, max_c),
+                        'h': max_r - min_r + 1, 'w': max_c - min_c + 1,
+                        'primary_color': Counter(grid[r][c] for r, c in cells).most_common(1)[0][0],
+                        'n_colors': len(set(grid[r][c] for r, c in cells)),
+                        'shape': shape,
+                        'binary': binary,
+                        'is_rect': len(cells) == (max_r - min_r + 1) * (max_c - min_c + 1),
+                    })
+        return objs
+    
+    def _crop_bbox(self, grid: List[List[int]], bbox) -> List[List[int]]:
+        r1, c1, r2, c2 = bbox
+        return [list(row[c1:c2 + 1]) for row in grid[r1:r2 + 1]]
+    
+    def _try_object_extraction(self, task: Dict) -> Optional[List[List[int]]]:
+        """Extract object by property (largest, smallest, unique shape, etc.) and crop."""
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        if not all(len(ex['output']) * len(ex['output'][0]) <
+                   len(ex['input']) * len(ex['input'][0]) for ex in train):
+            return None
+        
+        selectors = [
+            ("largest", lambda objs: max(objs, key=lambda o: o['size'])),
+            ("smallest", lambda objs: min(objs, key=lambda o: o['size'])),
+            ("tallest", lambda objs: max(objs, key=lambda o: o['h'])),
+            ("widest", lambda objs: max(objs, key=lambda o: o['w'])),
+            ("most_colors", lambda objs: max(objs, key=lambda o: o['n_colors'])),
+        ]
+        
+        for sel_name, sel_fn in selectors:
+            # Try: output = crop of input at selected object's bbox
+            valid = True
+            for ex in train:
+                bg = self._get_bg(ex['input'])
+                objs = self._get_objects_4(ex['input'], bg)
+                if not objs:
+                    valid = False; break
+                sel = sel_fn(objs)
+                out = ex['output']
+                ho, wo = len(out), len(out[0])
+                r1, c1, r2, c2 = sel['bbox']
+                if r2 - r1 + 1 != ho or c2 - c1 + 1 != wo:
+                    valid = False; break
+                if self._crop_bbox(ex['input'], sel['bbox']) != out:
+                    valid = False; break
+            if valid:
+                bg = self._get_bg(test_input)
+                objs = self._get_objects_4(test_input, bg)
+                if objs:
+                    sel = sel_fn(objs)
+                    return self._crop_bbox(test_input, sel['bbox'])
+            
+            # Try: output = object cells only (0 elsewhere in bbox)
+            valid = True
+            for ex in train:
+                bg = self._get_bg(ex['input'])
+                objs = self._get_objects_4(ex['input'], bg)
+                if not objs:
+                    valid = False; break
+                sel = sel_fn(objs)
+                out = ex['output']
+                ho, wo = len(out), len(out[0])
+                r1, c1, r2, c2 = sel['bbox']
+                if r2 - r1 + 1 != ho or c2 - c1 + 1 != wo:
+                    valid = False; break
+                expected = [[0] * wo for _ in range(ho)]
+                for (rr, cc) in sel['cells']:
+                    expected[rr - r1][cc - c1] = ex['input'][rr][cc]
+                if expected != out:
+                    valid = False; break
+            if valid:
+                bg = self._get_bg(test_input)
+                objs = self._get_objects_4(test_input, bg)
+                if objs:
+                    sel = sel_fn(objs)
+                    r1, c1, r2, c2 = sel['bbox']
+                    ho, wo = r2 - r1 + 1, c2 - c1 + 1
+                    result = [[0] * wo for _ in range(ho)]
+                    for (rr, cc) in sel['cells']:
+                        result[rr - r1][cc - c1] = test_input[rr][cc]
+                    return result
+        
+        # Try: extract bbox of minority non-bg color
+        from collections import Counter as C2
+        for color_sel in ["minority", "majority"]:
+            valid = True
+            for ex in train:
+                inp, out = ex['input'], ex['output']
+                bg = self._get_bg(inp)
+                non_bg_colors = C2()
+                for row in inp:
+                    for v in row:
+                        if v != bg:
+                            non_bg_colors[v] += 1
+                if len(non_bg_colors) < 2:
+                    valid = False; break
+                
+                if color_sel == "minority":
+                    target_color = non_bg_colors.most_common()[-1][0]
+                else:
+                    target_color = non_bg_colors.most_common(1)[0][0]
+                
+                cells = [(r, c) for r in range(len(inp)) for c in range(len(inp[0]))
+                         if inp[r][c] == target_color]
+                if not cells:
+                    valid = False; break
+                r1 = min(r for r, c in cells)
+                r2 = max(r for r, c in cells)
+                c1 = min(c for r, c in cells)
+                c2 = max(c for r, c in cells)
+                
+                crop = self._crop_bbox(inp, (r1, c1, r2, c2))
+                if crop != out:
+                    valid = False; break
+            
+            if valid:
+                bg = self._get_bg(test_input)
+                non_bg_colors = C2()
+                for row in test_input:
+                    for v in row:
+                        if v != bg:
+                            non_bg_colors[v] += 1
+                if len(non_bg_colors) >= 2:
+                    if color_sel == "minority":
+                        target_color = non_bg_colors.most_common()[-1][0]
+                    else:
+                        target_color = non_bg_colors.most_common(1)[0][0]
+                    cells = [(r, c) for r in range(len(test_input))
+                             for c in range(len(test_input[0]))
+                             if test_input[r][c] == target_color]
+                    if cells:
+                        r1 = min(r for r, c in cells)
+                        r2 = max(r for r, c in cells)
+                        c1 = min(c for r, c in cells)
+                        c2 = max(c for r, c in cells)
+                        return self._crop_bbox(test_input, (r1, c1, r2, c2))
+        
+        return None
+    
+    def _try_shape_selection(self, task: Dict) -> Optional[List[List[int]]]:
+        """Output = the unique/most-common/least-common object shape."""
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        if not all(len(ex['output']) * len(ex['output'][0]) <
+                   len(ex['input']) * len(ex['input'][0]) for ex in train):
+            return None
+        
+        from collections import Counter as C2
+        
+        for selector in ["unique_shape", "unique_binary", "most_common_shape", "least_common_shape"]:
+            valid = True
+            for ex in train:
+                bg = self._get_bg(ex['input'])
+                objs = self._get_objects_4(ex['input'], bg)
+                if len(objs) < 2:
+                    valid = False; break
+                
+                out = ex['output']
+                
+                if selector in ("unique_shape", "most_common_shape", "least_common_shape"):
+                    shape_counts = C2(o['shape'] for o in objs)
+                    if selector == "unique_shape":
+                        uniques = [s for s, c in shape_counts.items() if c == 1]
+                        if len(uniques) != 1:
+                            valid = False; break
+                        target = [list(row) for row in uniques[0]]
+                    elif selector == "most_common_shape":
+                        target = [list(row) for row in shape_counts.most_common(1)[0][0]]
+                    elif selector == "least_common_shape":
+                        target = [list(row) for row in shape_counts.most_common()[-1][0]]
+                elif selector == "unique_binary":
+                    bin_counts = C2(o['binary'] for o in objs)
+                    uniques = [o for o in objs if bin_counts[o['binary']] == 1]
+                    if len(uniques) != 1:
+                        valid = False; break
+                    sel = uniques[0]
+                    # Try shape with bg
+                    target = [list(row) for row in sel['shape']]
+                    if target != out:
+                        # Try shape with 0 for bg
+                        r1, c1, r2, c2 = sel['bbox']
+                        target = [[0] * sel['w'] for _ in range(sel['h'])]
+                        for (rr, cc) in sel['cells']:
+                            target[rr - r1][cc - c1] = ex['input'][rr][cc]
+                
+                if target != out:
+                    valid = False; break
+            
+            if valid:
+                bg = self._get_bg(test_input)
+                objs = self._get_objects_4(test_input, bg)
+                if len(objs) < 2:
+                    continue
+                
+                if selector in ("unique_shape", "most_common_shape", "least_common_shape"):
+                    shape_counts = C2(o['shape'] for o in objs)
+                    if selector == "unique_shape":
+                        uniques = [s for s, c in shape_counts.items() if c == 1]
+                        if len(uniques) == 1:
+                            return [list(row) for row in uniques[0]]
+                    elif selector == "most_common_shape":
+                        return [list(row) for row in shape_counts.most_common(1)[0][0]]
+                    elif selector == "least_common_shape":
+                        return [list(row) for row in shape_counts.most_common()[-1][0]]
+                elif selector == "unique_binary":
+                    bin_counts = C2(o['binary'] for o in objs)
+                    uniques = [o for o in objs if bin_counts[o['binary']] == 1]
+                    if len(uniques) == 1:
+                        sel = uniques[0]
+                        # Use same representation as training
+                        ex0 = task['train'][0]
+                        bg0 = self._get_bg(ex0['input'])
+                        if any(v == bg0 for row in ex0['output'] for v in row):
+                            return [list(row) for row in sel['shape']]
+                        else:
+                            r1, c1, r2, c2 = sel['bbox']
+                            result = [[0] * sel['w'] for _ in range(sel['h'])]
+                            for (rr, cc) in sel['cells']:
+                                result[rr - r1][cc - c1] = test_input[rr][cc]
+                            return result
+        
+        return None
+    
+    def _try_grid_division_extraction(self, task: Dict) -> Optional[List[List[int]]]:
+        """Divide input by grid lines, select region by criterion."""
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        if not all(len(ex['output']) * len(ex['output'][0]) <=
+                   len(ex['input']) * len(ex['input'][0]) for ex in train):
+            return None
+        
+        all_colors = set()
+        for ex in train:
+            for row in ex['input']:
+                all_colors.update(row)
+        
+        for grid_color in all_colors:
+            example_data = []
+            all_have_grid = True
+            
+            for ex in train:
+                inp = ex['input']
+                h, w = len(inp), len(inp[0])
+                h_lines = [r for r in range(h) if all(inp[r][c] == grid_color for c in range(w))]
+                v_lines = [c for c in range(w) if all(inp[r][c] == grid_color for r in range(h))]
+                if not h_lines and not v_lines:
+                    all_have_grid = False; break
+                
+                bg = self._get_bg(inp)
+                h_bounds = [-1] + h_lines + [h]
+                w_bounds = [-1] + v_lines + [w]
+                regions = []
+                for i in range(len(h_bounds) - 1):
+                    for j in range(len(w_bounds) - 1):
+                        r1, r2 = h_bounds[i] + 1, h_bounds[i + 1] - 1
+                        c1, c2 = w_bounds[j] + 1, w_bounds[j + 1] - 1
+                        if r1 <= r2 and c1 <= c2:
+                            region = [list(inp[r][c1:c2 + 1]) for r in range(r1, r2 + 1)]
+                            content = sum(1 for row in region for v in row if v not in (grid_color, bg))
+                            non_bg = set(v for row in region for v in row) - {grid_color, bg}
+                            regions.append({
+                                'grid': region, 'content': content,
+                                'n_unique': len(non_bg)
+                            })
+                
+                out = ex['output']
+                match_idx = None
+                for k, reg in enumerate(regions):
+                    if reg['grid'] == out:
+                        match_idx = k; break
+                if match_idx is None:
+                    all_have_grid = False; break
+                example_data.append((regions, match_idx))
+            
+            if not all_have_grid:
+                continue
+            
+            from collections import Counter as C2
+            for selector in ["most_content", "least_content_nonzero",
+                             "most_unique", "unique_pattern"]:
+                valid = True
+                for regions, match_idx in example_data:
+                    if selector == "most_content":
+                        exp = max(range(len(regions)), key=lambda k: regions[k]['content'])
+                    elif selector == "least_content_nonzero":
+                        nz = [k for k in range(len(regions)) if regions[k]['content'] > 0]
+                        exp = min(nz, key=lambda k: regions[k]['content']) if nz else -1
+                    elif selector == "most_unique":
+                        exp = max(range(len(regions)), key=lambda k: regions[k]['n_unique'])
+                    elif selector == "unique_pattern":
+                        grids = [tuple(tuple(r) for r in reg['grid']) for reg in regions]
+                        counts = C2(grids)
+                        uniques = [k for k, g in enumerate(grids) if counts[g] == 1]
+                        exp = uniques[0] if len(uniques) == 1 else -1
+                    if exp != match_idx:
+                        valid = False; break
+                
+                if valid:
+                    inp = test_input
+                    h, w = len(inp), len(inp[0])
+                    bg = self._get_bg(inp)
+                    h_lines = [r for r in range(h) if all(inp[r][c] == grid_color for c in range(w))]
+                    v_lines = [c for c in range(w) if all(inp[r][c] == grid_color for r in range(h))]
+                    if not h_lines and not v_lines:
+                        continue
+                    h_bounds = [-1] + h_lines + [h]
+                    w_bounds = [-1] + v_lines + [w]
+                    regions = []
+                    for i in range(len(h_bounds) - 1):
+                        for j in range(len(w_bounds) - 1):
+                            r1, r2 = h_bounds[i] + 1, h_bounds[i + 1] - 1
+                            c1, c2 = w_bounds[j] + 1, w_bounds[j + 1] - 1
+                            if r1 <= r2 and c1 <= c2:
+                                region = [list(inp[r][c1:c2 + 1]) for r in range(r1, r2 + 1)]
+                                content = sum(1 for row in region for v in row if v not in (grid_color, bg))
+                                non_bg = set(v for row in region for v in row) - {grid_color, bg}
+                                regions.append({
+                                    'grid': region, 'content': content,
+                                    'n_unique': len(non_bg)
+                                })
+                    if not regions:
+                        continue
+                    if selector == "most_content":
+                        return max(regions, key=lambda r: r['content'])['grid']
+                    elif selector == "least_content_nonzero":
+                        nz = [r for r in regions if r['content'] > 0]
+                        return min(nz, key=lambda r: r['content'])['grid'] if nz else None
+                    elif selector == "most_unique":
+                        return max(regions, key=lambda r: r['n_unique'])['grid']
+                    elif selector == "unique_pattern":
+                        grids = [tuple(tuple(r) for r in reg['grid']) for reg in regions]
+                        counts = C2(grids)
+                        uniques = [k for k, g in enumerate(grids) if counts[g] == 1]
+                        if len(uniques) == 1:
+                            return regions[uniques[0]]['grid']
+        
+        return None
+    
+    def _try_object_overlay(self, task: Dict) -> Optional[List[List[int]]]:
+        """Output = overlay of multiple same-size objects from input."""
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        if not all(len(ex['output']) * len(ex['output'][0]) <
+                   len(ex['input']) * len(ex['input'][0]) for ex in train):
+            return None
+        
+        # Check: all training outputs same size
+        out_sizes = set((len(ex['output']), len(ex['output'][0])) for ex in train)
+        if len(out_sizes) > 1:
+            return None
+        ho, wo = out_sizes.pop()
+        
+        valid = True
+        for ex in train:
+            bg = self._get_bg(ex['input'])
+            objs = self._get_objects_4(ex['input'], bg)
+            matching = [o for o in objs if o['h'] == ho and o['w'] == wo]
+            if len(matching) < 2:
+                valid = False; break
+            
+            pred = [[bg] * wo for _ in range(ho)]
+            for obj in matching:
+                r1, c1, _, _ = obj['bbox']
+                for (rr, cc) in obj['cells']:
+                    pr, pc = rr - r1, cc - c1
+                    if 0 <= pr < ho and 0 <= pc < wo and ex['input'][rr][cc] != bg:
+                        pred[pr][pc] = ex['input'][rr][cc]
+            if pred != ex['output']:
+                valid = False; break
+        
+        if valid:
+            bg = self._get_bg(test_input)
+            objs = self._get_objects_4(test_input, bg)
+            matching = [o for o in objs if o['h'] == ho and o['w'] == wo]
+            if matching:
+                pred = [[bg] * wo for _ in range(ho)]
+                for obj in matching:
+                    r1, c1, _, _ = obj['bbox']
+                    for (rr, cc) in obj['cells']:
+                        pr, pc = rr - r1, cc - c1
+                        if 0 <= pr < ho and 0 <= pc < wo and test_input[rr][cc] != bg:
+                            pred[pr][pc] = test_input[rr][cc]
+                return pred
+        
+        return None
+    
+    def _try_enclosed_fill(self, task: Dict) -> Optional[List[List[int]]]:
+        """Fill bg cells enclosed by non-bg cells with a fixed or surrounding color."""
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        if not all(len(ex['output']) == len(ex['input']) and
+                   len(ex['output'][0]) == len(ex['input'][0]) for ex in train):
+            return None
+        
+        for fill_method in ["fixed", "surrounding"]:
+            valid = True
+            fixed_fill = None
+            
+            for ex in train:
+                inp, out = ex['input'], ex['output']
+                h, w = len(inp), len(inp[0])
+                bg = self._get_bg(inp)
+                
+                border_bg = set()
+                stack = []
+                for r in range(h):
+                    for c in range(w):
+                        if (r == 0 or r == h - 1 or c == 0 or c == w - 1) and inp[r][c] == bg:
+                            stack.append((r, c))
+                while stack:
+                    r, c = stack.pop()
+                    if (r, c) in border_bg:
+                        continue
+                    border_bg.add((r, c))
+                    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                        nr, nc = r + dr, c + dc
+                        if 0 <= nr < h and 0 <= nc < w and (nr, nc) not in border_bg and inp[nr][nc] == bg:
+                            stack.append((nr, nc))
+                
+                interior = set()
+                for r in range(h):
+                    for c in range(w):
+                        if inp[r][c] == bg and (r, c) not in border_bg:
+                            interior.add((r, c))
+                
+                if not interior:
+                    continue
+                
+                # Check all non-interior cells unchanged
+                for r in range(h):
+                    for c in range(w):
+                        if (r, c) not in interior and inp[r][c] != out[r][c]:
+                            valid = False; break
+                    if not valid:
+                        break
+                if not valid:
+                    break
+                
+                if fill_method == "fixed":
+                    fill_colors = set(out[r][c] for r, c in interior)
+                    if len(fill_colors) != 1:
+                        valid = False; break
+                    fc = fill_colors.pop()
+                    if fc == bg:
+                        valid = False; break
+                    if fixed_fill is None:
+                        fixed_fill = fc
+                    elif fixed_fill != fc:
+                        valid = False; break
+                
+                elif fill_method == "surrounding":
+                    visited = set()
+                    for r, c in interior:
+                        if (r, c) in visited:
+                            continue
+                        region = set()
+                        st = [(r, c)]
+                        while st:
+                            cr, cc = st.pop()
+                            if (cr, cc) in visited:
+                                continue
+                            visited.add((cr, cc))
+                            region.add((cr, cc))
+                            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                                nr, nc = cr + dr, cc + dc
+                                if (nr, nc) in interior and (nr, nc) not in visited:
+                                    st.append((nr, nc))
+                        
+                        from collections import Counter as C2
+                        surround = C2()
+                        for rr, cc in region:
+                            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                                nr, nc = rr + dr, cc + dc
+                                if 0 <= nr < h and 0 <= nc < w and inp[nr][nc] != bg:
+                                    surround[inp[nr][nc]] += 1
+                        if not surround:
+                            valid = False; break
+                        wall_color = surround.most_common(1)[0][0]
+                        for rr, cc in region:
+                            if out[rr][cc] != wall_color:
+                                valid = False; break
+                        if not valid:
+                            break
+            
+            if valid and fill_method == "fixed" and fixed_fill is not None:
+                return self._apply_enclosed_fill_fixed(test_input, fixed_fill)
+            if valid and fill_method == "surrounding":
+                return self._apply_enclosed_fill_surrounding(test_input)
+        
+        return None
+    
+    def _apply_enclosed_fill_fixed(self, grid, fill_color):
+        h, w = len(grid), len(grid[0])
+        bg = self._get_bg(grid)
+        border_bg = set()
+        stack = []
+        for r in range(h):
+            for c in range(w):
+                if (r == 0 or r == h - 1 or c == 0 or c == w - 1) and grid[r][c] == bg:
+                    stack.append((r, c))
+        while stack:
+            r, c = stack.pop()
+            if (r, c) in border_bg:
+                continue
+            border_bg.add((r, c))
+            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < h and 0 <= nc < w and (nr, nc) not in border_bg and grid[nr][nc] == bg:
+                    stack.append((nr, nc))
+        result = [row[:] for row in grid]
+        for r in range(h):
+            for c in range(w):
+                if grid[r][c] == bg and (r, c) not in border_bg:
+                    result[r][c] = fill_color
+        return result
+    
+    def _apply_enclosed_fill_surrounding(self, grid):
+        from collections import Counter as C2
+        h, w = len(grid), len(grid[0])
+        bg = self._get_bg(grid)
+        border_bg = set()
+        stack = []
+        for r in range(h):
+            for c in range(w):
+                if (r == 0 or r == h - 1 or c == 0 or c == w - 1) and grid[r][c] == bg:
+                    stack.append((r, c))
+        while stack:
+            r, c = stack.pop()
+            if (r, c) in border_bg:
+                continue
+            border_bg.add((r, c))
+            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < h and 0 <= nc < w and (nr, nc) not in border_bg and grid[nr][nc] == bg:
+                    stack.append((nr, nc))
+        
+        interior = set()
+        for r in range(h):
+            for c in range(w):
+                if grid[r][c] == bg and (r, c) not in border_bg:
+                    interior.add((r, c))
+        
+        result = [row[:] for row in grid]
+        visited = set()
+        for r, c in interior:
+            if (r, c) in visited:
+                continue
+            region = set()
+            st = [(r, c)]
+            while st:
+                cr, cc = st.pop()
+                if (cr, cc) in visited:
+                    continue
+                visited.add((cr, cc))
+                region.add((cr, cc))
+                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    nr, nc = cr + dr, cc + dc
+                    if (nr, nc) in interior and (nr, nc) not in visited:
+                        st.append((nr, nc))
+            
+            surround = C2()
+            for rr, cc in region:
+                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    nr, nc = rr + dr, cc + dc
+                    if 0 <= nr < h and 0 <= nc < w and grid[nr][nc] != bg:
+                        surround[grid[nr][nc]] += 1
+            if surround:
+                fill_c = surround.most_common(1)[0][0]
+                for rr, cc in region:
+                    result[rr][cc] = fill_c
+        return result
+    
+    def _try_between_markers(self, task: Dict) -> Optional[List[List[int]]]:
+        """Connect same-color markers with lines (horizontal/vertical)."""
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        if not all(len(ex['output']) == len(ex['input']) and
+                   len(ex['output'][0]) == len(ex['input'][0]) for ex in train):
+            return None
+        
+        bg = self._get_bg(train[0]['input'])
+        
+        for variant in ["nearest_h", "nearest_v", "nearest_hv",
+                         "all_h", "all_v", "all_hv"]:
+            valid = True
+            for ex in train:
+                pred = self._apply_between_markers(ex['input'], variant, bg)
+                if pred != ex['output']:
+                    valid = False; break
+            if valid:
+                return self._apply_between_markers(test_input, variant, bg)
+        
+        return None
+    
+    def _apply_between_markers(self, grid, variant, bg):
+        h, w = len(grid), len(grid[0])
+        result = [row[:] for row in grid]
+        do_h = 'h' in variant
+        do_v = 'v' in variant
+        nearest = variant.startswith("nearest")
+        
+        if do_h:
+            for r in range(h):
+                non_bg = [(c, grid[r][c]) for c in range(w) if grid[r][c] != bg]
+                pairs = []
+                if nearest:
+                    for i in range(len(non_bg) - 1):
+                        pairs.append((non_bg[i], non_bg[i + 1]))
+                else:
+                    for i in range(len(non_bg)):
+                        for j in range(i + 1, len(non_bg)):
+                            pairs.append((non_bg[i], non_bg[j]))
+                for (c1, col1), (c2, col2) in pairs:
+                    if col1 == col2 and all(grid[r][c] == bg for c in range(c1 + 1, c2)):
+                        for c in range(c1 + 1, c2):
+                            result[r][c] = col1
+        
+        if do_v:
+            for c in range(w):
+                non_bg = [(r, grid[r][c]) for r in range(h) if grid[r][c] != bg]
+                pairs = []
+                if nearest:
+                    for i in range(len(non_bg) - 1):
+                        pairs.append((non_bg[i], non_bg[i + 1]))
+                else:
+                    for i in range(len(non_bg)):
+                        for j in range(i + 1, len(non_bg)):
+                            pairs.append((non_bg[i], non_bg[j]))
+                for (r1, col1), (r2, col2) in pairs:
+                    if col1 == col2 and all(grid[r][c] == bg for r in range(r1 + 1, r2)):
+                        for r in range(r1 + 1, r2):
+                            result[r][c] = col1
+        
+        return result
+    
+    def _try_gravity(self, task: Dict) -> Optional[List[List[int]]]:
+        """Apply gravity in 4 directions."""
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        if not all(len(ex['output']) == len(ex['input']) and
+                   len(ex['output'][0]) == len(ex['input'][0]) for ex in train):
+            return None
+        
+        for direction in ["down", "up", "left", "right"]:
+            valid = True
+            for ex in train:
+                pred = self._apply_gravity(ex['input'], direction)
+                if pred != ex['output']:
+                    valid = False; break
+            if valid:
+                return self._apply_gravity(test_input, direction)
+        
+        return None
+    
+    def _apply_gravity(self, grid, direction):
+        h, w = len(grid), len(grid[0])
+        bg = self._get_bg(grid)
+        result = [[bg] * w for _ in range(h)]
+        
+        if direction == "down":
+            for c in range(w):
+                vals = [grid[r][c] for r in range(h) if grid[r][c] != bg]
+                for i, v in enumerate(vals):
+                    result[h - len(vals) + i][c] = v
+        elif direction == "up":
+            for c in range(w):
+                vals = [grid[r][c] for r in range(h) if grid[r][c] != bg]
+                for i, v in enumerate(vals):
+                    result[i][c] = v
+        elif direction == "right":
+            for r in range(h):
+                vals = [grid[r][c] for c in range(w) if grid[r][c] != bg]
+                for i, v in enumerate(vals):
+                    result[r][w - len(vals) + i] = v
+        elif direction == "left":
+            for r in range(h):
+                vals = [grid[r][c] for c in range(w) if grid[r][c] != bg]
+                for i, v in enumerate(vals):
+                    result[r][i] = v
+        return result
+    
+    def _try_object_delete(self, task: Dict) -> Optional[List[List[int]]]:
+        """Delete objects matching a criterion, fill with bg."""
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        if not all(len(ex['output']) == len(ex['input']) and
+                   len(ex['output'][0]) == len(ex['input'][0]) for ex in train):
+            return None
+        
+        bg = self._get_bg(train[0]['input'])
+        
+        from collections import Counter as C2
+        
+        for criterion in ["smallest", "largest", "single_cell", "color_minority"]:
+            valid = True
+            for ex in train:
+                objs = self._get_objects_4(ex['input'], bg)
+                if not objs:
+                    valid = False; break
+                
+                deleted = set()
+                for i, obj in enumerate(objs):
+                    if all(ex['output'][r][c] == bg for r, c in obj['cells']):
+                        deleted.add(i)
+                
+                if not deleted:
+                    valid = False; break
+                
+                if criterion == "smallest":
+                    min_s = min(o['size'] for o in objs)
+                    expected_del = {i for i, o in enumerate(objs) if o['size'] == min_s}
+                elif criterion == "largest":
+                    max_s = max(o['size'] for o in objs)
+                    expected_del = {i for i, o in enumerate(objs) if o['size'] == max_s}
+                elif criterion == "single_cell":
+                    expected_del = {i for i, o in enumerate(objs) if o['size'] == 1}
+                elif criterion == "color_minority":
+                    cc = C2(o['primary_color'] for o in objs)
+                    min_cnt = min(cc.values())
+                    minority = {c for c, cnt in cc.items() if cnt == min_cnt}
+                    expected_del = {i for i, o in enumerate(objs) if o['primary_color'] in minority}
+                
+                if deleted != expected_del:
+                    valid = False; break
+                
+                all_del_cells = set()
+                for i in deleted:
+                    all_del_cells.update(objs[i]['cells'])
+                for r in range(len(ex['input'])):
+                    for c in range(len(ex['input'][0])):
+                        if (r, c) not in all_del_cells and ex['input'][r][c] != ex['output'][r][c]:
+                            valid = False; break
+                    if not valid:
+                        break
+            
+            if valid:
+                objs = self._get_objects_4(test_input, bg)
+                if not objs:
+                    continue
+                
+                if criterion == "smallest":
+                    min_s = min(o['size'] for o in objs)
+                    to_del = [o for o in objs if o['size'] == min_s]
+                elif criterion == "largest":
+                    max_s = max(o['size'] for o in objs)
+                    to_del = [o for o in objs if o['size'] == max_s]
+                elif criterion == "single_cell":
+                    to_del = [o for o in objs if o['size'] == 1]
+                elif criterion == "color_minority":
+                    cc = C2(o['primary_color'] for o in objs)
+                    min_cnt = min(cc.values())
+                    minority = {c for c, cnt in cc.items() if cnt == min_cnt}
+                    to_del = [o for o in objs if o['primary_color'] in minority]
+                
+                result = [row[:] for row in test_input]
+                for obj in to_del:
+                    for r, c in obj['cells']:
+                        result[r][c] = bg
+                return result
+        
+        return None
+    
+    def _try_compositional_synthesis(self, task: Dict) -> Optional[List[List[int]]]:
+        """Chain 2 primitive operations to solve tasks.
+        
+        Tries combinations like: detect objects → transform → place,
+        or: recolor → extract, or: gravity → fill, etc.
+        """
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        # Op1: grid transforms that produce same-size output
+        grid_ops = []
+        
+        def _rot90(g):
+            h, w = len(g), len(g[0])
+            return [[g[h-1-c][r] for c in range(h)] for r in range(w)]
+        
+        def _rot180(g):
+            return [row[::-1] for row in g[::-1]]
+        
+        def _rot270(g):
+            h, w = len(g), len(g[0])
+            return [[g[c][w-1-r] for c in range(h)] for r in range(w)]
+        
+        def _flip_h(g):
+            return [row[::-1] for row in g]
+        
+        def _flip_v(g):
+            return g[::-1]
+        
+        def _transpose(g):
+            h, w = len(g), len(g[0])
+            return [[g[r][c] for r in range(h)] for c in range(w)]
+        
+        grid_ops = [
+            ("rot90", _rot90), ("rot180", _rot180), ("rot270", _rot270),
+            ("flip_h", _flip_h), ("flip_v", _flip_v), ("transpose", _transpose),
+        ]
+        
+        # Op2: extraction ops
+        def _crop_nonbg(g):
+            bg = self._get_bg(g)
+            h, w = len(g), len(g[0])
+            rows = [r for r in range(h) if any(g[r][c] != bg for c in range(w))]
+            cols = [c for c in range(w) if any(g[r][c] != bg for r in range(h))]
+            if not rows or not cols:
+                return g
+            return [list(g[r][min(cols):max(cols)+1]) for r in range(min(rows), max(rows)+1)]
+        
+        def _remove_bg_border(g):
+            bg = self._get_bg(g)
+            h, w = len(g), len(g[0])
+            r1, r2, c1, c2 = 0, h-1, 0, w-1
+            while r1 < r2 and all(g[r1][c] == bg for c in range(w)):
+                r1 += 1
+            while r2 > r1 and all(g[r2][c] == bg for c in range(w)):
+                r2 -= 1
+            while c1 < c2 and all(g[r][c1] == bg for r in range(h)):
+                c1 += 1
+            while c2 > c1 and all(g[r][c2] == bg for r in range(h)):
+                c2 -= 1
+            return [list(g[r][c1:c2+1]) for r in range(r1, r2+1)]
+        
+        extract_ops = [
+            ("crop_nonbg", _crop_nonbg),
+            ("remove_border", _remove_bg_border),
+        ]
+        
+        # Recolor ops
+        def _make_recolor(from_c, to_c):
+            def _recolor(g):
+                return [[to_c if v == from_c else v for v in row] for row in g]
+            return _recolor
+        
+        # Try: grid_op → extract
+        for op1_name, op1 in grid_ops:
+            for op2_name, op2 in extract_ops:
+                valid = True
+                for ex in train:
+                    try:
+                        step1 = op1(ex['input'])
+                        step2 = op2(step1)
+                        if step2 != ex['output']:
+                            valid = False; break
+                    except:
+                        valid = False; break
+                if valid:
+                    step1 = op1(test_input)
+                    return op2(step1)
+        
+        # Try: extract → grid_op
+        for op1_name, op1 in extract_ops:
+            for op2_name, op2 in grid_ops:
+                valid = True
+                for ex in train:
+                    try:
+                        step1 = op1(ex['input'])
+                        step2 = op2(step1)
+                        if step2 != ex['output']:
+                            valid = False; break
+                    except:
+                        valid = False; break
+                if valid:
+                    step1 = op1(test_input)
+                    return op2(step1)
+        
+        # Try: gravity → extract
+        for direction in ["down", "up", "left", "right"]:
+            for op2_name, op2 in extract_ops + grid_ops:
+                valid = True
+                for ex in train:
+                    try:
+                        step1 = self._apply_gravity(ex['input'], direction)
+                        step2 = op2(step1)
+                        if step2 != ex['output']:
+                            valid = False; break
+                    except:
+                        valid = False; break
+                if valid:
+                    step1 = self._apply_gravity(test_input, direction)
+                    return op2(step1)
+        
+        # Try: recolor → other_op (learn color mapping from examples)
+        if train:
+            ex0 = train[0]
+            bg = self._get_bg(ex0['input'])
+            in_colors = set(v for row in ex0['input'] for v in row) - {bg}
+            out_colors = set(v for row in ex0['output'] for v in row) - {bg}
+            
+            # Simple 1-to-1 recoloring
+            if len(in_colors) == len(out_colors) and in_colors != out_colors:
+                from itertools import permutations
+                for perm in permutations(sorted(out_colors)):
+                    mapping = dict(zip(sorted(in_colors), perm))
+                    mapping[bg] = bg
+                    
+                    def _apply_cmap(g, m=mapping):
+                        return [[m.get(v, v) for v in row] for row in g]
+                    
+                    valid = True
+                    for ex in train:
+                        if _apply_cmap(ex['input']) != ex['output']:
+                            valid = False; break
+                    if valid:
+                        return _apply_cmap(test_input)
+                    
+                    if len(in_colors) > 3:
+                        break
+        
+        return None
+    
+    def _try_color_object_mapping(self, task: Dict) -> Optional[List[List[int]]]:
+        """Learn color transformations based on object properties."""
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        if not all(len(ex['output']) == len(ex['input']) and
+                   len(ex['output'][0]) == len(ex['input'][0]) for ex in train):
+            return None
+        
+        bg = self._get_bg(train[0]['input'])
+        
+        # Strategy: each object gets recolored based on its size/shape
+        from collections import Counter as C2
+        
+        # Learn: for each object, what color does it become?
+        # Try: all objects of color X become color Y (simple recolor)
+        color_map = {}
+        valid = True
+        for ex in train:
+            inp, out = ex['input'], ex['output']
+            h, w = len(inp), len(inp[0])
+            for r in range(h):
+                for c in range(w):
+                    if inp[r][c] != bg:
+                        pair = (inp[r][c], out[r][c])
+                        if inp[r][c] in color_map:
+                            if color_map[inp[r][c]] != out[r][c]:
+                                valid = False; break
+                        else:
+                            color_map[inp[r][c]] = out[r][c]
+                    elif out[r][c] != bg:
+                        valid = False; break
+                if not valid:
+                    break
+            if not valid:
+                break
+        
+        if valid and color_map:
+            h, w = len(test_input), len(test_input[0])
+            result = [row[:] for row in test_input]
+            for r in range(h):
+                for c in range(w):
+                    if test_input[r][c] in color_map:
+                        result[r][c] = color_map[test_input[r][c]]
+            return result
+        
+        # Try: object size determines output color
+        valid = True
+        size_to_color = {}
+        for ex in train:
+            objs = self._get_objects_4(ex['input'], bg)
+            for obj in objs:
+                out_colors = C2()
+                for r, c in obj['cells']:
+                    out_colors[ex['output'][r][c]] += 1
+                if not out_colors:
+                    continue
+                out_color = out_colors.most_common(1)[0][0]
+                s = obj['size']
+                if s in size_to_color:
+                    if size_to_color[s] != out_color:
+                        valid = False; break
+                else:
+                    size_to_color[s] = out_color
+            if not valid:
+                break
+        
+        if valid and size_to_color:
+            # Verify fully
+            for ex in train:
+                objs = self._get_objects_4(ex['input'], bg)
+                pred = [row[:] for row in ex['input']]
+                for obj in objs:
+                    if obj['size'] in size_to_color:
+                        for r, c in obj['cells']:
+                            pred[r][c] = size_to_color[obj['size']]
+                if pred != ex['output']:
+                    valid = False; break
+            
+            if valid:
+                objs = self._get_objects_4(test_input, bg)
+                result = [row[:] for row in test_input]
+                for obj in objs:
+                    if obj['size'] in size_to_color:
+                        for r, c in obj['cells']:
+                            result[r][c] = size_to_color[obj['size']]
+                return result
+        
+        return None
+    
+    def _try_pattern_completion(self, task: Dict) -> Optional[List[List[int]]]:
+        """Complete a pattern by detecting and filling symmetry/repetition gaps."""
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        if not all(len(ex['output']) == len(ex['input']) and
+                   len(ex['output'][0]) == len(ex['input'][0]) for ex in train):
+            return None
+        
+        # Strategy 1: Mirror symmetry completion
+        for axis in ["horizontal", "vertical", "both"]:
+            valid = True
+            for ex in train:
+                pred = self._apply_symmetry_fill(ex['input'], axis)
+                if pred != ex['output']:
+                    valid = False; break
+            if valid:
+                return self._apply_symmetry_fill(test_input, axis)
+        
+        # Strategy 2: Majority vote across symmetry transforms
+        valid = True
+        for ex in train:
+            pred = self._apply_majority_symmetry(ex['input'])
+            if pred != ex['output']:
+                valid = False; break
+        if valid:
+            return self._apply_majority_symmetry(test_input)
+        
+        return None
+    
+    def _apply_symmetry_fill(self, grid, axis):
+        """Fill bg cells using mirror symmetry."""
+        h, w = len(grid), len(grid[0])
+        bg = self._get_bg(grid)
+        result = [row[:] for row in grid]
+        
+        if axis in ("horizontal", "both"):
+            for r in range(h):
+                for c in range(w):
+                    mc = w - 1 - c
+                    if result[r][c] == bg and result[r][mc] != bg:
+                        result[r][c] = result[r][mc]
+                    elif result[r][mc] == bg and result[r][c] != bg:
+                        result[r][mc] = result[r][c]
+        
+        if axis in ("vertical", "both"):
+            for r in range(h):
+                for c in range(w):
+                    mr = h - 1 - r
+                    if result[r][c] == bg and result[mr][c] != bg:
+                        result[r][c] = result[mr][c]
+                    elif result[mr][c] == bg and result[r][c] != bg:
+                        result[mr][c] = result[r][c]
+        
+        return result
+    
+    def _apply_majority_symmetry(self, grid):
+        """Fill using majority vote across 4 symmetry transforms."""
+        from collections import Counter as C2
+        h, w = len(grid), len(grid[0])
+        bg = self._get_bg(grid)
+        result = [row[:] for row in grid]
+        
+        for r in range(h):
+            for c in range(w):
+                if grid[r][c] == bg:
+                    candidates = C2()
+                    # Mirror horizontal
+                    mc = w - 1 - c
+                    if 0 <= mc < w and grid[r][mc] != bg:
+                        candidates[grid[r][mc]] += 1
+                    # Mirror vertical
+                    mr = h - 1 - r
+                    if 0 <= mr < h and grid[mr][c] != bg:
+                        candidates[grid[mr][c]] += 1
+                    # Mirror both
+                    if 0 <= mr < h and 0 <= mc < w and grid[mr][mc] != bg:
+                        candidates[grid[mr][mc]] += 1
+                    # 90° rotation
+                    if h == w:
+                        rr, rc = c, h - 1 - r
+                        if 0 <= rr < h and 0 <= rc < w and grid[rr][rc] != bg:
+                            candidates[grid[rr][rc]] += 1
+                    
+                    if candidates:
+                        result[r][c] = candidates.most_common(1)[0][0]
+        
+        return result
+    
+    def _try_spatial_rule_induction(self, task: Dict) -> Optional[List[List[int]]]:
+        """Learn spatial rules from training examples and apply to test.
+        
+        For same-size tasks, analyzes which cells change and why,
+        trying to learn a rule based on local neighborhoods.
+        """
+        train = task['train']
+        test_input = task['test'][0]['input']
+        
+        # Only for same-size tasks
+        for pair in train:
+            if (len(pair['input']) != len(pair['output']) or 
+                len(pair['input'][0]) != len(pair['output'][0])):
+                return None
+        
+        # Strategy 1: Neighborhood-based rule
+        pred = self._try_neighborhood_rule(train, test_input)
+        if pred is not None:
+            return pred
+        
+        # Strategy 2: Row/column pattern propagation  
+        pred = self._try_pattern_propagation(train, test_input)
+        if pred is not None:
+            return pred
+        
+        # Strategy 3: Object-relative rules
+        pred = self._try_object_relative_rule(train, test_input)
+        if pred is not None:
+            return pred
+        
+        return None
+    
+    def _try_neighborhood_rule(self, train, test_input):
+        """Learn: for each cell, determine output color based on 3x3 neighborhood.
+        
+        Two strategies:
+        1. Exact neighborhood matching (original)
+        2. Color-relative features (abstract)
+        """
+        from collections import Counter
+        
+        # Strategy 1: Exact neighborhood matching
+        rules = {}
+        for pair in train:
+            inp = pair['input']
+            out = pair['output']
+            h, w = len(inp), len(inp[0])
+            for i in range(h):
+                for j in range(w):
+                    nbr = []
+                    for di in [-1, 0, 1]:
+                        for dj in [-1, 0, 1]:
+                            ni, nj = i + di, j + dj
+                            if 0 <= ni < h and 0 <= nj < w:
+                                nbr.append(inp[ni][nj])
+                            else:
+                                nbr.append(-1)
+                    key = tuple(nbr)
+                    if key not in rules:
+                        rules[key] = Counter()
+                    rules[key][out[i][j]] += 1
+        
+        # Check consistency
+        consistent = {}
+        ambiguous = 0
+        for feat, counts in rules.items():
+            if len(counts) == 1:
+                consistent[feat] = counts.most_common(1)[0][0]
+            else:
+                top = counts.most_common(1)[0]
+                if top[1] >= sum(counts.values()) * 0.9:
+                    consistent[feat] = top[0]
+                else:
+                    ambiguous += 1
+        
+        if ambiguous <= len(rules) * 0.05:
+            # Validate
+            valid = True
+            for pair in train:
+                inp = pair['input']
+                out = pair['output']
+                h, w = len(inp), len(inp[0])
+                for i in range(h):
+                    for j in range(w):
+                        nbr = []
+                        for di in [-1, 0, 1]:
+                            for dj in [-1, 0, 1]:
+                                ni, nj = i + di, j + dj
+                                if 0 <= ni < h and 0 <= nj < w:
+                                    nbr.append(inp[ni][nj])
+                                else:
+                                    nbr.append(-1)
+                        key = tuple(nbr)
+                        if key in consistent and consistent[key] != out[i][j]:
+                            valid = False
+                            break
+                    if not valid:
+                        break
+                if not valid:
+                    break
+            
+            if valid:
+                # Apply to test
+                h, w = len(test_input), len(test_input[0])
+                result = [row[:] for row in test_input]
+                unseen = 0
+                for i in range(h):
+                    for j in range(w):
+                        nbr = []
+                        for di in [-1, 0, 1]:
+                            for dj in [-1, 0, 1]:
+                                ni, nj = i + di, j + dj
+                                if 0 <= ni < h and 0 <= nj < w:
+                                    nbr.append(test_input[ni][nj])
+                                else:
+                                    nbr.append(-1)
+                        key = tuple(nbr)
+                        if key in consistent:
+                            result[i][j] = consistent[key]
+                        else:
+                            unseen += 1
+                
+                if unseen <= h * w * 0.15:
+                    return result
+        
+        # Strategy 2: Color-relative features
+        return self._try_relative_neighborhood_rule(train, test_input)
+    
+    def _try_relative_neighborhood_rule(self, train, test_input):
+        """Learn neighborhood rules using color-relative features.
+        
+        Features per cell:
+        - center_color
+        - n_same_cardinal (0-4): how many cardinal neighbors match center
+        - n_same_diagonal (0-4): how many diagonal neighbors match center
+        - n_zero_cardinal (0-4): how many cardinal neighbors are 0
+        - has_any_nonzero_neighbor: bool
+        - change_type: 'keep' or target_color
+        """
+        from collections import Counter
+        
+        # Determine background color (most common)
+        all_colors = Counter()
+        for pair in train:
+            for row in pair['input']:
+                all_colors.update(row)
+        bg = all_colors.most_common(1)[0][0]
+        
+        rules = {}  # (center_is_bg, n_same_card, n_same_diag, n_bg_card, n_nonbg_card) -> Counter
+        
+        for pair in train:
+            inp = pair['input']
+            out = pair['output']
+            h, w = len(inp), len(inp[0])
+            
+            for i in range(h):
+                for j in range(w):
+                    center = inp[i][j]
+                    out_c = out[i][j]
+                    
+                    # Cardinal neighbors
+                    card_same = 0
+                    card_bg = 0
+                    card_nonbg = 0
+                    for di, dj in [(-1,0),(1,0),(0,-1),(0,1)]:
+                        ni, nj = i + di, j + dj
+                        if 0 <= ni < h and 0 <= nj < w:
+                            n = inp[ni][nj]
+                            if n == center:
+                                card_same += 1
+                            if n == bg:
+                                card_bg += 1
+                            else:
+                                card_nonbg += 1
+                        else:
+                            card_bg += 1  # boundary = bg
+                    
+                    # Diagonal neighbors
+                    diag_same = 0
+                    for di, dj in [(-1,-1),(-1,1),(1,-1),(1,1)]:
+                        ni, nj = i + di, j + dj
+                        if 0 <= ni < h and 0 <= nj < w:
+                            if inp[ni][nj] == center:
+                                diag_same += 1
+                    
+                    key = (center == bg, card_same, diag_same, card_bg, card_nonbg)
+                    
+                    # Output is relative: keep same, change to bg, or change to specific
+                    if out_c == center:
+                        out_rel = 'keep'
+                    elif out_c == bg:
+                        out_rel = 'to_bg'
+                    else:
+                        out_rel = out_c  # absolute color (for new colors)
+                    
+                    if key not in rules:
+                        rules[key] = Counter()
+                    rules[key][out_rel] += 1
+        
+        # Check consistency
+        consistent = {}
+        ambiguous = 0
+        for feat, counts in rules.items():
+            if len(counts) == 1:
+                consistent[feat] = counts.most_common(1)[0][0]
+            else:
+                top = counts.most_common(1)[0]
+                total = sum(counts.values())
+                if top[1] >= total * 0.95:
+                    consistent[feat] = top[0]
+                else:
+                    ambiguous += 1
+        
+        if ambiguous > len(rules) * 0.05:
+            return None
+        
+        # Validate
+        for pair in train:
+            inp = pair['input']
+            out = pair['output']
+            h, w = len(inp), len(inp[0])
+            for i in range(h):
+                for j in range(w):
+                    center = inp[i][j]
+                    card_same = card_bg = card_nonbg = diag_same = 0
+                    for di, dj in [(-1,0),(1,0),(0,-1),(0,1)]:
+                        ni, nj = i + di, j + dj
+                        if 0 <= ni < h and 0 <= nj < w:
+                            n = inp[ni][nj]
+                            if n == center: card_same += 1
+                            if n == bg: card_bg += 1
+                            else: card_nonbg += 1
+                        else:
+                            card_bg += 1
+                    for di, dj in [(-1,-1),(-1,1),(1,-1),(1,1)]:
+                        ni, nj = i + di, j + dj
+                        if 0 <= ni < h and 0 <= nj < w:
+                            if inp[ni][nj] == center: diag_same += 1
+                    
+                    key = (center == bg, card_same, diag_same, card_bg, card_nonbg)
+                    if key in consistent:
+                        rule = consistent[key]
+                        expected = out[i][j]
+                        if rule == 'keep' and expected != center:
+                            return None
+                        elif rule == 'to_bg' and expected != bg:
+                            return None
+                        elif isinstance(rule, int) and expected != rule:
+                            return None
+        
+        # Apply to test
+        h, w = len(test_input), len(test_input[0])
+        result = [row[:] for row in test_input]
+        unseen = 0
+        
+        for i in range(h):
+            for j in range(w):
+                center = test_input[i][j]
+                card_same = card_bg = card_nonbg = diag_same = 0
+                for di, dj in [(-1,0),(1,0),(0,-1),(0,1)]:
+                    ni, nj = i + di, j + dj
+                    if 0 <= ni < h and 0 <= nj < w:
+                        n = test_input[ni][nj]
+                        if n == center: card_same += 1
+                        if n == bg: card_bg += 1
+                        else: card_nonbg += 1
+                    else:
+                        card_bg += 1
+                for di, dj in [(-1,-1),(-1,1),(1,-1),(1,1)]:
+                    ni, nj = i + di, j + dj
+                    if 0 <= ni < h and 0 <= nj < w:
+                        if test_input[ni][nj] == center: diag_same += 1
+                
+                key = (center == bg, card_same, diag_same, card_bg, card_nonbg)
+                if key in consistent:
+                    rule = consistent[key]
+                    if rule == 'keep':
+                        pass
+                    elif rule == 'to_bg':
+                        result[i][j] = bg
+                    elif isinstance(rule, int):
+                        result[i][j] = rule
+                else:
+                    unseen += 1
+        
+        if unseen > h * w * 0.15:
+            return None
+        
+        return result
+    
+    def _try_pattern_propagation(self, train, test_input):
+        """Learn row/column-based patterns: does each row have a consistent rule?"""
+        # Check if output rows are transformations of input rows
+        from collections import Counter
+        
+        for pair in train:
+            inp = pair['input']
+            out = pair['output']
+            if len(inp) != len(out):
+                return None
+        
+        # Try: output row = some function of input row (position-independent)
+        # Check if the transformation is the same for corresponding rows
+        # across all training examples
+        return None  # Complex, skip for now
+    
+    def _try_object_relative_rule(self, train, test_input):
+        """Learn rules relative to objects (connected components)."""
+        # For each training pair:
+        # 1. Find objects in input
+        # 2. Find what changed in output
+        # 3. Express changes relative to objects
+        # This is complex — skip for now, focus on neighborhood rules
+        return None
 
 
 # ============================================================================

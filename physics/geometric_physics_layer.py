@@ -466,6 +466,8 @@ class GeometricPhysicsLayer(nn.Module):
         if self.config.enable_fuller:
             fuller_result = self.fuller(h)
             fuller_out = fuller_result['combined']
+            if torch.isnan(fuller_out).any():
+                fuller_out = h  # fallback to identity
             h = h + residual_scale * (fuller_out - h)  # Soft update
             component_outputs['fuller'] = fuller_result
             

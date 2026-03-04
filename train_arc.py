@@ -8,6 +8,7 @@ ARC tasks require:
 - Grid-based spatial reasoning
 """
 
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -159,6 +160,11 @@ class ARCTrainer:
         )
         
         loss = output['loss']
+        
+        # Skip step if loss is NaN (can happen with newly initialized layers)
+        if torch.isnan(loss) or torch.isinf(loss):
+            self.optimizer.zero_grad()
+            return {'loss': 0.0, 'token_accuracy': 0.0, 'lr': self.optimizer.param_groups[0]['lr'], 'skipped': True}
         
         # Backward pass
         loss.backward()
@@ -492,15 +498,26 @@ class ARCTrainer:
         torch.save(checkpoint, path)
         logger.info(f"Saved checkpoint to {path}")
     
-    def load_checkpoint(self, path: str):
+    def load_checkpoint(self, path: str, strict: bool = True):
         """Load training checkpoint"""
-        checkpoint = torch.load(path, map_location=self.device)
+        checkpoint = torch.load(path, map_location=self.device, weights_only=False)
         
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-        self.global_step = checkpoint['global_step']
-        self.epoch = checkpoint['epoch']
+        result = self.model.load_state_dict(checkpoint['model_state_dict'], strict=False)
+        matched = len(self.model.state_dict()) - len(result.missing_keys)
+        logger.info(f"Loaded {matched}/{len(self.model.state_dict())} model params "
+                    f"({len(result.missing_keys)} missing, {len(result.unexpected_keys)} unexpected)")
+        
+        if strict and not result.missing_keys and not result.unexpected_keys:
+            # Full match — also restore optimizer and scheduler
+            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+            self.global_step = checkpoint['global_step']
+            self.epoch = checkpoint['epoch']
+        else:
+            logger.info("Architecture changed — starting fresh optimizer (weights partially loaded)")
+            self.global_step = 0
+            self.epoch = 0
+        
         self.best_val_accuracy = checkpoint.get('best_val_accuracy', 0.0)
         self.train_losses = checkpoint.get('train_losses', [])
         self.val_metrics = checkpoint.get('val_metrics', [])
@@ -538,12 +555,20 @@ def main():
     # Configuration
     config = get_config()
     
+    # If resuming, load checkpoint config to match architecture
+    if args.resume and os.path.exists(args.resume):
+        ckpt_peek = torch.load(args.resume, map_location='cpu', weights_only=False)
+        if 'config' in ckpt_peek and 'model' in ckpt_peek['config']:
+            config = get_config(model=ckpt_peek['config']['model'])
+            logger.info(f"Using checkpoint config: max_seq_len={config.model.max_seq_len}")
+        del ckpt_peek
+    
     # Training settings for ARC
     config.training.max_steps = args.max_steps
     config.training.batch_size = args.batch_size
     config.training.log_interval = 10
     config.training.eval_interval = 100
-    config.training.save_interval = 500
+    config.training.save_interval = 200
     
     logger.info("=" * 60)
     logger.info("OctoTetrahedral AGI - ARC Training")
