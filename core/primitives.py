@@ -598,6 +598,420 @@ def make_color_swap(a: int, b: int) -> Callable:
 
 
 # ============================================================================
+# Extended Primitives — Targeting Unsolved Task Categories
+# ============================================================================
+
+def p_self_tile(grid: Grid) -> Grid:
+    """Kronecker self-tiling: each non-zero cell → copy of input, zero → empty block.
+    Solves tasks like 007bbfb7 where 3x3→9x9 by self-replication."""
+    h, w = len(grid), len(grid[0])
+    if h * h > 100 or w * w > 100:  # guard against huge grids
+        return grid
+    result = [[0] * (w * w) for _ in range(h * h)]
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] != 0:
+                for gr in range(h):
+                    for gc in range(w):
+                        result[r * h + gr][c * w + gc] = grid[gr][gc]
+    return result
+
+
+def p_split_by_sep_v_xor(grid: Grid) -> Grid:
+    """Split grid at vertical separator, AND left/right halves.
+    Output = marker color where BOTH sides are non-zero, else 0.
+    Solves tasks like 0520fde7."""
+    h = len(grid)
+    w = len(grid[0])
+    # Find separator column (column where all cells are the same non-zero color)
+    sep_col = None
+    for c in range(w):
+        col_vals = set(grid[r][c] for r in range(h))
+        if len(col_vals) == 1 and list(col_vals)[0] != 0:
+            sep_col = c
+            break
+    if sep_col is None:
+        return grid
+    left = [row[:sep_col] for row in grid]
+    right = [row[sep_col+1:] for row in grid]
+    lw = len(left[0]) if left else 0
+    rw = len(right[0]) if right else 0
+    out_w = min(lw, rw)
+    if out_w == 0:
+        return grid
+    # Find marker color (not used in left or right, or use 2)
+    colors_used = set()
+    for row in left:
+        colors_used.update(row)
+    for row in right:
+        colors_used.update(row)
+    marker = 2
+    for m in range(1, 10):
+        if m not in colors_used:
+            marker = m
+            break
+    result = []
+    for r in range(h):
+        row = []
+        for c in range(out_w):
+            l = left[r][c] if c < lw else 0
+            ri = right[r][c] if c < rw else 0
+            if l != 0 and ri != 0:
+                row.append(marker)
+            else:
+                row.append(0)
+        result.append(row)
+    return result
+
+
+def p_split_by_sep_h_xor(grid: Grid) -> Grid:
+    """Split grid at horizontal separator, AND top/bottom halves.
+    Output = marker where BOTH sides non-bg, else bg."""
+    h = len(grid)
+    w = len(grid[0])
+    bg = _bg(grid)
+    sep_row = None
+    for r in range(h):
+        row_vals = set(grid[r])
+        if len(row_vals) == 1 and list(row_vals)[0] != bg:
+            sep_row = r
+            break
+    if sep_row is None:
+        return grid
+    top = grid[:sep_row]
+    bottom = grid[sep_row+1:]
+    th = len(top)
+    bh = len(bottom)
+    out_h = min(th, bh)
+    if out_h == 0:
+        return grid
+    colors_used = set(c for row in grid for c in row)
+    marker = 2
+    for m in range(1, 10):
+        if m not in colors_used:
+            marker = m
+            break
+    result = []
+    for r in range(out_h):
+        row = []
+        for c in range(w):
+            t = top[r][c] if r < th else bg
+            b = bottom[r][c] if r < bh else bg
+            if t != bg and b != bg:
+                row.append(marker)
+            else:
+                row.append(bg)
+        result.append(row)
+    return result
+
+
+def p_extend_color_to_lines(grid: Grid) -> Grid:
+    """Each non-bg pixel extends to fill its entire row or column.
+    Color 1,3 → fill row; Color 2 → fill column (by convention).
+    Actually: detect from examples which colors fill rows vs columns."""
+    h, w = len(grid), len(grid[0])
+    bg = _bg(grid)
+    result = [row[:] for row in grid]
+    # Collect non-bg pixels with their positions
+    pixels = []
+    for r in range(h):
+        for c in range(w):
+            if grid[r][c] != bg:
+                pixels.append((r, c, grid[r][c]))
+    if not pixels:
+        return grid
+    # For each pixel, extend it as a full row AND full column cross
+    for r, c, color in pixels:
+        for cc in range(w):
+            if result[r][cc] == bg:
+                result[r][cc] = color
+        for rr in range(h):
+            if result[rr][c] == bg:
+                result[rr][c] = color
+    return result
+
+
+def p_extend_rows(grid: Grid) -> Grid:
+    """Each non-bg pixel fills its entire row."""
+    h, w = len(grid), len(grid[0])
+    bg = _bg(grid)
+    result = [row[:] for row in grid]
+    for r in range(h):
+        colors = [grid[r][c] for c in range(w) if grid[r][c] != bg]
+        if len(colors) == 1:
+            result[r] = [colors[0]] * w
+    return result
+
+
+def p_extend_cols(grid: Grid) -> Grid:
+    """Each non-bg pixel fills its entire column."""
+    h, w = len(grid), len(grid[0])
+    bg = _bg(grid)
+    result = [row[:] for row in grid]
+    for c in range(w):
+        colors = [grid[r][c] for r in range(h) if grid[r][c] != bg]
+        if len(colors) == 1:
+            for r in range(h):
+                result[r][c] = colors[0]
+    return result
+
+
+def p_grid_cells_extract(grid: Grid) -> Grid:
+    """Extract the shape of grid cells divided by separator lines.
+    If grid has rows/cols of a single non-bg color dividing it into sections,
+    output the section dimensions as a grid of bg color.
+    Solves tasks like 1190e5a7."""
+    h, w = len(grid), len(grid[0])
+    bg = _bg(grid)
+    # Find horizontal separator rows
+    h_seps = []
+    for r in range(h):
+        vals = set(grid[r])
+        if len(vals) == 1 and list(vals)[0] != bg:
+            h_seps.append(r)
+    # Find vertical separator columns
+    v_seps = []
+    for c in range(w):
+        vals = set(grid[r][c] for r in range(h))
+        if len(vals) == 1 and list(vals)[0] != bg:
+            v_seps.append(c)
+    if not h_seps and not v_seps:
+        return grid
+    # Compute section boundaries
+    h_bounds = [-1] + h_seps + [h]
+    v_bounds = [-1] + v_seps + [w]
+    n_rows = len(h_bounds) - 1
+    n_cols = len(v_bounds) - 1
+    # Each section: row count x col count
+    section_h = [h_bounds[i+1] - h_bounds[i] - 1 for i in range(n_rows)]
+    section_w = [v_bounds[i+1] - v_bounds[i] - 1 for i in range(n_cols)]
+    # Output: grid of section sizes (height × width)
+    result = [[bg] * n_cols for _ in range(n_rows)]
+    return result
+
+
+def p_border_color(grid: Grid) -> Grid:
+    """Extract the border (outermost ring) of the grid."""
+    h, w = len(grid), len(grid[0])
+    bg = _bg(grid)
+    result = [[bg] * w for _ in range(h)]
+    for r in range(h):
+        for c in range(w):
+            if r == 0 or r == h-1 or c == 0 or c == w-1:
+                result[r][c] = grid[r][c]
+    return result
+
+
+def p_inner(grid: Grid) -> Grid:
+    """Remove the outermost ring of the grid."""
+    h, w = len(grid), len(grid[0])
+    if h <= 2 or w <= 2:
+        return grid
+    return [row[1:-1] for row in grid[1:-1]]
+
+
+def p_fill_enclosed_with_4(grid: Grid) -> Grid:
+    """Fill enclosed background regions with color 4.
+    Solves tasks like 00d62c1b where enclosed spaces get a specific new color."""
+    bg = _bg(grid)
+    rows, cols = len(grid), len(grid[0])
+    # Find bg cells reachable from edges
+    edge_bg = set()
+    queue = []
+    for r in range(rows):
+        for c in [0, cols - 1]:
+            if grid[r][c] == bg:
+                edge_bg.add((r, c))
+                queue.append((r, c))
+    for c in range(cols):
+        for r in [0, rows - 1]:
+            if grid[r][c] == bg and (r, c) not in edge_bg:
+                edge_bg.add((r, c))
+                queue.append((r, c))
+    while queue:
+        cr, cc = queue.pop(0)
+        for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+            nr, nc = cr+dr, cc+dc
+            if 0 <= nr < rows and 0 <= nc < cols and (nr, nc) not in edge_bg and grid[nr][nc] == bg:
+                edge_bg.add((nr, nc))
+                queue.append((nr, nc))
+    result = [row[:] for row in grid]
+    for r in range(rows):
+        for c in range(cols):
+            if grid[r][c] == bg and (r, c) not in edge_bg:
+                result[r][c] = 4
+    return result
+
+
+def p_max_color_per_object(grid: Grid) -> Grid:
+    """Recolor each connected object with the color of the largest object."""
+    bg = _bg(grid)
+    objects = _find_objects(grid, bg)
+    if not objects:
+        return grid
+    largest = max(objects, key=lambda o: o['size'])
+    result = [[bg] * len(grid[0]) for _ in range(len(grid))]
+    for obj in objects:
+        for r, c in obj['cells']:
+            result[r][c] = largest['color']
+    return result
+
+
+def p_recolor_objects_by_size(grid: Grid) -> Grid:
+    """Recolor objects: largest → color 1, 2nd → color 2, etc.
+    Solves tasks like 08ed6ac7."""
+    bg = _bg(grid)
+    objects = _find_objects(grid, bg)
+    if not objects:
+        return grid
+    # Sort by size descending
+    objects.sort(key=lambda o: o['size'], reverse=True)
+    result = [row[:] for row in grid]
+    for i, obj in enumerate(objects):
+        color = i + 1
+        if color > 9:
+            color = 9
+        for r, c in obj['cells']:
+            result[r][c] = color
+    return result
+
+
+def p_symmetrize_h(grid: Grid) -> Grid:
+    """Make grid horizontally symmetric by mirroring the left side."""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    for r in range(h):
+        for c in range(w // 2):
+            result[r][w - 1 - c] = result[r][c]
+    return result
+
+
+def p_symmetrize_v(grid: Grid) -> Grid:
+    """Make grid vertically symmetric by mirroring the top."""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    for r in range(h // 2):
+        result[h - 1 - r] = result[r][:]
+    return result
+
+
+def p_compress_to_unique(grid: Grid) -> Grid:
+    """Remove duplicate adjacent rows and columns.
+    Compresses repeated patterns down to unique elements."""
+    # Remove duplicate adjacent rows
+    rows = []
+    for row in grid:
+        if not rows or row != rows[-1]:
+            rows.append(row)
+    if not rows:
+        return grid
+    # Remove duplicate adjacent columns
+    w = len(rows[0])
+    keep_cols = [0]
+    for c in range(1, w):
+        col = [rows[r][c] for r in range(len(rows))]
+        prev_col = [rows[r][keep_cols[-1]] for r in range(len(rows))]
+        if col != prev_col:
+            keep_cols.append(c)
+    return [[rows[r][c] for c in keep_cols] for r in range(len(rows))]
+
+
+def p_denoise_majority(grid: Grid) -> Grid:
+    """Replace each cell with the majority of its 3x3 neighborhood.
+    Denoises grids with salt-and-pepper noise."""
+    h, w = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    for r in range(h):
+        for c in range(w):
+            neighbors = []
+            for dr in [-1, 0, 1]:
+                for dc in [-1, 0, 1]:
+                    nr, nc = r + dr, c + dc
+                    if 0 <= nr < h and 0 <= nc < w:
+                        neighbors.append(grid[nr][nc])
+            result[r][c] = Counter(neighbors).most_common(1)[0][0]
+    return result
+
+
+def p_split_v_overlay(grid: Grid) -> Grid:
+    """Split at vertical separator, overlay left onto right (OR merge)."""
+    h, w = len(grid), len(grid[0])
+    bg = _bg(grid)
+    sep_col = None
+    for c in range(w):
+        col_vals = set(grid[r][c] for r in range(h))
+        if len(col_vals) == 1 and list(col_vals)[0] != bg:
+            sep_col = c
+            break
+    if sep_col is None:
+        return grid
+    left = [row[:sep_col] for row in grid]
+    right = [row[sep_col+1:] for row in grid]
+    lw = len(left[0]) if left else 0
+    rw = len(right[0]) if right else 0
+    out_w = min(lw, rw)
+    if out_w == 0:
+        return grid
+    result = []
+    for r in range(h):
+        row = []
+        for c in range(out_w):
+            l = left[r][c] if c < lw else bg
+            ri = right[r][c] if c < rw else bg
+            if l != bg:
+                row.append(l)
+            else:
+                row.append(ri)
+        result.append(row)
+    return result
+
+
+def p_split_h_overlay(grid: Grid) -> Grid:
+    """Split at horizontal separator, overlay top onto bottom (OR merge)."""
+    h = len(grid)
+    w = len(grid[0])
+    bg = _bg(grid)
+    sep_row = None
+    for r in range(h):
+        row_vals = set(grid[r])
+        if len(row_vals) == 1 and list(row_vals)[0] != bg:
+            sep_row = r
+            break
+    if sep_row is None:
+        return grid
+    top = grid[:sep_row]
+    bottom = grid[sep_row+1:]
+    th = len(top)
+    bh = len(bottom)
+    out_h = min(th, bh)
+    if out_h == 0:
+        return grid
+    result = []
+    for r in range(out_h):
+        row = []
+        for c in range(w):
+            t = top[r][c] if r < th else bg
+            b = bottom[r][c] if r < bh else bg
+            if t != bg:
+                row.append(t)
+            else:
+                row.append(b)
+        result.append(row)
+    return result
+
+
+def p_color_count_grid(grid: Grid) -> Grid:
+    """Create output where each cell is the count of its color in the grid."""
+    counts = Counter(c for row in grid for c in row)
+    return [[counts[c] for c in row] for row in grid]
+
+
+def p_mask_nonzero(grid: Grid) -> Grid:
+    """Binary mask: 1 where non-zero, 0 where zero."""
+    return [[1 if c != 0 else 0 for c in row] for row in grid]
+
+
+# ============================================================================
 # Composition Engine
 # ============================================================================
 
@@ -645,6 +1059,25 @@ BASE_PRIMITIVES: List[Tuple[str, Callable]] = [
     ('solid_objects', p_replace_each_object_with_color),
     ('upscale_2x', p_upscale_2x),
     ('downscale_2x', p_downscale_2x),
+    # Extended primitives
+    ('self_tile', p_self_tile),
+    ('split_v_xor', p_split_by_sep_v_xor),
+    ('split_h_xor', p_split_by_sep_h_xor),
+    ('split_v_overlay', p_split_v_overlay),
+    ('split_h_overlay', p_split_h_overlay),
+    ('extend_lines', p_extend_color_to_lines),
+    ('extend_rows', p_extend_rows),
+    ('extend_cols', p_extend_cols),
+    ('grid_cells', p_grid_cells_extract),
+    ('border', p_border_color),
+    ('inner', p_inner),
+    ('fill_4', p_fill_enclosed_with_4),
+    ('recolor_by_size', p_recolor_objects_by_size),
+    ('symmetrize_h', p_symmetrize_h),
+    ('symmetrize_v', p_symmetrize_v),
+    ('compress', p_compress_to_unique),
+    ('denoise', p_denoise_majority),
+    ('mask_nonzero', p_mask_nonzero),
 ]
 
 
@@ -684,20 +1117,26 @@ class CompositionEngine:
         depth = max_depth or self.max_depth
         solutions = []
         t0 = _time.time()
-        timeout = 60.0  # seconds
+        timeout = 15.0  # seconds (reduced from 60)
 
         # Target output signature for dimension-based pruning
         target_dims = set()
+        target_hashes = set()
         for ex in examples:
             oh, ow = len(ex['output']), len(ex['output'][0]) if ex['output'] else 0
             target_dims.add((oh, ow))
+            target_hashes.add(tuple(tuple(r) for r in ex['output']))
 
         def _grid_hash(g):
             return tuple(tuple(r) for r in g)
 
+        MAX_CELLS = 2500  # prevent OOM on huge intermediates
+
         def _dims_match_target(g) -> bool:
             """Check if grid dimensions could lead to target output."""
             h, w = len(g), len(g[0]) if g else 0
+            if h * w > MAX_CELLS:
+                return False
             # Allow if dims already match target, or are larger (can be cropped)
             return any(h >= th and w >= tw or (h, w) == (th, tw) for th, tw in target_dims)
 
@@ -709,7 +1148,8 @@ class CompositionEngine:
             for name, fn in self.primitives:
                 try:
                     r = fn(ex['input'])
-                    d1_cache[ei][name] = r
+                    if len(r) * (len(r[0]) if r else 0) <= MAX_CELLS:
+                        d1_cache[ei][name] = r
                 except Exception:
                     pass
 
@@ -721,9 +1161,10 @@ class CompositionEngine:
         if solutions or depth < 2:
             return solutions
 
-        # Depth 2: pairs (with hash dedup)
-        seen_d2: Set[Any] = set()
+        # Depth 2: pairs — use d1_cache to avoid recomputing
         for n1, f1 in self.primitives:
+            if _time.time() - t0 > timeout:
+                break
             if n1 == 'identity':
                 continue
             # Quick prune: skip if first step does nothing on example 0
@@ -731,11 +1172,31 @@ class CompositionEngine:
                 r1 = d1_cache[0][n1]
                 if r1 == examples[0]['input']:
                     continue
+            # Check all examples for step 1
+            step1_results = []
+            valid = True
+            for ei in range(len(examples)):
+                if n1 in d1_cache.get(ei, {}):
+                    step1_results.append(d1_cache[ei][n1])
+                else:
+                    valid = False
+                    break
+            if not valid:
+                continue
             for n2, f2 in self.primitives:
                 if n2 == 'identity':
                     continue
-                if self._test_program([f1, f2], examples):
-                    solutions.append({'program': [n1, n2], 'depth': 2})
+                try:
+                    ok = True
+                    for ei in range(len(examples)):
+                        r2 = f2(step1_results[ei])
+                        if r2 != examples[ei]['output']:
+                            ok = False
+                            break
+                    if ok:
+                        solutions.append({'program': [n1, n2], 'depth': 2})
+                except Exception:
+                    pass
 
         if solutions or depth < 3:
             return solutions
@@ -775,6 +1236,9 @@ class CompositionEngine:
                     for ei, g in enumerate(inter_grids):
                         try:
                             r = fn(g)
+                            if len(r) * (len(r[0]) if r else 0) > MAX_CELLS:
+                                valid = False
+                                break
                             new_grids.append(r)
                         except Exception:
                             valid = False
