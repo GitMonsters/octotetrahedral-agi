@@ -6,12 +6,14 @@ ARC Hybrid Solver - Combining DSL + Neural Approaches
 Strategy:
 1. Try HypothesisEngine first (few-shot + composition — solves 8%+ of tasks)
 2. Try DSL-based program synthesis (fast, interpretable)
-3. For unsolved tasks, run neural network in parallel
-4. Ensemble predictions when confidence is low
+3. Test-time training (TTT) for same-size tasks — trains fresh model per task
+4. For unsolved tasks, run neural network fallback
+5. Ensemble predictions when confidence is low
 
 This hybrid approach aims to get the best of both worlds:
 - HypothesisEngine handles abstract reasoning via compositional search
 - DSL handles simple geometric transformations perfectly
+- TTT handles complex same-size pattern tasks via per-task learning
 - Neural network learns complex pattern rules from data
 """
 
@@ -35,6 +37,13 @@ from arc_solver import (
 
 # Import hypothesis engine
 from core.hypothesis import HypothesisEngine
+
+# Import TTT solver
+try:
+    from arc_ttt_v2 import solve_task as ttt_solve_task
+    HAS_TTT = True
+except ImportError:
+    HAS_TTT = False
 
 # Import neural components
 try:
@@ -210,12 +219,13 @@ class NeuralARCSolver:
 
 
 class HybridARCSolver:
-    """Hybrid solver: HypothesisEngine → DSL → Neural ensemble"""
+    """Hybrid solver: HypothesisEngine → DSL → TTT → Neural ensemble"""
 
     def __init__(
         self,
         neural_checkpoint: str = None,
         use_neural_fallback: bool = True,
+        use_ttt: bool = True,
         device: str = None
     ):
         # Hypothesis engine (few-shot + composition search)
@@ -226,6 +236,17 @@ class HybridARCSolver:
         # DSL solver
         self.dsl_solver = ARCSolver()
         self.hint_gen = HintGenerator()
+
+        # TTT solver
+        self.use_ttt = use_ttt and HAS_TTT
+        self.ttt_device = None
+        if self.use_ttt:
+            if device:
+                self.ttt_device = torch.device(device)
+            elif torch.backends.mps.is_available():
+                self.ttt_device = torch.device("mps")
+            else:
+                self.ttt_device = torch.device("cpu")
 
         # Neural solver (optional)
         self.use_neural = use_neural_fallback
@@ -239,8 +260,17 @@ class HybridARCSolver:
         else:
             self.neural_solver = None
 
+    def _is_same_size(self, task: Dict) -> bool:
+        """Check if all train examples have same input/output dimensions."""
+        for ex in task['train']:
+            if len(ex['input']) != len(ex['output']):
+                return False
+            if len(ex['input'][0]) != len(ex['output'][0]):
+                return False
+        return True
+
     def solve(self, task: Dict) -> List[List[List[int]]]:
-        """Solve task using 3-stage pipeline, return up to 2 predictions"""
+        """Solve task using 4-stage pipeline, return up to 2 predictions"""
         train = task['train']
         test_input = task['test'][0]['input']
 
@@ -260,8 +290,21 @@ class HybridARCSolver:
             if pred != test_input and pred not in predictions:
                 predictions.append(pred)
 
-        # Stage 3: Neural fallback — trigger when neither hypothesis nor DSL
-        # produced a confident answer (not just when DSL gave up entirely)
+        # Stage 3: TTT — per-task training for same-size tasks without a
+        # confident symbolic solution
+        has_confident = len(predictions) > 0 and predictions[0] != test_input
+        if not has_confident and self.use_ttt and self._is_same_size(task):
+            try:
+                ttt_preds = ttt_solve_task(task, device=self.ttt_device, verbose=False)
+                if ttt_preds is not None:
+                    for pred_arr in ttt_preds:
+                        pred_list = pred_arr.tolist()
+                        if pred_list not in predictions:
+                            predictions.append(pred_list)
+            except Exception:
+                pass
+
+        # Stage 4: Neural fallback — trigger when nothing else worked
         has_confident = len(predictions) > 0 and predictions[0] != test_input
         if not has_confident and self.use_neural and self.neural_solver:
             try:
@@ -279,6 +322,12 @@ class HybridARCSolver:
             if key not in seen:
                 seen.add(key)
                 unique.append(pred)
+        
+        # Fallback: return input
+        if not unique:
+            unique.append(copy.deepcopy(test_input))
+        
+        return unique[:2]
         
         # Fallback: return input
         if not unique:
