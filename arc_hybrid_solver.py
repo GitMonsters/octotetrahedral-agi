@@ -4,11 +4,13 @@ ARC Hybrid Solver - Combining DSL + Neural Approaches
 =====================================================
 
 Strategy:
-1. Try DSL-based program synthesis first (fast, interpretable)
-2. For complex tasks, use neural network as backup
-3. Ensemble predictions when confidence is low
+1. Try HypothesisEngine first (few-shot + composition — solves 8%+ of tasks)
+2. Try DSL-based program synthesis (fast, interpretable)
+3. For unsolved tasks, run neural network in parallel
+4. Ensemble predictions when confidence is low
 
 This hybrid approach aims to get the best of both worlds:
+- HypothesisEngine handles abstract reasoning via compositional search
 - DSL handles simple geometric transformations perfectly
 - Neural network learns complex pattern rules from data
 """
@@ -30,6 +32,9 @@ from arc_solver import (
     OPERATIONS,
     find_connected_components
 )
+
+# Import hypothesis engine
+from core.hypothesis import HypothesisEngine
 
 # Import neural components
 try:
@@ -205,7 +210,7 @@ class NeuralARCSolver:
 
 
 class HybridARCSolver:
-    """Hybrid solver combining DSL and neural approaches"""
+    """Hybrid solver: HypothesisEngine → DSL → Neural ensemble"""
 
     def __init__(
         self,
@@ -213,6 +218,11 @@ class HybridARCSolver:
         use_neural_fallback: bool = True,
         device: str = None
     ):
+        # Hypothesis engine (few-shot + composition search)
+        self.hypothesis_engine = HypothesisEngine(
+            max_composition_depth=3, timeout_seconds=15.0,
+        )
+
         # DSL solver
         self.dsl_solver = ARCSolver()
         self.hint_gen = HintGenerator()
@@ -230,41 +240,38 @@ class HybridARCSolver:
             self.neural_solver = None
 
     def solve(self, task: Dict) -> List[List[List[int]]]:
-        """Solve task, return up to 2 predictions"""
-        import time
+        """Solve task using 3-stage pipeline, return up to 2 predictions"""
         train = task['train']
         test_input = task['test'][0]['input']
 
         predictions = []
 
-        # 1. Try DSL solver first
+        # Stage 1: HypothesisEngine (few-shot abstraction + composition)
+        try:
+            hyp_result = self.hypothesis_engine.solve(task)
+            if hyp_result['solved'] and hyp_result['prediction'] is not None:
+                predictions.append(hyp_result['prediction'])
+        except Exception:
+            pass
+
+        # Stage 2: DSL solver (may find solutions hypothesis engine missed)
         dsl_preds = self.dsl_solver.solve(task)
-        predictions.extend(dsl_preds)
+        for pred in dsl_preds:
+            if pred != test_input and pred not in predictions:
+                predictions.append(pred)
 
-        # 2. Analyze task complexity
-        hints = self.hint_gen.analyze(train)
-        is_simple = (
-            hints['geometric'] is not None or
-            hints['tiling'] is not None or
-            hints['symmetry'] is not None or
-            hints['fill_pattern'] is not None
-        )
-
-        # 3. Only try neural when DSL fell back to returning the input unchanged
-        #    (i.e., it found no real solution). Budget is tight to keep eval fast.
-        dsl_gave_up = (
-            len(predictions) == 0 or
-            (len(predictions) == 1 and predictions[0] == test_input)
-        )
-        if dsl_gave_up and self.use_neural and self.neural_solver:
+        # Stage 3: Neural fallback — trigger when neither hypothesis nor DSL
+        # produced a confident answer (not just when DSL gave up entirely)
+        has_confident = len(predictions) > 0 and predictions[0] != test_input
+        if not has_confident and self.use_neural and self.neural_solver:
             try:
                 neural_pred = self.neural_solver.solve(task, time_budget=2.0)
                 if neural_pred is not None and neural_pred not in predictions:
                     predictions.append(neural_pred)
             except Exception:
-                pass  # Neural failed, stick with DSL predictions
-        
-        # 4. Deduplicate
+                pass
+
+        # Deduplicate
         unique = []
         seen = set()
         for pred in predictions:

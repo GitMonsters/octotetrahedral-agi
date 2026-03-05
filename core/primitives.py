@@ -359,13 +359,45 @@ class CompositionEngine:
     ) -> List[Dict[str, Any]]:
         """
         Search for programs that solve all examples.
+        Uses iterative deepening with output-hash pruning:
+        intermediate results that duplicate earlier states are skipped.
         
         Returns list of solutions, each containing:
           - program: list of primitive names
           - depth: number of chained primitives
         """
+        import time as _time
         depth = max_depth or self.max_depth
         solutions = []
+        t0 = _time.time()
+        timeout = 60.0  # seconds
+
+        # Target output signature for dimension-based pruning
+        target_dims = set()
+        for ex in examples:
+            oh, ow = len(ex['output']), len(ex['output'][0]) if ex['output'] else 0
+            target_dims.add((oh, ow))
+
+        def _grid_hash(g):
+            return tuple(tuple(r) for r in g)
+
+        def _dims_match_target(g) -> bool:
+            """Check if grid dimensions could lead to target output."""
+            h, w = len(g), len(g[0]) if g else 0
+            # Allow if dims already match target, or are larger (can be cropped)
+            return any(h >= th and w >= tw or (h, w) == (th, tw) for th, tw in target_dims)
+
+        # Precompute depth-1 results per example for pruning
+        # Maps: example_idx -> list of (name, fn, result_hash)
+        d1_cache: Dict[int, Dict[str, Any]] = {}
+        for ei, ex in enumerate(examples):
+            d1_cache[ei] = {}
+            for name, fn in self.primitives:
+                try:
+                    r = fn(ex['input'])
+                    d1_cache[ei][name] = r
+                except Exception:
+                    pass
 
         # Depth 1: single primitives
         for name, fn in self.primitives:
@@ -375,10 +407,18 @@ class CompositionEngine:
         if solutions or depth < 2:
             return solutions
 
-        # Depth 2: pairs
+        # Depth 2: pairs (with hash dedup)
+        seen_d2: Set[Any] = set()
         for n1, f1 in self.primitives:
+            if n1 == 'identity':
+                continue
+            # Quick prune: skip if first step does nothing on example 0
+            if 0 in d1_cache and n1 in d1_cache[0]:
+                r1 = d1_cache[0][n1]
+                if r1 == examples[0]['input']:
+                    continue
             for n2, f2 in self.primitives:
-                if n1 == 'identity' or n2 == 'identity':
+                if n2 == 'identity':
                     continue
                 if self._test_program([f1, f2], examples):
                     solutions.append({'program': [n1, n2], 'depth': 2})
@@ -386,32 +426,68 @@ class CompositionEngine:
         if solutions or depth < 3:
             return solutions
 
-        # Depth 3: triples (expensive — prune aggressively)
-        # Only try if depth-2 partial matches exist
-        partial_first = []
+        # Depth 3+: iterative deepening with aggressive pruning
+        # Build frontier: intermediate results after applying 1 primitive
+        # Each entry: (program_names, per-example intermediate grids)
+        frontier = []
         for n1, f1 in self.primitives:
             if n1 == 'identity':
                 continue
-            partial_ok = False
-            for ex in examples[:1]:  # Quick check on first example only
-                try:
-                    r = f1(ex['input'])
-                    if r != ex['input']:  # Actually does something
-                        partial_ok = True
-                except Exception:
-                    pass
-            if partial_ok:
-                partial_first.append((n1, f1))
+            intermediates = []
+            valid = True
+            for ei, ex in enumerate(examples):
+                if n1 in d1_cache.get(ei, {}):
+                    intermediates.append(d1_cache[ei][n1])
+                else:
+                    valid = False
+                    break
+            if valid and intermediates[0] != examples[0]['input']:
+                frontier.append(([n1], intermediates))
 
-        for n1, f1 in partial_first:
-            for n2, f2 in self.primitives:
-                if n2 == 'identity':
-                    continue
-                for n3, f3 in self.primitives:
-                    if n3 == 'identity':
+        for current_depth in range(2, depth + 1):
+            if _time.time() - t0 > timeout:
+                break
+            next_frontier = []
+            seen_hashes: Set[Any] = set()
+
+            for prog_names, inter_grids in frontier:
+                if _time.time() - t0 > timeout:
+                    break
+                for name, fn in self.primitives:
+                    if name == 'identity':
                         continue
-                    if self._test_program([f1, f2, f3], examples):
-                        solutions.append({'program': [n1, n2, n3], 'depth': 3})
+                    new_grids = []
+                    valid = True
+                    for ei, g in enumerate(inter_grids):
+                        try:
+                            r = fn(g)
+                            new_grids.append(r)
+                        except Exception:
+                            valid = False
+                            break
+                    if not valid:
+                        continue
+
+                    # Check if this solves all examples
+                    new_prog = prog_names + [name]
+                    if all(new_grids[ei] == examples[ei]['output'] for ei in range(len(examples))):
+                        solutions.append({'program': new_prog, 'depth': current_depth})
+                        return solutions  # Return first solution at this depth
+
+                    # Prune: skip if we've seen this exact intermediate state
+                    state_hash = tuple(_grid_hash(g) for g in new_grids)
+                    if state_hash in seen_hashes:
+                        continue
+                    seen_hashes.add(state_hash)
+
+                    # Prune: skip if dimensions can't reach target
+                    if not _dims_match_target(new_grids[0]):
+                        continue
+
+                    if current_depth < depth:
+                        next_frontier.append((new_prog, new_grids))
+
+            frontier = next_frontier
 
         return solutions
 

@@ -106,8 +106,10 @@ class ExpertCompoundTracker(nn.Module):
 
     def get_load_balance_score(self) -> float:
         """Returns 0-1 score; 1.0 = perfectly balanced."""
+        # Normalize to probability distribution first (loads may not sum to 1)
+        load_prob = self.expert_load_ema / (self.expert_load_ema.sum() + 1e-8)
         ideal = 1.0 / self.num_experts
-        deviation = (self.expert_load_ema - ideal).abs().mean().item()
+        deviation = (load_prob - ideal).abs().mean().item()
         return max(0.0, 1.0 - deviation * self.num_experts)
 
     def get_expert_affinity_matrix(self) -> torch.Tensor:

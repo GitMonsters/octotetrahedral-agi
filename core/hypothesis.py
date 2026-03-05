@@ -73,7 +73,7 @@ class HypothesisEngine:
             prediction = result['prediction']
     """
 
-    def __init__(self, max_composition_depth: int = 2, timeout_seconds: float = 30.0):
+    def __init__(self, max_composition_depth: int = 3, timeout_seconds: float = 30.0):
         self.abstractor = FewShotAbstractor()
         self.composer = CompositionEngine(max_depth=max_composition_depth)
         self.timeout = timeout_seconds
@@ -111,7 +111,7 @@ class HypothesisEngine:
         if not self._has_perfect(hypotheses, train):
             elapsed = time.time() - t0
             if elapsed < self.timeout:
-                comp_solutions = self.composer.search(train, max_depth=2)
+                comp_solutions = self.composer.search(train, max_depth=3)
                 for sol in comp_solutions:
                     program = sol['program']
                     h = Hypothesis(
@@ -383,5 +383,5 @@ class HypothesisEngine:
 
 def solve_arc_task(task: Dict, timeout: float = 30.0) -> Dict[str, Any]:
     """One-line interface to solve an ARC task."""
-    engine = HypothesisEngine(max_composition_depth=2, timeout_seconds=timeout)
+    engine = HypothesisEngine(max_composition_depth=3, timeout_seconds=timeout)
     return engine.solve(task)

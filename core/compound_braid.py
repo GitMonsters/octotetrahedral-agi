@@ -15,6 +15,8 @@ via a braid_signal vector, and MoE expert specialization feeds back to
 update braid combine weights.
 """
 
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -195,9 +197,10 @@ class CompoundBraid(nn.Module):
             # Expert load entropy as a modulation signal
             load_prob = moe_expert_loads / (moe_expert_loads.sum() + 1e-8)
             load_entropy = -(load_prob * (load_prob + 1e-8).log()).sum()
+            max_entropy = math.log(moe_expert_loads.shape[0])
             # Low entropy (expert collapse) → increase braid diversity
             # High entropy (balanced) → keep current braid weights
-            diversity_boost = torch.clamp(1.0 - load_entropy / 4.0, 0.0, 0.2)
+            diversity_boost = torch.clamp(1.0 - load_entropy / max(max_entropy, 1e-8), 0.0, 0.2)
             # Push combine_weights toward uniform when experts are collapsing
             uniform = torch.ones_like(self.combine_weights) / self.num_limbs
             effective_weights = F.softmax(
