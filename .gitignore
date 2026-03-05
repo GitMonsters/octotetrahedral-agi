@@ -14,3 +14,4 @@ venv/
 # Ignore all checkpoints (too large for GitHub)
 checkpoints/
 *.pt
+abc82100_analysis.html
