@@ -267,6 +267,302 @@ def p_dilate(grid: Grid) -> Grid:
     return result
 
 
+def p_flood_fill_enclosed(grid: Grid) -> Grid:
+    """Fill enclosed background regions with the enclosing object's color."""
+    bg = _bg(grid)
+    rows, cols = len(grid), len(grid[0])
+    # Find bg cells reachable from edges
+    edge_bg = set()
+    queue = []
+    for r in range(rows):
+        for c in [0, cols - 1]:
+            if grid[r][c] == bg:
+                edge_bg.add((r, c))
+                queue.append((r, c))
+    for c in range(cols):
+        for r in [0, rows - 1]:
+            if grid[r][c] == bg and (r, c) not in edge_bg:
+                edge_bg.add((r, c))
+                queue.append((r, c))
+    while queue:
+        cr, cc = queue.pop(0)
+        for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+            nr, nc = cr+dr, cc+dc
+            if 0 <= nr < rows and 0 <= nc < cols and (nr, nc) not in edge_bg and grid[nr][nc] == bg:
+                edge_bg.add((nr, nc))
+                queue.append((nr, nc))
+    # Fill non-edge bg with nearest non-bg color
+    result = [row[:] for row in grid]
+    for r in range(rows):
+        for c in range(cols):
+            if grid[r][c] == bg and (r, c) not in edge_bg:
+                # Find nearest non-bg neighbor color
+                for dr, dc in [(-1,0),(1,0),(0,-1),(0,1),(1,1),(-1,-1),(1,-1),(-1,1)]:
+                    nr, nc = r+dr, c+dc
+                    if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] != bg:
+                        result[r][c] = grid[nr][nc]
+                        break
+    return result
+
+
+def p_replace_bg_with_most_common(grid: Grid) -> Grid:
+    """Replace background cells with the most common foreground color."""
+    bg = _bg(grid)
+    non_bg = [c for row in grid for c in row if c != bg]
+    if not non_bg:
+        return grid
+    fg = Counter(non_bg).most_common(1)[0][0]
+    return [[fg if c == bg else c for c in row] for row in grid]
+
+
+def p_keep_largest_color(grid: Grid) -> Grid:
+    """Keep only the most common non-bg color, rest becomes bg."""
+    bg = _bg(grid)
+    non_bg = [c for row in grid for c in row if c != bg]
+    if not non_bg:
+        return grid
+    keep = Counter(non_bg).most_common(1)[0][0]
+    return [[c if c == keep else bg for c in row] for row in grid]
+
+
+def p_keep_minority_color(grid: Grid) -> Grid:
+    """Keep only the least common non-bg color, rest becomes bg."""
+    bg = _bg(grid)
+    non_bg = [c for row in grid for c in row if c != bg]
+    if not non_bg:
+        return grid
+    counts = Counter(non_bg)
+    keep = counts.most_common()[-1][0]
+    return [[c if c == keep else bg for c in row] for row in grid]
+
+
+def p_top_half(grid: Grid) -> Grid:
+    """Return top half of grid."""
+    h = len(grid)
+    return [row[:] for row in grid[:h // 2]]
+
+
+def p_bottom_half(grid: Grid) -> Grid:
+    """Return bottom half of grid."""
+    h = len(grid)
+    return [row[:] for row in grid[h // 2:]]
+
+
+def p_left_half(grid: Grid) -> Grid:
+    """Return left half of grid."""
+    w = len(grid[0]) if grid else 0
+    return [row[:w // 2] for row in grid]
+
+
+def p_right_half(grid: Grid) -> Grid:
+    """Return right half of grid."""
+    w = len(grid[0]) if grid else 0
+    return [row[w // 2:] for row in grid]
+
+
+def p_xor_halves_h(grid: Grid) -> Grid:
+    """XOR top and bottom halves: keep cells that differ."""
+    h = len(grid)
+    w = len(grid[0]) if grid else 0
+    half = h // 2
+    if h % 2 != 0 or half == 0:
+        return grid
+    bg = _bg(grid)
+    result = []
+    for r in range(half):
+        row = []
+        for c in range(w):
+            top = grid[r][c]
+            bot = grid[r + half][c]
+            if top != bot:
+                row.append(top if top != bg else bot)
+            else:
+                row.append(bg)
+        result.append(row)
+    return result
+
+
+def p_xor_halves_v(grid: Grid) -> Grid:
+    """XOR left and right halves: keep cells that differ."""
+    h = len(grid)
+    w = len(grid[0]) if grid else 0
+    half = w // 2
+    if w % 2 != 0 or half == 0:
+        return grid
+    bg = _bg(grid)
+    result = []
+    for r in range(h):
+        row = []
+        for c in range(half):
+            left = grid[r][c]
+            right = grid[r][c + half]
+            if left != right:
+                row.append(left if left != bg else right)
+            else:
+                row.append(bg)
+        result.append(row)
+    return result
+
+
+def p_and_halves_h(grid: Grid) -> Grid:
+    """AND top and bottom halves: keep cells that match (non-bg)."""
+    h = len(grid)
+    w = len(grid[0]) if grid else 0
+    half = h // 2
+    if h % 2 != 0 or half == 0:
+        return grid
+    bg = _bg(grid)
+    result = []
+    for r in range(half):
+        row = []
+        for c in range(w):
+            top = grid[r][c]
+            bot = grid[r + half][c]
+            if top != bg and bot != bg:
+                row.append(top)
+            else:
+                row.append(bg)
+        result.append(row)
+    return result
+
+
+def p_and_halves_v(grid: Grid) -> Grid:
+    """AND left and right halves: keep cells present in both."""
+    h = len(grid)
+    w = len(grid[0]) if grid else 0
+    half = w // 2
+    if w % 2 != 0 or half == 0:
+        return grid
+    bg = _bg(grid)
+    result = []
+    for r in range(h):
+        row = []
+        for c in range(half):
+            left = grid[r][c]
+            right = grid[r][c + half]
+            if left != bg and right != bg:
+                row.append(left)
+            else:
+                row.append(bg)
+        result.append(row)
+    return result
+
+
+def p_or_halves_h(grid: Grid) -> Grid:
+    """OR top and bottom halves: overlay non-bg cells from both."""
+    h = len(grid)
+    w = len(grid[0]) if grid else 0
+    half = h // 2
+    if h % 2 != 0 or half == 0:
+        return grid
+    bg = _bg(grid)
+    result = []
+    for r in range(half):
+        row = []
+        for c in range(w):
+            top = grid[r][c]
+            bot = grid[r + half][c]
+            if top != bg:
+                row.append(top)
+            elif bot != bg:
+                row.append(bot)
+            else:
+                row.append(bg)
+        result.append(row)
+    return result
+
+
+def p_or_halves_v(grid: Grid) -> Grid:
+    """OR left and right halves: overlay non-bg cells from both."""
+    h = len(grid)
+    w = len(grid[0]) if grid else 0
+    half = w // 2
+    if w % 2 != 0 or half == 0:
+        return grid
+    bg = _bg(grid)
+    result = []
+    for r in range(h):
+        row = []
+        for c in range(half):
+            left = grid[r][c]
+            right = grid[r][c + half]
+            if left != bg:
+                row.append(left)
+            elif right != bg:
+                row.append(right)
+            else:
+                row.append(bg)
+        result.append(row)
+    return result
+
+
+def p_count_colors_per_row(grid: Grid) -> Grid:
+    """Replace each cell with the count of distinct non-bg colors in its row."""
+    bg = _bg(grid)
+    result = []
+    for row in grid:
+        n = len({c for c in row if c != bg})
+        result.append([n] * len(row))
+    return result
+
+
+def p_replace_each_object_with_color(grid: Grid) -> Grid:
+    """Replace each connected object with a single solid color (its own)."""
+    bg = _bg(grid)
+    objs = _find_objects(grid, bg)
+    result = [[bg] * len(grid[0]) for _ in range(len(grid))]
+    for obj in objs:
+        r1, c1, r2, c2 = obj['bbox']
+        color = obj['color']
+        for r in range(r1, r2 + 1):
+            for c in range(c1, c2 + 1):
+                result[r][c] = color
+    return result
+
+
+def p_erode(grid: Grid) -> Grid:
+    """Remove non-bg cells that touch background (opposite of dilate)."""
+    bg = _bg(grid)
+    rows, cols = len(grid), len(grid[0])
+    result = [row[:] for row in grid]
+    for r in range(rows):
+        for c in range(cols):
+            if grid[r][c] != bg:
+                for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+                    nr, nc = r+dr, c+dc
+                    if nr < 0 or nr >= rows or nc < 0 or nc >= cols or grid[nr][nc] == bg:
+                        result[r][c] = bg
+                        break
+    return result
+
+
+def p_upscale_2x(grid: Grid) -> Grid:
+    """Upscale grid by 2x (each cell becomes 2x2 block)."""
+    result = []
+    for row in grid:
+        new_row = []
+        for c in row:
+            new_row.extend([c, c])
+        result.append(new_row[:])
+        result.append(new_row[:])
+    return result
+
+
+def p_downscale_2x(grid: Grid) -> Grid:
+    """Downscale grid by 2x (take majority of each 2x2 block)."""
+    rows, cols = len(grid), len(grid[0])
+    if rows < 2 or cols < 2:
+        return grid
+    result = []
+    for r in range(0, rows - 1, 2):
+        new_row = []
+        for c in range(0, cols - 1, 2):
+            block = [grid[r][c], grid[r][c+1], grid[r+1][c], grid[r+1][c+1]]
+            new_row.append(Counter(block).most_common(1)[0][0])
+        result.append(new_row)
+    return result if result else grid
+
+
 # ============================================================================
 # Parameterized Primitives (generators)
 # ============================================================================
@@ -320,6 +616,7 @@ BASE_PRIMITIVES: List[Tuple[str, Callable]] = [
     ('gravity_right', p_gravity_right),
     ('crop', p_remove_bg),
     ('fill_holes', p_fill_holes),
+    ('flood_fill_enclosed', p_flood_fill_enclosed),
     ('extract_largest', p_extract_largest),
     ('extract_smallest', p_extract_smallest),
     ('sort_rows', p_sort_rows),
@@ -331,6 +628,23 @@ BASE_PRIMITIVES: List[Tuple[str, Callable]] = [
     ('invert', p_invert),
     ('outline', p_outline),
     ('dilate', p_dilate),
+    ('erode', p_erode),
+    ('replace_bg_fg', p_replace_bg_with_most_common),
+    ('keep_largest_color', p_keep_largest_color),
+    ('keep_minority_color', p_keep_minority_color),
+    ('top_half', p_top_half),
+    ('bottom_half', p_bottom_half),
+    ('left_half', p_left_half),
+    ('right_half', p_right_half),
+    ('xor_halves_h', p_xor_halves_h),
+    ('xor_halves_v', p_xor_halves_v),
+    ('and_halves_h', p_and_halves_h),
+    ('and_halves_v', p_and_halves_v),
+    ('or_halves_h', p_or_halves_h),
+    ('or_halves_v', p_or_halves_v),
+    ('solid_objects', p_replace_each_object_with_color),
+    ('upscale_2x', p_upscale_2x),
+    ('downscale_2x', p_downscale_2x),
 ]
 
 
