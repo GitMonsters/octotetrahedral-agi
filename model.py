@@ -254,7 +254,7 @@ class OctoTetrahedralModel(nn.Module):
         moe_signal_dim = self.config.moe.num_experts if self.config.moe.enabled and self.config.moe.compound_enabled else 0
         self.compound_braid = CompoundBraid(
             hidden_dim=self.hidden_dim,
-            num_limbs=4,  # memory, spatial, language, metacognition
+            num_limbs=6,  # memory, spatial, language, metacognition, reasoning, perception
             num_heads=self.num_heads // 4,
             dropout=self.config.model.dropout,
             braid_strength=0.3,
@@ -461,7 +461,7 @@ class OctoTetrahedralModel(nn.Module):
         else:
             memory_enhanced = core_output
         
-        # === 5. Parallel Limb Processing ===
+        # === 5. Parallel Limb Processing (all 6 braided limbs) ===
         # Memory Limb: Store/retrieve episodic memories
         memory_out, memory_conf, _ = self.memory_limb(memory_enhanced)
         
@@ -473,14 +473,27 @@ class OctoTetrahedralModel(nn.Module):
         
         # MetaCognition: Self-monitoring and strategy selection
         meta_out, meta_conf, _ = self.metacognition(memory_enhanced)
+
+        # Reasoning Limb: Pattern Processing (now braided with others)
+        reasoning_out, reasoning_conf, _ = self.reasoning(
+            memory_enhanced,
+            attention_mask=attention_mask,
+            return_confidence=return_confidences
+        )
+        # reasoning_out: [batch, seq_len, hidden_dim]
+
+        # Perception echo: re-encode with awareness of core processing
+        perception_echo = encoded  # [batch, seq_len, hidden_dim]
         
         # Compound Braid: cross-limb information exchange via learned cross-attention
+        # All 6 sequence-shaped limbs braided together
         # Feed MoE expert loads back to braid for closed-loop compound learning
         moe_expert_loads = None
         if self.config.moe.enabled and self.config.moe.compound_enabled:
             moe_expert_loads = self._get_first_compound_moe_loads()
         combined_limbs, braid_info = self.compound_braid(
-            [memory_out, spatial_out, language_out, meta_out],
+            [memory_out, spatial_out, language_out, meta_out,
+             reasoning_out, perception_echo],
             attention_mask=attention_mask,
             moe_expert_loads=moe_expert_loads,
         )
@@ -491,8 +504,8 @@ class OctoTetrahedralModel(nn.Module):
         # Blend with memory_enhanced
         multi_limb_output = memory_enhanced + 0.3 * combined_limbs
         
-        # === 6. Reasoning Limb: Pattern Processing ===
-        reasoned, reasoning_conf, _ = self.reasoning(
+        # === 6. Post-Braid Reasoning: refine with braided context ===
+        reasoned, _, _ = self.reasoning(
             multi_limb_output,
             attention_mask=attention_mask,
             return_confidence=return_confidences

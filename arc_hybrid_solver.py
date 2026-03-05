@@ -1,20 +1,29 @@
 #!/usr/bin/env python3
 """
-ARC Hybrid Solver - Combining DSL + Neural Approaches
-=====================================================
+ARC Hybrid Solver - Compound Integration of All Components
+==========================================================
 
-Strategy:
-1. Try HypothesisEngine first (few-shot + composition — solves 8%+ of tasks)
-2. Try DSL-based program synthesis (fast, interpretable)
-3. Test-time training (TTT) for same-size tasks — trains fresh model per task
-4. For unsolved tasks, run neural network fallback
-5. Ensemble predictions when confidence is low
+All components compound-integrated into a unified pipeline:
 
-This hybrid approach aims to get the best of both worlds:
-- HypothesisEngine handles abstract reasoning via compositional search
-- DSL handles simple geometric transformations perfectly
-- TTT handles complex same-size pattern tasks via per-task learning
-- Neural network learns complex pattern rules from data
+  ┌─────────────────────────────────────────────────────────┐
+  │  Stage 1: TTCCVTLR Cognitive Loop                       │
+  │  (V→T→L→R→C→CC) subsumes:                               │
+  │    • HypothesisEngine (few-shot + composition)           │
+  │    • TTT per-task neural learning                        │
+  │    • Visual feature analysis                             │
+  │    • Consequential self-consistency                      │
+  ├─────────────────────────────────────────────────────────┤
+  │  Stage 2: DSL Solver (fast parallel path)                │
+  ├─────────────────────────────────────────────────────────┤
+  │  Stage 3: Neural Fallback w/ feedback                    │
+  │    • OctoTetrahedralModel (8 limbs + CompoundBraid)      │
+  │    • Neural→Symbolic: predictions evaluated by TTCCVTLR  │
+  │      ConsequentialAnalyzer before acceptance              │
+  ├─────────────────────────────────────────────────────────┤
+  │  Cross-Task Pattern Memory                               │
+  │    • Caches successful (visual_features → method) pairs  │
+  │    • Provides priors for similar future tasks             │
+  └─────────────────────────────────────────────────────────┘
 """
 
 import torch
@@ -37,6 +46,13 @@ from arc_solver import (
 
 # Import hypothesis engine
 from core.hypothesis import HypothesisEngine
+
+# Import TTCCVTLR engine (compound integration of all symbolic + TTT)
+try:
+    from core.ttccvtlr import TTCCVTLREngine
+    HAS_TTCCVTLR = True
+except ImportError:
+    HAS_TTCCVTLR = False
 
 # Import TTT solver
 try:
@@ -219,7 +235,14 @@ class NeuralARCSolver:
 
 
 class HybridARCSolver:
-    """Hybrid solver: HypothesisEngine → DSL → TTT → Neural ensemble"""
+    """Compound-integrated solver: TTCCVTLR → DSL → Neural
+    
+    TTCCVTLR subsumes HypothesisEngine + TTT into a single cognitive loop.
+    DSL provides a fast parallel path. Neural is the final fallback.
+    
+    When TTCCVTLR solves a task, the reasoning trace is cached in the
+    cross-task pattern memory for use as a prior on similar future tasks.
+    """
 
     def __init__(
         self,
@@ -228,16 +251,29 @@ class HybridARCSolver:
         use_ttt: bool = True,
         device: str = None
     ):
-        # Hypothesis engine (few-shot + composition search)
+        # TTCCVTLR: compound engine (HypothesisEngine + TTT + visual reasoning)
+        self.use_ttccvtlr = HAS_TTCCVTLR
+        if self.use_ttccvtlr:
+            self.ttccvtlr = TTCCVTLREngine(
+                max_rounds=2,
+                confidence_threshold=0.7,
+                use_neural_learning=use_ttt and HAS_TTT,
+                device=device,
+                timeout_seconds=20.0,
+            )
+        else:
+            self.ttccvtlr = None
+
+        # Standalone HypothesisEngine as backup if TTCCVTLR unavailable
         self.hypothesis_engine = HypothesisEngine(
             max_composition_depth=3, timeout_seconds=15.0,
         )
 
-        # DSL solver
+        # DSL solver (fast, parallel path)
         self.dsl_solver = ARCSolver()
         self.hint_gen = HintGenerator()
 
-        # TTT solver
+        # TTT solver (standalone, for when TTCCVTLR isn't available)
         self.use_ttt = use_ttt and HAS_TTT
         self.ttt_device = None
         if self.use_ttt:
@@ -260,6 +296,9 @@ class HybridARCSolver:
         else:
             self.neural_solver = None
 
+        # Cross-task pattern memory: stores successful (visual_features → method)
+        self.pattern_memory: List[Dict] = []
+
     def _is_same_size(self, task: Dict) -> bool:
         """Check if all train examples have same input/output dimensions."""
         for ex in task['train']:
@@ -270,30 +309,77 @@ class HybridARCSolver:
         return True
 
     def solve(self, task: Dict) -> List[List[List[int]]]:
-        """Solve task using 4-stage pipeline, return up to 2 predictions"""
-        train = task['train']
+        """Solve task using compound-integrated pipeline, return up to 2 predictions.
+        
+        Pipeline:
+          1. TTCCVTLR cognitive loop (V→T→L→R→C→CC) — subsumes HE + TTT
+          2. DSL solver (parallel fast path, may catch what TTCCVTLR missed)
+          3. Neural fallback with feedback — if neural produces near-miss,
+             feed it back to TTCCVTLR for consequential refinement
+        """
         test_input = task['test'][0]['input']
-
         predictions = []
+        ttccvtlr_result = None
 
-        # Stage 1: HypothesisEngine (few-shot abstraction + composition)
+        # ── Stage 1: TTCCVTLR Compound Engine ───────────────────────────
+        if self.use_ttccvtlr:
+            try:
+                ttccvtlr_result = self.ttccvtlr.solve(task, verbose=False)
+                if ttccvtlr_result['solved'] and ttccvtlr_result['prediction'] is not None:
+                    predictions.append(ttccvtlr_result['prediction'])
+                    # Cache in pattern memory for cross-task learning
+                    self._cache_pattern(ttccvtlr_result)
+                # Also grab secondary predictions
+                for pred, method, score in ttccvtlr_result.get('predictions', [])[1:]:
+                    if pred not in predictions:
+                        predictions.append(pred)
+            except Exception:
+                pass
+
+        # Fallback: standalone HypothesisEngine if TTCCVTLR not available
+        if not predictions and not self.use_ttccvtlr:
+            try:
+                hyp_result = self.hypothesis_engine.solve(task)
+                if hyp_result['solved'] and hyp_result['prediction'] is not None:
+                    predictions.append(hyp_result['prediction'])
+            except Exception:
+                pass
+
+        # ── Stage 2: DSL solver (fast parallel path) ────────────────────
         try:
-            hyp_result = self.hypothesis_engine.solve(task)
-            if hyp_result['solved'] and hyp_result['prediction'] is not None:
-                predictions.append(hyp_result['prediction'])
+            dsl_preds = self.dsl_solver.solve(task)
+            for pred in dsl_preds:
+                if pred != test_input and pred not in predictions:
+                    predictions.append(pred)
         except Exception:
             pass
 
-        # Stage 2: DSL solver (may find solutions hypothesis engine missed)
-        dsl_preds = self.dsl_solver.solve(task)
-        for pred in dsl_preds:
-            if pred != test_input and pred not in predictions:
-                predictions.append(pred)
-
-        # Stage 3: TTT — per-task training for same-size tasks without a
-        # confident symbolic solution
+        # ── Stage 3: Neural fallback with feedback loop ─────────────────
         has_confident = len(predictions) > 0 and predictions[0] != test_input
-        if not has_confident and self.use_ttt and self._is_same_size(task):
+        if not has_confident and self.use_neural and self.neural_solver:
+            try:
+                neural_pred = self.neural_solver.solve(task, time_budget=2.0)
+                if neural_pred is not None:
+                    # Neural→Symbolic feedback: use TTCCVTLR to evaluate
+                    # and potentially fix the neural prediction
+                    if self.use_ttccvtlr:
+                        refined = self.ttccvtlr.refine_with_neural_hint(
+                            task, neural_pred
+                        )
+                        if refined['accepted']:
+                            pred = refined['prediction']
+                            if pred not in predictions:
+                                predictions.append(pred)
+                    elif neural_pred not in predictions:
+                        predictions.append(neural_pred)
+            except Exception:
+                pass
+
+        # ── Stage 4: TTT standalone (if TTCCVTLR didn't include it) ─────
+        has_confident = len(predictions) > 0 and predictions[0] != test_input
+        if (not has_confident and self.use_ttt 
+                and not self.use_ttccvtlr
+                and self._is_same_size(task)):
             try:
                 ttt_preds = ttt_solve_task(task, device=self.ttt_device, verbose=False)
                 if ttt_preds is not None:
@@ -304,17 +390,7 @@ class HybridARCSolver:
             except Exception:
                 pass
 
-        # Stage 4: Neural fallback — trigger when nothing else worked
-        has_confident = len(predictions) > 0 and predictions[0] != test_input
-        if not has_confident and self.use_neural and self.neural_solver:
-            try:
-                neural_pred = self.neural_solver.solve(task, time_budget=2.0)
-                if neural_pred is not None and neural_pred not in predictions:
-                    predictions.append(neural_pred)
-            except Exception:
-                pass
-
-        # Deduplicate
+        # Deduplicate and return
         unique = []
         seen = set()
         for pred in predictions:
@@ -322,18 +398,71 @@ class HybridARCSolver:
             if key not in seen:
                 seen.add(key)
                 unique.append(pred)
-        
-        # Fallback: return input
+
         if not unique:
             unique.append(copy.deepcopy(test_input))
-        
+
         return unique[:2]
+
+    def _cache_pattern(self, result: Dict) -> None:
+        """Cache a successful solve pattern for cross-task memory."""
+        self.pattern_memory.append({
+            'method': result.get('method', ''),
+            'visual_summary': result.get('visual_summary', ''),
+            'time_ms': result.get('time_ms', 0),
+            'rounds': result.get('rounds', 0),
+        })
+        # Keep memory bounded
+        if len(self.pattern_memory) > 1000:
+            self.pattern_memory = self.pattern_memory[-500:]
+
+    def get_pattern_prior(self, task: Dict) -> Optional[str]:
+        """Cross-task memory: find methods that worked for visually similar tasks.
         
-        # Fallback: return input
-        if not unique:
-            unique.append(copy.deepcopy(test_input))
+        Extracts visual feature tags from the current task and matches against
+        the pattern memory to suggest which method to prioritize.
+        """
+        if not self.pattern_memory or not HAS_TTCCVTLR:
+            return None
         
-        return unique[:2]
+        try:
+            from core.ttccvtlr import aggregate_visual_features
+            agg = aggregate_visual_features(task)
+            # Build feature signature
+            tags = set()
+            if agg['all_same_size']:
+                tags.add('same-size')
+            if agg['all_sparse']:
+                tags.add('sparse')
+            if agg['any_symmetry']:
+                tags.add('symmetry')
+            if not agg['all_same_size']:
+                tags.add('resize')
+            
+            # Find patterns with matching tags
+            tag_str = ','.join(sorted(tags))
+            matches = []
+            for p in self.pattern_memory:
+                vs = p.get('visual_summary', '')
+                p_tags = set()
+                if 'same-size' in vs:
+                    p_tags.add('same-size')
+                if 'sparse' in vs:
+                    p_tags.add('sparse')
+                if 'symmetry' in vs:
+                    p_tags.add('symmetry')
+                if 'resize' in vs:
+                    p_tags.add('resize')
+                overlap = len(tags & p_tags) / max(len(tags | p_tags), 1)
+                if overlap > 0.5:
+                    matches.append(p['method'])
+            
+            if matches:
+                # Return most common successful method
+                return Counter(matches).most_common(1)[0][0]
+        except Exception:
+            pass
+        return None
     
     def evaluate(
         self, 

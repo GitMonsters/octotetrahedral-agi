@@ -953,6 +953,81 @@ class TTCCVTLREngine:
             'method': 'best_effort' if prediction else 'unsolved',
         }
 
+    def refine_with_neural_hint(
+        self, task: Dict, neural_prediction: Grid, verbose: bool = False
+    ) -> Dict[str, Any]:
+        """Neural→Symbolic feedback: use a neural prediction as a seed.
+        
+        When the neural model produces a prediction, evaluate it with the
+        ConsequentialAnalyzer and optionally use it as a starting point
+        for symbolic refinement (e.g., fix color inconsistencies).
+        
+        This closes the loop: Neural → TTCCVTLR → refined prediction.
+        """
+        consistency = self.analyzer.check_consistency(neural_prediction, task)
+        
+        if consistency.get('overall', 0) >= 0.75:
+            # Neural prediction is self-consistent — accept it
+            return {
+                'accepted': True,
+                'prediction': neural_prediction,
+                'consistency': consistency,
+                'method': 'neural_accepted',
+            }
+        
+        # Try to fix the prediction symbolically
+        # If color palette is wrong, remap to valid colors
+        if not consistency.get('color_consistent', True):
+            fixed = self._fix_color_palette(neural_prediction, task)
+            if fixed is not None:
+                fix_consistency = self.analyzer.check_consistency(fixed, task)
+                if fix_consistency.get('overall', 0) > consistency.get('overall', 0):
+                    return {
+                        'accepted': True,
+                        'prediction': fixed,
+                        'consistency': fix_consistency,
+                        'method': 'neural_color_fixed',
+                    }
+        
+        return {
+            'accepted': consistency.get('overall', 0) >= 0.5,
+            'prediction': neural_prediction,
+            'consistency': consistency,
+            'method': 'neural_low_confidence',
+        }
+
+    def _fix_color_palette(self, prediction: Grid, task: Dict) -> Optional[Grid]:
+        """Remap prediction colors to match the training output palette."""
+        # Collect valid output colors from training
+        valid_colors = set()
+        for ex in task['train']:
+            for row in ex['output']:
+                valid_colors.update(row)
+        
+        pred = np.array(prediction)
+        pred_colors = set(pred.flatten())
+        invalid = pred_colors - valid_colors
+        
+        if not invalid:
+            return None  # Already valid
+        
+        # For each invalid color, map to nearest valid color by frequency
+        train_color_freq = Counter()
+        for ex in task['train']:
+            for row in ex['output']:
+                train_color_freq.update(row)
+        
+        remap = {}
+        for ic in invalid:
+            # Map to most common valid color
+            remap[ic] = train_color_freq.most_common(1)[0][0]
+        
+        fixed = pred.copy()
+        for old_c, new_c in remap.items():
+            fixed[pred == old_c] = new_c
+        
+        return fixed.tolist()
+
 
 # ============================================================================
 # Convenience: solve a task file

@@ -79,7 +79,8 @@ class CompoundBraid(nn.Module):
     cross-pollination between complementary processing streams.
     """
 
-    LIMB_NAMES = ['memory', 'spatial', 'language', 'metacognition']
+    LIMB_NAMES = ['memory', 'spatial', 'language', 'metacognition',
+                  'reasoning', 'perception']
 
     def __init__(
         self,
