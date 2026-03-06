@@ -609,6 +609,13 @@ class OctoTetrahedralModel(nn.Module):
         }
         
         if return_confidences:
+            # Compound loop path doesn't set individual limb confidences
+            if self.use_compound_loop:
+                memory_conf = memory_conf if 'memory_conf' in dir() else 0.5
+                spatial_conf = spatial_conf if 'spatial_conf' in dir() else 0.5
+                language_conf = language_conf if 'language_conf' in dir() else 0.5
+                meta_conf = meta_conf if 'meta_conf' in dir() else 0.5
+                reasoning_conf = reasoning_conf if 'reasoning_conf' in dir() else 0.5
             self._last_confidences = {
                 'perception': perception_conf or 0.0,
                 'memory': memory_conf or 0.0,
