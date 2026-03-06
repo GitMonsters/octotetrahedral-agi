@@ -1,0 +1,2519 @@
+{
+  "total_tasks": 400,
+  "solved_count": 23,
+  "solved_pct": 5.75,
+  "previous_count": 54,
+  "new_solves": [
+    "00576224",
+    "0692e18c",
+    "0c786b71",
+    "2072aba6",
+    "27f8ce4f",
+    "48131b3c",
+    "4cd1b7b2",
+    "5b6cbef5",
+    "60c09cac",
+    "62b74c02",
+    "68b67ca3",
+    "7039b2d7",
+    "73182012",
+    "833dafe3",
+    "8e2edd66",
+    "a59b95c0",
+    "be03b35f",
+    "ccd554ac",
+    "cd3c21df",
+    "ce8d95cc",
+    "d4b1c2b1",
+    "e1baa8a4",
+    "fc754716"
+  ],
+  "lost_solves": [
+    "1190e5a7",
+    "2dee498d",
+    "4347f46a",
+    "1e0a9b12",
+    "5582e5ca",
+    "2013d3e2",
+    "67a3c6ac",
+    "1f85a75f",
+    "7b7f7511",
+    "c8f0f002",
+    "007bbfb7",
+    "08ed6ac7",
+    "1cf80156",
+    "00d62c1b",
+    "496994bd",
+    "ed36ccf7",
+    "67e8384a",
+    "8f2ea7aa",
+    "0d3d703e",
+    "9172f3a0",
+    "0520fde7",
+    "c9e6f938",
+    "7468f01a",
+    "3af2c5a8",
+    "e3497940",
+    "d511f180",
+    "a416b8f3",
+    "746b3537",
+    "b1948b0a",
+    "6150a2bd",
+    "9dfd6313",
+    "f25ffba3",
+    "4be741c5",
+    "3c9b0459",
+    "62c24649",
+    "f25fbde4",
+    "68b16354",
+    "4c4377d9",
+    "b94a9452",
+    "eb5a1d5d",
+    "28bf18c6",
+    "6fa7a44f",
+    "3906de3d",
+    "e98196ab",
+    "1c786137",
+    "0b148d64",
+    "23b5c85d",
+    "6d0aefbc",
+    "90c28cc7",
+    "c59eb873",
+    "2dc579da",
+    "be94b721",
+    "74dd1130",
+    "8be77c9e"
+  ],
+  "solved_ids": [
+    "00576224",
+    "0692e18c",
+    "0c786b71",
+    "2072aba6",
+    "27f8ce4f",
+    "48131b3c",
+    "4cd1b7b2",
+    "5b6cbef5",
+    "60c09cac",
+    "62b74c02",
+    "68b67ca3",
+    "7039b2d7",
+    "73182012",
+    "833dafe3",
+    "8e2edd66",
+    "a59b95c0",
+    "be03b35f",
+    "ccd554ac",
+    "cd3c21df",
+    "ce8d95cc",
+    "d4b1c2b1",
+    "e1baa8a4",
+    "fc754716"
+  ],
+  "methods": {
+    "dsl": 23
+  },
+  "total_time_s": 2986.3,
+  "gci": 6.721336278416362,
+  "per_task": {
+    "00576224": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 1.374,
+      "n_predictions": 1
+    },
+    "009d5c81": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.015,
+      "n_predictions": 0
+    },
+    "00dbd492": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.014,
+      "n_predictions": 0
+    },
+    "03560426": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.014,
+      "n_predictions": 0
+    },
+    "05a7bcf2": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.015,
+      "n_predictions": 0
+    },
+    "0607ce86": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.021,
+      "n_predictions": 0
+    },
+    "0692e18c": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 2.262,
+      "n_predictions": 1
+    },
+    "070dd51e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.014,
+      "n_predictions": 0
+    },
+    "08573cc6": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.013,
+      "n_predictions": 0
+    },
+    "0934a4d8": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.235,
+      "n_predictions": 0
+    },
+    "09c534e7": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.015,
+      "n_predictions": 0
+    },
+    "0a1d4ef5": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.037,
+      "n_predictions": 0
+    },
+    "0a2355a6": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "0b17323b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "0bb8deee": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "0becf7df": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "0c786b71": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 3.756,
+      "n_predictions": 1
+    },
+    "0c9aba6e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "0d87d2a6": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "0e671a1a": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "0f63c0b9": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "103eff5b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "11e1fe23": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "12422b43": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "12997ef3": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "12eac192": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "136b0064": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "13713586": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "137f0df0": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "140c817e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "14754a24": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "15113be4": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.022,
+      "n_predictions": 0
+    },
+    "15663ba9": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "15696249": {
+      "solved": false,
+      "method": "none",
+      "time_s": 2.883,
+      "n_predictions": 0
+    },
+    "16b78196": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.014,
+      "n_predictions": 0
+    },
+    "17b80ad2": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "17cae0c1": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "18419cfa": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "184a9768": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.012,
+      "n_predictions": 0
+    },
+    "195ba7dc": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "1990f7a8": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "19bb5feb": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "1a2e2828": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "1a6449f1": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.014,
+      "n_predictions": 0
+    },
+    "1acc24af": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "1c02dbbe": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "1c0d0a4b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "1c56ad9f": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "1d0a4b61": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.043,
+      "n_predictions": 0
+    },
+    "1d398264": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "1da012fc": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "1e81d6f9": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "1e97544e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.04,
+      "n_predictions": 0
+    },
+    "2037f2c7": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.016,
+      "n_predictions": 0
+    },
+    "2072aba6": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 2.814,
+      "n_predictions": 1
+    },
+    "20818e16": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.012,
+      "n_predictions": 0
+    },
+    "20981f0e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "212895b5": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "21f83797": {
+      "solved": false,
+      "method": "none",
+      "time_s": 7.752,
+      "n_predictions": 0
+    },
+    "22a4bbc2": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "25094a63": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.247,
+      "n_predictions": 0
+    },
+    "2546ccf6": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "256b0a75": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "2685904e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "2697da3f": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "2753e76c": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "27a77e38": {
+      "solved": false,
+      "method": "none",
+      "time_s": 7.128,
+      "n_predictions": 0
+    },
+    "27f8ce4f": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 2.783,
+      "n_predictions": 1
+    },
+    "281123b4": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "292dd178": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "29700607": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "2a5f8217": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "2b01abd0": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "2c0b0aff": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.015,
+      "n_predictions": 0
+    },
+    "2c737e39": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "2f0c5170": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.021,
+      "n_predictions": 0
+    },
+    "310f3251": {
+      "solved": false,
+      "method": "none",
+      "time_s": 2.928,
+      "n_predictions": 0
+    },
+    "3194b014": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.016,
+      "n_predictions": 0
+    },
+    "319f2597": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.02,
+      "n_predictions": 0
+    },
+    "31adaf00": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "31d5ba1a": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "32e9702f": {
+      "solved": false,
+      "method": "none",
+      "time_s": 5.738,
+      "n_predictions": 0
+    },
+    "332efdb3": {
+      "solved": false,
+      "method": "none",
+      "time_s": 2.173,
+      "n_predictions": 0
+    },
+    "3391f8c0": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "33b52de3": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "3490cc26": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "34b99a2b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "351d6448": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "358ba94e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "37d3e8b2": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "3979b1a8": {
+      "solved": false,
+      "method": "none",
+      "time_s": 3.667,
+      "n_predictions": 0
+    },
+    "3a301edc": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "3b4c2228": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "3d31c5b3": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "3ed85e70": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.024,
+      "n_predictions": 0
+    },
+    "3ee1011a": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "3f23242b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "40f6cd08": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.023,
+      "n_predictions": 0
+    },
+    "414297c0": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "423a55dc": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "42918530": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.017,
+      "n_predictions": 0
+    },
+    "42a15761": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "4364c1c4": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "456873bc": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "45737921": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "45bbe264": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "477d2879": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "47996f11": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.361,
+      "n_predictions": 0
+    },
+    "48131b3c": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 0.938,
+      "n_predictions": 1
+    },
+    "4852f2fa": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "48f8583b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 3.766,
+      "n_predictions": 0
+    },
+    "4aab4007": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.063,
+      "n_predictions": 0
+    },
+    "4acc7107": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "4b6b68e5": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "4c177718": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "4cd1b7b2": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 6.456,
+      "n_predictions": 1
+    },
+    "4e45f183": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.015,
+      "n_predictions": 0
+    },
+    "4e469f39": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "4f537728": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.012,
+      "n_predictions": 0
+    },
+    "4ff4c9da": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.019,
+      "n_predictions": 0
+    },
+    "505fff84": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.013,
+      "n_predictions": 0
+    },
+    "506d28a5": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.016,
+      "n_predictions": 0
+    },
+    "50a16a69": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.017,
+      "n_predictions": 0
+    },
+    "50aad11f": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "50f325b5": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.012,
+      "n_predictions": 0
+    },
+    "516b51b7": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "5207a7b5": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "5289ad53": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "52fd389e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "54db823b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "55059096": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "551d5bf1": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "55783887": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.012,
+      "n_predictions": 0
+    },
+    "575b1a71": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "5783df64": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "5833af48": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "58743b76": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "58e15b12": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "59341089": {
+      "solved": false,
+      "method": "none",
+      "time_s": 2.355,
+      "n_predictions": 0
+    },
+    "5a5a2103": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "5af49b42": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.013,
+      "n_predictions": 0
+    },
+    "5b526a93": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "5b692c0f": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "5b6cbef5": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 1.036,
+      "n_predictions": 1
+    },
+    "5d2a5c43": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "5ffb2104": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "604001fa": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "60a26a3e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.012,
+      "n_predictions": 0
+    },
+    "60c09cac": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 0.871,
+      "n_predictions": 1
+    },
+    "626c0bcc": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "62ab2642": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "62b74c02": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 6.516,
+      "n_predictions": 1
+    },
+    "639f5a19": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.014,
+      "n_predictions": 0
+    },
+    "642248e4": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "642d658d": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.026,
+      "n_predictions": 0
+    },
+    "64a7c07e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "66e6c45b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 3.426,
+      "n_predictions": 0
+    },
+    "66f2d22f": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "67636eac": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "67b4a34d": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "67c52801": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "68b67ca3": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 1.054,
+      "n_predictions": 1
+    },
+    "692cd3b6": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "695367ec": {
+      "solved": false,
+      "method": "none",
+      "time_s": 1.218,
+      "n_predictions": 0
+    },
+    "696d4842": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "69889d6e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "6a11f6da": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "6ad5bdfd": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "6df30ad6": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "6ea4a07e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 6.266,
+      "n_predictions": 0
+    },
+    "6f473927": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "7039b2d7": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 4.207,
+      "n_predictions": 1
+    },
+    "705a3229": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.007,
+      "n_predictions": 0
+    },
+    "712bf12e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "72207abc": {
+      "solved": false,
+      "method": "none",
+      "time_s": 6.112,
+      "n_predictions": 0
+    },
+    "72a961c9": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "73182012": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 5.755,
+      "n_predictions": 1
+    },
+    "73c3b0d8": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "73ccf9c2": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.007,
+      "n_predictions": 0
+    },
+    "759f3fd3": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "762cd429": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "770cc55f": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "782b5218": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "79369cc6": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.013,
+      "n_predictions": 0
+    },
+    "7953d61e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 7.588,
+      "n_predictions": 0
+    },
+    "79fb03f4": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "7bb29440": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.016,
+      "n_predictions": 0
+    },
+    "7c8af763": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "7c9b52a0": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.014,
+      "n_predictions": 0
+    },
+    "7d18a6fb": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "7d1f7ee8": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.015,
+      "n_predictions": 0
+    },
+    "7d419a02": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.013,
+      "n_predictions": 0
+    },
+    "7e02026e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.007,
+      "n_predictions": 0
+    },
+    "7ee1c6ea": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "817e6c09": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.007,
+      "n_predictions": 0
+    },
+    "81c0276b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "833dafe3": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 2.935,
+      "n_predictions": 1
+    },
+    "845d6e51": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "84db8fc4": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "84f2aca1": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "8597cfd7": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "85b81ff1": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "85fa5666": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "8719f442": {
+      "solved": false,
+      "method": "none",
+      "time_s": 1.616,
+      "n_predictions": 0
+    },
+    "88207623": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "891232d6": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "896d5239": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "8a371977": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.022,
+      "n_predictions": 0
+    },
+    "8b28cd80": {
+      "solved": false,
+      "method": "none",
+      "time_s": 2.898,
+      "n_predictions": 0
+    },
+    "8ba14f53": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "8cb8642d": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "8dae5dfc": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "8e2edd66": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 0.965,
+      "n_predictions": 1
+    },
+    "8ee62060": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "8fbca751": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "90347967": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "903d1b4a": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "9110e3c5": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "917bccba": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "929ab4e9": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.038,
+      "n_predictions": 0
+    },
+    "92e50de0": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.017,
+      "n_predictions": 0
+    },
+    "9356391f": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "93b4f4b3": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "93c31fbe": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "94133066": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.013,
+      "n_predictions": 0
+    },
+    "94414823": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "94be5b80": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "95a58926": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.013,
+      "n_predictions": 0
+    },
+    "963f59bc": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "96a8c0cd": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "97239e3d": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "9772c176": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.013,
+      "n_predictions": 0
+    },
+    "981571dc": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.131,
+      "n_predictions": 0
+    },
+    "992798f6": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "99306f82": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "9a4bb226": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "9b2a60aa": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "9b365c51": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.007,
+      "n_predictions": 0
+    },
+    "9b4c17c4": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "9bebae7a": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "9c1e755f": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "9c56f360": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "9caba7c3": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.013,
+      "n_predictions": 0
+    },
+    "9ddd00f0": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "9def23fe": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "9f27f097": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "a04b2602": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.012,
+      "n_predictions": 0
+    },
+    "a096bf4d": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.015,
+      "n_predictions": 0
+    },
+    "a3f84088": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "a406ac07": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "a57f2f04": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.02,
+      "n_predictions": 0
+    },
+    "a59b95c0": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 4.141,
+      "n_predictions": 2
+    },
+    "a680ac02": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "a8610ef7": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "a934301b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "aa18de87": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "aa300dc3": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "aa4ec2a5": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.045,
+      "n_predictions": 0
+    },
+    "aab50785": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "ac0c5833": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "ac2e8ecf": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "ac3e2b04": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "ac605cbb": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "ad7e01d0": {
+      "solved": false,
+      "method": "none",
+      "time_s": 3.989,
+      "n_predictions": 0
+    },
+    "ae58858e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "aee291af": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.014,
+      "n_predictions": 0
+    },
+    "af22c60d": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.133,
+      "n_predictions": 0
+    },
+    "af24b4cc": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "b0722778": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "b0f4d537": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "b15fca0b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "b1fc8b8e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "b20f7c8b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.013,
+      "n_predictions": 0
+    },
+    "b457fec5": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "b4a43f3b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "b7999b51": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "b7cb93ac": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "b7f8a4d8": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.021,
+      "n_predictions": 0
+    },
+    "b7fb29bc": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "b942fd60": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "b9630600": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.012,
+      "n_predictions": 0
+    },
+    "ba9d41b8": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "baf41dbf": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "bb52a14b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "bbb1b8b6": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "bc4146bd": {
+      "solved": false,
+      "method": "none",
+      "time_s": 2.894,
+      "n_predictions": 0
+    },
+    "bcb3040b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "bd14c3bf": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "be03b35f": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 1.335,
+      "n_predictions": 1
+    },
+    "bf32578f": {
+      "solved": false,
+      "method": "none",
+      "time_s": 7.682,
+      "n_predictions": 0
+    },
+    "bf699163": {
+      "solved": false,
+      "method": "none",
+      "time_s": 4.08,
+      "n_predictions": 1
+    },
+    "bf89d739": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "c074846d": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "c1990cce": {
+      "solved": false,
+      "method": "none",
+      "time_s": 1.375,
+      "n_predictions": 0
+    },
+    "c3202e5a": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.013,
+      "n_predictions": 0
+    },
+    "c35c1b4c": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "c48954c1": {
+      "solved": false,
+      "method": "none",
+      "time_s": 2.419,
+      "n_predictions": 0
+    },
+    "c62e2108": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "c64f1187": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "c658a4bd": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "c663677b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.05,
+      "n_predictions": 0
+    },
+    "c6e1b8da": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "c7d4e6ad": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "c87289bb": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "c8b7cc0f": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "c92b942c": {
+      "solved": false,
+      "method": "none",
+      "time_s": 3.505,
+      "n_predictions": 0
+    },
+    "c97c0139": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "ca8de6ea": {
+      "solved": false,
+      "method": "none",
+      "time_s": 6.579,
+      "n_predictions": 0
+    },
+    "ca8f78db": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.144,
+      "n_predictions": 0
+    },
+    "cad67732": {
+      "solved": false,
+      "method": "none",
+      "time_s": 5.281,
+      "n_predictions": 0
+    },
+    "cb227835": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "ccd554ac": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 5.791,
+      "n_predictions": 2
+    },
+    "cd3c21df": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 5.682,
+      "n_predictions": 1
+    },
+    "ce039d91": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "ce8d95cc": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 2.231,
+      "n_predictions": 1
+    },
+    "cf133acc": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "cfb2ce5a": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "d017b73f": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "d19f7514": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "d282b262": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "d2acf2cb": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "d304284e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "d37a1ef5": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "d47aa2ff": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.007,
+      "n_predictions": 0
+    },
+    "d492a647": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "d4b1c2b1": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 7.288,
+      "n_predictions": 1
+    },
+    "d4c90558": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.012,
+      "n_predictions": 0
+    },
+    "d56f2372": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "d5c634a2": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "d931c21c": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "d94c3b52": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "da2b0fe3": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "da515329": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "dc2aa30b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "dc2e9a9d": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "dd2401ed": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "de493100": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.192,
+      "n_predictions": 0
+    },
+    "df8cc377": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "e0fb7511": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "e133d23d": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "e1baa8a4": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 3.837,
+      "n_predictions": 1
+    },
+    "e1d2900e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.012,
+      "n_predictions": 0
+    },
+    "e2092e0c": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "e21a174a": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.015,
+      "n_predictions": 0
+    },
+    "e345f17b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "e4075551": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "e41c6fd3": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.012,
+      "n_predictions": 0
+    },
+    "e57337a4": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.015,
+      "n_predictions": 0
+    },
+    "e5790162": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.012,
+      "n_predictions": 0
+    },
+    "e5c44e8f": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.013,
+      "n_predictions": 0
+    },
+    "e619ca6e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "e633a9e5": {
+      "solved": false,
+      "method": "none",
+      "time_s": 3.014,
+      "n_predictions": 0
+    },
+    "e66aafb8": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.036,
+      "n_predictions": 0
+    },
+    "e681b708": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "e69241bd": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "e6de6e8f": {
+      "solved": false,
+      "method": "none",
+      "time_s": 2.719,
+      "n_predictions": 0
+    },
+    "e74e1818": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "e760a62e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.018,
+      "n_predictions": 0
+    },
+    "e7639916": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "e78887d1": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "e7a25a18": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "e7b06bea": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "e7dd8335": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.007,
+      "n_predictions": 0
+    },
+    "e872b94a": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "e88171ec": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "e95e3d8e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.023,
+      "n_predictions": 0
+    },
+    "e99362f0": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "e9ac8c9e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "e9b4f6fc": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.012,
+      "n_predictions": 0
+    },
+    "e9bb6954": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "e9c9d9a1": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "ea959feb": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.03,
+      "n_predictions": 0
+    },
+    "ea9794b1": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "ecaa0ec1": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.012,
+      "n_predictions": 0
+    },
+    "ed74f2f2": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "ed98d772": {
+      "solved": false,
+      "method": "none",
+      "time_s": 4.495,
+      "n_predictions": 0
+    },
+    "ef26cbf6": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "f0afb749": {
+      "solved": false,
+      "method": "none",
+      "time_s": 5.161,
+      "n_predictions": 0
+    },
+    "f0df5ff0": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "f21745ec": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "f3b10344": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.016,
+      "n_predictions": 0
+    },
+    "f3cdc58f": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "f3e62deb": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.01,
+      "n_predictions": 0
+    },
+    "f4081712": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.036,
+      "n_predictions": 0
+    },
+    "f45f5ca7": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "f5aa3634": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "f5c89df1": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "f823c43c": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.011,
+      "n_predictions": 0
+    },
+    "f83cb3f6": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.012,
+      "n_predictions": 0
+    },
+    "f8be4b64": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "f9a67cb5": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "f9d67f8b": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.208,
+      "n_predictions": 0
+    },
+    "fafd9572": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    },
+    "fb791726": {
+      "solved": false,
+      "method": "none",
+      "time_s": 6.47,
+      "n_predictions": 0
+    },
+    "fc754716": {
+      "solved": true,
+      "method": "dsl",
+      "time_s": 4.025,
+      "n_predictions": 1
+    },
+    "fd096ab6": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.028,
+      "n_predictions": 0
+    },
+    "fd4b2b02": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.007,
+      "n_predictions": 0
+    },
+    "fe9372f3": {
+      "solved": false,
+      "method": "none",
+      "time_s": 7.533,
+      "n_predictions": 0
+    },
+    "fea12743": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.008,
+      "n_predictions": 0
+    },
+    "ff72ca3e": {
+      "solved": false,
+      "method": "none",
+      "time_s": 8.009,
+      "n_predictions": 0
+    }
+  }
+}
