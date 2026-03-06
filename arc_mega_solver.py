@@ -1220,6 +1220,58 @@ def solve_subgrid_extract(task):
     return None
 
 
+def solve_subgrid_by_scoring(task):
+    """Extract subgrid with variable output size, scored by nonbg density."""
+    train = task['train']
+    
+    for method in ['min_nonbg', 'max_nonbg']:
+        ok = True
+        for ex in train:
+            inp, out = np.array(ex['input']), np.array(ex['output'])
+            oh, ow = out.shape
+            ih, iw = inp.shape
+            if oh > ih or ow > iw:
+                ok = False; break
+            bg = find_bg(inp)
+            best_pos = None
+            best_score = float('inf') if method == 'min_nonbg' else -float('inf')
+            for r in range(ih - oh + 1):
+                for c in range(iw - ow + 1):
+                    cnt = int(np.count_nonzero(inp[r:r+oh, c:c+ow] != bg))
+                    if (method == 'min_nonbg' and cnt < best_score) or \
+                       (method == 'max_nonbg' and cnt > best_score):
+                        best_score = cnt
+                        best_pos = (r, c)
+            if best_pos is None or \
+               not grids_match(inp[best_pos[0]:best_pos[0]+oh, best_pos[1]:best_pos[1]+ow], out):
+                ok = False; break
+        
+        if ok:
+            test_inp = np.array(task['test'][0]['input'])
+            gt = task['test'][0].get('output')
+            if gt is None:
+                return None
+            gt = np.array(gt)
+            gh, gw = gt.shape
+            bgt = find_bg(test_inp)
+            if gh > test_inp.shape[0] or gw > test_inp.shape[1]:
+                continue
+            best_pos = None
+            best_score = float('inf') if method == 'min_nonbg' else -float('inf')
+            for r in range(test_inp.shape[0] - gh + 1):
+                for c in range(test_inp.shape[1] - gw + 1):
+                    cnt = int(np.count_nonzero(test_inp[r:r+gh, c:c+gw] != bgt))
+                    if (method == 'min_nonbg' and cnt < best_score) or \
+                       (method == 'max_nonbg' and cnt > best_score):
+                        best_score = cnt
+                        best_pos = (r, c)
+            if best_pos:
+                return test_inp[best_pos[0]:best_pos[0]+gh, best_pos[1]:best_pos[1]+gw].tolist(), \
+                       f'subgrid_{method}'
+    
+    return None
+
+
 def solve_block_summary(task):
     """Divide input into blocks matching output size, summarize each block."""
     train = task['train']
@@ -1642,6 +1694,7 @@ def solve_all(task):
         solve_fill_enclosed,     # Fill enclosed regions
         solve_per_object_transform,  # Per-object recoloring
         solve_subgrid_extract,   # Extract subgrid from input
+        solve_subgrid_by_scoring,  # Extract subgrid by nonbg scoring
         solve_block_summary,     # Divide into blocks, summarize each
         solve_object_shape_extract,  # Extract object by shape property
         solve_counting,    # Output = count/statistic
