@@ -274,6 +274,16 @@ class TrainingConfig:
     max_grad_norm: float = 1.0
 
 
+@dataclass
+class CompoundLoopConfig:
+    """Compound looping — adaptive-depth reasoning (Ouro-style)"""
+    enabled: bool = False         # Off by default for backward compat
+    max_loops: int = 4            # Maximum reasoning loop iterations
+    exit_threshold: float = 0.5   # CDF threshold for early exit at inference
+    entropy_beta: float = 0.1     # KL(exit_dist || uniform) regularization weight
+    warmup_loops: int = 0         # Minimum loops before exit gate activates
+
+
 @dataclass 
 class Config:
     """Master configuration combining all sub-configs"""
@@ -287,6 +297,7 @@ class Config:
     geometric_physics: GeometricPhysicsConfig = field(default_factory=GeometricPhysicsConfig)
     quantum_coupling: QuantumCouplingConfig = field(default_factory=QuantumCouplingConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
+    compound_loop: CompoundLoopConfig = field(default_factory=CompoundLoopConfig)
     
     # Device
     device: str = field(default_factory=_select_device)

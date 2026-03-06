@@ -51,6 +51,7 @@ from limbs.spatial_limb import SpatialLimb
 from limbs.metacognition_limb import MetaCognitionLimb
 from sync.hub_sync import HubSync
 from core.compound_braid import CompoundBraid
+from core.compound_loop import CompoundLoopController, CompoundLoopConfig as _LoopCfg
 from cognition import AGICognition, CognitionConfig
 
 # Import new geometric physics modules
@@ -261,6 +262,21 @@ class OctoTetrahedralModel(nn.Module):
             moe_signal_dim=moe_signal_dim,
         )
         
+        # === Compound Loop Controller (Adaptive-Depth Reasoning) ===
+        self.use_compound_loop = self.config.compound_loop.enabled
+        if self.use_compound_loop:
+            loop_cfg = _LoopCfg(
+                max_loops=self.config.compound_loop.max_loops,
+                exit_threshold=self.config.compound_loop.exit_threshold,
+                entropy_beta=self.config.compound_loop.entropy_beta,
+                warmup_loops=self.config.compound_loop.warmup_loops,
+            )
+            self.compound_loop = CompoundLoopController(
+                hidden_dim=self.hidden_dim, config=loop_cfg
+            )
+        else:
+            self.compound_loop = None
+        
         # === Reasoning Limb (Pattern Processing) ===
         self.reasoning = ReasoningLimb(
             hidden_dim=self.hidden_dim,
@@ -461,56 +477,66 @@ class OctoTetrahedralModel(nn.Module):
         else:
             memory_enhanced = core_output
         
-        # === 5. Parallel Limb Processing (all 6 braided limbs) ===
-        # Memory Limb: Store/retrieve episodic memories
-        memory_out, memory_conf, _ = self.memory_limb(memory_enhanced)
-        
-        # Spatial Limb: Process spatial/grid features (useful for ARC)
-        spatial_out, spatial_conf, _ = self.spatial(memory_enhanced)
-        
-        # Language Limb: Language understanding
-        language_out, language_conf, _ = self.language(memory_enhanced)
-        
-        # MetaCognition: Self-monitoring and strategy selection
-        meta_out, meta_conf, _ = self.metacognition(memory_enhanced)
-
-        # Reasoning Limb: Pattern Processing (now braided with others)
-        reasoning_out, reasoning_conf, _ = self.reasoning(
-            memory_enhanced,
-            attention_mask=attention_mask,
-            return_confidence=return_confidences
-        )
-        # reasoning_out: [batch, seq_len, hidden_dim]
-
-        # Perception echo: re-encode with awareness of core processing
-        perception_echo = encoded  # [batch, seq_len, hidden_dim]
-        
-        # Compound Braid: cross-limb information exchange via learned cross-attention
-        # All 6 sequence-shaped limbs braided together
-        # Feed MoE expert loads back to braid for closed-loop compound learning
-        moe_expert_loads = None
-        if self.config.moe.enabled and self.config.moe.compound_enabled:
-            moe_expert_loads = self._get_first_compound_moe_loads()
-        combined_limbs, braid_info = self.compound_braid(
-            [memory_out, spatial_out, language_out, meta_out,
-             reasoning_out, perception_echo],
-            attention_mask=attention_mask,
-            moe_expert_loads=moe_expert_loads,
-        )
-        # Cache braid signal for next forward pass → MoE routing
-        if braid_info.get('braid_signal') is not None:
-            self._cached_braid_signal = braid_info['braid_signal'].detach()
-        
-        # Blend with memory_enhanced
-        multi_limb_output = memory_enhanced + 0.3 * combined_limbs
-        
-        # === 6. Post-Braid Reasoning: refine with braided context ===
-        reasoned, _, _ = self.reasoning(
-            multi_limb_output,
-            attention_mask=attention_mask,
-            return_confidence=return_confidences
-        )
-        # reasoned: [batch, seq_len, hidden_dim]
+        # === 5-7. Limb Processing — optionally wrapped in compound loop ===
+        if self.use_compound_loop and self.compound_loop is not None:
+            loop_result = self.compound_loop(
+                memory_enhanced,
+                process_fn=self._limb_loop_step,
+                process_kwargs={
+                    'attention_mask': attention_mask,
+                    'return_confidences': return_confidences,
+                    'encoded': encoded,
+                }
+            )
+            multi_limb_output = loop_result['output']
+            compound_loop_info = {
+                'loop_count': loop_result['loop_count'],
+                'exit_distribution': loop_result['exit_distribution'],
+                'entropy_loss': loop_result['entropy_loss'],
+            }
+            # Use a dummy for reasoning out (already folded into loop output)
+            reasoned = multi_limb_output
+        else:
+            # Original non-looped path (backward compatible)
+            compound_loop_info = None
+            # Memory Limb
+            memory_out, memory_conf, _ = self.memory_limb(memory_enhanced)
+            # Spatial Limb
+            spatial_out, spatial_conf, _ = self.spatial(memory_enhanced)
+            # Language Limb
+            language_out, language_conf, _ = self.language(memory_enhanced)
+            # MetaCognition
+            meta_out, meta_conf, _ = self.metacognition(memory_enhanced)
+            # Reasoning Limb
+            reasoning_out, reasoning_conf, _ = self.reasoning(
+                memory_enhanced,
+                attention_mask=attention_mask,
+                return_confidence=return_confidences
+            )
+            # Perception echo
+            perception_echo = encoded
+            
+            # Compound Braid
+            moe_expert_loads = None
+            if self.config.moe.enabled and self.config.moe.compound_enabled:
+                moe_expert_loads = self._get_first_compound_moe_loads()
+            combined_limbs, braid_info = self.compound_braid(
+                [memory_out, spatial_out, language_out, meta_out,
+                 reasoning_out, perception_echo],
+                attention_mask=attention_mask,
+                moe_expert_loads=moe_expert_loads,
+            )
+            if braid_info.get('braid_signal') is not None:
+                self._cached_braid_signal = braid_info['braid_signal'].detach()
+            
+            multi_limb_output = memory_enhanced + 0.3 * combined_limbs
+            
+            # Post-Braid Reasoning
+            reasoned, _, _ = self.reasoning(
+                multi_limb_output,
+                attention_mask=attention_mask,
+                return_confidence=return_confidences
+            )
         
         # === 7. Planning Limb: Action Sequencing ===
         # Get current state from reasoned output
@@ -563,8 +589,13 @@ class OctoTetrahedralModel(nn.Module):
                 # Add MoE load-balancing auxiliary loss
                 if self.config.moe.enabled:
                     loss = loss + self.config.moe.load_balance_weight * moe_aux_loss
+                
+                # Add compound loop entropy regularization
+                if compound_loop_info is not None:
+                    loss = loss + compound_loop_info['entropy_loss']
         
         # === Build Output ===
+        braid_info = braid_info if not self.use_compound_loop else {}
         output = {
             'logits': logits,
             'loss': loss,
@@ -573,7 +604,8 @@ class OctoTetrahedralModel(nn.Module):
             'braid_info': braid_info,
             'physics_loss': physics_loss if self.use_geometric_physics else None,
             'moe_aux_loss': moe_aux_loss if self.config.moe.enabled else None,
-            'geometric_physics_info': geometric_physics_info if self.use_geometric_physics else None
+            'geometric_physics_info': geometric_physics_info if self.use_geometric_physics else None,
+            'compound_loop_info': compound_loop_info,
         }
         
         if return_confidences:
@@ -623,6 +655,50 @@ class OctoTetrahedralModel(nn.Module):
         info_gain = 0.1 * entropy + 0.05 * editing_activity
         
         return info_gain
+    
+    def _limb_loop_step(
+        self,
+        x: torch.Tensor,
+        loop_idx: int,
+        attention_mask: Optional[torch.Tensor] = None,
+        return_confidences: bool = False,
+        encoded: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        """
+        One iteration of the compound-looped limb pipeline.
+        Called by CompoundLoopController.forward() for each loop step.
+        """
+        # Parallel limb processing
+        memory_out, _, _ = self.memory_limb(x)
+        spatial_out, _, _ = self.spatial(x)
+        language_out, _, _ = self.language(x)
+        meta_out, _, _ = self.metacognition(x)
+        reasoning_out, _, _ = self.reasoning(
+            x, attention_mask=attention_mask,
+            return_confidence=return_confidences
+        )
+        perception_echo = encoded if encoded is not None else x
+
+        # Compound Braid
+        moe_expert_loads = None
+        if self.config.moe.enabled and self.config.moe.compound_enabled:
+            moe_expert_loads = self._get_first_compound_moe_loads()
+        combined_limbs, braid_info = self.compound_braid(
+            [memory_out, spatial_out, language_out, meta_out,
+             reasoning_out, perception_echo],
+            attention_mask=attention_mask,
+            moe_expert_loads=moe_expert_loads,
+        )
+        if braid_info.get('braid_signal') is not None:
+            self._cached_braid_signal = braid_info['braid_signal'].detach()
+
+        # Blend + post-braid reasoning
+        blended = x + 0.3 * combined_limbs
+        reasoned, _, _ = self.reasoning(
+            blended, attention_mask=attention_mask,
+            return_confidence=return_confidences
+        )
+        return reasoned
     
     def generate(
         self,
