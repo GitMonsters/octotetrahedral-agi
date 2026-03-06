@@ -1216,6 +1216,92 @@ def solve_subgrid_extract(task):
     return None
 
 
+def solve_block_summary(task):
+    """Divide input into blocks matching output size, summarize each block."""
+    train = task['train']
+    
+    # Check block division is possible for all examples
+    for ex in train:
+        inp, out = np.array(ex['input']), np.array(ex['output'])
+        ih, iw = inp.shape
+        oh, ow = out.shape
+        if oh >= ih or ow >= iw or oh == 0 or ow == 0:
+            return None
+        if ih % oh != 0 or iw % ow != 0:
+            return None
+    
+    bg = find_bg(np.array(train[0]['input']))
+    
+    rules = [
+        ('mc_nonbg', lambda block, bg: int(Counter(block[block != bg].flatten().tolist()).most_common(1)[0][0]) if block[block != bg].size > 0 else bg),
+        ('mc_all', lambda block, bg: int(Counter(block.flatten().tolist()).most_common(1)[0][0])),
+        ('has_nonbg', lambda block, bg: 1 if np.any(block != bg) else 0),
+        ('max_val', lambda block, bg: int(block.max())),
+        ('center', lambda block, bg: int(block[block.shape[0]//2, block.shape[1]//2])),
+        ('min_nonbg', lambda block, bg: int(block[block != bg].min()) if block[block != bg].size > 0 else bg),
+    ]
+    
+    for rname, rfn in rules:
+        ok = True
+        for ex in train:
+            inp, out = np.array(ex['input']), np.array(ex['output'])
+            ih, iw = inp.shape
+            oh, ow = out.shape
+            bh, bw = ih // oh, iw // ow
+            bgi = find_bg(inp)
+            
+            pred = np.zeros_like(out)
+            try:
+                for r in range(oh):
+                    for c in range(ow):
+                        block = inp[r*bh:(r+1)*bh, c*bw:(c+1)*bw]
+                        pred[r, c] = rfn(block, bgi)
+            except Exception:
+                ok = False
+                break
+            
+            if not np.array_equal(pred, out):
+                ok = False
+                break
+        
+        if ok:
+            test_inp = np.array(task['test'][0]['input'])
+            tih, tiw = test_inp.shape
+            
+            # Determine output size: output shape is consistent across examples
+            out_shapes = set(np.array(ex['output']).shape for ex in train)
+            if len(out_shapes) == 1:
+                toh, tow = list(out_shapes)[0]
+                if tih % toh == 0 and tiw % tow == 0:
+                    tbh, tbw = tih // toh, tiw // tow
+                else:
+                    continue
+            else:
+                # Output size varies — use block size ratio from first example
+                ex0 = train[0]
+                inp0, out0 = np.array(ex0['input']), np.array(ex0['output'])
+                ratio_h = inp0.shape[0] // out0.shape[0]
+                ratio_w = inp0.shape[1] // out0.shape[1]
+                if tih % ratio_h != 0 or tiw % ratio_w != 0:
+                    continue
+                toh, tow = tih // ratio_h, tiw // ratio_w
+                tbh, tbw = ratio_h, ratio_w
+            
+            bgt = find_bg(test_inp)
+            pred = np.zeros((toh, tow), dtype=int)
+            try:
+                for r in range(toh):
+                    for c in range(tow):
+                        block = test_inp[r*tbh:(r+1)*tbh, c*tbw:(c+1)*tbw]
+                        pred[r, c] = rfn(block, bgt)
+            except Exception:
+                continue
+            
+            return pred.tolist(), f'block:{rname}'
+    
+    return None
+
+
 def solve_counting(task):
     train = task['train']
     out0 = np.array(train[0]['output'])
@@ -1250,6 +1336,206 @@ def solve_counting(task):
 
 
 # ═══════════════════════════════════════════════
+# TILE WITH TRANSFORMS (per-quadrant rotation/flip)
+# ═══════════════════════════════════════════════
+
+def solve_tile_plan(task):
+    """Output = NxM tiling of input with per-tile rotation/flip."""
+    train = task['train']
+    
+    _transforms = [
+        ('id', lambda g: g),
+        ('lr', lambda g: np.fliplr(g)),
+        ('ud', lambda g: np.flipud(g)),
+        ('r90', lambda g: np.rot90(g, 1)),
+        ('r180', lambda g: np.rot90(g, 2)),
+        ('r270', lambda g: np.rot90(g, 3)),
+        ('T', lambda g: g.T),
+    ]
+    
+    inp0, out0 = np.array(train[0]['input']), np.array(train[0]['output'])
+    h_i, w_i = inp0.shape
+    h_o, w_o = out0.shape
+    
+    if h_o <= h_i or w_o <= w_i: return None
+    if h_o % h_i != 0 or w_o % w_i != 0: return None
+    
+    rr, cc = h_o // h_i, w_o // w_i
+    
+    valid = [(n, f) for n, f in _transforms if f(inp0).shape == inp0.shape]
+    
+    grid_plan = []
+    for r in range(rr):
+        row_plan = []
+        for c in range(cc):
+            sub = out0[r*h_i:(r+1)*h_i, c*w_i:(c+1)*w_i]
+            found = None
+            for name, fn in valid:
+                if np.array_equal(fn(inp0), sub):
+                    found = (name, fn)
+                    break
+            if found is None:
+                return None
+            row_plan.append(found)
+        grid_plan.append(row_plan)
+    
+    for ex in train[1:]:
+        i2, o2 = np.array(ex['input']), np.array(ex['output'])
+        h2, w2 = i2.shape
+        if o2.shape != (h2*rr, w2*cc): return None
+        for r in range(rr):
+            for c in range(cc):
+                name, fn = grid_plan[r][c]
+                if not np.array_equal(fn(i2), o2[r*h2:(r+1)*h2, c*w2:(c+1)*w2]):
+                    return None
+    
+    ti = np.array(task['test'][0]['input'])
+    rows_out = []
+    for r in range(rr):
+        row_out = [grid_plan[r][c][1](ti) for c in range(cc)]
+        rows_out.append(np.concatenate(row_out, axis=1))
+    pred = np.concatenate(rows_out, axis=0)
+    tag = '_'.join(grid_plan[r][c][0] for r in range(rr) for c in range(cc))
+    return pred.tolist(), f'tile_plan:{tag}'
+
+
+# ═══════════════════════════════════════════════
+# GRID SEPARATOR SUMMARY
+# ═══════════════════════════════════════════════
+
+def solve_grid_separator(task):
+    """Grid has uniform-color separator rows+cols → summarize each region."""
+    train = task['train']
+    inp0, out0 = np.array(train[0]['input']), np.array(train[0]['output'])
+    h, w = inp0.shape
+    
+    for sep_color in set(inp0.flatten().tolist()):
+        sep_rows = [r for r in range(h) if np.all(inp0[r,:] == sep_color)]
+        sep_cols = [c for c in range(w) if np.all(inp0[:,c] == sep_color)]
+        if len(sep_rows) < 1 or len(sep_cols) < 1: continue
+        
+        rb = [-1] + sep_rows + [h]
+        cb = [-1] + sep_cols + [w]
+        n_r, n_c = len(rb)-1, len(cb)-1
+        if n_r < 2 or n_c < 2: continue
+        if out0.shape != (n_r, n_c): continue
+        
+        def summarize(grid, rb_, cb_, sep):
+            result = []
+            for i in range(len(rb_)-1):
+                row = []
+                for j in range(len(cb_)-1):
+                    r1, r2 = rb_[i]+1, rb_[i+1]
+                    c1, c2 = cb_[j]+1, cb_[j+1]
+                    if r1 >= r2 or c1 >= c2:
+                        row.append(sep); continue
+                    region = grid[r1:r2, c1:c2]
+                    nonbg = region[region != sep]
+                    if len(nonbg) == 0:
+                        row.append(sep)
+                    else:
+                        row.append(int(Counter(nonbg.tolist()).most_common(1)[0][0]))
+                result.append(row)
+            return np.array(result)
+        
+        if not np.array_equal(summarize(inp0, rb, cb, sep_color), out0):
+            continue
+        
+        ok = True
+        for ex in train[1:]:
+            i2, o2 = np.array(ex['input']), np.array(ex['output'])
+            h2, w2 = i2.shape
+            sr2 = [r for r in range(h2) if np.all(i2[r,:] == sep_color)]
+            sc2 = [c for c in range(w2) if np.all(i2[:,c] == sep_color)]
+            rb2 = [-1] + sr2 + [h2]
+            cb2 = [-1] + sc2 + [w2]
+            if o2.shape != (len(rb2)-1, len(cb2)-1):
+                ok = False; break
+            if not np.array_equal(summarize(i2, rb2, cb2, sep_color), o2):
+                ok = False; break
+        if not ok: continue
+        
+        ti = np.array(task['test'][0]['input'])
+        ht, wt = ti.shape
+        srt = [r for r in range(ht) if np.all(ti[r,:] == sep_color)]
+        sct = [c for c in range(wt) if np.all(ti[:,c] == sep_color)]
+        rbt = [-1] + srt + [ht]
+        cbt = [-1] + sct + [wt]
+        pred = summarize(ti, rbt, cbt, sep_color)
+        return pred.tolist(), 'grid_sep_summary'
+    
+    return None
+
+
+# ═══════════════════════════════════════════════
+# ROW/COL SELECTION (output = specific rows/cols from input)
+# ═══════════════════════════════════════════════
+
+def solve_row_col_select(task):
+    """Output = subset/reorder of input rows or columns."""
+    train = task['train']
+    inp0, out0 = np.array(train[0]['input']), np.array(train[0]['output'])
+    
+    # Row selection
+    if out0.shape[1] == inp0.shape[1] and out0.shape[0] != inp0.shape[0]:
+        row_map = []
+        ok = True
+        for r_out in range(out0.shape[0]):
+            found = None
+            for r_in in range(inp0.shape[0]):
+                if np.array_equal(out0[r_out, :], inp0[r_in, :]):
+                    found = r_in; break
+            if found is None: ok = False; break
+            row_map.append(found)
+        
+        if ok and row_map:
+            ok2 = True
+            for ex in train[1:]:
+                i2, o2 = np.array(ex['input']), np.array(ex['output'])
+                if o2.shape[1] != i2.shape[1] or o2.shape[0] != len(row_map):
+                    ok2 = False; break
+                for ri, rm in enumerate(row_map):
+                    if rm >= i2.shape[0] or not np.array_equal(o2[ri, :], i2[rm, :]):
+                        ok2 = False; break
+                if not ok2: break
+            if ok2:
+                ti = np.array(task['test'][0]['input'])
+                if all(rm < ti.shape[0] for rm in row_map):
+                    pred = np.array([ti[rm, :] for rm in row_map])
+                    return pred.tolist(), f'row_select'
+    
+    # Col selection
+    if out0.shape[0] == inp0.shape[0] and out0.shape[1] != inp0.shape[1]:
+        col_map = []
+        ok = True
+        for c_out in range(out0.shape[1]):
+            found = None
+            for c_in in range(inp0.shape[1]):
+                if np.array_equal(out0[:, c_out], inp0[:, c_in]):
+                    found = c_in; break
+            if found is None: ok = False; break
+            col_map.append(found)
+        
+        if ok and col_map:
+            ok2 = True
+            for ex in train[1:]:
+                i2, o2 = np.array(ex['input']), np.array(ex['output'])
+                if o2.shape[0] != i2.shape[0] or o2.shape[1] != len(col_map):
+                    ok2 = False; break
+                for ci, cm in enumerate(col_map):
+                    if cm >= i2.shape[1] or not np.array_equal(o2[:, ci], i2[:, cm]):
+                        ok2 = False; break
+                if not ok2: break
+            if ok2:
+                ti = np.array(task['test'][0]['input'])
+                if all(cm < ti.shape[1] for cm in col_map):
+                    pred = np.array([ti[:, cm] for cm in col_map]).T
+                    return pred.tolist(), f'col_select'
+    
+    return None
+
+
+# ═══════════════════════════════════════════════
 # MAIN SOLVE
 # ═══════════════════════════════════════════════
 
@@ -1261,16 +1547,20 @@ def solve_all(task):
         solve_geometric,   # Flips, rotations, transposes
         solve_scale,       # Scale up/down
         solve_tile,        # Tiling/repeat
+        solve_tile_plan,   # Tile with per-quadrant transforms
         solve_crop,        # Crop/extract/border removal
         solve_partition,   # Grid partitioning
+        solve_grid_separator,  # Grid separator summary
         solve_boolean,     # Boolean grid ops
         solve_symmetry,    # Symmetry completion
         solve_rowcol,      # Row/col operations
+        solve_row_col_select,  # Row/col selection/reorder
         solve_flood,       # Flood fill propagation
         solve_minority_removal,  # Remove isolated/minority cells
         solve_fill_enclosed,     # Fill enclosed regions
         solve_per_object_transform,  # Per-object recoloring
         solve_subgrid_extract,   # Extract subgrid from input
+        solve_block_summary,     # Divide into blocks, summarize each
         solve_counting,    # Output = count/statistic
     ]
     
