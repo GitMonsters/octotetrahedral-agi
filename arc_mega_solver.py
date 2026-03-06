@@ -1391,6 +1391,79 @@ def solve_counting(task):
     return None
 
 
+def solve_adj_recolor(task):
+    """Recolor cells of one color that are adjacent (8-conn) to another specific color."""
+    train = task['train']
+    inp0, out0 = np.array(train[0]['input']), np.array(train[0]['output'])
+    if inp0.shape != out0.shape:
+        return None
+    
+    diff = (inp0 != out0)
+    ndiff = int(diff.sum())
+    if ndiff == 0 or ndiff > inp0.size * 0.5:
+        return None
+    
+    changed = list(zip(*np.where(diff)))
+    before = set(int(inp0[r,c]) for r,c in changed)
+    after = set(int(out0[r,c]) for r,c in changed)
+    if len(before) != 1 or len(after) != 1:
+        return None
+    c_from = before.pop()
+    c_to = after.pop()
+    
+    colors_inp = set(inp0.flatten().tolist())
+    
+    def is_adj8(grid, r, c, color):
+        for dr in [-1, 0, 1]:
+            for dc in [-1, 0, 1]:
+                if dr == 0 and dc == 0:
+                    continue
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < grid.shape[0] and 0 <= nc < grid.shape[1]:
+                    if int(grid[nr, nc]) == color:
+                        return True
+        return False
+    
+    h, w = inp0.shape
+    changed_set = set(changed)
+    
+    for adj_color in colors_inp:
+        if adj_color == c_from:
+            continue
+        all_adj = all(is_adj8(inp0, r, c, adj_color) for r, c in changed)
+        if not all_adj:
+            continue
+        unchanged = [(r, c) for r in range(h) for c in range(w)
+                     if int(inp0[r,c]) == c_from and (r, c) not in changed_set]
+        all_notadj = all(not is_adj8(inp0, r, c, adj_color) for r, c in unchanged)
+        if not all_notadj:
+            continue
+        
+        ok = True
+        for ex in train[1:]:
+            i2, o2 = np.array(ex['input']), np.array(ex['output'])
+            if i2.shape != o2.shape:
+                ok = False; break
+            pred = i2.copy()
+            for r in range(i2.shape[0]):
+                for c in range(i2.shape[1]):
+                    if int(i2[r,c]) == c_from and is_adj8(i2, r, c, adj_color):
+                        pred[r, c] = c_to
+            if not grids_match(pred, o2):
+                ok = False; break
+        
+        if ok:
+            ti = np.array(task['test'][0]['input'])
+            pred = ti.copy()
+            for r in range(ti.shape[0]):
+                for c in range(ti.shape[1]):
+                    if int(ti[r,c]) == c_from and is_adj8(ti, r, c, adj_color):
+                        pred[r, c] = c_to
+            return pred.tolist(), f'adj_recolor_{c_from}_near_{adj_color}_to_{c_to}'
+    
+    return None
+
+
 # ═══════════════════════════════════════════════
 # TILE WITH TRANSFORMS (per-quadrant rotation/flip)
 # ═══════════════════════════════════════════════
@@ -1698,6 +1771,7 @@ def solve_all(task):
         solve_block_summary,     # Divide into blocks, summarize each
         solve_object_shape_extract,  # Extract object by shape property
         solve_counting,    # Output = count/statistic
+        solve_adj_recolor,     # Recolor cells adjacent to specific color
     ]
     
     for fn in strategies:

@@ -1,8 +1,8 @@
 {
-  "solver_solved": 25,
-  "new": 15,
-  "combined": 52,
-  "pct": 13.0,
+  "solver_solved": 26,
+  "new": 16,
+  "combined": 53,
+  "pct": 13.2,
   "solved_ids": [
     "00576224",
     "0c786b71",
@@ -28,6 +28,7 @@
     "e57337a4",
     "e872b94a",
     "ed98d772",
+    "f0df5ff0",
     "f5aa3634"
   ],
   "new_ids": [
@@ -45,6 +46,7 @@
     "e57337a4",
     "e872b94a",
     "ed98d772",
+    "f0df5ff0",
     "f5aa3634"
   ],
   "combined_ids": [
@@ -98,6 +100,7 @@
     "e57337a4",
     "e872b94a",
     "ed98d772",
+    "f0df5ff0",
     "f5aa3634",
     "fc754716"
   ],
@@ -122,8 +125,9 @@
     "obj_shape_unique": 1,
     "abstract_f2": 1,
     "scale_down_5": 1,
+    "adj_recolor_0_near_1_to_1": 1,
     "obj_shape_most_common": 1
   },
   "timeouts": 0,
-  "time_s": 11.4
+  "time_s": 11.7
 }
