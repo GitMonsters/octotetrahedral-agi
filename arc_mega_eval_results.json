@@ -1,11 +1,12 @@
 {
-  "solver_solved": 20,
-  "new": 12,
-  "combined": 49,
-  "pct": 12.2,
+  "solver_solved": 23,
+  "new": 14,
+  "combined": 51,
+  "pct": 12.8,
   "solved_ids": [
     "00576224",
     "0c786b71",
+    "1c0d0a4b",
     "332efdb3",
     "5783df64",
     "59341089",
@@ -21,11 +22,14 @@
     "bf699163",
     "c3202e5a",
     "c48954c1",
+    "cd3c21df",
     "e0fb7511",
     "e57337a4",
-    "ed98d772"
+    "ed98d772",
+    "f5aa3634"
   ],
   "new_ids": [
+    "1c0d0a4b",
     "5783df64",
     "59341089",
     "7953d61e",
@@ -37,13 +41,15 @@
     "c48954c1",
     "e0fb7511",
     "e57337a4",
-    "ed98d772"
+    "ed98d772",
+    "f5aa3634"
   ],
   "combined_ids": [
     "00576224",
     "0692e18c",
     "070dd51e",
     "0c786b71",
+    "1c0d0a4b",
     "2072aba6",
     "27f8ce4f",
     "332efdb3",
@@ -88,11 +94,13 @@
     "e1baa8a4",
     "e57337a4",
     "ed98d772",
+    "f5aa3634",
     "fc754716"
   ],
   "methods": {
     "tile_plan:id_id_id_lr_lr_lr_id_id_id": 1,
     "tile_plan:r180_ud_lr_id": 2,
+    "abstract_f21": 1,
     "abstract_f6": 1,
     "block:mc_nonbg": 1,
     "col_select": 2,
@@ -106,9 +114,11 @@
     "extract_most_nonbg": 1,
     "partition:least_colors": 1,
     "tile_plan:r180_ud_r180_lr_id_lr_r180_ud_r180": 1,
+    "obj_shape_unique": 1,
     "abstract_f2": 1,
-    "scale_down_5": 1
+    "scale_down_5": 1,
+    "obj_shape_most_common": 1
   },
   "timeouts": 0,
-  "time_s": 8.7
+  "time_s": 11.1
 }

@@ -112,6 +112,10 @@ def get_features(grid, r, c):
         ('n4_sorted', tuple(sorted(n4))),
         ('n4_val', val, tuple(sorted(n4))),
         ('v_adj_diff', val, tuple(sorted(set(n4) - {val}))),
+        # Paired features
+        ('v_rowu_colu', val, len(set(int(x) for x in grid[r, :])), len(set(int(x) for x in grid[:, c]))),
+        ('v_isbg_rcparity', val, int(val == bg), (r + c) % 2),
+        ('v_isbg_n4nonbg', val, int(val == bg), nn4_bg),
     ]
     return feats
 
@@ -1536,6 +1540,84 @@ def solve_row_col_select(task):
 
 
 # ═══════════════════════════════════════════════
+# OBJECT SHAPE EXTRACTION (most common / unique shape)
+# ═══════════════════════════════════════════════
+
+def solve_object_shape_extract(task):
+    """Extract object with the most-common (or unique) shape among all objects."""
+    train = task['train']
+    
+    def get_objects(grid, bg):
+        labeled, n = ndimage.label(grid != bg)
+        objs = []
+        for i in range(1, n+1):
+            mask = labeled == i
+            rows, cols = np.where(mask)
+            r1, c1, r2, c2 = rows.min(), cols.min(), rows.max()+1, cols.max()+1
+            crop = np.where(mask[r1:r2, c1:c2], grid[r1:r2, c1:c2], bg)
+            shape_key = tuple(tuple(int(x) for x in row) for row in crop)
+            objs.append({'crop': crop, 'shape': shape_key, 'size': int(mask.sum())})
+        return objs
+    
+    for select_rule in ['most_common', 'unique', 'smallest', 'second_largest']:
+        ok = True
+        for ex in train:
+            inp, out = np.array(ex['input']), np.array(ex['output'])
+            bg = find_bg(inp)
+            objs = get_objects(inp, bg)
+            if len(objs) < 2:
+                ok = False; break
+            
+            shapes = Counter(o['shape'] for o in objs)
+            
+            if select_rule == 'most_common':
+                target_shape = shapes.most_common(1)[0][0]
+                if shapes[target_shape] <= 1: ok = False; break
+            elif select_rule == 'unique':
+                uniques = [s for s, c in shapes.items() if c == 1]
+                if len(uniques) != 1: ok = False; break
+                target_shape = uniques[0]
+            elif select_rule == 'smallest':
+                target_shape = min(shapes, key=lambda s: sum(len(r) for r in s) * len(s))
+            elif select_rule == 'second_largest':
+                if len(shapes) < 2: ok = False; break
+                sorted_shapes = sorted(shapes.keys(), key=lambda s: sum(len(r) for r in s) * len(s), reverse=True)
+                target_shape = sorted_shapes[1]
+            
+            target_obj = [o for o in objs if o['shape'] == target_shape][0]
+            if not np.array_equal(target_obj['crop'], out):
+                ok = False; break
+        
+        if not ok: continue
+        
+        # Apply to test
+        ti = np.array(task['test'][0]['input'])
+        bgt = find_bg(ti)
+        objs_t = get_objects(ti, bgt)
+        if len(objs_t) < 2: continue
+        
+        shapes_t = Counter(o['shape'] for o in objs_t)
+        
+        if select_rule == 'most_common':
+            target = shapes_t.most_common(1)[0][0]
+        elif select_rule == 'unique':
+            uniques = [s for s, c in shapes_t.items() if c == 1]
+            if len(uniques) != 1: continue
+            target = uniques[0]
+        elif select_rule == 'smallest':
+            target = min(shapes_t, key=lambda s: sum(len(r) for r in s) * len(s))
+        elif select_rule == 'second_largest':
+            if len(shapes_t) < 2: continue
+            sorted_s = sorted(shapes_t.keys(), key=lambda s: sum(len(r) for r in s) * len(s), reverse=True)
+            target = sorted_s[1]
+        
+        target_obj = [o for o in objs_t if o['shape'] == target][0]
+        return target_obj['crop'].tolist(), f'obj_shape_{select_rule}'
+    
+    return None
+
+
+# ═══════════════════════════════════════════════
 # MAIN SOLVE
 # ═══════════════════════════════════════════════
 
@@ -1561,6 +1643,7 @@ def solve_all(task):
         solve_per_object_transform,  # Per-object recoloring
         solve_subgrid_extract,   # Extract subgrid from input
         solve_block_summary,     # Divide into blocks, summarize each
+        solve_object_shape_extract,  # Extract object by shape property
         solve_counting,    # Output = count/statistic
     ]
     
