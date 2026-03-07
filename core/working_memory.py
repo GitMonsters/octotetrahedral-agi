@@ -75,56 +75,43 @@ class WorkingMemory(nn.Module):
         self.read_norm = nn.LayerNorm(hidden_dim)
         self.write_norm = nn.LayerNorm(hidden_dim)
     
-    def read(
+    def _read_impl(
         self,
         query: torch.Tensor,
+        memory_state: torch.Tensor,
         return_weights: bool = False
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         """
-        Read from memory using attention.
-        
-        Args:
-            query: Query tensor [batch, hidden_dim] or [batch, seq_len, hidden_dim]
-            return_weights: Whether to return attention weights
-            
-        Returns:
-            read_content: Content read from memory [batch, hidden_dim] or [batch, seq_len, hidden_dim]
-            read_weights: Optional attention weights [batch, num_slots] or [batch, seq_len, num_slots]
+        Core read implementation operating on a provided memory state.
+        Fully differentiable — gradients flow through memory_state.
         """
-        # Handle different query shapes
         if query.dim() == 2:
-            query = query.unsqueeze(1)  # [batch, 1, hidden]
+            query = query.unsqueeze(1)
             squeeze_output = True
         else:
             squeeze_output = False
         
         batch_size, seq_len, _ = query.shape
         
-        # Expand memory for batch
-        memory = self.memory.unsqueeze(0).expand(batch_size, -1, -1)  # [batch, slots, hidden]
+        memory = memory_state.unsqueeze(0).expand(batch_size, -1, -1)
         
-        # Project query, key, value
-        q = self.read_query_proj(query)  # [batch, seq, hidden]
-        k = self.read_key_proj(memory)   # [batch, slots, hidden]
-        v = self.read_value_proj(memory) # [batch, slots, hidden]
+        q = self.read_query_proj(query)
+        k = self.read_key_proj(memory)
+        v = self.read_value_proj(memory)
         
-        # Reshape for multi-head attention
         q = q.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
         k = k.view(batch_size, self.num_slots, self.num_heads, self.head_dim).transpose(1, 2)
         v = v.view(batch_size, self.num_slots, self.num_heads, self.head_dim).transpose(1, 2)
         
-        # Attention scores
         attn_scores = torch.matmul(q, k.transpose(-2, -1)) / (self.head_dim ** 0.5)
-        attn_weights = F.softmax(attn_scores, dim=-1)  # [batch, heads, seq, slots]
+        attn_weights = F.softmax(attn_scores, dim=-1)
         
-        # Weighted sum
-        read_content = torch.matmul(attn_weights, v)  # [batch, heads, seq, head_dim]
+        read_content = torch.matmul(attn_weights, v)
         read_content = read_content.transpose(1, 2).contiguous().view(batch_size, seq_len, self.hidden_dim)
         read_content = self.read_out_proj(read_content)
         read_content = self.read_norm(read_content)
         
-        # Aggregate weights across heads
-        read_weights_agg = attn_weights.mean(dim=1)  # [batch, seq, slots]
+        read_weights_agg = attn_weights.mean(dim=1)
         
         if squeeze_output:
             read_content = read_content.squeeze(1)
@@ -133,60 +120,86 @@ class WorkingMemory(nn.Module):
         if return_weights:
             return read_content, read_weights_agg
         return read_content, None
+
+    def read(
+        self,
+        query: torch.Tensor,
+        return_weights: bool = False
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+        """
+        Read from memory using attention (uses self.memory parameter).
+        """
+        return self._read_impl(query, self.memory, return_weights)
+
+    def read_from_state(
+        self,
+        query: torch.Tensor,
+        memory_state: torch.Tensor,
+        return_weights: bool = False
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+        """
+        Read from an external memory state tensor (differentiable).
+        Used by compound loop to maintain gradient flow across iterations.
+        """
+        return self._read_impl(query, memory_state, return_weights)
     
+    def _write_impl(
+        self,
+        content: torch.Tensor,
+        memory_state: torch.Tensor,
+        address: Optional[torch.Tensor] = None
+    ) -> torch.Tensor:
+        """
+        Core write implementation operating on a provided memory state.
+        Returns new memory state with full gradient flow.
+        """
+        batch_size = content.size(0)
+        
+        if address is None:
+            address = F.softmax(self.address_net(content), dim=-1)
+        
+        write_content = self.write_content(content)
+        write_content = self.write_norm(write_content)
+        
+        memory_expanded = memory_state.unsqueeze(0).expand(batch_size, -1, -1)
+        
+        gate_input = torch.cat([
+            memory_expanded,
+            write_content.unsqueeze(1).expand(-1, self.num_slots, -1)
+        ], dim=-1)
+        write_gates = self.write_gate(gate_input)
+        
+        erase = self.erase_gate(write_content).unsqueeze(1)
+        address_expanded = address.unsqueeze(-1)
+        
+        erase_term = memory_expanded * (1 - erase * address_expanded)
+        write_term = write_content.unsqueeze(1) * write_gates * address_expanded
+        new_memory = erase_term + write_term
+        
+        return new_memory.mean(dim=0)
+
     def write(
         self,
         content: torch.Tensor,
         address: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
         """
-        Write to memory with gated update.
-        
-        Args:
-            content: Content to write [batch, hidden_dim]
-            address: Optional explicit address weights [batch, num_slots]
-                     If None, computed from content
-                     
-        Returns:
-            Updated memory [num_slots, hidden_dim]
+        Write to memory with gated update (uses self.memory parameter).
         """
-        batch_size = content.size(0)
-        
-        # Compute address if not provided
-        if address is None:
-            address = F.softmax(self.address_net(content), dim=-1)  # [batch, slots]
-        
-        # Compute write content
-        write_content = self.write_content(content)  # [batch, hidden]
-        write_content = self.write_norm(write_content)
-        
-        # Expand for all slots
-        memory_expanded = self.memory.unsqueeze(0).expand(batch_size, -1, -1)  # [batch, slots, hidden]
-        
-        # Compute write gate (how much to update)
-        # Concatenate current memory and new content for each slot
-        gate_input = torch.cat([
-            memory_expanded,
-            write_content.unsqueeze(1).expand(-1, self.num_slots, -1)
-        ], dim=-1)  # [batch, slots, hidden*2]
-        write_gates = self.write_gate(gate_input)  # [batch, slots, hidden]
-        
-        # Compute erase gate
-        erase = self.erase_gate(write_content).unsqueeze(1)  # [batch, 1, hidden]
-        
-        # Address-weighted update
-        address_expanded = address.unsqueeze(-1)  # [batch, slots, 1]
-        
-        # New memory content per batch
-        # memory_new = memory * (1 - erase * address) + write_content * write_gate * address
-        erase_term = memory_expanded * (1 - erase * address_expanded)
-        write_term = write_content.unsqueeze(1) * write_gates * address_expanded
-        new_memory = erase_term + write_term  # [batch, slots, hidden]
-        
-        # Average across batch for parameter update
-        # In practice, we update self.memory based on the batch
-        # For simplicity, we return the computed memory and let the caller decide
-        return new_memory.mean(dim=0)  # [slots, hidden]
+        return self._write_impl(content, self.memory, address)
+
+    def write_to_state(
+        self,
+        content: torch.Tensor,
+        memory_state: torch.Tensor,
+        address: Optional[torch.Tensor] = None
+    ) -> torch.Tensor:
+        """
+        Write to an external memory state tensor (differentiable).
+        Returns new state — no detach, full gradient flow.
+        Used by compound loop for within-loop memory updates.
+        """
+        return self._write_impl(content, memory_state, address)
     
     def forward(
         self,

@@ -45,7 +45,7 @@ class EpisodicMemory:
         context: Optional[Dict] = None
     ):
         """Store a memory with timestamp and importance."""
-        self.memories.append(memory.detach().cpu())
+        self.memories.append(memory.detach())  # stay on same device
         self.timestamps.append(self.current_time)
         self.importance.append(importance)
         self.current_time += 1

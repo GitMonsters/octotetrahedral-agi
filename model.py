@@ -481,6 +481,9 @@ class OctoTetrahedralModel(nn.Module):
         
         # === 5-7. Limb Processing — optionally wrapped in compound loop ===
         if self.use_compound_loop and self.compound_loop is not None:
+            # Initialize loop memory state (differentiable within loop)
+            self._loop_memory_state = self.working_memory.memory.clone()
+
             loop_result = self.compound_loop(
                 memory_enhanced,
                 process_fn=self._limb_loop_step,
@@ -496,6 +499,11 @@ class OctoTetrahedralModel(nn.Module):
                 'exit_distribution': loop_result['exit_distribution'],
                 'entropy_loss': loop_result['entropy_loss'],
             }
+
+            # Commit final memory state (detach to prevent unbounded graph)
+            self.working_memory.memory.data = self._loop_memory_state.detach()
+            self._loop_memory_state = None
+
             # Use a dummy for reasoning out (already folded into loop output)
             reasoned = multi_limb_output
         else:
@@ -676,7 +684,18 @@ class OctoTetrahedralModel(nn.Module):
         """
         One iteration of the compound-looped limb pipeline.
         Called by CompoundLoopController.forward() for each loop step.
+
+        Consequential memory: reads working memory at loop entry, writes
+        reasoning output back at loop exit. Fully differentiable within
+        the loop — gradients flow through memory state across iterations.
         """
+        # --- Consequential memory read (state from previous iteration) ---
+        if self._loop_memory_state is not None:
+            mem_read, _ = self.working_memory.read_from_state(
+                x, self._loop_memory_state
+            )
+            x = x + 0.1 * mem_read
+
         # Parallel limb processing
         memory_out, _, _ = self.memory_limb(x)
         spatial_out, _, _ = self.spatial(x)
@@ -707,6 +726,14 @@ class OctoTetrahedralModel(nn.Module):
             blended, attention_mask=attention_mask,
             return_confidence=return_confidences
         )
+
+        # --- Consequential memory write (feeds next iteration) ---
+        if self._loop_memory_state is not None:
+            write_content = reasoned.mean(dim=1)  # [batch, hidden]
+            self._loop_memory_state = self.working_memory.write_to_state(
+                write_content, self._loop_memory_state
+            )
+
         return reasoned
     
     def generate(
