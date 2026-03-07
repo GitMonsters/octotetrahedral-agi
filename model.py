@@ -270,6 +270,8 @@ class OctoTetrahedralModel(nn.Module):
                 exit_threshold=self.config.compound_loop.exit_threshold,
                 entropy_beta=self.config.compound_loop.entropy_beta,
                 warmup_loops=self.config.compound_loop.warmup_loops,
+                conciseness_reward=self.config.compound_loop.conciseness_reward,
+                max_cheap_loops=self.config.compound_loop.max_cheap_loops,
             )
             self.compound_loop = CompoundLoopController(
                 hidden_dim=self.hidden_dim, config=loop_cfg
@@ -887,7 +889,33 @@ class OctoTetrahedralModel(nn.Module):
             if isinstance(module, CompoundMoELayer):
                 return module.get_expert_loads()
         return None
-    
+
+    def prune_dead_experts(self) -> Dict[str, Any]:
+        """
+        LAEP: Prune dead experts across all CompoundMoE layers.
+        Uses config thresholds. Returns pruning summary.
+        """
+        from core.compound_moe import CompoundMoELayer
+        results = {}
+        threshold = self.config.moe.expert_prune_threshold
+        min_experts = self.config.moe.expert_prune_min
+        for name, module in self.named_modules():
+            if isinstance(module, CompoundMoELayer):
+                candidates = module.get_pruning_candidates(threshold)
+                if candidates:
+                    pruned = module.prune_dead_experts(threshold, min_experts)
+                    results[name] = {
+                        'pruned': pruned,
+                        'remaining': module.num_experts
+                    }
+        return results
+
+    def get_compound_loop_stats(self) -> Dict[str, Any]:
+        """Get stats from compound loop controller if active."""
+        if hasattr(self, 'compound_loop') and self.compound_loop is not None:
+            return self.compound_loop.get_stats()
+        return {}
+
     def get_stats(self) -> Dict[str, Any]:
         """Get model statistics"""
         return {

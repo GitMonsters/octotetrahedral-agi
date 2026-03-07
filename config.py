@@ -218,7 +218,9 @@ class MoEConfig:
     top_k: int = 8
     expert_ffn_dim: int = 28672  # Per-expert FFN intermediate dim
     jitter_noise: float = 0.01  # Router exploration noise during training
-    load_balance_weight: float = 0.01  # Auxiliary loss weight
+    load_balance_weight: float = 0.001  # Reduced: pruning replaces forced balancing (Yuan LAEP)
+    expert_prune_threshold: float = 0.25  # Prune experts below this fraction of mean load
+    expert_prune_min: int = 8  # Never prune below this many experts
     # Compounding integration settings
     compound_enabled: bool = False  # Use CompoundMoELayer instead of base MoELayer
     compound_bias_scale: float = 0.1  # Scale for adaptive routing bias
@@ -276,12 +278,15 @@ class TrainingConfig:
 
 @dataclass
 class CompoundLoopConfig:
-    """Compound looping — adaptive-depth reasoning (Ouro-style)"""
+    """Compound looping — adaptive-depth reasoning (Ouro-style + Yuan RIRM)"""
     enabled: bool = False         # Off by default for backward compat
     max_loops: int = 4            # Maximum reasoning loop iterations
     exit_threshold: float = 0.5   # CDF threshold for early exit at inference
     entropy_beta: float = 0.1     # KL(exit_dist || uniform) regularization weight
     warmup_loops: int = 0         # Minimum loops before exit gate activates
+    # RIRM: Reflection Inhibition Reward (Yuan 3.0 Ultra inspired)
+    conciseness_reward: float = 0.05  # Penalizes late-loop probability mass
+    max_cheap_loops: int = 2          # Loops beyond this are "expensive"
 
 
 @dataclass 

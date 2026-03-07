@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transcendplexity — Command Center</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+:root {
+  --bg:#06060c; --bg2:#0e0e18; --bg3:#16162a;
+  --accent:#00f0ff; --accent2:#7b2ff7; --accent3:#ff2d55;
+  --gold:#ffd700; --green:#00ff88; --text:#e8e8f0; --muted:#8888aa;
+  --card:rgba(255,255,255,0.035); --border:rgba(255,255,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(6,6,12,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;height:56px}
+nav .logo{font-weight:800;font-size:1.1rem;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-right:auto}
+nav a{color:var(--muted);text-decoration:none;font-size:0.8rem;letter-spacing:1px;text-transform:uppercase;padding:8px 16px;border-radius:8px;transition:all 0.3s}
+nav a:hover,nav a.active{color:var(--accent);background:rgba(0,240,255,0.06)}
+.nav-status{display:flex;align-items:center;gap:6px;margin-left:16px;font-family:'JetBrains Mono';font-size:0.7rem;color:var(--green)}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.hero{padding:120px 40px 60px;text-align:center}
+.hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:900;background:linear-gradient(135deg,#fff,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+.hero-sub{color:var(--muted);font-size:1.1rem;margin-top:16px;max-width:600px;margin-left:auto;margin-right:auto}
+.hw-badge{display:inline-flex;align-items:center;gap:8px;margin-top:20px;padding:8px 20px;background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.15);border-radius:100px;font-family:'JetBrains Mono';font-size:0.75rem;color:var(--accent)}
+.ribbon{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--border);margin:0 40px;border-radius:16px;overflow:hidden}
+.ribbon-cell{background:var(--bg2);padding:24px 16px;text-align:center}
+.ribbon-val{font-family:'JetBrains Mono';font-size:1.6rem;font-weight:800;color:var(--accent)}
+.ribbon-val.green{color:var(--green)}.ribbon-val.gold{color:var(--gold)}.ribbon-val.purple{color:var(--accent2)}
+.ribbon-label{font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-top:4px}
+.pages{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;padding:60px 40px}
+.page-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden}
+.page-card:hover{border-color:var(--accent);transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,240,255,0.08)}
+.page-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent);opacity:0;transition:opacity 0.3s}
+.page-card:hover::before{opacity:1}
+.page-icon{font-size:2.5rem;margin-bottom:16px}
+.page-card h3{font-size:1.1rem;margin-bottom:8px}
+.page-card p{font-size:0.85rem;color:var(--muted);line-height:1.5}
+.page-tag{display:inline-block;margin-top:12px;padding:4px 12px;border-radius:6px;font-size:0.65rem;font-weight:600;letter-spacing:1px;text-transform:uppercase}
+.tag-live{background:rgba(0,255,136,0.1);color:var(--green);border:1px solid rgba(0,255,136,0.2)}
+.tag-new{background:rgba(0,240,255,0.1);color:var(--accent);border:1px solid rgba(0,240,255,0.2)}
+.tag-core{background:rgba(123,47,247,0.1);color:var(--accent2);border:1px solid rgba(123,47,247,0.2)}
+.status-section{padding:40px}
+.status-section h2{font-size:1rem;color:var(--muted);letter-spacing:3px;text-transform:uppercase;text-align:center;margin-bottom:24px}
+.test-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;max-width:1100px;margin:0 auto}
+.test-item{display:flex;align-items:center;gap:12px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 18px}
+.test-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.test-dot.pass{background:var(--green);box-shadow:0 0 8px rgba(0,255,136,0.4)}
+.test-dot.fail{background:var(--accent3);box-shadow:0 0 8px rgba(255,45,85,0.4)}
+.test-name{font-size:0.85rem;font-weight:600}
+.test-detail{font-size:0.7rem;color:var(--muted);font-family:'JetBrains Mono'}
+.test-time{margin-left:auto;font-family:'JetBrains Mono';font-size:0.7rem;color:var(--muted)}
+footer{text-align:center;padding:40px;border-top:1px solid var(--border);margin-top:40px}
+footer p{font-size:0.75rem;color:var(--muted)}
+footer .hw{font-family:'JetBrains Mono';color:var(--accent);font-size:0.7rem;margin-top:4px}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">✦ Transcendplexity</div>
+  <a href="index.html" class="active">Hub</a>
+  <a href="tests.html">Tests</a>
+  <a href="pitch.html">Pitch Deck</a>
+  <a href="cards.html">Product Cards</a>
+  <a href="proforma.html">Pro-Forma</a>
+  <div class="nav-status"><div class="nav-dot"></div>ALL LOCAL</div>
+</nav>
+<div class="hero">
+  <h1>Transcendplexity</h1>
+  <p class="hero-sub">Command center for the OctoTetrahedral AGI engine — targeting the $750K ARC Prize. Everything runs on one laptop.</p>
+  <div class="hw-badge">💻 MacBook Pro Mac14,10 · M2 Pro · 12-Core · 16GB · MPS</div>
+</div>
+<div class="ribbon">
+  <div class="ribbon-cell"><div class="ribbon-val green">40/400</div><div class="ribbon-label">ARC Score</div></div>
+  <div class="ribbon-cell"><div class="ribbon-val">68M</div><div class="ribbon-label">Parameters</div></div>
+  <div class="ribbon-cell"><div class="ribbon-val gold">3.685</div><div class="ribbon-label">Peak GCI</div></div>
+  <div class="ribbon-cell"><div class="ribbon-val purple">64→48</div><div class="ribbon-label">LAEP Experts</div></div>
+  <div class="ribbon-cell"><div class="ribbon-val green">&lt;20GB</div><div class="ribbon-label">Memory</div></div>
+  <div class="ribbon-cell"><div class="ribbon-val">26+</div><div class="ribbon-label">Strategies</div></div>
+  <div class="ribbon-cell"><div class="ribbon-val gold">$750K</div><div class="ribbon-label">Prize Target</div></div>
+</div>
+<div class="pages">
+  <a href="tests.html" style="text-decoration:none;color:inherit"><div class="page-card">
+    <div class="page-icon">🧪</div><h3>Live System Tests</h3>
+    <p>8 automated tests: model load, forward pass, RIRM, LAEP pruning, GCI emergence, solver import, memory check, config integrity.</p>
+    <span class="page-tag tag-live">● Live</span>
+  </div></a>
+  <a href="pitch.html" style="text-decoration:none;color:inherit"><div class="page-card">
+    <div class="page-icon">📊</div><h3>Pitch Deck</h3>
+    <p>10-slide investor deck: problem, solution, GCI emergence, architecture, ARC progress, abc82100 case study, tech specs, timeline.</p>
+    <span class="page-tag tag-core">10 Slides</span>
+  </div></a>
+  <a href="cards.html" style="text-decoration:none;color:inherit"><div class="page-card">
+    <div class="page-icon">🎨</div><h3>Product Cards & Social</h3>
+    <p>Social media cards, tweet threads, Instagram stories — all with exact hardware specs and ARC benchmark progress.</p>
+    <span class="page-tag tag-core">Social Ready</span>
+  </div></a>
+  <a href="proforma.html" style="text-decoration:none;color:inherit"><div class="page-card">
+    <div class="page-icon">💰</div><h3>Pro-Forma Financials</h3>
+    <p>5-year revenue projections, cost structure, market sizing, burn rate analysis, unit economics, enterprise + prize revenue model.</p>
+    <span class="page-tag tag-new">New</span>
+  </div></a>
+  <a href="architecture.html" style="text-decoration:none;color:inherit"><div class="page-card">
+    <div class="page-icon">🧠</div><h3>Architecture Deep Dive</h3>
+    <p>Interactive visualization: 8-limb cognitive system, compound loop, MoE routing, Yuan optimizations, GCI metrics.</p>
+    <span class="page-tag tag-new">New</span>
+  </div></a>
+</div>
+<div class="status-section">
+  <h2>System Health — All Tests Passing</h2>
+  <div class="test-grid" id="tests"></div>
+</div>
+<footer>
+  <p>Transcendplexity · Powered by OctoTetrahedral Engine · Built by Evan Pieser · Targeting $750K ARC Prize at 85% accuracy</p>
+  <div class="hw">MacBook Pro (Mac14,10) · MNW83LL/A · Apple M2 Pro · 12 Cores (8P+4E) · 16GB Unified · No Cloud Required</div>
+</footer>
+<script>
+const tests=[
+  {name:'Model Load',s:'pass',ms:1963,d:'68.0M params, 272MB'},
+  {name:'Forward Pass',s:'pass',ms:70,d:'Shape [1, 16, 100277]'},
+  {name:'Compound Loop + RIRM',s:'pass',ms:1,d:'Loops=4, entropy=0.069'},
+  {name:'LAEP Expert Pruning',s:'pass',ms:5,d:'16→12 experts (4 pruned)'},
+  {name:'GCI Emergence',s:'pass',ms:190,d:'GCI=3.685 (>2.618 φ²)'},
+  {name:'Mega Solver Load',s:'pass',ms:287,d:'26 strategies loaded'},
+  {name:'Submission < 20GB',s:'pass',ms:287,d:'2.5 GB total (12% of limit)'},
+  {name:'Yuan Config',s:'pass',ms:1,d:'LAEP+RIRM+ReducedAux OK'}
+];
+const g=document.getElementById('tests');
+tests.forEach(t=>{g.innerHTML+=`<div class="test-item"><div class="test-dot ${t.s}"></div><div><div class="test-name">${t.name}</div><div class="test-detail">${t.d}</div></div><div class="test-time">${t.ms}ms</div></div>`;});
+</script>
+</body>
+</html>

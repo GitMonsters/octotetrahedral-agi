@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transcendplexity — Pro-Forma Financials</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+:root{--bg:#06060c;--bg2:#0e0e18;--bg3:#16162a;--accent:#00f0ff;--accent2:#7b2ff7;--accent3:#ff2d55;--gold:#ffd700;--green:#00ff88;--text:#e8e8f0;--muted:#8888aa;--card:rgba(255,255,255,0.035);--border:rgba(255,255,255,0.08)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(6,6,12,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;height:56px}
+nav .logo{font-weight:800;font-size:1.1rem;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-right:auto}
+nav a{color:var(--muted);text-decoration:none;font-size:0.8rem;letter-spacing:1px;text-transform:uppercase;padding:8px 16px;border-radius:8px;transition:all 0.3s}
+nav a:hover,nav a.active{color:var(--accent);background:rgba(0,240,255,0.06)}
+.nav-status{display:flex;align-items:center;gap:6px;margin-left:16px;font-family:'JetBrains Mono';font-size:0.7rem;color:var(--green)}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.container{max-width:1200px;margin:0 auto;padding:100px 40px 60px}
+h1{font-size:2.2rem;font-weight:800;margin-bottom:8px}
+h1 span{color:var(--gold)}
+.subtitle{color:var(--muted);margin-bottom:48px;font-size:0.95rem}
+
+.section-label{font-size:0.7rem;color:var(--accent);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;margin-top:56px}
+.section-title{font-size:1.5rem;font-weight:800;margin-bottom:24px}
+
+/* Revenue Streams */
+.revenue-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:48px}
+.rev-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;position:relative;overflow:hidden;transition:all 0.3s}
+.rev-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.rev-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.rev-card.prize::before{background:linear-gradient(90deg,var(--gold),var(--accent3))}
+.rev-card.ent::before{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.rev-card.saas::before{background:linear-gradient(90deg,var(--green),var(--accent))}
+.rev-card.ip::before{background:linear-gradient(90deg,var(--accent2),var(--accent3))}
+.rev-emoji{font-size:2rem;margin-bottom:12px}
+.rev-card h3{font-size:1rem;margin-bottom:4px}
+.rev-card .amount{font-family:'JetBrains Mono';font-size:1.5rem;font-weight:800;margin:8px 0}
+.rev-card .amount.gold{color:var(--gold)}.rev-card .amount.green{color:var(--green)}.rev-card .amount.purple{color:var(--accent2)}
+.rev-card p{font-size:0.8rem;color:var(--muted);line-height:1.5}
+.rev-card .timing{display:inline-block;margin-top:8px;padding:3px 10px;border-radius:6px;font-size:0.65rem;font-weight:600;letter-spacing:0.5px}
+.timing.near{background:rgba(0,255,136,0.1);color:var(--green);border:1px solid rgba(0,255,136,0.2)}
+.timing.mid{background:rgba(0,240,255,0.1);color:var(--accent);border:1px solid rgba(0,240,255,0.2)}
+.timing.later{background:rgba(123,47,247,0.1);color:var(--accent2);border:1px solid rgba(123,47,247,0.2)}
+
+/* Financial Table */
+.fin-table-wrap{overflow-x:auto;margin:24px 0;border-radius:14px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:0.85rem}
+th,td{padding:14px 18px;text-align:right;border-bottom:1px solid var(--border)}
+th{background:var(--bg3);color:var(--accent);font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;font-weight:600;position:sticky;top:0}
+td{font-family:'JetBrains Mono';font-size:0.8rem}
+td:first-child,th:first-child{text-align:left;font-family:'Inter';font-weight:600}
+tr:hover td{background:rgba(0,240,255,0.02)}
+.row-header{color:var(--text);font-weight:600}
+.row-sub{color:var(--muted);padding-left:28px!important;font-weight:400;font-size:0.75rem}
+.row-total{border-top:2px solid var(--accent);font-weight:800}
+.row-total td{color:var(--accent);font-weight:800}
+.positive{color:var(--green)}.negative{color:var(--accent3)}.highlight{color:var(--gold)}
+
+/* Chart */
+.chart-container{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:32px;margin:24px 0}
+.bar-chart{display:flex;align-items:flex-end;gap:12px;height:280px;padding-top:20px}
+.bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bar{width:100%;border-radius:8px 8px 0 0;transition:height 1s ease-out;position:relative;min-width:40px}
+.bar.revenue{background:linear-gradient(180deg,var(--accent),var(--accent2))}
+.bar.cost{background:linear-gradient(180deg,var(--accent3),rgba(255,45,85,0.3))}
+.bar.profit{background:linear-gradient(180deg,var(--green),rgba(0,255,136,0.3))}
+.bar-label{font-size:0.7rem;color:var(--muted);margin-top:8px}
+.bar-val{font-family:'JetBrains Mono';font-size:0.65rem;color:var(--text);position:absolute;top:-20px;width:100%;text-align:center}
+.chart-legend{display:flex;gap:24px;justify-content:center;margin-top:16px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--muted)}
+.legend-dot{width:10px;height:10px;border-radius:3px}
+
+/* KPI Cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:24px 0}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center}
+.kpi-val{font-family:'JetBrains Mono';font-size:1.8rem;font-weight:800}
+.kpi-label{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+
+/* Assumptions */
+.assumptions{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px;margin:24px 0}
+.assumptions h3{font-size:0.85rem;margin-bottom:16px;color:var(--accent)}
+.assumptions ul{list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px}
+.assumptions li{font-size:0.8rem;color:var(--muted);line-height:1.6;padding-left:20px;position:relative}
+.assumptions li::before{content:'›';position:absolute;left:4px;color:var(--accent);font-weight:700}
+
+footer{text-align:center;padding:40px;border-top:1px solid var(--border);margin-top:60px}
+footer p{font-size:0.75rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">✦ Transcendplexity</div>
+  <a href="index.html">Hub</a>
+  <a href="tests.html">Tests</a>
+  <a href="pitch.html">Pitch Deck</a>
+  <a href="cards.html">Product Cards</a>
+  <a href="proforma.html" class="active">Pro-Forma</a>
+  <div class="nav-status"><div class="nav-dot"></div>ALL LOCAL</div>
+</nav>
+
+<div class="container">
+  <h1>💰 Pro-Forma <span>Financials</span></h1>
+  <p class="subtitle">5-year projection · Prize revenue + Enterprise licensing + SaaS + IP licensing · Bootstrap-first model with near-zero burn rate</p>
+
+  <!-- ===== REVENUE STREAMS ===== -->
+  <div class="section-label">Revenue Streams</div>
+  <div class="section-title">Four Paths to Revenue</div>
+
+  <div class="revenue-grid">
+    <div class="rev-card prize">
+      <div class="rev-emoji">🏆</div>
+      <h3>ARC Prize Revenue</h3>
+      <div class="amount gold">$750K</div>
+      <p>85% accuracy on ARC-AGI earns the grand prize. Additional prizes from Kaggle competitions and AI challenge circuits.</p>
+      <div class="timing near">Near-term Target</div>
+    </div>
+    <div class="rev-card ent">
+      <div class="rev-emoji">🏢</div>
+      <h3>Enterprise Licensing</h3>
+      <div class="amount" style="color:var(--accent)">$50K–$500K/yr</div>
+      <p>License the OctoTetrahedral reasoning engine to enterprises for on-premise deployment. Runs on commodity hardware — no GPU cluster needed.</p>
+      <div class="timing mid">Year 2–3</div>
+    </div>
+    <div class="rev-card saas">
+      <div class="rev-emoji">☁️</div>
+      <h3>Transcendplexity SaaS</h3>
+      <div class="amount green">$99–$999/mo</div>
+      <p>API access to the GCI-validated reasoning engine. Tiered pricing: Developer ($99), Team ($299), Enterprise ($999/mo).</p>
+      <div class="timing mid">Year 2</div>
+    </div>
+    <div class="rev-card ip">
+      <div class="rev-emoji">📜</div>
+      <h3>IP & Research Licensing</h3>
+      <div class="amount purple">$100K–$1M</div>
+      <p>Patent tetrahedral attention, RNA-editing weight modulation, LAEP pruning method. License to AI labs and research institutions.</p>
+      <div class="timing later">Year 3–5</div>
+    </div>
+  </div>
+
+  <!-- ===== 5-YEAR P&L ===== -->
+  <div class="section-label">5-Year Projection</div>
+  <div class="section-title">Profit & Loss Statement</div>
+
+  <div class="fin-table-wrap">
+    <table>
+      <thead>
+        <tr><th>Item</th><th>Year 1</th><th>Year 2</th><th>Year 3</th><th>Year 4</th><th>Year 5</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="row-header">Revenue</td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td class="row-sub">ARC Prize / Competitions</td><td class="highlight">$750,000</td><td>$150,000</td><td>$100,000</td><td>$50,000</td><td>$25,000</td></tr>
+        <tr><td class="row-sub">Enterprise Licenses</td><td>$0</td><td>$200,000</td><td>$600,000</td><td>$1,500,000</td><td>$3,000,000</td></tr>
+        <tr><td class="row-sub">SaaS (Transcendplexity)</td><td>$0</td><td>$60,000</td><td>$300,000</td><td>$900,000</td><td>$2,400,000</td></tr>
+        <tr><td class="row-sub">IP / Research Licensing</td><td>$0</td><td>$0</td><td>$100,000</td><td>$250,000</td><td>$500,000</td></tr>
+        <tr class="row-total"><td>Total Revenue</td><td class="highlight">$750,000</td><td class="positive">$410,000</td><td class="positive">$1,100,000</td><td class="positive">$2,700,000</td><td class="positive">$5,925,000</td></tr>
+
+        <tr><td class="row-header" style="padding-top:24px">Expenses</td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td class="row-sub">Compute (Cloud / GPU)</td><td>$2,400</td><td>$24,000</td><td>$60,000</td><td>$120,000</td><td>$200,000</td></tr>
+        <tr><td class="row-sub">Personnel</td><td>$0</td><td>$180,000</td><td>$400,000</td><td>$800,000</td><td>$1,500,000</td></tr>
+        <tr><td class="row-sub">Infrastructure (SaaS)</td><td>$1,200</td><td>$12,000</td><td>$36,000</td><td>$72,000</td><td>$120,000</td></tr>
+        <tr><td class="row-sub">Domain / IP / Legal</td><td>$500</td><td>$5,000</td><td>$30,000</td><td>$50,000</td><td>$75,000</td></tr>
+        <tr><td class="row-sub">Marketing / BD</td><td>$0</td><td>$10,000</td><td>$30,000</td><td>$60,000</td><td>$120,000</td></tr>
+        <tr class="row-total"><td>Total Expenses</td><td class="negative">$4,100</td><td class="negative">$231,000</td><td class="negative">$556,000</td><td class="negative">$1,102,000</td><td class="negative">$2,015,000</td></tr>
+
+        <tr style="height:8px"><td colspan="6"></td></tr>
+        <tr class="row-total"><td style="font-size:1rem">Net Income</td>
+          <td class="positive" style="font-size:1rem">$745,900</td>
+          <td class="positive" style="font-size:1rem">$179,000</td>
+          <td class="positive" style="font-size:1rem">$544,000</td>
+          <td class="positive" style="font-size:1rem">$1,598,000</td>
+          <td class="positive" style="font-size:1rem">$3,910,000</td>
+        </tr>
+        <tr><td class="row-sub">Net Margin</td>
+          <td class="positive">99.5%</td>
+          <td class="positive">43.7%</td>
+          <td class="positive">49.5%</td>
+          <td class="positive">59.2%</td>
+          <td class="positive">66.0%</td>
+        </tr>
+        <tr><td class="row-sub">Cumulative</td>
+          <td class="highlight">$745,900</td>
+          <td class="highlight">$924,900</td>
+          <td class="highlight">$1,468,900</td>
+          <td class="highlight">$3,066,900</td>
+          <td class="highlight">$6,976,900</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== CHART ===== -->
+  <div class="chart-container">
+    <div style="text-align:center;margin-bottom:20px;font-weight:700;font-size:0.9rem;color:var(--muted)">Revenue vs Expenses vs Net Income (5-Year)</div>
+    <div class="bar-chart" id="chart"></div>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(180deg,var(--accent),var(--accent2))"></div>Revenue</div>
+      <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(180deg,var(--accent3),rgba(255,45,85,0.3))"></div>Expenses</div>
+      <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(180deg,var(--green),rgba(0,255,136,0.3))"></div>Net Income</div>
+    </div>
+  </div>
+
+  <!-- ===== KPIs ===== -->
+  <div class="section-label">Key Metrics</div>
+  <div class="section-title">Unit Economics & KPIs</div>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-val" style="color:var(--green)">$4,100</div><div class="kpi-label">Year 1 Burn Rate</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--gold)">182×</div><div class="kpi-label">Y1 Revenue / Cost</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--accent)">$0</div><div class="kpi-label">External Funding Req.</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--green)">~$7M</div><div class="kpi-label">5-Year Cum. Profit</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--accent2)">$2,499</div><div class="kpi-label">Total HW Investment</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--gold)">300×</div><div class="kpi-label">Prize / HW Cost</div></div>
+  </div>
+
+  <!-- ===== MARKET SIZING ===== -->
+  <div class="section-label">Market Opportunity</div>
+  <div class="section-title">TAM / SAM / SOM</div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:24px 0">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px;text-align:center">
+      <div style="font-family:'JetBrains Mono';font-size:2.4rem;font-weight:800;color:var(--accent)">$150B</div>
+      <div style="font-size:0.8rem;font-weight:700;margin:8px 0">Total Addressable Market</div>
+      <div style="font-size:0.75rem;color:var(--muted);line-height:1.5">Global AI reasoning & decision intelligence market by 2030 (McKinsey estimate)</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px;text-align:center">
+      <div style="font-family:'JetBrains Mono';font-size:2.4rem;font-weight:800;color:var(--accent2)">$5B</div>
+      <div style="font-size:0.8rem;font-weight:700;margin:8px 0">Serviceable Addressable</div>
+      <div style="font-size:0.75rem;color:var(--muted);line-height:1.5">On-premise AI reasoning for enterprises requiring local-only, air-gapped deployment</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px;text-align:center">
+      <div style="font-family:'JetBrains Mono';font-size:2.4rem;font-weight:800;color:var(--green)">$50M</div>
+      <div style="font-size:0.8rem;font-weight:700;margin:8px 0">Serviceable Obtainable</div>
+      <div style="font-size:0.75rem;color:var(--muted);line-height:1.5">100 enterprise customers × $500K avg. deal. Achievable by Year 5 with proven ARC results</div>
+    </div>
+  </div>
+
+  <!-- ===== COST STRUCTURE ===== -->
+  <div class="section-label">Cost Advantage</div>
+  <div class="section-title">Why We Win on Unit Economics</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:24px 0">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px">
+      <h3 style="color:var(--accent3);font-size:0.9rem;margin-bottom:16px">🔴 Competitor Cost Stack (Typical)</h3>
+      <div style="display:grid;gap:8px">
+        <div style="display:flex;justify-content:space-between;font-size:0.8rem"><span style="color:var(--muted)">GPU Cluster (8× H100)</span><span style="font-family:'JetBrains Mono';color:var(--accent3)">$250K/yr</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.8rem"><span style="color:var(--muted)">Cloud Infra (AWS/GCP)</span><span style="font-family:'JetBrains Mono';color:var(--accent3)">$50K/yr</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.8rem"><span style="color:var(--muted)">ML Ops / DevOps</span><span style="font-family:'JetBrains Mono';color:var(--accent3)">$120K/yr</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.8rem"><span style="color:var(--muted)">Data Pipeline</span><span style="font-family:'JetBrains Mono';color:var(--accent3)">$30K/yr</span></div>
+        <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:space-between;font-size:0.9rem;font-weight:700"><span>Total</span><span style="font-family:'JetBrains Mono';color:var(--accent3)">$450K/yr</span></div>
+      </div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid rgba(0,255,136,0.15);border-radius:14px;padding:28px">
+      <h3 style="color:var(--green);font-size:0.9rem;margin-bottom:16px">🟢 Transcendplexity Cost Stack</h3>
+      <div style="display:grid;gap:8px">
+        <div style="display:flex;justify-content:space-between;font-size:0.8rem"><span style="color:var(--muted)">MacBook Pro M2 Pro (one-time)</span><span style="font-family:'JetBrains Mono';color:var(--green)">$2,499</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.8rem"><span style="color:var(--muted)">Lambda GPU (occasional)</span><span style="font-family:'JetBrains Mono';color:var(--green)">$2,400/yr</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.8rem"><span style="color:var(--muted)">Domains (7 TLDs)</span><span style="font-family:'JetBrains Mono';color:var(--green)">$100/yr</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.8rem"><span style="color:var(--muted)">VPS (API hosting)</span><span style="font-family:'JetBrains Mono';color:var(--green)">$600/yr</span></div>
+        <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:space-between;font-size:0.9rem;font-weight:700"><span>Total Year 1</span><span style="font-family:'JetBrains Mono';color:var(--green)">$4,100</span></div>
+      </div>
+      <div style="text-align:center;margin-top:16px;padding:8px;background:rgba(0,255,136,0.06);border-radius:8px;font-family:'JetBrains Mono';font-size:1.1rem;font-weight:800;color:var(--gold)">110× cheaper than competitors</div>
+    </div>
+  </div>
+
+  <!-- ===== ASSUMPTIONS ===== -->
+  <div class="assumptions">
+    <h3>📋 Key Assumptions</h3>
+    <ul>
+      <li>ARC Prize won in Year 1 at 85% accuracy threshold ($750K)</li>
+      <li>Enterprise deals start Year 2 with 4 customers at avg $50K, growing to 10 at $150K by Year 3</li>
+      <li>SaaS pricing: $99/mo Dev, $299/mo Team, $999/mo Enterprise; 50 users Y2 → 200 users Y3</li>
+      <li>Hiring begins Year 2: 1 engineer ($180K), scaling to team of 8 by Year 5</li>
+      <li>No external venture funding required — fully bootstrapped from prize revenue</li>
+      <li>Compute scales with customer count; local-first architecture keeps marginal cost near-zero</li>
+      <li>IP licensing deals begin Year 3 after patent filings complete</li>
+      <li>Tax rate assumed 25% (not reflected — pre-tax figures shown)</li>
+    </ul>
+  </div>
+
+  <!-- ===== VALUATION SCENARIOS ===== -->
+  <div class="section-label">Valuation</div>
+  <div class="section-title">Scenario Analysis</div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:24px 0">
+    <div style="background:var(--bg2);border:1px solid rgba(255,45,85,0.15);border-radius:14px;padding:28px;text-align:center">
+      <div style="font-size:0.7rem;color:var(--accent3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Conservative</div>
+      <div style="font-family:'JetBrains Mono';font-size:2.2rem;font-weight:800;color:var(--text)">$5M</div>
+      <div style="font-size:0.8rem;color:var(--muted);margin-top:8px;line-height:1.5">Prize only + 5 enterprise deals. No SaaS. Acqui-hire scenario.</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid rgba(0,240,255,0.15);border-radius:14px;padding:28px;text-align:center">
+      <div style="font-size:0.7rem;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Base Case</div>
+      <div style="font-family:'JetBrains Mono';font-size:2.2rem;font-weight:800;color:var(--accent)">$25M</div>
+      <div style="font-size:0.8rem;color:var(--muted);margin-top:8px;line-height:1.5">All 4 revenue streams active. 50 enterprise clients. Growing SaaS. ~5× Y5 revenue.</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid rgba(0,255,136,0.15);border-radius:14px;padding:28px;text-align:center">
+      <div style="font-size:0.7rem;color:var(--green);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Optimistic</div>
+      <div style="font-family:'JetBrains Mono';font-size:2.2rem;font-weight:800;color:var(--green)">$100M+</div>
+      <div style="font-size:0.8rem;color:var(--muted);margin-top:8px;line-height:1.5">AGI breakthrough validated. Strategic acquisition by FAANG / AI lab. IP portfolio premium.</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>Transcendplexity — Pro-Forma Financials · Powered by OctoTetrahedral Engine · Built by Evan Pieser · All projections are estimates</p>
+</footer>
+
+<script>
+// Animated bar chart
+const data=[
+  {label:'Year 1',rev:750,cost:4.1,net:745.9},
+  {label:'Year 2',rev:410,cost:231,net:179},
+  {label:'Year 3',rev:1100,cost:556,net:544},
+  {label:'Year 4',rev:2700,cost:1102,net:1598},
+  {label:'Year 5',rev:5925,cost:2015,net:3910}
+];
+const maxVal=6000;
+const chart=document.getElementById('chart');
+
+data.forEach(d=>{
+  const g=document.createElement('div');
+  g.className='bar-group';
+  g.innerHTML=`
+    <div style="display:flex;gap:4px;align-items:flex-end;width:100%;height:100%">
+      <div class="bar revenue" style="height:${(d.rev/maxVal)*100}%;flex:1"><div class="bar-val">$${d.rev>=1000?(d.rev/1000).toFixed(1)+'M':d.rev+'K'}</div></div>
+      <div class="bar cost" style="height:${(d.cost/maxVal)*100}%;flex:1"><div class="bar-val">$${d.cost>=1000?(d.cost/1000).toFixed(1)+'M':d.cost+'K'}</div></div>
+      <div class="bar profit" style="height:${(d.net/maxVal)*100}%;flex:1"><div class="bar-val">$${d.net>=1000?(d.net/1000).toFixed(1)+'M':d.net+'K'}</div></div>
+    </div>
+    <div class="bar-label">${d.label}</div>`;
+  chart.appendChild(g);
+});
+</script>
+</body>
+</html>

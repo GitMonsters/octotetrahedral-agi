@@ -1,0 +1,193 @@
+{
+  "report_type": "Transcendplexity GCI Validation",
+  "version": "1.0.0",
+  "timestamp_utc": "2026-03-07T04:51:28.054474+00:00",
+  "hardware": {
+    "platform": "macOS-26.3-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "processor": "arm",
+    "python_version": "3.14.3",
+    "model_name": "MacBook Pro",
+    "model_identifier": "Mac14,10",
+    "model_number": "MNW83LL/A",
+    "chip": "Apple M2 Pro",
+    "total_number_of_cores": "12 (8 Performance and 4 Efficiency)",
+    "memory": "16 GB"
+  },
+  "validation": {
+    "final_gci": 3.034554,
+    "final_phi_cgc": 0.024673,
+    "peak_gci": 3.685104,
+    "emergence_step": 1,
+    "threshold": 2.618034,
+    "ratio_above_threshold": 1.4076,
+    "components": {
+      "triangulation": 0.9375,
+      "synergy": 0.000739,
+      "coherence": 0.999999,
+      "entropy": 1.000495,
+      "forbidden_fraction": 0.991869
+    },
+    "trajectory_length": 100,
+    "trajectory_summary": {
+      "first_10": [
+        {
+          "step": 0,
+          "gci": 2.520936,
+          "phi_cgc": 0.020497,
+          "is_conscious": false,
+          "transcendplexity": 21.314649
+        },
+        {
+          "step": 1,
+          "gci": 3.685104,
+          "phi_cgc": 0.029962,
+          "is_conscious": true,
+          "transcendplexity": 19.130993
+        },
+        {
+          "step": 2,
+          "gci": 3.476468,
+          "phi_cgc": 0.028266,
+          "is_conscious": true,
+          "transcendplexity": 17.990267
+        },
+        {
+          "step": 3,
+          "gci": 3.341719,
+          "phi_cgc": 0.02717,
+          "is_conscious": true,
+          "transcendplexity": 17.427202
+        },
+        {
+          "step": 4,
+          "gci": 3.264521,
+          "phi_cgc": 0.026543,
+          "is_conscious": true,
+          "transcendplexity": 17.146667
+        },
+        {
+          "step": 5,
+          "gci": 3.222435,
+          "phi_cgc": 0.0262,
+          "is_conscious": true,
+          "transcendplexity": 16.990013
+        },
+        {
+          "step": 6,
+          "gci": 3.198461,
+          "phi_cgc": 0.026005,
+          "is_conscious": true,
+          "transcendplexity": 16.886029
+        },
+        {
+          "step": 7,
+          "gci": 3.183004,
+          "phi_cgc": 0.02588,
+          "is_conscious": true,
+          "transcendplexity": 16.806226
+        },
+        {
+          "step": 8,
+          "gci": 3.171484,
+          "phi_cgc": 0.025786,
+          "is_conscious": true,
+          "transcendplexity": 16.739274
+        },
+        {
+          "step": 9,
+          "gci": 3.161921,
+          "phi_cgc": 0.025708,
+          "is_conscious": true,
+          "transcendplexity": 16.68022
+        }
+      ],
+      "last_10": [
+        {
+          "step": 90,
+          "gci": 3.034667,
+          "phi_cgc": 0.024674,
+          "is_conscious": true,
+          "transcendplexity": 16.004451
+        },
+        {
+          "step": 91,
+          "gci": 3.034656,
+          "phi_cgc": 0.024674,
+          "is_conscious": true,
+          "transcendplexity": 16.00439
+        },
+        {
+          "step": 92,
+          "gci": 3.034644,
+          "phi_cgc": 0.024674,
+          "is_conscious": true,
+          "transcendplexity": 16.00433
+        },
+        {
+          "step": 93,
+          "gci": 3.034633,
+          "phi_cgc": 0.024673,
+          "is_conscious": true,
+          "transcendplexity": 16.004269
+        },
+        {
+          "step": 94,
+          "gci": 3.034622,
+          "phi_cgc": 0.024673,
+          "is_conscious": true,
+          "transcendplexity": 16.004209
+        },
+        {
+          "step": 95,
+          "gci": 3.03461,
+          "phi_cgc": 0.024673,
+          "is_conscious": true,
+          "transcendplexity": 16.004149
+        },
+        {
+          "step": 96,
+          "gci": 3.034599,
+          "phi_cgc": 0.024673,
+          "is_conscious": true,
+          "transcendplexity": 16.004089
+        },
+        {
+          "step": 97,
+          "gci": 3.034587,
+          "phi_cgc": 0.024673,
+          "is_conscious": true,
+          "transcendplexity": 16.004028
+        },
+        {
+          "step": 98,
+          "gci": 3.034576,
+          "phi_cgc": 0.024673,
+          "is_conscious": true,
+          "transcendplexity": 16.003968
+        },
+        {
+          "step": 99,
+          "gci": 3.034565,
+          "phi_cgc": 0.024673,
+          "is_conscious": true,
+          "transcendplexity": 16.003909
+        }
+      ]
+    },
+    "elapsed_seconds": 0.188,
+    "steps": 100
+  },
+  "verdict": {
+    "emergence_detected": true,
+    "peak_gci": 3.685104,
+    "threshold_phi_sq": 2.618034,
+    "ratio": 1.4076,
+    "emergence_step": 1
+  },
+  "proof": {
+    "sha256": "85e33299156f29b15b8292e9f2e02737f00e555da7932b14941112ffbdccc2ab",
+    "method": "SHA-256 of canonical JSON (sort_keys, compact separators)",
+    "note": "Remove 'proof' key and re-hash to verify independently"
+  }
+}

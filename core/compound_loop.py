@@ -27,6 +27,9 @@ class CompoundLoopConfig:
     entropy_beta: float = 0.1  # KL regularization strength
     prior: str = 'uniform'     # 'uniform' >> 'geometric' (paper finding)
     warmup_loops: int = 0      # force minimum loops before exit gate activates
+    # RIRM: Reflection Inhibition Reward (Yuan 3.0 Ultra inspired)
+    conciseness_reward: float = 0.05   # reward for exiting early
+    max_cheap_loops: int = 2           # loops beyond this get penalized
 
 
 class ExitGate(nn.Module):
@@ -170,6 +173,11 @@ class CompoundLoopController(nn.Module):
         # Entropy regularization (KL vs uniform prior)
         entropy_loss = self._entropy_regularization(P, device)
 
+        # RIRM: penalize unnecessary loops (Yuan 3.0 Ultra inspired)
+        # If high exit probability early, reward conciseness
+        conciseness_loss = self._conciseness_penalty(P, device)
+        entropy_loss = entropy_loss + conciseness_loss
+
         # Track stats
         self._last_loop_count = self.max_loops
         self._last_exit_dist = [p.mean().item() for p in P]
@@ -201,6 +209,25 @@ class CompoundLoopController(nn.Module):
         kl = (exit_dist * (exit_dist.log() - uniform.log())).sum(dim=-1)
 
         return self.entropy_beta * kl.mean()
+
+    def _conciseness_penalty(
+        self, P: List[torch.Tensor], device: torch.device
+    ) -> torch.Tensor:
+        """
+        RIRM: Reflection Inhibition Reward Mechanism.
+        Penalizes probability mass on loops beyond max_cheap_loops.
+        Encourages the model to exit early when possible.
+        """
+        if self.config.conciseness_reward <= 0 or len(P) <= self.config.max_cheap_loops:
+            return torch.tensor(0.0, device=device)
+
+        # Sum probability mass on "expensive" late loops
+        late_mass = torch.zeros(P[0].shape[0], device=device)
+        for i in range(self.config.max_cheap_loops, len(P)):
+            late_mass = late_mass + P[i]
+
+        # Penalty = reward_weight * mean late-loop probability mass
+        return self.config.conciseness_reward * late_mass.mean()
 
     def get_stats(self) -> Dict:
         return {

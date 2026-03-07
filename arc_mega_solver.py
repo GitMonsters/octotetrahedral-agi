@@ -1746,6 +1746,123 @@ def solve_object_shape_extract(task):
 # MAIN SOLVE
 # ═══════════════════════════════════════════════
 
+def solve_cellular_automaton(task):
+    """Solve tasks that apply Game-of-Life style rules."""
+    for ex in task['train']:
+        if np.array(ex['input']).shape != np.array(ex['output']).shape:
+            return None
+
+    inp0 = np.array(task['train'][0]['input'])
+    out0 = np.array(task['train'][0]['output'])
+    h, w = inp0.shape
+
+    rule = {}
+    for r in range(h):
+        for c in range(w):
+            nb = sum(1 for dr in [-1,0,1] for dc in [-1,0,1]
+                     if not (dr==0 and dc==0) and 0<=r+dr<h and 0<=c+dc<w and inp0[r+dr,c+dc]!=0)
+            key = (int(inp0[r,c]!=0), nb)
+            val = int(out0[r,c]!=0)
+            if key in rule and rule[key] != val:
+                return None
+            rule[key] = val
+
+    def apply_ca(grid):
+        g = np.array(grid)
+        hh, ww = g.shape
+        res = np.zeros_like(g)
+        for rr in range(hh):
+            for cc in range(ww):
+                nb = sum(1 for dr in [-1,0,1] for dc in [-1,0,1]
+                         if not (dr==0 and dc==0) and 0<=rr+dr<hh and 0<=cc+dc<ww and g[rr+dr,cc+dc]!=0)
+                k = (int(g[rr,cc]!=0), nb)
+                if k in rule and rule[k]:
+                    if g[rr,cc] != 0:
+                        res[rr,cc] = g[rr,cc]
+                    else:
+                        cols = [int(g[rr+dr,cc+dc]) for dr in [-1,0,1] for dc in [-1,0,1]
+                                if not (dr==0 and dc==0) and 0<=rr+dr<hh and 0<=cc+dc<ww and g[rr+dr,cc+dc]!=0]
+                        if cols:
+                            from collections import Counter as Ctr
+                            res[rr,cc] = Ctr(cols).most_common(1)[0][0]
+        return res
+
+    for ex in task['train']:
+        if not grids_match(apply_ca(ex['input']).tolist(), ex['output']):
+            return None
+
+    pred = apply_ca(task['test'][0]['input'])
+    return pred.tolist(), 'cellular_automaton'
+
+
+def solve_enhanced_dt(task):
+    """Enhanced decision tree with rich per-cell features."""
+    from sklearn.tree import DecisionTreeClassifier
+    from sklearn.ensemble import RandomForestClassifier
+
+    for ex in task['train']:
+        if np.array(ex['input']).shape != np.array(ex['output']).shape:
+            return None
+
+    def extract_feat(grid, r, c):
+        h, w = grid.shape
+        f = {}
+        v = int(grid[r,c])
+        f['color'] = v; f['row'] = r; f['col'] = c
+        f['row_rev'] = h-1-r; f['col_rev'] = w-1-c
+        f['rn'] = r/max(h-1,1); f['cn'] = c/max(w-1,1)
+        f['brd'] = int(r==0 or r==h-1 or c==0 or c==w-1)
+        f['rp'] = r%2; f['cp'] = c%2; f['rcp'] = (r+c)%2
+        f['d1'] = r+c; f['d2'] = r-c+w
+        for i,(dr,dc) in enumerate([(-1,-1),(-1,0),(-1,1),(0,-1),(0,1),(1,-1),(1,0),(1,1)]):
+            nr, nc = r+dr, c+dc
+            f[f'a{i}'] = int(grid[nr,nc]) if 0<=nr<h and 0<=nc<w else -1
+        for rad in [1,2,3]:
+            vals = []
+            for dr in range(-rad, rad+1):
+                for dc in range(-rad, rad+1):
+                    if dr==0 and dc==0: continue
+                    nr, nc = r+dr, c+dc
+                    if 0<=nr<h and 0<=nc<w: vals.append(int(grid[nr,nc]))
+            f[f'n{rad}u'] = len(set(vals)) if vals else 0
+            f[f'n{rad}z'] = sum(1 for x in vals if x>0)
+            f[f'n{rad}s'] = sum(1 for x in vals if x==v)
+        rv = grid[r,:]; cv = grid[:,c]
+        f['ru'] = len(set(rv.flatten())); f['cu'] = len(set(cv.flatten()))
+        f['rz'] = int(np.count_nonzero(rv)); f['cz'] = int(np.count_nonzero(cv))
+        for ci in range(1,10):
+            cells = np.argwhere(grid==ci)
+            f[f'd{ci}'] = int((np.abs(cells[:,0]-r)+np.abs(cells[:,1]-c)).min()) if len(cells)>0 else 999
+        f['mh'] = int(grid[h-1-r,c]); f['mv'] = int(grid[r,w-1-c])
+        return f
+
+    all_f = []; all_l = []; fn = None
+    for ex in task['train']:
+        inp, out = np.array(ex['input']), np.array(ex['output'])
+        for r in range(inp.shape[0]):
+            for c in range(inp.shape[1]):
+                feat = extract_feat(inp, r, c)
+                if fn is None: fn = sorted(feat.keys())
+                all_f.append([feat[k] for k in fn])
+                all_l.append(int(out[r,c]))
+
+    X, y = np.array(all_f), np.array(all_l)
+    ti = np.array(task['test'][0]['input'])
+    th, tw = ti.shape
+    Xt = np.array([[extract_feat(ti,r,c)[k] for k in fn] for r in range(th) for c in range(tw)])
+
+    for clf in [
+        DecisionTreeClassifier(max_depth=None, min_samples_leaf=1),
+        RandomForestClassifier(n_estimators=100, max_depth=None, min_samples_leaf=1, random_state=42),
+    ]:
+        clf.fit(X, y)
+        if np.mean(clf.predict(X) == y) < 1.0:
+            continue
+        return clf.predict(Xt).reshape(th, tw).tolist(), 'enhanced_dt'
+
+    return None
+
+
 def solve_all(task):
     strategies = [
         solve_nb_lut,      # Exact neighborhood match
@@ -1772,6 +1889,8 @@ def solve_all(task):
         solve_object_shape_extract,  # Extract object by shape property
         solve_counting,    # Output = count/statistic
         solve_adj_recolor,     # Recolor cells adjacent to specific color
+        solve_cellular_automaton,  # Game-of-Life style rules
+        solve_enhanced_dt,         # Rich-feature decision tree
     ]
     
     for fn in strategies:

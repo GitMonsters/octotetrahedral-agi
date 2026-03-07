@@ -9,6 +9,7 @@ framework, enabling:
   - Cross-expert knowledge transfer tracking
   - Adaptive routing bias based on accumulated patterns
   - Expert specialization monitoring
+  - Layer-Adaptive Expert Pruning (LAEP) inspired by Yuan 3.0 Ultra
 """
 
 import torch
@@ -337,7 +338,112 @@ class CompoundMoELayer(nn.Module):
         stats["compound_bias_norm"] = (
             self.compound_bias.compound_bias.norm().item()
         )
+        stats["active_experts"] = self.num_experts
+        stats["pruned_experts"] = getattr(self, '_pruned_ids', [])
         return stats
+
+    # ── Layer-Adaptive Expert Pruning (LAEP) ─────────────────────
+    # Inspired by Yuan 3.0 Ultra: remove experts whose load is far
+    # below average after the routing distribution has stabilized.
+
+    def get_pruning_candidates(self, load_threshold: float = 0.25) -> List[int]:
+        """
+        Identify experts whose EMA load is below threshold × mean load.
+
+        Args:
+            load_threshold: fraction of mean load below which an expert
+                            is considered dead (Yuan used ~0.25).
+        Returns:
+            List of expert indices to prune.
+        """
+        load = self.compound_tracker.expert_load_ema
+        mean_load = load.mean().item()
+        cutoff = mean_load * load_threshold
+        candidates = [
+            i for i in range(self.num_experts)
+            if load[i].item() < cutoff
+        ]
+        return candidates
+
+    @torch.no_grad()
+    def prune_dead_experts(
+        self, load_threshold: float = 0.25, min_experts: int = 8
+    ) -> List[int]:
+        """
+        Remove underutilized experts from the layer (LAEP).
+
+        Experts below load_threshold × mean_load are pruned.
+        Their parameters are deleted and the router output dim is shrunk.
+        Preserves at least min_experts to prevent collapse.
+
+        Returns:
+            List of pruned expert indices.
+        """
+        candidates = self.get_pruning_candidates(load_threshold)
+
+        # Never prune below min_experts
+        max_prunable = self.num_experts - min_experts
+        if max_prunable <= 0:
+            return []
+        candidates = candidates[:max_prunable]
+
+        if not candidates:
+            return []
+
+        # Sort descending so index removal is safe
+        candidates.sort(reverse=True)
+        pruned_ids = []
+
+        for idx in candidates:
+            if idx < len(self.experts):
+                # Delete expert module
+                del self.experts[idx]
+                pruned_ids.append(idx)
+
+        # Rebuild router gate to match new expert count
+        old_num = self.num_experts
+        new_num = len(self.experts)
+        if new_num < old_num:
+            # Keep rows of gate weight for surviving experts
+            keep_mask = [i for i in range(old_num) if i not in pruned_ids]
+            old_weight = self.router.gate.weight.data  # [old_num, hidden]
+            new_weight = old_weight[keep_mask]
+            self.router.gate = nn.Linear(
+                self.hidden_dim, new_num, bias=False
+            ).to(old_weight.device)
+            self.router.gate.weight.data.copy_(new_weight)
+            self.router.num_experts = new_num
+
+            # Update compound bias
+            old_cb = self.compound_bias.compound_bias
+            self.compound_bias.compound_bias = torch.zeros(
+                new_num, device=old_cb.device
+            )
+            self.compound_bias.compound_bias.copy_(old_cb[keep_mask])
+            # Rebuild bias_proj output
+            old_bp_weight = self.compound_bias.bias_proj[0].weight.data
+            new_bp = nn.Linear(self.hidden_dim, new_num, bias=False).to(
+                old_bp_weight.device
+            )
+            new_bp.weight.data.copy_(old_bp_weight[keep_mask])
+            self.compound_bias.bias_proj[0] = new_bp
+
+            # Rebuild tracker buffers
+            self.compound_tracker.expert_load_ema = (
+                self.compound_tracker.expert_load_ema[keep_mask].clone()
+            )
+            self.compound_tracker.expert_output_norm_ema = (
+                self.compound_tracker.expert_output_norm_ema[keep_mask].clone()
+            )
+            self.compound_tracker.expert_pair_coactivation = (
+                self.compound_tracker.expert_pair_coactivation[keep_mask][:, keep_mask].clone()
+            )
+            self.compound_tracker.num_experts = new_num
+
+            self.num_experts = new_num
+            self._pruned_ids = getattr(self, '_pruned_ids', []) + pruned_ids
+
+        return pruned_ids
 
     def total_params(self) -> int:
         return sum(p.numel() for p in self.parameters())

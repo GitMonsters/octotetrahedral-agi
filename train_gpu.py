@@ -300,6 +300,25 @@ def train(args):
                         f"transfer_efficiency={efficiency:.3f}"
                     )
 
+                    # LAEP: prune dead experts after routing distribution stabilizes
+                    if global_step >= 1000:
+                        prune_results = model.prune_dead_experts()
+                        if prune_results:
+                            for layer_name, info in prune_results.items():
+                                logger.info(
+                                    f"LAEP pruned {len(info['pruned'])} experts in {layer_name} "
+                                    f"→ {info['remaining']} remaining"
+                                )
+
+                    # Log compound loop stats (RIRM visibility)
+                    loop_stats = model.get_compound_loop_stats()
+                    if loop_stats.get('last_exit_distribution'):
+                        logger.info(
+                            f"Compound loop: {loop_stats['last_loop_count']} loops, "
+                            f"exit_dist={[f'{p:.2f}' for p in loop_stats['last_exit_distribution']]}, "
+                            f"alpha={loop_stats['loop_alpha']:.3f}"
+                        )
+
             # Only run logging/saving/eval right after an optimizer step
             if micro_step % grad_accum != 0:
                 continue
