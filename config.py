@@ -289,6 +289,50 @@ class CompoundLoopConfig:
     max_cheap_loops: int = 2          # Loops beyond this are "expensive"
 
 
+@dataclass
+class CognitiveGeometryConfigDC:
+    """Cognitive Geometry Engine — compound integration of ML vocabulary concepts."""
+    enabled: bool = True
+    # SVD Activation Decomposer
+    svd_enabled: bool = True
+    svd_top_k: int = 8
+    svd_loss_weight: float = 0.01
+    # Concept Alignment Matrix
+    alignment_enabled: bool = True
+    alignment_loss_weight: float = 0.01
+    # Entropy Flow Monitor
+    entropy_monitor_enabled: bool = True
+    entropy_target: float = 2.0
+    entropy_loss_weight: float = 0.005
+    # Semantic Drift Detector
+    drift_enabled: bool = True
+    drift_max_rotation: float = 0.5
+    drift_loss_weight: float = 0.01
+    # Anchor Vector System
+    anchor_enabled: bool = True
+    num_anchors: int = 4
+    anchor_decay: float = 0.95
+    anchor_strength: float = 0.1
+    # Repetition Dampener
+    repetition_dampen_enabled: bool = True
+    repetition_penalty: float = 1.2
+    repetition_window: int = 32
+    # Branch Scorer
+    branch_scorer_enabled: bool = True
+    branch_prune_threshold: float = 0.1
+    # Manifold Partitioner
+    manifold_enabled: bool = True
+    manifold_loss_weight: float = 0.02
+    # Goal Vector System
+    goal_vector_enabled: bool = True
+    goal_strength: float = 0.15
+    # Attention Plane Reconstructor
+    attention_plane_enabled: bool = True
+    plane_dim: int = 16
+    # Vector Field Tracker
+    vector_field_enabled: bool = True
+
+
 @dataclass 
 class Config:
     """Master configuration combining all sub-configs"""
@@ -303,6 +347,7 @@ class Config:
     quantum_coupling: QuantumCouplingConfig = field(default_factory=QuantumCouplingConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
     compound_loop: CompoundLoopConfig = field(default_factory=CompoundLoopConfig)
+    cognitive_geometry: CognitiveGeometryConfigDC = field(default_factory=CognitiveGeometryConfigDC)
     
     # Device
     device: str = field(default_factory=_select_device)
@@ -338,6 +383,7 @@ class Config:
             'geometric_physics': self.geometric_physics.__dict__,
             'quantum_coupling': self.quantum_coupling.__dict__,
             'training': {**self.training.__dict__, 'betas': self.training.betas},
+            'cognitive_geometry': self.cognitive_geometry.__dict__,
             'device': self.device,
             'seed': self.seed
         }

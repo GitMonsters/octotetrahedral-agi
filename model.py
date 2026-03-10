@@ -52,6 +52,7 @@ from limbs.metacognition_limb import MetaCognitionLimb
 from sync.hub_sync import HubSync
 from core.compound_braid import CompoundBraid
 from core.compound_loop import CompoundLoopController, CompoundLoopConfig as _LoopCfg
+from core.cognitive_geometry import CognitiveGeometryEngine, CognitiveGeometryConfig
 from cognition import AGICognition, CognitionConfig
 
 # Import new geometric physics modules
@@ -349,6 +350,44 @@ class OctoTetrahedralModel(nn.Module):
             'action': self.action
         }
         
+        # === Cognitive Geometry Engine (ML Vocabulary Compound Integration) ===
+        cg_cfg = self.config.cognitive_geometry
+        cg_config = CognitiveGeometryConfig(
+            enabled=cg_cfg.enabled,
+            svd_enabled=cg_cfg.svd_enabled,
+            svd_top_k=cg_cfg.svd_top_k,
+            svd_loss_weight=cg_cfg.svd_loss_weight,
+            alignment_enabled=cg_cfg.alignment_enabled,
+            alignment_loss_weight=cg_cfg.alignment_loss_weight,
+            entropy_monitor_enabled=cg_cfg.entropy_monitor_enabled,
+            entropy_target=cg_cfg.entropy_target,
+            entropy_loss_weight=cg_cfg.entropy_loss_weight,
+            drift_enabled=cg_cfg.drift_enabled,
+            drift_max_rotation=cg_cfg.drift_max_rotation,
+            drift_loss_weight=cg_cfg.drift_loss_weight,
+            anchor_enabled=cg_cfg.anchor_enabled,
+            num_anchors=cg_cfg.num_anchors,
+            anchor_decay=cg_cfg.anchor_decay,
+            anchor_strength=cg_cfg.anchor_strength,
+            repetition_dampen_enabled=cg_cfg.repetition_dampen_enabled,
+            repetition_penalty=cg_cfg.repetition_penalty,
+            repetition_window=cg_cfg.repetition_window,
+            branch_scorer_enabled=cg_cfg.branch_scorer_enabled,
+            branch_prune_threshold=cg_cfg.branch_prune_threshold,
+            manifold_enabled=cg_cfg.manifold_enabled,
+            manifold_loss_weight=cg_cfg.manifold_loss_weight,
+            goal_vector_enabled=cg_cfg.goal_vector_enabled,
+            goal_strength=cg_cfg.goal_strength,
+            attention_plane_enabled=cg_cfg.attention_plane_enabled,
+            plane_dim=cg_cfg.plane_dim,
+            vector_field_enabled=cg_cfg.vector_field_enabled,
+        )
+        self.cognitive_geometry = CognitiveGeometryEngine(
+            hidden_dim=self.hidden_dim,
+            num_limbs=6,
+            config=cg_config,
+        )
+        
         # === Initialization ===
         self._init_weights()
         
@@ -480,6 +519,7 @@ class OctoTetrahedralModel(nn.Module):
             memory_enhanced = core_output
         
         # === 5-7. Limb Processing — optionally wrapped in compound loop ===
+        _limb_outputs_for_cg = None  # Collected for cognitive geometry engine
         if self.use_compound_loop and self.compound_loop is not None:
             # Initialize loop memory state (differentiable within loop)
             self._loop_memory_state = self.working_memory.memory.clone()
@@ -525,6 +565,10 @@ class OctoTetrahedralModel(nn.Module):
             )
             # Perception echo
             perception_echo = encoded
+            
+            # Store limb outputs for cognitive geometry engine
+            _limb_outputs_for_cg = [memory_out, spatial_out, language_out,
+                                     meta_out, reasoning_out, perception_echo]
             
             # Compound Braid
             moe_expert_loads = None
@@ -572,6 +616,19 @@ class OctoTetrahedralModel(nn.Module):
         )
         # logits: [batch, seq_len, vocab_size]
         
+        # === 9.5 Cognitive Geometry Engine: compound ML vocabulary integration ===
+        cg_result = self.cognitive_geometry(
+            hidden=cognition_enhanced,
+            limb_outputs=_limb_outputs_for_cg,
+            logits=logits,
+            input_ids=input_ids,
+        )
+        # Apply modified hidden states and logits
+        cognition_enhanced = cg_result['hidden']
+        logits = cg_result['logits'] if cg_result['logits'] is not None else logits
+        cg_aux_loss = cg_result['aux_loss']
+        cognitive_geometry_info = cg_result['info']
+        
         # === Compute Loss if Labels Provided ===
         loss = None
         if labels is not None:
@@ -603,6 +660,10 @@ class OctoTetrahedralModel(nn.Module):
                 # Add compound loop entropy regularization
                 if compound_loop_info is not None:
                     loss = loss + compound_loop_info['entropy_loss']
+                
+                # Add cognitive geometry auxiliary losses
+                if self.config.cognitive_geometry.enabled:
+                    loss = loss + cg_aux_loss
         
         # === Build Output ===
         braid_info = braid_info if not self.use_compound_loop else {}
@@ -616,6 +677,8 @@ class OctoTetrahedralModel(nn.Module):
             'moe_aux_loss': moe_aux_loss if self.config.moe.enabled else None,
             'geometric_physics_info': geometric_physics_info if self.use_geometric_physics else None,
             'compound_loop_info': compound_loop_info,
+            'cognitive_geometry_info': cognitive_geometry_info,
+            'cg_aux_loss': cg_aux_loss,
         }
         
         if return_confidences:
