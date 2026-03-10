@@ -1,98 +1,134 @@
-"""
-Solver for ARC-AGI task b99e7126.
+"""Solver for ARC puzzle b99e7126.
 
-The 29x29 grid is a tiled pattern of 7x7 macro-cells (each 3x3) separated by
-single-pixel borders. Some macro-cells are "stamped" with a modified pattern
-that introduces a new color. The stamp's difference mask (positions where the
-new color appears) is a 3x3 bitmap. The output places the stamp at every
-macro-cell position indicated by that bitmap, anchored so the bitmap covers
-all originally-stamped cells.
+The grid has a repeating tile pattern with border lines. Some tiles are
+modified (one color replaced with a new color). The stencil of new-color
+positions within a modified tile is applied at the tile level around the
+center of the modified region. The input tiles' positions are matched
+to the stencil to determine the correct offset.
 """
-
-from collections import Counter
+import json
 
 
 def solve(grid: list[list[int]]) -> list[list[int]]:
-    H = len(grid)
-    W = len(grid[0])
+    H, W = len(grid), len(grid[0])
+    border_color = grid[0][0]
 
-    # Detect separator rows (uniform color) to find the tile period
-    sep_rows = [r for r in range(H) if len(set(grid[r])) == 1]
-    period = sep_rows[1] - sep_rows[0]
-    cell_size = period - 1
-    num_mr = (H - 1) // period
-    num_mc = (W - 1) // period
+    period = 0
+    for p in range(2, min(H, 20)):
+        if all(grid[p][c] == border_color for c in range(W)):
+            period = p
+            break
+    if period == 0:
+        return [row[:] for row in grid]
 
-    def get_cell(br: int, bc: int) -> tuple[tuple[int, ...], ...]:
-        r0 = period * br + 1
-        c0 = period * bc + 1
-        return tuple(
-            tuple(grid[r0 + dr][c0 + dc] for dc in range(cell_size))
-            for dr in range(cell_size)
-        )
+    tile_size = period - 1
+    n_tile_rows = (H - 1) // period
+    n_tile_cols = (W - 1) // period
 
-    # Collect all macro-cell contents and find the base (most common) cell
-    cells: dict[tuple[int, int], tuple] = {}
-    counts: Counter = Counter()
-    for br in range(num_mr):
-        for bc in range(num_mc):
-            cell = get_cell(br, bc)
-            cells[(br, bc)] = cell
-            counts[cell] += 1
+    def get_tile(tr: int, tc: int) -> list[list[int]]:
+        r0 = tr * period + 1
+        c0 = tc * period + 1
+        return [[grid[r0 + dr][c0 + dc] for dc in range(tile_size)]
+                for dr in range(tile_size)]
 
-    base = counts.most_common(1)[0][0]
+    base_tile = get_tile(0, 0)
+    base_colors = {v for row in base_tile for v in row}
 
-    # Identify modified macro-cells and extract the stamp pattern
-    modified = {(br, bc) for br in range(num_mr) for bc in range(num_mc) if cells[(br, bc)] != base}
-    stamp = cells[next(iter(modified))]
+    modified_positions: list[tuple[int, int]] = []
+    mod_tile = None
+    new_color = None
 
-    # The stamp color is the one present in the stamp but absent from the base
-    base_colors = {c for row in base for c in row}
-    stamp_colors = {c for row in stamp for c in row}
-    new_color = (stamp_colors - base_colors).pop()
+    for tr in range(n_tile_rows):
+        for tc in range(n_tile_cols):
+            tile = get_tile(tr, tc)
+            if tile != base_tile:
+                modified_positions.append((tr, tc))
+                if mod_tile is None:
+                    mod_tile = tile
+                    for dr in range(tile_size):
+                        for dc in range(tile_size):
+                            if tile[dr][dc] not in base_colors:
+                                new_color = tile[dr][dc]
 
-    # Build a binary mask: 1 where stamp has the new color
-    mask = [
-        [1 if stamp[dr][dc] == new_color else 0 for dc in range(cell_size)]
-        for dr in range(cell_size)
-    ]
+    if not modified_positions or mod_tile is None or new_color is None:
+        return [row[:] for row in grid]
 
-    # Find the unique placement of the mask over the macro-grid that covers
-    # all originally-modified cells
-    for r_off in range(num_mr - cell_size + 1):
-        for c_off in range(num_mc - cell_size + 1):
-            mask_cells = {
-                (r_off + dr, c_off + dc)
-                for dr in range(cell_size)
-                for dc in range(cell_size)
-                if mask[dr][dc]
-            }
-            if modified.issubset(mask_cells):
-                # Apply the stamp to every mask-indicated macro-cell
-                output = [row[:] for row in grid]
-                for br, bc in mask_cells:
-                    r0 = period * br + 1
-                    c0 = period * bc + 1
-                    for dr in range(cell_size):
-                        for dc in range(cell_size):
-                            output[r0 + dr][c0 + dc] = stamp[dr][dc]
-                return output
+    # Build stencil: positions where new color appears in modified tile
+    stencil_ones: list[tuple[int, int]] = []
+    for dr in range(tile_size):
+        for dc in range(tile_size):
+            if mod_tile[dr][dc] == new_color:
+                stencil_ones.append((dr, dc))
 
-    return grid  # fallback
+    stencil_set = set(stencil_ones)
+    input_set = set(modified_positions)
+
+    # Find offset by matching input tiles to stencil 1-positions
+    # Try each (stencil_pos, input_pos) pair to get a candidate offset
+    best_offset = None
+    for sr, sc in stencil_ones:
+        for ir, ic in modified_positions:
+            off_r, off_c = ir - sr, ic - sc
+            # Check if ALL input tiles map to stencil 1-positions
+            if all((iir - off_r, iic - off_c) in stencil_set
+                   for iir, iic in modified_positions):
+                best_offset = (off_r, off_c)
+                break
+        if best_offset is not None:
+            break
+
+    if best_offset is None:
+        return [row[:] for row in grid]
+
+    off_r, off_c = best_offset
+
+    # Apply stencil with offset to get all output modified tiles
+    output_modified: set[tuple[int, int]] = set()
+    for sr, sc in stencil_ones:
+        tr, tc = sr + off_r, sc + off_c
+        if 0 <= tr < n_tile_rows and 0 <= tc < n_tile_cols:
+            output_modified.add((tr, tc))
+
+    # Build output
+    out = [row[:] for row in grid]
+    for tr in range(n_tile_rows):
+        for tc in range(n_tile_cols):
+            r0 = tr * period + 1
+            c0 = tc * period + 1
+            tile = mod_tile if (tr, tc) in output_modified else base_tile
+            for dr in range(tile_size):
+                for dc in range(tile_size):
+                    out[r0 + dr][c0 + dc] = tile[dr][dc]
+
+    return out
 
 
 if __name__ == "__main__":
-    import json, pathlib
-
-    task_path = pathlib.Path(__file__).resolve().parents[2] / "dataset" / "tasks" / "b99e7126.json"
+    import os
+    task_path = os.path.join(
+        os.path.dirname(__file__), "..", "..", "dataset", "tasks", "b99e7126.json"
+    )
     with open(task_path) as f:
-        task = json.load(f)
+        data = json.load(f)
 
-    for i, pair in enumerate(task["train"] + task.get("test", [])):
-        label = f"train[{i}]" if i < len(task["train"]) else f"test[{i - len(task['train'])}]"
-        result = solve(pair["input"])
-        if "output" in pair:
-            status = "PASS" if result == pair["output"] else "FAIL"
+    all_pass = True
+    for i, ex in enumerate(data["train"]):
+        result = solve(ex["input"])
+        expected = ex["output"]
+        ok = result == expected
+        print(f"Train {i}: {'PASS' if ok else 'FAIL'}")
+        if not ok:
+            all_pass = False
+
+    for i, ex in enumerate(data["test"]):
+        result = solve(ex["input"])
+        if "output" in ex:
+            ok = result == ex["output"]
+            print(f"Test {i}: {'PASS' if ok else 'FAIL'}")
+            if not ok:
+                all_pass = False
         else:
-            status = "NO_EXPECTED"
-        print(f"{label}: {status}")
+            print(f"Test {i}: produced {len(result)}x{len(result[0])} output")
+
+    if all_pass:
+        print("\nALL PASS")
