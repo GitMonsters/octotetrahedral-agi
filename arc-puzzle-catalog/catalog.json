@@ -1896,5 +1896,465 @@
     "num_test": 1,
     "solver": "solves/fc754716/solver.py",
     "status": "solved"
+  },
+  {
+    "id": "03560426",
+    "name": "ARC Eval 03560426",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/03560426/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "0becf7df",
+    "name": "ARC Eval 0becf7df",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/0becf7df/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "137f0df0",
+    "name": "ARC Eval 137f0df0",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/137f0df0/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "15696249",
+    "name": "ARC Eval 15696249",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 4,
+    "num_test": 1,
+    "solver": "solves/15696249/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "2685904e",
+    "name": "ARC Eval 2685904e",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 6,
+    "num_test": 1,
+    "solver": "solves/2685904e/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "310f3251",
+    "name": "ARC Eval 310f3251",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 5,
+    "num_test": 1,
+    "solver": "solves/310f3251/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "31adaf00",
+    "name": "ARC Eval 31adaf00",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/31adaf00/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "31d5ba1a",
+    "name": "ARC Eval 31d5ba1a",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 5,
+    "num_test": 2,
+    "solver": "solves/31d5ba1a/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "32e9702f",
+    "name": "ARC Eval 32e9702f",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/32e9702f/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "3979b1a8",
+    "name": "ARC Eval 3979b1a8",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 2,
+    "num_test": 1,
+    "solver": "solves/3979b1a8/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "48f8583b",
+    "name": "ARC Eval 48f8583b",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 6,
+    "num_test": 1,
+    "solver": "solves/48f8583b/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "62ab2642",
+    "name": "ARC Eval 62ab2642",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/62ab2642/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "67c52801",
+    "name": "ARC Eval 67c52801",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 4,
+    "num_test": 1,
+    "solver": "solves/67c52801/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "695367ec",
+    "name": "ARC Eval 695367ec",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/695367ec/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "69889d6e",
+    "name": "ARC Eval 69889d6e",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 4,
+    "num_test": 1,
+    "solver": "solves/69889d6e/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "6ad5bdfd",
+    "name": "ARC Eval 6ad5bdfd",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/6ad5bdfd/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "6df30ad6",
+    "name": "ARC Eval 6df30ad6",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 5,
+    "num_test": 1,
+    "solver": "solves/6df30ad6/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "782b5218",
+    "name": "ARC Eval 782b5218",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/782b5218/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "7c8af763",
+    "name": "ARC Eval 7c8af763",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/7c8af763/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "7ee1c6ea",
+    "name": "ARC Eval 7ee1c6ea",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/7ee1c6ea/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "817e6c09",
+    "name": "ARC Eval 817e6c09",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 5,
+    "num_test": 1,
+    "solver": "solves/817e6c09/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "8719f442",
+    "name": "ARC Eval 8719f442",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/8719f442/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "8b28cd80",
+    "name": "ARC Eval 8b28cd80",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 5,
+    "num_test": 2,
+    "solver": "solves/8b28cd80/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "8e2edd66",
+    "name": "ARC Eval 8e2edd66",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/8e2edd66/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "94414823",
+    "name": "ARC Eval 94414823",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/94414823/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "9c1e755f",
+    "name": "ARC Eval 9c1e755f",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 4,
+    "num_test": 1,
+    "solver": "solves/9c1e755f/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "a406ac07",
+    "name": "ARC Eval a406ac07",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/a406ac07/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "aa300dc3",
+    "name": "ARC Eval aa300dc3",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 4,
+    "num_test": 1,
+    "solver": "solves/aa300dc3/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "ac605cbb",
+    "name": "ARC Eval ac605cbb",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 6,
+    "num_test": 1,
+    "solver": "solves/ac605cbb/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "ad7e01d0",
+    "name": "ARC Eval ad7e01d0",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 4,
+    "num_test": 1,
+    "solver": "solves/ad7e01d0/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "b15fca0b",
+    "name": "ARC Eval b15fca0b",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 5,
+    "num_test": 1,
+    "solver": "solves/b15fca0b/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "be03b35f",
+    "name": "ARC Eval be03b35f",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/be03b35f/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "c1990cce",
+    "name": "ARC Eval c1990cce",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/c1990cce/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "c92b942c",
+    "name": "ARC Eval c92b942c",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 4,
+    "num_test": 1,
+    "solver": "solves/c92b942c/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "ca8de6ea",
+    "name": "ARC Eval ca8de6ea",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/ca8de6ea/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "ce039d91",
+    "name": "ARC Eval ce039d91",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 4,
+    "num_test": 1,
+    "solver": "solves/ce039d91/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "cfb2ce5a",
+    "name": "ARC Eval cfb2ce5a",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/cfb2ce5a/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "da2b0fe3",
+    "name": "ARC Eval da2b0fe3",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 2,
+    "solver": "solves/da2b0fe3/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "dd2401ed",
+    "name": "ARC Eval dd2401ed",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 4,
+    "num_test": 1,
+    "solver": "solves/dd2401ed/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "e133d23d",
+    "name": "ARC Eval e133d23d",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 5,
+    "num_test": 1,
+    "solver": "solves/e133d23d/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "e5790162",
+    "name": "ARC Eval e5790162",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 5,
+    "num_test": 1,
+    "solver": "solves/e5790162/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "e633a9e5",
+    "name": "ARC Eval e633a9e5",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/e633a9e5/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "e6de6e8f",
+    "name": "ARC Eval e6de6e8f",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/e6de6e8f/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "f3cdc58f",
+    "name": "ARC Eval f3cdc58f",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/f3cdc58f/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "f3e62deb",
+    "name": "ARC Eval f3e62deb",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 6,
+    "num_test": 2,
+    "solver": "solves/f3e62deb/solver.py",
+    "status": "solved"
+  },
+  {
+    "id": "f45f5ca7",
+    "name": "ARC Eval f45f5ca7",
+    "dataset": "arc-agi-eval",
+    "source": "ARC-AGI evaluation set",
+    "num_train": 3,
+    "num_test": 1,
+    "solver": "solves/f45f5ca7/solver.py",
+    "status": "solved"
   }
 ]
