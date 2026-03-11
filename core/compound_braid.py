@@ -80,7 +80,8 @@ class CompoundBraid(nn.Module):
     """
 
     LIMB_NAMES = ['memory', 'spatial', 'language', 'metacognition',
-                  'reasoning', 'perception']
+                  'reasoning', 'perception', 'visualization', 'imagination',
+                  'empathy', 'emotion', 'ethics']
 
     def __init__(
         self,

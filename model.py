@@ -49,6 +49,12 @@ from limbs.planning_limb import PlanningLimb
 from limbs.language_limb import LanguageLimb
 from limbs.spatial_limb import SpatialLimb
 from limbs.metacognition_limb import MetaCognitionLimb
+from limbs.visualization_limb import VisualizationLimb
+from limbs.imagination_limb import ImaginationLimb
+from limbs.empathy_limb import EmpathyLimb
+from limbs.emotion_limb import EmotionLimb
+from limbs.ethics_limb import EthicsLimb
+from limbs.dream_mode import DreamMode
 from sync.hub_sync import HubSync
 from core.compound_braid import CompoundBraid
 from core.compound_loop import CompoundLoopController, CompoundLoopConfig as _LoopCfg
@@ -72,7 +78,7 @@ class OctoTetrahedralModel(nn.Module):
     - Tetrahedral geometry (64-point structure for attention)
     - Octopus-inspired RNA editing (dynamic weight modulation)
     - Geometric Physics Layer (Fuller/Lloyd/Morphogenesis/TPMS)
-    - Distributed 8-limb architecture (semi-autonomous processing units):
+    - Distributed 13-limb architecture (semi-autonomous processing units):
         * Perception: Input encoding
         * Memory: Episodic + semantic storage
         * Planning: Goal-directed action sequencing
@@ -81,6 +87,12 @@ class OctoTetrahedralModel(nn.Module):
         * Reasoning: Abstract pattern processing
         * MetaCognition: Self-monitoring and adaptation
         * Action: Output generation
+        * Visualization: Reconstructive mental imagery
+        * Imagination: Generative latent exploration
+        * Empathy: Theory of Mind agent modeling
+        * Emotion: Valence/arousal modulation
+        * Ethics: Value alignment / safety contraction
+    - Dream Mode (awake / daydream / dream)
     - Quantum-enhanced hub synchronization
     - Working memory (differentiable memory slots)
     - AGI Cognition (causal discovery, world model, meta-learning)
@@ -252,11 +264,64 @@ class OctoTetrahedralModel(nn.Module):
             buffer_size=self.config.limb.buffer_size
         )
         
+        # === Visualization Limb (Reconstructive Mental Imagery) ===
+        self.visualization = VisualizationLimb(
+            hidden_dim=self.hidden_dim,
+            num_scales=3,
+            dropout=self.config.model.dropout,
+            lora_rank=self.config.lora.rank,
+            lora_alpha=self.config.lora.alpha,
+            buffer_size=self.config.limb.buffer_size,
+        )
+        
+        # === Imagination Limb (Generative Latent Exploration) ===
+        self.imagination = ImaginationLimb(
+            hidden_dim=self.hidden_dim,
+            num_modalities=4,
+            dropout=self.config.model.dropout,
+            lora_rank=self.config.lora.rank,
+            lora_alpha=self.config.lora.alpha,
+            buffer_size=self.config.limb.buffer_size,
+        )
+        
+        # === Empathy Limb (Theory of Mind) ===
+        self.empathy = EmpathyLimb(
+            hidden_dim=self.hidden_dim,
+            num_heads=self.num_heads // 2,
+            dropout=self.config.model.dropout,
+            lora_rank=self.config.lora.rank,
+            lora_alpha=self.config.lora.alpha,
+            buffer_size=self.config.limb.buffer_size,
+        )
+        
+        # === Emotion Limb (Valence/Arousal Modulation) ===
+        self.emotion = EmotionLimb(
+            hidden_dim=self.hidden_dim,
+            dropout=self.config.model.dropout,
+            lora_rank=self.config.lora.rank,
+            lora_alpha=self.config.lora.alpha,
+            buffer_size=self.config.limb.buffer_size,
+        )
+        
+        # === Ethics Limb (Safety Contraction) ===
+        self.ethics = EthicsLimb(
+            hidden_dim=self.hidden_dim,
+            num_safety_axes=8,
+            num_values=4,
+            dropout=self.config.model.dropout,
+            lora_rank=self.config.lora.rank,
+            lora_alpha=self.config.lora.alpha,
+            buffer_size=self.config.limb.buffer_size,
+        )
+        
+        # === Dream Mode (Visualization + Imagination orchestrator) ===
+        self.dream_mode = DreamMode(hidden_dim=self.hidden_dim)
+        
         # === Compound Braid (Cross-Limb Information Exchange) ===
         moe_signal_dim = self.config.moe.num_experts if self.config.moe.enabled and self.config.moe.compound_enabled else 0
         self.compound_braid = CompoundBraid(
             hidden_dim=self.hidden_dim,
-            num_limbs=6,  # memory, spatial, language, metacognition, reasoning, perception
+            num_limbs=11,  # 6 original + 5 new cognitive petals
             num_heads=self.num_heads // 4,
             dropout=self.config.model.dropout,
             braid_strength=0.3,
@@ -322,7 +387,7 @@ class OctoTetrahedralModel(nn.Module):
         if self.config.sync.use_quantum_sync:
             self.quantum_hub_sync = QuantumEnhancedHubSync(
                 hidden_dim=self.hidden_dim,
-                num_limbs=8,
+                num_limbs=13,
                 coupling_strength=self.config.sync.quantum_coupling_strength,
                 use_tpms_routing=self.config.sync.use_tpms_routing,
                 dropout=self.config.model.dropout
@@ -338,7 +403,7 @@ class OctoTetrahedralModel(nn.Module):
             use_performance_weighting=self.config.sync.use_performance_weighting
         )
         
-        # Collect all 8 limbs for sync
+        # Collect all 13 limbs for sync
         self._limbs = {
             'perception': self.perception,
             'memory': self.memory_limb,
@@ -347,7 +412,12 @@ class OctoTetrahedralModel(nn.Module):
             'spatial': self.spatial,
             'reasoning': self.reasoning,
             'metacognition': self.metacognition,
-            'action': self.action
+            'action': self.action,
+            'visualization': self.visualization,
+            'imagination': self.imagination,
+            'empathy': self.empathy,
+            'emotion': self.emotion,
+            'ethics': self.ethics,
         }
         
         # === Cognitive Geometry Engine (ML Vocabulary Compound Integration) ===
@@ -384,7 +454,7 @@ class OctoTetrahedralModel(nn.Module):
         )
         self.cognitive_geometry = CognitiveGeometryEngine(
             hidden_dim=self.hidden_dim,
-            num_limbs=6,
+            num_limbs=11,
             config=cg_config,
         )
         
@@ -421,7 +491,8 @@ class OctoTetrahedralModel(nn.Module):
         return_dict: bool = True,
         return_confidences: bool = False,
         use_memory: bool = True,
-        pathway_hint: Optional[int] = None
+        pathway_hint: Optional[int] = None,
+        dream_mode: str = 'awake',
     ) -> Dict[str, Any]:
         """
         Forward pass through the full model.
@@ -566,17 +637,47 @@ class OctoTetrahedralModel(nn.Module):
             # Perception echo
             perception_echo = encoded
             
-            # Store limb outputs for cognitive geometry engine
-            _limb_outputs_for_cg = [memory_out, spatial_out, language_out,
-                                     meta_out, reasoning_out, perception_echo]
+            # === New cognitive petals ===
+            # Visualization (reconstructive, memory-based)
+            vis_out, vis_conf, _ = self.visualization(memory_enhanced)
+            # Imagination (generative, novelty-seeking)
+            imag_out, imag_conf, _ = self.imagination(memory_enhanced)
+            # Empathy (Theory of Mind)
+            empathy_out, empathy_conf, _ = self.empathy(memory_enhanced)
+            # Emotion (valence/arousal modulation)
+            emotion_out, emotion_conf, _ = self.emotion(memory_enhanced)
+            # Ethics (safety contraction)
+            ethics_out, ethics_conf, _ = self.ethics(memory_enhanced)
             
-            # Compound Braid
+            # Dream Mode: blend visualization + imagination
+            dream_out, dream_info = self.dream_mode(
+                vis_out, imag_out, ethics_out, dream_mode=dream_mode
+            )
+            
+            # Emotion modulation: apply emotional signal to all limb outputs
+            emo_signal = self.emotion.get_modulation_signal()
+            if emo_signal is not None:
+                emo_vec, emo_strength = emo_signal
+                # Broadcast emotional modulation across sequence
+                emo_bias = (emo_strength.unsqueeze(1) * emo_vec.unsqueeze(1)) * 0.05
+                memory_out = memory_out + emo_bias
+                reasoning_out = reasoning_out + emo_bias
+                language_out = language_out + emo_bias
+            
+            # Store limb outputs for cognitive geometry engine (11 limbs)
+            _limb_outputs_for_cg = [memory_out, spatial_out, language_out,
+                                     meta_out, reasoning_out, perception_echo,
+                                     dream_out, empathy_out, emotion_out,
+                                     ethics_out, vis_out]
+            
+            # Compound Braid (11 limbs)
             moe_expert_loads = None
             if self.config.moe.enabled and self.config.moe.compound_enabled:
                 moe_expert_loads = self._get_first_compound_moe_loads()
             combined_limbs, braid_info = self.compound_braid(
                 [memory_out, spatial_out, language_out, meta_out,
-                 reasoning_out, perception_echo],
+                 reasoning_out, perception_echo, dream_out,
+                 empathy_out, emotion_out, ethics_out, vis_out],
                 attention_mask=attention_mask,
                 moe_expert_loads=moe_expert_loads,
             )
@@ -664,9 +765,20 @@ class OctoTetrahedralModel(nn.Module):
                 # Add cognitive geometry auxiliary losses
                 if self.config.cognitive_geometry.enabled:
                     loss = loss + cg_aux_loss
+                
+                # Add imagination KL divergence (encourages diverse generation)
+                imag_kl = self.imagination.get_kl_loss()
+                if isinstance(imag_kl, torch.Tensor) and imag_kl.item() > 0:
+                    loss = loss + 0.01 * imag_kl
+                
+                # Add ethics value alignment loss
+                ethics_align = self.ethics.get_alignment_loss()
+                if isinstance(ethics_align, torch.Tensor):
+                    loss = loss + 0.01 * ethics_align
         
         # === Build Output ===
         braid_info = braid_info if not self.use_compound_loop else {}
+        dream_info_out = dream_info if not self.use_compound_loop else {}
         output = {
             'logits': logits,
             'loss': loss,
@@ -679,6 +791,9 @@ class OctoTetrahedralModel(nn.Module):
             'compound_loop_info': compound_loop_info,
             'cognitive_geometry_info': cognitive_geometry_info,
             'cg_aux_loss': cg_aux_loss,
+            'dream_info': dream_info_out,
+            'emotional_state': self.emotion.get_emotional_state(),
+            'safety_state': self.ethics.get_safety_state(),
         }
         
         if return_confidences:
@@ -689,6 +804,11 @@ class OctoTetrahedralModel(nn.Module):
                 language_conf = language_conf if 'language_conf' in dir() else 0.5
                 meta_conf = meta_conf if 'meta_conf' in dir() else 0.5
                 reasoning_conf = reasoning_conf if 'reasoning_conf' in dir() else 0.5
+                vis_conf = vis_conf if 'vis_conf' in dir() else 0.5
+                imag_conf = imag_conf if 'imag_conf' in dir() else 0.5
+                empathy_conf = empathy_conf if 'empathy_conf' in dir() else 0.5
+                emotion_conf = emotion_conf if 'emotion_conf' in dir() else 0.5
+                ethics_conf = ethics_conf if 'ethics_conf' in dir() else 0.5
             self._last_confidences = {
                 'perception': perception_conf or 0.0,
                 'memory': memory_conf or 0.0,
@@ -697,6 +817,11 @@ class OctoTetrahedralModel(nn.Module):
                 'metacognition': meta_conf or 0.0,
                 'reasoning': reasoning_conf or 0.0,
                 'action': action_conf or 0.0,
+                'visualization': vis_conf or 0.0,
+                'imagination': imag_conf or 0.0,
+                'empathy': empathy_conf or 0.0,
+                'emotion': emotion_conf or 0.0,
+                'ethics': ethics_conf or 0.0,
                 'overall': (
                     (perception_conf or 0.5) * 
                     (reasoning_conf or 0.5) * 
@@ -770,13 +895,22 @@ class OctoTetrahedralModel(nn.Module):
         )
         perception_echo = encoded if encoded is not None else x
 
-        # Compound Braid
+        # New cognitive petals
+        vis_out, _, _ = self.visualization(x)
+        imag_out, _, _ = self.imagination(x)
+        empathy_out, _, _ = self.empathy(x)
+        emotion_out, _, _ = self.emotion(x)
+        ethics_out, _, _ = self.ethics(x)
+        dream_out, _ = self.dream_mode(vis_out, imag_out, ethics_out)
+
+        # Compound Braid (11 limbs)
         moe_expert_loads = None
         if self.config.moe.enabled and self.config.moe.compound_enabled:
             moe_expert_loads = self._get_first_compound_moe_loads()
         combined_limbs, braid_info = self.compound_braid(
             [memory_out, spatial_out, language_out, meta_out,
-             reasoning_out, perception_echo],
+             reasoning_out, perception_echo, dream_out,
+             empathy_out, emotion_out, ethics_out, vis_out],
             attention_mask=attention_mask,
             moe_expert_loads=moe_expert_loads,
         )
