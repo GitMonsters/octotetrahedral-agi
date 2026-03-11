@@ -1,321 +1,291 @@
-"""Solver for ARC puzzle b6f77b65.
-
-The grid contains nested L-shaped bracket borders forming a staircase or grid
-pattern. The indicator color at (0,0) identifies which bars to remove. When
-removed, the remaining structure collapses downward.
 """
+ARC-AGI puzzle b6f77b65 solver.
+
+The grid contains nested Pi-shaped (Π) rectangles. The indicator color(s) at row 0
+select which parts to remove. When an arm or top-bar is removed, the structure
+collapses downward according to a hierarchical shift model:
+- Removing an arm: the top bar drops by the arm's body height.
+- Removing a top bar: creates a 1-row gap; arms above extend through it.
+- Shifts cascade through the rectangle hierarchy from bottom to top.
+"""
+
 import json
+from typing import List, Optional, Tuple, Dict, Any
 
 
-def solve(grid: list[list[int]]) -> list[list[int]]:
-    H, W = len(grid), len(grid[0])
-    indicator = grid[0][0]
+def detect_pi_shapes(grid: List[List[int]]) -> List[Dict[str, Any]]:
+    """Detect all Pi-shaped (upside-down U) rectangles in the grid."""
+    rows, cols = len(grid), len(grid[0])
+    shapes: List[Dict[str, Any]] = []
+    used_tops: set = set()
+    for r in range(rows):
+        c = 0
+        while c < cols:
+            if grid[r][c] != 0 and (r, c) != (0, 0):
+                start = c
+                while c < cols and grid[r][c] != 0:
+                    c += 1
+                end = c - 1
+                if end - start >= 2:
+                    arm_h = 0
+                    for r2 in range(r + 1, rows):
+                        left_ok = grid[r2][start] != 0
+                        right_ok = grid[r2][end] != 0
+                        interior_ok = all(
+                            grid[r2][c2] == 0 for c2 in range(start + 1, end)
+                        )
+                        if left_ok and right_ok and interior_ok:
+                            arm_h += 1
+                        else:
+                            break
+                    if arm_h >= 1:
+                        key = (r, start, end)
+                        if key not in used_tops:
+                            used_tops.add(key)
+                            shapes.append({
+                                'top': r, 'left': start, 'right': end, 'body': arm_h,
+                            })
+            else:
+                c += 1
+    return shapes
 
-    has_ind = any(
-        grid[r][c] == indicator
-        for r in range(H) for c in range(W)
-        if (r, c) != (0, 0)
-    )
-    if not has_ind:
+
+def find_removed_part(
+    grid: List[List[int]], rect: Dict[str, Any], indicator: int
+) -> Optional[str]:
+    """Determine which part of the rect has the indicator color."""
+    r, cl, cr, h = rect['top'], rect['left'], rect['right'], rect['body']
+    if all(grid[r + i][cl] == indicator for i in range(h + 1)):
+        return 'left'
+    if all(grid[r + i][cr] == indicator for i in range(h + 1)):
+        return 'right'
+    if cr - cl > 1:
+        if all(grid[r][c] == indicator for c in range(cl + 1, cr)):
+            return 'top'
+    return None
+
+
+def get_shift_at_col(rect: Dict[str, Any], col: int) -> int:
+    """Get shift this rect provides at a specific column for rects above."""
+    removed = rect['removed']
+    if removed == 'left' and col == rect['left']:
+        return rect['body'] + 1
+    if removed == 'right' and col == rect['right']:
+        return rect['body'] + 1
+    return rect['bar_shift']
+
+
+def find_rect_below_at_col(
+    rects: List[Dict[str, Any]], below_row: int, col: int
+) -> Optional[Dict[str, Any]]:
+    """Find the nearest rect at or below below_row that covers the given column."""
+    candidates = [r for r in rects if r['top'] >= below_row and r['left'] <= col <= r['right']]
+    if not candidates:
+        return None
+    candidates.sort(key=lambda r: r['top'])
+    return candidates[0]
+
+
+def compute_arm_shift(
+    rect: Dict[str, Any], arm_col: int, rects: List[Dict[str, Any]]
+) -> Tuple[int, bool]:
+    """Compute shift for a rect's arm, handling bypass for removed top bars."""
+    below_row = rect['top'] + rect['body'] + 1
+    below_rect = find_rect_below_at_col(rects, below_row, arm_col)
+    if below_rect is None:
+        return 0, False
+    if (below_rect['removed'] == 'top'
+            and below_rect['left'] < arm_col < below_rect['right']):
+        bypass_below_row = below_rect['top'] + below_rect['body'] + 1
+        bypass_rect = find_rect_below_at_col(rects, bypass_below_row, arm_col)
+        bypass_shift = get_shift_at_col(bypass_rect, arm_col) if bypass_rect else 0
+        return bypass_shift, True
+    return get_shift_at_col(below_rect, arm_col), False
+
+
+def transform(grid: List[List[int]]) -> List[List[int]]:
+    rows, cols = len(grid), len(grid[0])
+    indicators = {v for v in grid[0] if v != 0}
+
+    if not any(
+        grid[r][c] in indicators and (r, c) != (0, 0)
+        for r in range(rows) for c in range(cols)
+    ):
         return [row[:] for row in grid]
 
-    ind_cells = {
-        (r, c) for r in range(H) for c in range(W)
-        if grid[r][c] == indicator and (r, c) != (0, 0)
-    }
-    ind_rows = {r for r, c in ind_cells}
-    min_ind_row = min(ind_rows)
+    rects = detect_pi_shapes(grid)
+    for rect in rects:
+        removed = None
+        for ind in indicators:
+            r_part = find_removed_part(grid, rect, ind)
+            if r_part is not None:
+                if removed is None:
+                    removed = r_part
+                else:
+                    removed = 'full'
+        rect['removed'] = removed
 
-    # Check if shift needed: any non-indicator cell at topmost indicator row
-    # is unsupported below (empty or indicator cell directly below)
-    needs_shift = False
-    for c in range(W):
-        v = grid[min_ind_row][c]
-        if v != 0 and v != indicator and (min_ind_row, c) != (0, 0):
-            below_r = min_ind_row + 1
-            if below_r >= H:
+    rects.sort(key=lambda r: -r['top'])
+
+    for rect in rects:
+        ls, ls_bypass = compute_arm_shift(rect, rect['left'], rects)
+        rs, rs_bypass = compute_arm_shift(rect, rect['right'], rects)
+        rect['left_shift'] = ls
+        rect['right_shift'] = rs
+        rect['left_bypass'] = ls_bypass
+        rect['right_bypass'] = rs_bypass
+
+        h = rect['body']
+        removed = rect['removed']
+
+        if ls_bypass:
+            bl = find_rect_below_at_col(
+                rects, rect['top'] + rect['body'] + 1, rect['left']
+            )
+            ls_eff = bl['bar_shift'] if bl else 0
+        else:
+            ls_eff = ls
+
+        if rs_bypass:
+            br = find_rect_below_at_col(
+                rects, rect['top'] + rect['body'] + 1, rect['right']
+            )
+            rs_eff = br['bar_shift'] if br else 0
+        else:
+            rs_eff = rs
+
+        if removed == 'left':
+            rect['bar_shift'] = rs_eff + h
+        elif removed == 'right':
+            rect['bar_shift'] = ls_eff + h
+        elif removed == 'top' or removed == 'full':
+            rect['bar_shift'] = max(ls_eff, rs_eff) + 1
+        else:
+            rect['bar_shift'] = max(ls_eff, rs_eff)
+
+        r_top = rect['top']
+        cl_r, cr_r = rect['left'], rect['right']
+        bar_cells_are_indicator = all(
+            grid[r_top][c] in indicators for c in range(cl_r + 1, cr_r)
+        ) if cr_r - cl_r > 1 else False
+        if bar_cells_are_indicator and removed in ('left', 'right'):
+            rect['bar_shift'] += 1
+
+    result = [[0] * cols for _ in range(rows)]
+    for c in range(cols):
+        result[0][c] = grid[0][c]
+
+    placed = set()
+
+    for rect in rects:
+        r, cl, cr, h = rect['top'], rect['left'], rect['right'], rect['body']
+        removed = rect['removed']
+        ls = rect['left_shift']
+        rs = rect['right_shift']
+        bs = rect['bar_shift']
+
+        if removed != 'top' and removed != 'full':
+            for c in range(cl + 1, cr):
+                if grid[r][c] in indicators:
+                    placed.add((r, c))
+                    continue
+                nr = r + bs
+                if 0 <= nr < rows:
+                    result[nr][c] = grid[r][c]
+                placed.add((r, c))
+
+        if removed != 'left' and removed != 'full':
+            for i in range(h + 1):
+                if grid[r + i][cl] in indicators:
+                    placed.add((r + i, cl))
+                    continue
+                nr = r + i + ls
+                if 0 <= nr < rows:
+                    result[nr][cl] = grid[r + i][cl]
+                placed.add((r + i, cl))
+            if rect['left_bypass']:
+                nr = r + h + 1 + ls
+                if 0 <= nr < rows:
+                    result[nr][cl] = grid[r + h][cl]
+
+        if removed != 'right' and removed != 'full':
+            for i in range(h + 1):
+                if grid[r + i][cr] in indicators:
+                    placed.add((r + i, cr))
+                    continue
+                nr = r + i + rs
+                if 0 <= nr < rows:
+                    result[nr][cr] = grid[r + i][cr]
+                placed.add((r + i, cr))
+            if rect['right_bypass']:
+                nr = r + h + 1 + rs
+                if 0 <= nr < rows:
+                    result[nr][cr] = grid[r + h][cr]
+
+        # Mark removed cells as placed
+        if removed == 'left':
+            for i in range(h + 1):
+                placed.add((r + i, cl))
+        elif removed == 'right':
+            for i in range(h + 1):
+                placed.add((r + i, cr))
+        elif removed == 'top' or removed == 'full':
+            for c in range(cl + 1, cr):
+                placed.add((r, c))
+            if removed == 'full':
+                for i in range(h + 1):
+                    placed.add((r + i, cl))
+                    placed.add((r + i, cr))
+
+    # Handle orphan cells not placed by any Π — inherit shift from nearest arm above
+    for r in range(1, rows):
+        for c in range(cols):
+            if (r, c) in placed:
                 continue
-            bv = grid[below_r][c]
-            if bv == 0 or bv == indicator:
-                needs_shift = True
-                break
+            val = grid[r][c]
+            if val == 0 or val in indicators:
+                continue
+            best_shift = None
+            for rect in rects:
+                arm_end = rect['top'] + rect['body']
+                if c == rect['left'] and arm_end < r and rect['removed'] != 'left':
+                    shift = rect['left_shift']
+                    if best_shift is None or rect['top'] > best_shift[1]:
+                        best_shift = (shift, rect['top'])
+                elif c == rect['right'] and arm_end < r and rect['removed'] != 'right':
+                    shift = rect['right_shift']
+                    if best_shift is None or rect['top'] > best_shift[1]:
+                        best_shift = (shift, rect['top'])
+            if best_shift is not None:
+                nr = r + best_shift[0]
+                if 0 <= nr < rows:
+                    result[nr][c] = val
 
-    if not needs_shift:
-        out = [row[:] for row in grid]
-        for r, c in ind_cells:
-            out[r][c] = 0
-        return out
-
-    # Find removed vertical and horizontal bars
-    removed_v: list[tuple[int, int, int]] = []
-    for c in range(W):
-        r = 0
-        while r < H:
-            if (r, c) in ind_cells:
-                s = r
-                while r < H and (r, c) in ind_cells:
-                    r += 1
-                if r - s >= 2:
-                    removed_v.append((s, r - 1, c))
-            else:
-                r += 1
-
-    removed_h: list[tuple[int, int, int]] = []
-    for rr in range(H):
-        c = 0
-        while c < W:
-            if (rr, c) in ind_cells:
-                s = c
-                while c < W and (rr, c) in ind_cells:
-                    c += 1
-                if c - s >= 2:
-                    removed_h.append((rr, s, c - 1))
-            else:
-                c += 1
-
-    v_bar_cols = {rc for _, _, rc in removed_v}
-
-    # Find non-indicator horizontal bars
-    non_ind_h_bars: list[tuple[int, int, int, int, int]] = []
-    for rr in range(H):
-        c = 0
-        while c < W:
-            v = grid[rr][c]
-            if v != 0 and v != indicator and (rr, c) != (0, 0):
-                s = c
-                while c < W and grid[rr][c] == v:
-                    c += 1
-                if c - s >= 2:
-                    non_ind_h_bars.append((rr, s, c - 1, v, c - s))
-            else:
-                c += 1
-    if not non_ind_h_bars:
-        out = [row[:] for row in grid]
-        for r, c in ind_cells:
-            out[r][c] = 0
-        return out
-
-    outer_bar = max(non_ind_h_bars, key=lambda b: b[4])
-    outer_top_row = outer_bar[0]
-    all_rows = [
-        r for r in range(1, H)
-        if any(grid[r][c] != 0 and (r, c) != (0, 0) for c in range(W))
-    ]
-    max_row = max(all_rows)
-
-    # Compute base_shift: if indicator has horizontal bar below outer bar,
-    # use it for shift computation
-    ind_h_below = [rr for rr, _, _ in removed_h if rr > outer_top_row]
-    has_ind_h_below = len(ind_h_below) > 0
-    if has_ind_h_below:
-        lowest_ind_h = min(ind_h_below)
-        base_shift = max_row - lowest_ind_h + 1
-    else:
-        base_shift = max_row - outer_top_row
-
-    min_nz_row = min(all_rows)
-    inner_corner_col = None
-    for c in range(W):
-        if (grid[min_nz_row][c] != 0 and grid[min_nz_row][c] != indicator
-                and (min_nz_row, c) != (0, 0)):
-            v = grid[min_nz_row][c]
-            if min_nz_row + 1 < H and grid[min_nz_row + 1][c] == v:
-                inner_corner_col = c
-                break
-
-    inner_bracket_end = min_nz_row
-    if inner_corner_col is not None:
-        corner_color = grid[min_nz_row][inner_corner_col]
-        r = min_nz_row
-        while r + 1 < H and grid[r + 1][inner_corner_col] == corner_color:
-            r += 1
-        inner_bracket_end = r
-
-    inner_cols: set[int] = set()
-    for r in range(min_nz_row, inner_bracket_end + 1):
-        for c in range(W):
-            if grid[r][c] != 0 and grid[r][c] != indicator and (r, c) != (0, 0):
-                inner_cols.add(c)
-    inner_max_c = max(inner_cols) if inner_cols else 0
-
-    inter_extra, inter_min_row = 0, H
-    for r1, r2, rc in removed_v:
-        if r2 < outer_top_row:
-            inter_extra = max(inter_extra, r2 - r1)
-            inter_min_row = min(inter_min_row, r1)
-    for rr, c1, c2 in removed_h:
-        if rr < outer_top_row:
-            inter_extra = max(inter_extra, 1)
-            inter_min_row = min(inter_min_row, rr)
-
-    nz_outer = {
-        c for c in range(W)
-        for r in range(outer_top_row, max_row + 1)
-        if grid[r][c] != 0 and (r, c) != (0, 0)
-    }
-    if not nz_outer:
-        out = [row[:] for row in grid]
-        for r, c in ind_cells:
-            out[r][c] = 0
-        return out
-    min_outer_c, max_outer_c = min(nz_outer), max(nz_outer)
-    left_removed = any(rc == min_outer_c for _, _, rc in removed_v)
-    right_removed = any(rc == max_outer_c for _, _, rc in removed_v)
-
-    center_col = None
-    if inner_corner_col is not None:
-        c = inner_corner_col
-        vals = [
-            grid[r][c]
-            for r in range(outer_top_row, max_row + 1)
-            if grid[r][c] != 0 and grid[r][c] != indicator
-        ]
-        if len(vals) >= 2 and len(set(vals)) == 1:
-            center_col = c
-    two_wings = center_col is not None
-
-    inner_far_edge_col = None
-    if two_wings and left_removed:
-        inner_far_edge_col = inner_max_c
-
-    kept_bar_cells: set[tuple[int, int]] = set()
-    for c in [min_outer_c, max_outer_c]:
-        v = grid[outer_top_row][c]
-        if v != 0 and v != indicator:
-            for r in range(outer_top_row, max_row + 1):
-                if grid[r][c] == v:
-                    kept_bar_cells.add((r, c))
-
-    bottom_edge_cols = set()
-    if has_ind_h_below:
-        bottom_edge_cols = {min_outer_c, max_outer_c}
-
-    out = [[0] * W for _ in range(H)]
-    for c in range(W):
-        out[0][c] = grid[0][c]
-
-    stays_cells: list[tuple[int, int, int]] = []
-    shift_cells: list[tuple[int, int, int]] = []
-
-    for c in range(W):
-        col_cells = [
-            (r, grid[r][c]) for r in range(1, H)
-            if grid[r][c] != 0 and grid[r][c] != indicator
-        ]
-        if not col_cells:
-            continue
-
-        segs: list[list[tuple[int, int]]] = []
-        cur = [col_cells[0]]
-        for i in range(1, len(col_cells)):
-            if col_cells[i][0] == cur[-1][0] + 1:
-                cur.append(col_cells[i])
-            else:
-                segs.append(cur[:])
-                cur = [col_cells[i]]
-        segs.append(cur[:])
-
-        on_kept_side = False
-        if two_wings:
-            if right_removed and c < center_col:
-                on_kept_side = True
-            elif left_removed and c > center_col:
-                on_kept_side = True
-
-        for seg in segs:
-            seg_min, seg_max = seg[0][0], seg[-1][0]
-            seg_in_kept = any((r, c) in kept_bar_cells for r, _ in seg)
-            grounded = seg_max == max_row
-            below_inner = seg_min > inner_bracket_end
-            at_far_edge = (
-                inner_far_edge_col is not None
-                and c == inner_far_edge_col
-                and seg_min <= inner_bracket_end
-            )
-
-            if has_ind_h_below and grounded and c not in bottom_edge_cols:
-                grounded = False
-
-            stays = (
-                seg_in_kept
-                or (on_kept_side and below_inner)
-                or grounded
-                or (on_kept_side and at_far_edge)
-            )
-
-            if stays:
-                for r, v in seg:
-                    stays_cells.append((r, c, v))
-            else:
-                shift = base_shift
-                if not has_ind_h_below and c in v_bar_cols:
-                    if any(
-                        r1 > seg_max and rc == c
-                        for r1, _, rc in removed_v
-                    ):
-                        shift = max(shift, (H - 1) - seg_max)
-                if inter_extra > 0:
-                    has_above = seg_min < inter_min_row
-                    near_v = any(
-                        abs(c - rc) <= 1 and r1 <= seg_min <= r2
-                        for r1, r2, rc in removed_v if r2 < outer_top_row
-                    )
-                    if has_above and c != inner_corner_col:
-                        shift += inter_extra
-                    elif not has_above and near_v and c != inner_corner_col:
-                        shift += inter_extra
-                for r, v in seg:
-                    nr = r + shift
-                    if 0 <= nr < H:
-                        shift_cells.append((nr, c, v))
-
-    # Write stays first, then shifted (shifted overwrites)
-    for r, c, v in stays_cells:
-        out[r][c] = v
-    for r, c, v in shift_cells:
-        out[r][c] = v
-
-    # Extend vertical bars through removed horizontal bar gaps
-    for rr, c1, c2 in removed_h:
-        if rr >= outer_top_row:
-            continue
-        for c in range(c1, c2 + 1):
-            if rr > 0 and grid[rr - 1][c] != 0 and grid[rr - 1][c] != indicator:
-                above_v = grid[rr - 1][c]
-                if rr > 1 and grid[rr - 2][c] == above_v:
-                    ext_r = rr + base_shift
-                    if 0 <= ext_r < H and out[ext_r][c] == 0:
-                        out[ext_r][c] = above_v
-
-    return out
+    return result
 
 
 if __name__ == "__main__":
-    import os
-    task_path = os.path.join(
-        os.path.dirname(__file__), "..", "..", "dataset", "tasks", "b6f77b65.json"
-    )
-    with open(task_path) as f:
-        data = json.load(f)
+    with open("/Users/evanpieser/ARC_AMD_TRANSFER/data/ARC-AGI-2/data/evaluation/b6f77b65.json") as f:
+        task = json.load(f)
 
+    print("=== Training Examples ===")
     all_pass = True
-    for i, ex in enumerate(data["train"]):
-        result = solve(ex["input"])
-        expected = ex["output"]
-        ok = result == expected
-        print(f"Train {i}: {'PASS' if ok else 'FAIL'}")
-        if not ok:
-            all_pass = False
+    for ti, ex in enumerate(task['train']):
+        predicted = transform(ex['input'])
+        match = predicted == ex['output']
+        all_pass = all_pass and match
+        print(f"Train {ti}: {'PASS' if match else 'FAIL'}")
+        if not match:
+            for r in range(len(ex['output'])):
+                for c in range(len(ex['output'][0])):
+                    if predicted[r][c] != ex['output'][r][c]:
+                        print(f"  ({r},{c}): pred={predicted[r][c]} exp={ex['output'][r][c]}")
 
-    for i, ex in enumerate(data["test"]):
-        result = solve(ex["input"])
-        if "output" in ex:
-            ok = result == ex["output"]
-            print(f"Test {i}: {'PASS' if ok else 'FAIL'}")
-            if not ok:
-                all_pass = False
-        else:
-            print(f"Test {i}: produced {len(result)}x{len(result[0])} output")
+    print(f"\nAll training: {'PASS' if all_pass else 'FAIL'}")
 
-    if all_pass:
-        print("\nALL PASS")
+    print("\n=== Test Predictions ===")
+    for ti, ex in enumerate(task['test']):
+        predicted = transform(ex['input'])
+        print(f"\nTest {ti} prediction:")
+        for row in predicted:
+            print(row)
