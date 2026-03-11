@@ -37,7 +37,7 @@ def _get_slope(pts: list[tuple[int, int]], end: str = 'last') -> float:
     return 0
 
 
-def solve(grid: list[list[int]]) -> list[list[int]]:
+def transform(grid: list[list[int]]) -> list[list[int]]:
     H, W = len(grid), len(grid[0])
     flat = [grid[r][c] for r in range(H) for c in range(W)]
     bg = Counter(flat).most_common(1)[0][0]
@@ -261,23 +261,29 @@ def solve(grid: list[list[int]]) -> list[list[int]]:
 
 if __name__ == "__main__":
     import os
+
     task_path = os.path.join(
-        os.path.dirname(__file__), "..", "..", "dataset", "tasks", "b9e38dc0.json"
+        os.path.expanduser("~"),
+        "ARC_AMD_TRANSFER", "data", "ARC-AGI-2", "data", "evaluation", "b9e38dc0.json",
     )
     with open(task_path) as f:
         data = json.load(f)
 
     all_pass = True
     for i, ex in enumerate(data["train"]):
-        result = solve(ex["input"])
+        result = transform(ex["input"])
         expected = ex["output"]
         ok = result == expected
         print(f"Train {i}: {'PASS' if ok else 'FAIL'}")
         if not ok:
             all_pass = False
+            for r in range(len(expected)):
+                if result[r] != expected[r]:
+                    print(f"  Row {r}: got    {result[r]}")
+                    print(f"  Row {r}: expect {expected[r]}")
 
     for i, ex in enumerate(data["test"]):
-        result = solve(ex["input"])
+        result = transform(ex["input"])
         if "output" in ex:
             ok = result == ex["output"]
             print(f"Test {i}: {'PASS' if ok else 'FAIL'}")
