@@ -53,7 +53,7 @@ def solve(grid: list[list[int]]) -> list[list[int]]:
         r -= 1; c -= 1
 
     # Top-right diagonal (up-right from top-right of block)
-    r, c = br-1, bc+2+0
+    r, c = br-1, bc+3
     while r >= 0 and c < W:
         result[r][c] = tr_val
         r -= 1; c += 1
