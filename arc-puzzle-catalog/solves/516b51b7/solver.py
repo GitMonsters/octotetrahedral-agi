@@ -69,35 +69,32 @@ def find_rectangle_at(grid, start_r, start_c, visited):
 
 
 def fill_rectangle_with_layers(grid, rect):
-    """Fill a rectangle with concentric layers."""
+    """Fill a rectangle with concentric layers.
+    
+    Rule: For each cell, calculate its distance from the nearest edge (both row and col).
+    - If distance >= 3 for BOTH row and col, cap value at 2
+    - Otherwise, value = min(min_distance + 1, 3)
+    """
     min_r, max_r, min_c, max_c = rect
     
     # Create output grid
     output = [row[:] for row in grid]
     
-    height = max_r - min_r + 1
-    width = max_c - min_c + 1
-    
-    # For each layer (distance from border)
-    max_depth = min(height, width) // 2
-    
-    for layer in range(max_depth):
-        # The value for this layer (layer 0 stays 1, layer 1 becomes 2, etc.)
-        value = layer + 1 if layer == 0 else layer + 1
-        
-        # Fill this layer
-        for i in range(min_r + layer, max_r - layer + 1):
-            for j in range(min_c + layer, max_c - layer + 1):
-                # Check distance from border
-                dist_from_border = min(
-                    i - min_r,
-                    max_r - i,
-                    j - min_c,
-                    max_c - j
-                )
-                
-                # Assign value based on distance
-                output[i][j] = dist_from_border + 1
+    # Fill each cell in the rectangle
+    for i in range(min_r, max_r + 1):
+        for j in range(min_c, max_c + 1):
+            # Calculate distance from edge for this row and column
+            dist_row = min(i - min_r, max_r - i)
+            dist_col = min(j - min_c, max_c - j)
+            
+            # Apply the layering rule
+            if dist_row >= 3 and dist_col >= 3:
+                # In the center zone, cap at 2
+                output[i][j] = 2
+            else:
+                # Otherwise, cap at 3
+                min_dist = min(dist_row, dist_col)
+                output[i][j] = min(min_dist + 1, 3)
     
     return output
 

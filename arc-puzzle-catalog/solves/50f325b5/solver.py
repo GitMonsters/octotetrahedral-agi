@@ -101,7 +101,8 @@ def solve(grid: list[list[int]]) -> list[list[int]]:
     2. Extract the shape formed by the 8s
     3. Get all rotations and reflections of that shape
     4. Find all positions where 3s form any of these shapes
-    5. Replace those 3s with 8s
+    5. Filter to non-overlapping matches (greedy)
+    6. Replace those 3s with 8s
     """
     result = deepcopy(grid)
     height = len(grid)
@@ -121,16 +122,31 @@ def solve(grid: list[list[int]]) -> list[list[int]]:
     # Get all possible orientations of the 8-shape
     orientations = get_all_rotations_and_reflections(eight_shape)
     
-    # For each orientation, find all positions where 3s form that shape
+    # Find all matches for each orientation
+    all_matches = []
     for orientation in orientations:
         matches = find_all_shape_matches(grid, orientation, 3)
-        
-        # Replace matched 3s with 8s
         for base_r, base_c in matches:
-            for dr, dc in orientation:
-                r, c = base_r + dr, base_c + dc
-                if 0 <= r < height and 0 <= c < width:
-                    result[r][c] = 8
+            positions = frozenset((base_r + dr, base_c + dc) for dr, dc in orientation)
+            all_matches.append((positions, orientation, base_r, base_c))
+    
+    # Sort matches by base position (row-major order) for consistency
+    all_matches.sort(key=lambda x: (x[2], x[3]))
+    
+    # Greedy selection: pick non-overlapping matches (process in order)
+    used_positions = set()
+    selected_matches = []
+    
+    for positions, orientation, base_r, base_c in all_matches:
+        # Check if this match overlaps with already-selected matches
+        if not (positions & used_positions):
+            selected_matches.append((positions, orientation, base_r, base_c))
+            used_positions.update(positions)
+    
+    # Replace selected 3s with 8s
+    for positions, _, _, _ in selected_matches:
+        for r, c in positions:
+            result[r][c] = 8
     
     return result
 
