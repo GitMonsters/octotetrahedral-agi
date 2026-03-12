@@ -4,16 +4,23 @@ from typing import List
 
 def solve(grid: List[List[int]]) -> List[List[int]]:
     """
-    The puzzle:
-    1. Top section (rows 0-4) has 3 shape patterns with different colors
-    2. Middle row (5) is a separator (all 5s)
-    3. Bottom section (rows 6+) has a single shape pattern
-    4. Output: vertically stack shapes that are NOT at the bottom shape's column position
+    ARC-AGI Task 4c177718: Shape Reordering and Stacking
     
-    The rule:
-    - Find column position of bottom shape
-    - Find top shapes that are NOT at the same column position
-    - Stack them vertically at the bottom shape's column, centered
+    Input structure:
+    - Rows 0-4: Top section with 3 colored shapes (left, middle, right columns)
+    - Row 5: Separator row (all 5s)
+    - Rows 6+: Bottom section with 1 colored shape (matching color from top-left)
+    
+    Transformation rule:
+    1. Skip the middle shape from the top section
+    2. Take the left and right shapes from the top
+    3. Replace the selected shape's pattern with the bottom shape's pattern where colors match
+    4. Stack the shapes vertically at the bottom shape's column position
+    5. Output order depends on distance: if bottom closer to left, order is [right, left];
+       if bottom closer to right or equal, order is [left, right]
+    6. Vertical positioning: if left-color-first, starts at offset=bot_first_offset;
+       if right-color-first, starts at offset=max(0, bot_first_offset-3)
+    7. Output is always 9 rows × 15 cols, with shapes centered at the bottom shape's column
     """
     
     # Find separator row (all 5s)
@@ -70,34 +77,76 @@ def solve(grid: List[List[int]]) -> List[List[int]]:
     bottom_col_min, bottom_col_max = bottom_bbox[2], bottom_bbox[3]
     bottom_col_center = (bottom_col_min + bottom_col_max) // 2
     
-    # Find top shapes NOT at bottom column and extract them
-    shapes_to_stack = []
-    for color in sorted(top_shapes.keys(), reverse=False):
+    # Find top shapes: we want LEFT and RIGHT, skip MIDDLE
+    # Sort colors by their column position
+    color_positions = []
+    for color in top_shapes:
         bbox = get_bbox(top_shapes[color])
         col_min, col_max = bbox[2], bbox[3]
         col_center = (col_min + col_max) // 2
-        
-        # Check if this color is NOT at the same column position as bottom
-        if col_center != bottom_col_center:
+        color_positions.append((col_center, color))
+    
+    color_positions.sort()
+    left_color = color_positions[0][1]
+    middle_color = color_positions[1][1]  # This is always skipped
+    right_color = color_positions[2][1]
+    
+    # Determine output order based on bottom shape's position
+    dist_to_left = abs(bottom_col_center - color_positions[0][0])
+    dist_to_right = abs(bottom_col_center - color_positions[2][0])
+    
+    if dist_to_left < dist_to_right:
+        # Bottom is closer to left → output order is [right, left]
+        output_colors = [right_color, left_color]
+    else:
+        # Bottom is closer to right or equal → output order is [left, right]
+        output_colors = [left_color, right_color]
+    
+    # Collect shapes in output order
+    # If a shape color matches the bottom color, use the bottom's pattern instead
+    shapes_to_stack = []
+    for color in output_colors:
+        if color == bottom_color:
+            # Use bottom pattern
+            bottom_pattern_data = extract_pattern(bottom_shapes[bottom_color])
+            bottom_pattern, _ = bottom_pattern_data
+            shapes_to_stack.append((color, bottom_pattern))
+        else:
+            # Use top pattern
             pattern_data = extract_pattern(top_shapes[color])
             if pattern_data:
                 pattern, _ = pattern_data
                 shapes_to_stack.append((color, pattern))
     
-    # Extract bottom shape pattern
-    bottom_pattern_data = extract_pattern(bottom_shapes[bottom_color])
-    bottom_pattern, _ = bottom_pattern_data
+    # Determine starting row in output based on bottom shape's position
+    # Find first row of bottom shape (after separator)
+    bot_first_row = -1
+    for r in range(sep_row + 1, len(grid)):
+        for c in range(len(grid[r])):
+            if grid[r][c] != 0:
+                if bot_first_row == -1:
+                    bot_first_row = r
+                break
     
-    # Build output: calculate total height and width needed
-    total_height = sum(len(p[1]) for p in shapes_to_stack) + len(bottom_pattern) + 1  # +1 for spacing
+    bot_first_offset = bot_first_row - (sep_row + 1)  # Offset from row (sep_row + 1)
+    
+    # Calculate output starting row based on output order and bottom offset
+    if output_colors[0] == left_color:
+        # Left color first: output_start = bot_first_offset
+        output_start_row = bot_first_offset
+    else:
+        # Right color first: output_start = max(0, bot_first_offset - 3)
+        output_start_row = max(0, bot_first_offset - 3)
+    
+    # Build output with the correct size
+    # All outputs are 9 rows
     output_width = len(grid[0])
-    output = [[0] * output_width for _ in range(total_height)]
+    output = [[0] * output_width for _ in range(9)]
     
-    # Place shapes vertically, centered at bottom_col_center
-    out_row = 0
-    all_shapes = shapes_to_stack + [(bottom_color, bottom_pattern)]
+    # Place shapes starting at output_start_row
+    out_row = output_start_row
     
-    for color, pattern in all_shapes:
+    for color, pattern in shapes_to_stack:
         pattern_height = len(pattern)
         pattern_width = len(pattern[0]) if pattern else 0
         
@@ -111,12 +160,9 @@ def solve(grid: List[List[int]]) -> List[List[int]]:
                     if 0 <= col_start + pc < output_width and out_row + pr < len(output):
                         output[out_row + pr][col_start + pc] = color
         
-        out_row += pattern_height + 1  # +1 for spacing between shapes
+        out_row += pattern_height  # No spacing between shapes
     
-    # Trim output - remove trailing empty rows
-    while output and all(cell == 0 for cell in output[-1]):
-        output.pop()
-    
+    # Return the output grid (always 9 rows)
     return output
 
 

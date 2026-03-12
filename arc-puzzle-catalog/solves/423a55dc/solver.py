@@ -21,6 +21,8 @@ def solve(grid):
     3. If target_col would be negative (clipped), only keep if 2+ pixels map to this position
     4. Otherwise, keep all pixels
     """
+    from collections import defaultdict
+    
     # Create output grid (same size, all zeros)
     output = [[0 for _ in range(len(grid[0]))] for _ in range(len(grid))]
     
@@ -43,7 +45,6 @@ def solve(grid):
         max_r = max(p[0] for p in pixels)
         
         # Group pixels by their target position to identify collisions and clipping
-        from collections import defaultdict
         target_groups = defaultdict(list)
         
         for r, c in pixels:

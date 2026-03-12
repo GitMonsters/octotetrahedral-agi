@@ -9,8 +9,9 @@ def solve(grid: list[list[int]]) -> list[list[int]]:
     The transformation expands the rectangle and fills the expanded border region
     with the innermost color, while preserving the original structure in the core.
     
-    The expansion amount is: min(margin_to_inner, max(inner_height, inner_width))
-    where margin is the distance from the outer rectangle boundary to the inner color.
+    The expansion amount depends on the inner region shape:
+    - If inner is square: expand by the size of the square
+    - If inner is rectangular (non-square): expand by the margin distance
     """
     grid = [row[:] for row in grid]
     
@@ -56,8 +57,15 @@ def solve(grid: list[list[int]]) -> list[list[int]]:
     inner_width = inner_max_col - inner_min_col + 1
     margin = inner_min_row - outer_min_row
     
-    # Expansion amount is the minimum of the margin and the maximum inner dimension
-    expansion = min(margin, max(inner_height, inner_width))
+    # Expansion amount depends on whether the inner region is square:
+    # - If inner is square: expand by the size of the square
+    # - If inner is rectangular (non-square): expand by the margin
+    if inner_height == inner_width:
+        # Square inner region: expand by the square's dimension
+        expansion = inner_height
+    else:
+        # Non-square inner region: expand by the margin
+        expansion = margin
     
     # Save original content
     orig_content = {}

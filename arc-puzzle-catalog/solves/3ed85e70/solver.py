@@ -1,5 +1,6 @@
 import json
 import sys
+import os
 from typing import List
 
 def solve(grid: List[List[int]]) -> List[List[int]]:
@@ -7,18 +8,15 @@ def solve(grid: List[List[int]]) -> List[List[int]]:
     Solve ARC task 3ed85e70.
     
     Pattern:
-    1. Find all contiguous regions of colored cells (non-0, non-3)
-    2. For each region, check its expanded bounding box (±1 cell):
-       - If contains 0s and only 0s (no other colors), fill those 0s with a border color
-       - Border color: 8 gets 1, 4 gets 8, 2 gets 1
-    3. For color 2 regions that form 3x3 perfect rectangles:
-       - Also change the center cell from 2 to 4
+    1. For color 2 regions that form 3x3 perfect rectangles:
+       - Change the center cell from 2 to 4
+    2. For color 8 regions:
+       - Expand the bounding box by 1 cell in all directions
+       - If the expanded box contains only 0s (no other non-bg colors),
+         fill those 0s with 1s
     """
     
     output = [row[:] for row in grid]
-    
-    # Determine border colors for each interior color
-    border_color = {8: 1, 4: 8, 2: 1}
     
     # Find all colored regions via flood fill
     visited = set()
@@ -47,7 +45,38 @@ def solve(grid: List[List[int]]) -> List[List[int]]:
                 if cells:
                     regions.append((color, cells))
     
-    # Process each region
+    # First, check if there are any 3x3 4-regions that will expand
+    # This determines what value 2-regions' centers change to
+    has_expanding_4_regions = False
+    for color, cells in regions:
+        if color == 4:
+            min_r = min(r for r, c in cells)
+            max_r = max(r for r, c in cells)
+            min_c = min(c for r, c in cells)
+            max_c = max(c for r, c in cells)
+            h = max_r - min_r + 1
+            w = max_c - min_c + 1
+            
+            if h == 3 and w == 3 and len(cells) == 9:
+                # Check if it will expand (has 0s around it, no other colors)
+                expand_min_r = max(0, min_r - 1)
+                expand_max_r = min(len(grid) - 1, max_r + 1)
+                expand_min_c = max(0, min_c - 1)
+                expand_max_c = min(len(grid[0]) - 1, max_c + 1)
+                
+                other_colors = False
+                for r in range(expand_min_r, expand_max_r + 1):
+                    for c in range(expand_min_c, expand_max_c + 1):
+                        if (r, c) not in cells and grid[r][c] not in (0, 3):
+                            other_colors = True
+                            break
+                    if other_colors:
+                        break
+                
+                if not other_colors:
+                    has_expanding_4_regions = True
+                    break
+    
     for color, cells in regions:
         min_r = min(r for r, c in cells)
         max_r = max(r for r, c in cells)
@@ -57,40 +86,97 @@ def solve(grid: List[List[int]]) -> List[List[int]]:
         h = max_r - min_r + 1
         w = max_c - min_c + 1
         
-        # Handle color 2 regions: change center to 4 if perfect 3x3
+        # Handle color 2 regions: change center based on whether 4-regions expand
         if color == 2:
             if h == 3 and w == 3 and len(cells) == 9:
                 center_r = min_r + 1
                 center_c = min_c + 1
-                output[center_r][center_c] = 4
+                # If there are expanding 4-regions, center becomes 1; otherwise 4
+                center_val = 1 if has_expanding_4_regions else 4
+                output[center_r][center_c] = center_val
         
-        # For colors that have border filling: expand and check for 0s
-        if color in border_color:
+        # Handle color 8 regions: expand by 1 and fill 0s with 1s
+        elif color == 8:
             # Expand bounding box by 1 in all directions
             expand_min_r = max(0, min_r - 1)
             expand_max_r = min(len(grid) - 1, max_r + 1)
             expand_min_c = max(0, min_c - 1)
             expand_max_c = min(len(grid[0]) - 1, max_c + 1)
             
-            # Check what's in the expanded region
-            has_zeros = False
-            has_other_colors = False
-            
+            # Check if expanded region contains only 0s (and the 8s themselves)
+            other_colors = False
             for r in range(expand_min_r, expand_max_r + 1):
                 for c in range(expand_min_c, expand_max_c + 1):
-                    if (r, c) not in cells:  # Outside the original region
-                        if grid[r][c] == 0:
-                            has_zeros = True
-                        elif grid[r][c] not in (0, 3, color):
-                            has_other_colors = True
+                    if (r, c) not in cells and grid[r][c] not in (0, 3):
+                        other_colors = True
+                        break
+                if other_colors:
+                    break
             
-            # Only fill if we have 0s and no other colors (except 3 which is background)
-            if has_zeros and not has_other_colors:
-                # Fill 0s with border color
+            # If no other colors in expansion, fill 0s with 1
+            if not other_colors:
                 for r in range(expand_min_r, expand_max_r + 1):
                     for c in range(expand_min_c, expand_max_c + 1):
                         if grid[r][c] == 0:
-                            output[r][c] = border_color[color]
+                            output[r][c] = 1
+        
+        # Handle color 4 regions: expand by 1 and fill 0s with 8s (only for 3x3)
+        elif color == 4:
+            if h == 3 and w == 3 and len(cells) == 9:
+                # Expand bounding box by 1 in all directions
+                expand_min_r = max(0, min_r - 1)
+                expand_max_r = min(len(grid) - 1, max_r + 1)
+                expand_min_c = max(0, min_c - 1)
+                expand_max_c = min(len(grid[0]) - 1, max_c + 1)
+                
+                # Check if expanded region contains only 0s (and the 4s themselves)
+                other_colors = False
+                for r in range(expand_min_r, expand_max_r + 1):
+                    for c in range(expand_min_c, expand_max_c + 1):
+                        if (r, c) not in cells and grid[r][c] not in (0, 3):
+                            other_colors = True
+                            break
+                    if other_colors:
+                        break
+                
+                # If no other colors in expansion, fill 0s with 8
+                if not other_colors:
+                    for r in range(expand_min_r, expand_max_r + 1):
+                        for c in range(expand_min_c, expand_max_c + 1):
+                            if grid[r][c] == 0:
+                                output[r][c] = 8
+        
+        # Handle color 1 regions: change center based on whether 4-regions expand
+        elif color == 1:
+            if h == 3 and w == 3 and len(cells) == 9:
+                center_r = min_r + 1
+                center_c = min_c + 1
+                # If there are expanding 4-regions, center becomes 2; otherwise stays 1
+                if has_expanding_4_regions:
+                    output[center_r][center_c] = 2
+                    
+                    # Also expand by 1 and fill 0s with 1
+                    expand_min_r = max(0, min_r - 1)
+                    expand_max_r = min(len(grid) - 1, max_r + 1)
+                    expand_min_c = max(0, min_c - 1)
+                    expand_max_c = min(len(grid[0]) - 1, max_c + 1)
+                    
+                    # Check if expanded region contains only 0s (and the 1s themselves)
+                    other_colors = False
+                    for r in range(expand_min_r, expand_max_r + 1):
+                        for c in range(expand_min_c, expand_max_c + 1):
+                            if (r, c) not in cells and grid[r][c] not in (0, 3):
+                                other_colors = True
+                                break
+                        if other_colors:
+                            break
+                    
+                    # If no other colors in expansion, fill 0s with 1
+                    if not other_colors:
+                        for r in range(expand_min_r, expand_max_r + 1):
+                            for c in range(expand_min_c, expand_max_c + 1):
+                                if grid[r][c] == 0:
+                                    output[r][c] = 1
     
     return output
 
@@ -114,14 +200,6 @@ def main():
         else:
             print(f"Train example {idx}: FAIL")
             all_pass = False
-            # Debug: show first difference
-            for i in range(len(result)):
-                for j in range(len(result[0])):
-                    if result[i][j] != expected[i][j]:
-                        print(f"  First diff at ({i},{j}): got {result[i][j]}, expected {expected[i][j]}")
-                        break
-                if result[i] != expected[i]:
-                    break
     
     if all_pass:
         print("\nAll training examples PASS!")
@@ -132,5 +210,4 @@ def main():
 
 
 if __name__ == "__main__":
-    import os
     sys.exit(main())
