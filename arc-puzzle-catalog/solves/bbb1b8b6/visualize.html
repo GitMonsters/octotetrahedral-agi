@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>ARC bbb1b8b6</title>
+<style>
+body{font-family:monospace;background:#1a1a2e;color:#eee;padding:20px}
+h1{color:#7FDBFF}h2{color:#FFDC00}
+table{border-collapse:collapse;display:inline-block;margin:8px}
+td{width:32px;height:32px;border:1px solid #333;text-align:center;font-size:12px;color:#000;font-weight:bold}
+.arrow{font-size:28px;vertical-align:middle;margin:0 10px;display:inline-block;padding-top:30px}
+.pair{margin:10px 0;display:flex;align-items:center;flex-wrap:wrap}
+</style></head><body>
+<h1>ARC Task bbb1b8b6</h1>
+<p>Rule: Split at col-5 separator → left (1-shape) + right (color-shape). If right non-zero positions = left zero positions, fill zeros with color. Otherwise output = left unchanged.</p>
+<div id="content"></div>
+<script>
+const colors=['#000','#0074D9','#FF4136','#2ECC40','#FFDC00','#AAAAAA','#F012BE','#FF851B','#7FDBFF','#870C25'];
+const data={"train":[{"input":[[0,0,0,1,5,2,2,2,0],[1,0,0,0,5,0,2,2,2],[1,1,0,0,5,0,0,2,2],[1,1,1,0,5,0,0,0,2]],"output":[[2,2,2,1],[1,2,2,2],[1,1,2,2],[1,1,1,2]]},{"input":[[0,0,0,1,5,2,2,0,0],[1,0,0,0,5,2,2,0,0],[1,1,0,0,5,0,2,2,0],[1,1,1,0,5,0,2,2,0]],"output":[[0,0,0,1],[1,0,0,0],[1,1,0,0],[1,1,1,0]]},{"input":[[1,1,0,0,5,0,0,3,3],[1,0,0,1,5,0,3,3,0],[1,0,0,1,5,0,3,3,0],[1,1,0,0,5,0,0,3,3]],"output":[[1,1,3,3],[1,3,3,1],[1,3,3,1],[1,1,3,3]]},{"input":[[1,1,1,1,5,0,0,0,0],[1,0,0,1,5,0,6,6,0],[1,0,0,1,5,0,6,6,0],[1,1,1,1,5,0,0,0,0]],"output":[[1,1,1,1],[1,6,6,1],[1,6,6,1],[1,1,1,1]]},{"input":[[1,1,1,1,5,2,2,0,0],[1,0,0,1,5,2,2,0,0],[1,0,0,1,5,0,0,0,0],[1,1,1,1,5,0,0,0,0]],"output":[[1,1,1,1],[1,0,0,1],[1,0,0,1],[1,1,1,1]]},{"input":[[1,1,1,1,5,3,3,0,0],[1,0,0,1,5,3,3,0,0],[1,0,0,1,5,3,0,0,0],[1,0,0,1,5,0,0,0,0]],"output":[[1,1,1,1],[1,0,0,1],[1,0,0,1],[1,0,0,1]]},{"input":[[1,1,1,1,5,0,0,0,0],[1,0,0,0,5,0,7,7,7],[1,0,1,1,5,0,7,0,0],[1,0,1,0,5,0,7,0,7]],"output":[[1,1,1,1],[1,7,7,7],[1,7,1,1],[1,7,1,7]]}],"test":[{"input":[[1,1,0,0,5,0,0,3,3],[1,0,0,1,5,0,3,3,0],[0,0,0,1,5,3,3,3,0],[0,1,1,1,5,3,0,0,0]],"output":[[1,1,3,3],[1,3,3,1],[3,3,3,1],[3,1,1,1]]},{"input":[[1,1,1,1,5,2,0,0,0],[0,1,1,0,5,2,2,2,2],[0,1,1,0,5,2,0,0,0],[0,0,0,0,5,0,0,0,0]],"output":[[1,1,1,1],[0,1,1,0],[0,1,1,0],[0,0,0,0]]}]};
+function makeTable(grid){
+  let t='<table>';
+  for(let r of grid){t+='<tr>';for(let c of r)t+=`<td style="background:${colors[c]}">${c}</td>`;t+='</tr>';}
+  return t+'</table>';
+}
+let html='';
+['train','test'].forEach(s=>{
+  html+=`<h2>${s.toUpperCase()}</h2>`;
+  data[s].forEach((p,i)=>{
+    html+=`<div class="pair"><b>${s} ${i}:</b>${makeTable(p.input)}<span class="arrow">→</span>${p.output?makeTable(p.output):'<i>?</i>'}</div>`;
+  });
+});
+document.getElementById('content').innerHTML=html;
+</script></body></html>
