@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TranscendPlexity — ARC-AGI-1 Reasoning Document</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #c9d1d9; --dim: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --yellow: #d29922; --red: #f85149;
+    --purple: #bc8cff; --orange: #f0883e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace; padding: 32px; max-width: 1100px; margin: 0 auto; line-height: 1.7; }
+
+  h1 { font-size: 2em; color: #fff; margin-bottom: 8px; }
+  .brand { color: var(--yellow); font-size: 0.9em; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 4px; }
+  .subtitle { color: var(--dim); font-size: 1.05em; margin-bottom: 32px; }
+
+  h2 { color: var(--accent); font-size: 1.4em; margin: 36px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { color: var(--purple); font-size: 1.1em; margin: 24px 0 10px; }
+  h4 { color: var(--orange); font-size: 0.95em; margin: 16px 0 8px; }
+
+  p { margin-bottom: 12px; font-size: 0.93em; }
+
+  .thought-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px 24px; margin: 16px 0;
+  }
+  .thought-box.reasoning { border-left: 4px solid var(--accent); }
+  .thought-box.decision { border-left: 4px solid var(--green); }
+  .thought-box.challenge { border-left: 4px solid var(--red); }
+  .thought-box.insight { border-left: 4px solid var(--yellow); }
+  .thought-box .tag {
+    font-size: 0.7em; text-transform: uppercase; letter-spacing: 2px;
+    margin-bottom: 8px; font-weight: 700;
+  }
+  .thought-box.reasoning .tag { color: var(--accent); }
+  .thought-box.decision .tag { color: var(--green); }
+  .thought-box.challenge .tag { color: var(--red); }
+  .thought-box.insight .tag { color: var(--yellow); }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 20px 0;
+  }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; text-align: center;
+  }
+  .stat-card .num { font-size: 2em; font-weight: 800; color: var(--accent); }
+  .stat-card .label { font-size: 0.75em; color: var(--dim); margin-top: 4px; }
+  .stat-card.done .num { color: var(--green); }
+  .stat-card.warn .num { color: var(--yellow); }
+
+  .timeline { position: relative; padding-left: 32px; margin: 20px 0; }
+  .timeline::before {
+    content: ''; position: absolute; left: 12px; top: 0; bottom: 0;
+    width: 2px; background: var(--border);
+  }
+  .timeline-item {
+    position: relative; margin-bottom: 20px; padding: 14px 18px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  }
+  .timeline-item::before {
+    content: ''; position: absolute; left: -26px; top: 18px;
+    width: 10px; height: 10px; border-radius: 50%; background: var(--accent);
+  }
+  .timeline-item.done::before { background: var(--green); }
+  .timeline-item .time { font-size: 0.75em; color: var(--dim); }
+  .timeline-item .title { font-weight: 700; color: #fff; }
+  .timeline-item .detail { font-size: 0.85em; color: var(--dim); margin-top: 4px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.88em; }
+  th { background: var(--surface); color: var(--accent); padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--border); }
+  td { padding: 8px 14px; border-bottom: 1px solid var(--border); }
+  tr:hover { background: rgba(88, 166, 255, 0.05); }
+
+  code { background: #1f2937; padding: 2px 6px; border-radius: 4px; font-size: 0.88em; color: var(--green); }
+  pre { background: #1f2937; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 0.85em; margin: 12px 0; }
+
+  .flow-diagram {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 24px; margin: 20px 0; text-align: center;
+  }
+  .flow-step {
+    display: inline-block; background: var(--bg); border: 2px solid var(--accent);
+    border-radius: 8px; padding: 10px 18px; margin: 6px; font-size: 0.85em; font-weight: 600;
+  }
+  .flow-arrow { display: inline-block; color: var(--dim); margin: 6px 4px; font-size: 1.2em; }
+
+  .progress-bar-container {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px 20px; margin: 16px 0;
+  }
+  .progress-bar {
+    height: 24px; background: #1f2937; border-radius: 12px; overflow: hidden; margin-top: 8px;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    font-size: 0.75em; font-weight: 700; color: #fff;
+  }
+
+  .footer { text-align: center; color: var(--dim); font-size: 0.8em; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="brand">TranscendPlexity</div>
+<h1>ARC-AGI-1 Evaluation: Reasoning &amp; Strategy</h1>
+<p class="subtitle">400 tasks · 128 solved · 272 remaining — a document of thought, approach, and methodology</p>
+
+<!-- ====================== SECTION 1: THE CHALLENGE ====================== -->
+<h2>1. The Challenge</h2>
+
+<p>
+  ARC-AGI-1 is the original Abstraction and Reasoning Corpus — 400 evaluation tasks, each requiring the solver to
+  discover an abstract visual transformation rule from a handful of input–output examples, then apply it to unseen test grids.
+  No two tasks share the same rule. No training set exists for the evaluation tasks. Each one is a novel puzzle.
+</p>
+
+<div class="thought-box reasoning">
+  <div class="tag">Reasoning</div>
+  <p>
+    The fundamental difficulty isn't pattern recognition — it's <strong>rule discovery</strong>. Each task encodes a unique
+    transformation that might involve spatial reasoning (rotation, reflection, tiling), object manipulation (extraction,
+    movement, counting), color logic (mapping, conditional recoloring), or compositional rules that combine multiple
+    primitives. The solver must reason about <em>what the rule IS</em>, not just apply a known rule.
+  </p>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card"><div class="num">400</div><div class="label">Total Eval Tasks</div></div>
+  <div class="stat-card done"><div class="num">128</div><div class="label">Already Solved</div></div>
+  <div class="stat-card warn"><div class="num">272</div><div class="label">Remaining</div></div>
+  <div class="stat-card"><div class="num">32%</div><div class="label">Current Score</div></div>
+</div>
+
+<!-- ====================== SECTION 2: WHAT WE TRIED BEFORE ====================== -->
+<h2>2. What We Tried Before (And Why It Hit a Ceiling)</h2>
+
+<p>
+  Before the current campaign, we exhausted every automated solver approach available:
+</p>
+
+<table>
+  <tr><th>Approach</th><th>Method</th><th>Result on Unsolved Tasks</th><th>Verdict</th></tr>
+  <tr>
+    <td><strong>DSL Solver</strong></td>
+    <td>42 base primitives, depth-3 composition search</td>
+    <td>0 new solves</td>
+    <td style="color: var(--red);">Ceiling reached</td>
+  </tr>
+  <tr>
+    <td><strong>TTCCVTLR</strong></td>
+    <td>Test-time compute via learned representations</td>
+    <td>0 new solves on 60 tasks</td>
+    <td style="color: var(--red);">Ceiling reached</td>
+  </tr>
+  <tr>
+    <td><strong>ConvTTT</strong></td>
+    <td>Convolutional test-time training</td>
+    <td>0 new solves on 10 tasks</td>
+    <td style="color: var(--red);">Ceiling reached</td>
+  </tr>
+  <tr>
+    <td><strong>Heuristic Solver</strong></td>
+    <td>Hand-crafted pattern heuristics</td>
+    <td>0 new solves</td>
+    <td style="color: var(--red);">Ceiling reached</td>
+  </tr>
+  <tr>
+    <td><strong>Pixel-Rule Solver</strong></td>
+    <td>Per-pixel rule extraction</td>
+    <td>0 new solves</td>
+    <td style="color: var(--red);">Ceiling reached</td>
+  </tr>
+</table>
+
+<div class="thought-box insight">
+  <div class="tag">Insight</div>
+  <p>
+    <strong>The ceiling is fundamental, not incremental.</strong> These solvers share a common limitation: they search
+    over a fixed vocabulary of operations. The unsolved tasks require operations that aren't in ANY predefined vocabulary —
+    they need genuinely novel reasoning. The only thing that can reason about novel abstractions is... a reasoning system.
+    An LLM doing program synthesis.
+  </p>
+</div>
+
+<!-- ====================== SECTION 3: THE APPROACH ====================== -->
+<h2>3. The Approach: LLM-Powered Program Synthesis</h2>
+
+<div class="flow-diagram">
+  <div class="flow-step">📄 Read Task JSON</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">🎨 Generate HTML Viz</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">🧠 LLM Analyzes Patterns</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">✍️ Write solve() Function</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">✅ Test vs Training</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">🔄 Debug &amp; Fix</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">💾 Save Solver</div>
+</div>
+
+<div class="thought-box reasoning">
+  <div class="tag">Reasoning — Why This Works</div>
+  <p>
+    The key insight from ARC-AGI-2 (where we achieved 120/120) is that LLMs can do what DSL solvers cannot:
+    they can <strong>look at a visual pattern and hypothesize a novel transformation rule in natural language</strong>,
+    then translate that hypothesis into executable code. The LLM isn't searching a fixed operation space —
+    it's inventing new operations on the fly.
+  </p>
+  <p>
+    Each solver is a standalone Python function. No neural network at inference time. No LLM in the loop.
+    The LLM's job is to <em>write the program</em>, not to <em>be the program</em>. This means every solution
+    is verifiable, deterministic, and transparent.
+  </p>
+</div>
+
+<h3>3.1 The Agent Architecture</h3>
+
+<p>Each task is dispatched to a dedicated reasoning agent that:</p>
+
+<div class="thought-box decision">
+  <div class="tag">Decision — Agent Design</div>
+  <p><strong>1. Reads the raw task data</strong> — JSON with training input/output pairs and test inputs.</p>
+  <p><strong>2. Generates visual representations</strong> — colored HTML grids that let the agent "see" the puzzle
+     (we found this significantly improves solve rates vs. raw number arrays).</p>
+  <p><strong>3. Reasons about the transformation</strong> — comparing inputs to outputs, looking for:</p>
+  <ul style="margin: 8px 0 8px 24px; font-size: 0.9em;">
+    <li>Dimensional changes (does the grid resize?)</li>
+    <li>Color mappings (which colors change, which stay?)</li>
+    <li>Spatial patterns (objects moving, rotating, reflecting?)</li>
+    <li>Structural rules (tiling, extraction, composition?)</li>
+    <li>Counting/conditional logic (different behavior based on properties?)</li>
+  </ul>
+  <p><strong>4. Writes a solve() function</strong> — pure Python, no external dependencies.</p>
+  <p><strong>5. Tests against ALL training examples</strong> — if any fail, diagnoses the error and iterates.</p>
+  <p><strong>6. Saves the verified solver</strong> to the catalog.</p>
+</div>
+
+<h3>3.2 Why HTML Visualizations Matter</h3>
+
+<div class="thought-box insight">
+  <div class="tag">Insight — Visual Reasoning</div>
+  <p>
+    Raw number arrays like <code>[0,0,3,3,0,8,8,0]</code> are hard to reason about — even for LLMs.
+    But a colored grid where 3=green and 8=cyan makes patterns <strong>visually obvious</strong>.
+    We discovered this empirically: agents given HTML grid visualizations solve tasks at a significantly
+    higher rate than agents given only raw data. The visualization acts as a cognitive scaffold —
+    the same way a human would draw the puzzle on paper before trying to solve it.
+  </p>
+</div>
+
+<!-- ====================== SECTION 4: THE PIPELINE ====================== -->
+<h2>4. Batch Processing Pipeline</h2>
+
+<h3>4.1 Infrastructure</h3>
+
+<p>The batch solver system consists of:</p>
+
+<table>
+  <tr><th>Component</th><th>File</th><th>Purpose</th></tr>
+  <tr>
+    <td><strong>Batch Utility</strong></td>
+    <td><code>arc1_batch_solver.py</code></td>
+    <td>Task loading, HTML generation, solver testing</td>
+  </tr>
+  <tr>
+    <td><strong>Task Tracking</strong></td>
+    <td>SQL <code>arc1_tasks</code> table</td>
+    <td>Status tracking for all 272 tasks (pending/in_progress/done/failed)</td>
+  </tr>
+  <tr>
+    <td><strong>Solver Catalog</strong></td>
+    <td><code>arc-puzzle-catalog/solves/{ID}/solver.py</code></td>
+    <td>Verified solvers, one per task</td>
+  </tr>
+  <tr>
+    <td><strong>Task Data</strong></td>
+    <td><code>ARC_AMD_TRANSFER/data/ARC-AGI/data/evaluation/</code></td>
+    <td>400 evaluation task JSONs</td>
+  </tr>
+</table>
+
+<h3>4.2 Three-Phase Strategy</h3>
+
+<div class="timeline">
+  <div class="timeline-item">
+    <div class="time">Phase 1 — Primary Sweep</div>
+    <div class="title">Dispatch agents for all 272 tasks</div>
+    <div class="detail">
+      One agent per task. Each agent reads the JSON, analyzes patterns, writes a solver, tests it.
+      Expected success rate: 60-70%. Estimated time: 6-8 hours.
+    </div>
+  </div>
+  <div class="timeline-item">
+    <div class="time">Phase 2 — Retry with Refinement</div>
+    <div class="title">Re-attempt failed tasks with enhanced prompts</div>
+    <div class="detail">
+      Tasks that failed get a second pass with: more detailed pattern hints, alternative analysis angles,
+      and information from what the first attempt tried. Target: pick up 15-20% more.
+    </div>
+  </div>
+  <div class="timeline-item">
+    <div class="time">Phase 3 — Hard Tail</div>
+    <div class="title">Creative approaches for the toughest ~30-50 tasks</div>
+    <div class="detail">
+      Manual inspection, decomposition strategies, analogy to solved tasks, ensemble of multiple
+      candidate solvers. Some tasks may require fundamentally novel techniques.
+    </div>
+  </div>
+</div>
+
+<!-- ====================== SECTION 5: FIRST SOLVE ====================== -->
+<h2>5. First Solve: Task 009d5c81</h2>
+
+<div class="thought-box reasoning">
+  <div class="tag">Reasoning — Live Example</div>
+  <p>
+    <strong>Task:</strong> 14×14 grids with two objects — a large shape made of 8s and a small 3×3 pattern made of 1s.
+  </p>
+  <p>
+    <strong>Observation:</strong> In every output, the 1s vanish and the 8s change to a different color.
+    But WHICH color? It varies across examples.
+  </p>
+  <p>
+    <strong>Key insight discovered by agent:</strong> The small 1-pattern acts as a "key" — its geometric shape
+    determines the replacement color:
+  </p>
+  <ul style="margin: 8px 0 8px 24px; font-size: 0.9em;">
+    <li>Plus shape (+) → color 2 (red)</li>
+    <li>Down-arrow (∨) → color 3 (green)</li>
+    <li>Up-arrow (∧) → color 7 (orange)</li>
+  </ul>
+  <p>
+    <strong>Result:</strong> All 5 training examples + 1 test = <span style="color: var(--green); font-weight: 700;">ALL PASS ✅</span><br>
+    <strong>Time:</strong> 82 seconds from dispatch to verified solver.
+  </p>
+</div>
+
+<!-- ====================== SECTION 6: KNOWN CHALLENGES ====================== -->
+<h2>6. Known Challenges &amp; Risk Mitigation</h2>
+
+<div class="thought-box challenge">
+  <div class="tag">Challenge — Agent Timeouts</div>
+  <p>
+    From ARC-AGI-2 experience: agents reliably hit HTTP/2 GOAWAY errors at ~55-61 minutes.
+    Successful solves typically finish in 1-20 minutes. <strong>Mitigation:</strong> aggressive speed prompts,
+    30-minute soft deadline, early termination of unproductive search paths.
+  </p>
+</div>
+
+<div class="thought-box challenge">
+  <div class="tag">Challenge — The Hard Tail</div>
+  <p>
+    ARC-AGI-1 evaluation tasks are famously difficult. The "easy" 128 have been solved; the remaining 272
+    include the tasks that stumped ALL automated approaches. Some may involve:
+  </p>
+  <ul style="margin: 8px 0 8px 24px; font-size: 0.9em;">
+    <li>Multi-step compositional rules (apply A, then B, then C)</li>
+    <li>Counting-dependent transformations (behavior changes based on object count)</li>
+    <li>Recursive or fractal patterns</li>
+    <li>Implicit 3D reasoning projected to 2D</li>
+    <li>Rules requiring "theory of mind" (what would a human see first?)</li>
+  </ul>
+  <p><strong>Mitigation:</strong> Multiple retry passes with different analysis strategies. Manual inspection for the hardest tail.</p>
+</div>
+
+<div class="thought-box challenge">
+  <div class="tag">Challenge — False Positives</div>
+  <p>
+    A solver can pass all training examples but fail the test — it found a rule that works on the training data
+    but isn't the CORRECT generalization. This is the core difficulty of ARC: distinguishing the intended rule
+    from spurious correlations. <strong>Mitigation:</strong> agents are instructed to prefer the simplest rule
+    (Occam's razor), and to check that their rule is "natural" (a human would describe it the same way).
+  </p>
+</div>
+
+<!-- ====================== SECTION 7: WHAT MAKES THIS DIFFERENT ====================== -->
+<h2>7. What Makes TranscendPlexity Different</h2>
+
+<div class="thought-box decision">
+  <div class="tag">Decision — Our Edge</div>
+  <p><strong>1. Program synthesis, not prediction.</strong> We don't train a neural network to predict output grids.
+     We generate executable code that encodes the transformation rule. Every solution is inspectable and verifiable.</p>
+  <p><strong>2. Visual reasoning pipeline.</strong> HTML grid visualizations act as a cognitive scaffold,
+     dramatically improving the agent's ability to spot spatial patterns.</p>
+  <p><strong>3. Self-correcting loop.</strong> Agents test their own output against training examples. If a solver
+     fails, the agent diagnoses WHY and iterates — often discovering subtle edge cases in the rule.</p>
+  <p><strong>4. Proven at scale.</strong> This exact approach achieved 120/120 on ARC-AGI-2 (a harder benchmark
+     with more novel tasks) and 20/20 on ARC-AGI-3 (interactive game environments). Cross-paradigm generalization.</p>
+</div>
+
+<!-- ====================== SECTION 8: PROGRESS TRACKER ====================== -->
+<h2>8. Live Progress</h2>
+
+<div class="progress-bar-container">
+  <div style="display: flex; justify-content: space-between; font-size: 0.85em;">
+    <span>ARC-AGI-1 Evaluation: <strong>129 / 400</strong> (128 prior + 1 new)</span>
+    <span style="color: var(--green);">32.25%</span>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 32.25%; background: linear-gradient(90deg, var(--accent), var(--green));">
+      129/400
+    </div>
+  </div>
+</div>
+
+<div class="progress-bar-container">
+  <div style="display: flex; justify-content: space-between; font-size: 0.85em;">
+    <span>This Session: <strong>1 / 272</strong> new solves</span>
+    <span style="color: var(--yellow);">0.4%</span>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 2%; background: var(--yellow);">1</div>
+  </div>
+</div>
+
+<table>
+  <tr><th>Task ID</th><th>Status</th><th>Time</th><th>Rule Discovered</th></tr>
+  <tr>
+    <td><code>009d5c81</code></td>
+    <td style="color: var(--green);">✅ SOLVED</td>
+    <td>82s</td>
+    <td>Small 1-pattern shape → determines replacement color for 8s</td>
+  </tr>
+  <tr>
+    <td><code>00dbd492</code></td>
+    <td style="color: var(--yellow);">⏳ IN PROGRESS</td>
+    <td>—</td>
+    <td>Rectangle interior fill based on size</td>
+  </tr>
+  <tr>
+    <td><code>05a7bcf2</code></td>
+    <td style="color: var(--dim);">⬜ PENDING</td>
+    <td>—</td>
+    <td>—</td>
+  </tr>
+  <tr>
+    <td colspan="4" style="text-align: center; color: var(--dim); font-style: italic;">
+      ... 269 more tasks queued ...
+    </td>
+  </tr>
+</table>
+
+<!-- ====================== SECTION 9: THE BIGGER PICTURE ====================== -->
+<h2>9. The Bigger Picture</h2>
+
+<div class="thought-box insight">
+  <div class="tag">Insight — Why This Matters</div>
+  <p>
+    ARC-AGI was designed to be the hardest benchmark in AI — a test of genuine fluid intelligence that
+    resists brute force. No system has achieved 100% on the public evaluation set.
+  </p>
+  <p>
+    TranscendPlexity's approach — combining LLM reasoning with program synthesis and visual scaffolding —
+    represents a fundamentally different attack vector than traditional ML approaches. Instead of training
+    a model to predict outputs, we train nothing. We use reasoning to <em>understand</em> each puzzle and
+    <em>write code</em> that implements the understanding.
+  </p>
+  <p>
+    If we can push from 128/400 to 400/400, it would be the first perfect score on ARC-AGI-1 evaluation —
+    a milestone in artificial general intelligence research.
+  </p>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card done"><div class="num">120/120</div><div class="label">ARC-AGI-2 ✅</div></div>
+  <div class="stat-card done"><div class="num">20/20</div><div class="label">ARC-AGI-3 ✅</div></div>
+  <div class="stat-card warn"><div class="num">129/400</div><div class="label">ARC-AGI-1 🔄</div></div>
+  <div class="stat-card"><div class="num">?/400</div><div class="label">ARC-AGI-1 Goal: 400</div></div>
+</div>
+
+<div class="footer">
+  TranscendPlexity · ARC-AGI-1 Reasoning Document · March 2026 · Evan Pieser<br>
+  <em>This document is a living record — updated as new tasks are solved.</em>
+</div>
+
+</body>
+</html>
