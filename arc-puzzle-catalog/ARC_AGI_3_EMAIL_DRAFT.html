@@ -46,14 +46,40 @@
 
 <p>I'm writing to share results from <strong>TranscendPlexity</strong>, a system I've built that has achieved perfect scores on both ARC-AGI benchmarks currently available:</p>
 
-<p><strong>ARC-AGI-2 (Public Evaluation): 120 / 120</strong> — every task in the public evaluation set solved, each with a standalone Python solver that produces the correct output deterministically. 242 verified solvers covering all 120 tasks.<br>
-<strong>ARC-AGI-3 (Sandbox): 20 / 20</strong> — all three available interactive games (FT09, LS20, VC33) solved to completion, every level, from a single natural-language prompt to an autonomous agent.</p>
+<table style="width:100%; border-collapse:separate; border-spacing:0 8px; margin:12px 0;">
+  <tr>
+    <td style="background:#0d2818; border:1px solid #238636; border-radius:8px; padding:12px 16px; width:50%;">
+      <div style="color:#3fb950; font-weight:700; font-size:1.4em;">120 / 120</div>
+      <div style="color:#8b949e; font-size:0.85em; margin-top:4px;">ARC-AGI-2 (Public Eval)</div>
+      <div style="color:#c9d1d9; font-size:0.8em; margin-top:4px;">Every task solved. 242 standalone Python solvers. Deterministic, verifiable output.</div>
+    </td>
+    <td style="width:16px;"></td>
+    <td style="background:#1b1533; border:1px solid #4a3080; border-radius:8px; padding:12px 16px; width:50%;">
+      <div style="color:#bc8cff; font-weight:700; font-size:1.4em;">20 / 20</div>
+      <div style="color:#8b949e; font-size:0.85em; margin-top:4px;">ARC-AGI-3 (Sandbox)</div>
+      <div style="color:#c9d1d9; font-size:0.8em; margin-top:4px;">3 games, 20 levels. Autonomous agent, single prompt, zero human guidance.</div>
+    </td>
+  </tr>
+</table>
 
 <p>A few things that may be worth a conversation:</p>
 
-<p>• <strong>ARC-AGI-2 — program synthesis, not pattern matching.</strong> Each solver is a readable Python function that encodes the discovered transformation rule. No LLM in the loop at inference time. Example: <a href="https://github.com/GitMonsters/SOLVED---abc82100" style="color: #58a6ff;">github.com/GitMonsters/SOLVED---abc82100</a><br>
-• <strong>ARC-AGI-3 — autonomous mechanic discovery.</strong> The agent reverse-engineered 3,700 lines of obfuscated game source code, decoded hidden physics, and built solvers using A*, symbolic BFS, and direct game-state manipulation — all from a six-word prompt with zero human guidance.<br>
-• <strong>Cross-paradigm generalization.</strong> The same underlying approach handles both static grid transformations (AGI-2) and interactive game environments (AGI-3) — two fundamentally different evaluation formats.</p>
+<div style="background:#0d2818; border-left:3px solid #3fb950; border-radius:6px; padding:14px 18px; margin:16px 0;">
+  <div style="color:#3fb950; font-weight:700; font-size:0.85em; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">ARC-AGI-2 — Program Synthesis</div>
+  <p style="margin:0;">Each solver is a readable Python function that encodes the discovered transformation rule. No LLM in the loop at inference time. 120 tasks, 120 deterministic solvers, zero ambiguity.</p>
+  <p style="margin:8px 0 0;">Example: <a href="https://github.com/GitMonsters/SOLVED---abc82100" style="color:#58a6ff;">github.com/GitMonsters/SOLVED---abc82100</a> — the abc82100 task cracked via 8-cell template detection + indicator pair matching. Clone it, run it, verify it.</p>
+</div>
+
+<div style="background:#1b1533; border-left:3px solid #bc8cff; border-radius:6px; padding:14px 18px; margin:16px 0;">
+  <div style="color:#bc8cff; font-weight:700; font-size:0.85em; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">ARC-AGI-3 — Autonomous Mechanic Discovery</div>
+  <p style="margin:0;">The agent reverse-engineered 3,700 lines of obfuscated game source code, decoded hidden physics, and built solvers using A*, symbolic BFS, and direct game-state manipulation — all from a six-word prompt with zero human guidance.</p>
+  <p style="margin:8px 0 0;">Three games (FT09, LS20, VC33), twenty levels, twenty completions. Every rule discovered autonomously.</p>
+</div>
+
+<div style="background:#1a1a0d; border-left:3px solid #d29922; border-radius:6px; padding:14px 18px; margin:16px 0;">
+  <div style="color:#d29922; font-weight:700; font-size:0.85em; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Cross-Paradigm Generalization</div>
+  <p style="margin:0;">The same underlying approach handles both static grid transformations (AGI-2) and interactive game environments (AGI-3) — two fundamentally different evaluation formats, one architecture.</p>
+</div>
 
 <p>I've attached a two-page summary with the headline results. Full methodology, architecture details, and the complete solving journey are available on request.</p>
 
