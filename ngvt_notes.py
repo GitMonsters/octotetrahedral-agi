@@ -6,6 +6,7 @@ Inspired by Confucius SDK's note-taking mechanism
 
 import json
 import os
+import math
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, asdict, field
 from datetime import datetime
@@ -171,18 +172,75 @@ class PatternNoteStore:
         pattern_ids = self.type_index.get(pattern_type, [])
         return [self.index[pid] for pid in pattern_ids if pid in self.index]
     
-    def search_similar(self, query: str, top_k: int = 5) -> List[PatternNote]:
-        """Find patterns similar to query"""
+    def search_similar(self, query: str, top_k: int = 5,
+                       spatial_embedding: Optional[List[float]] = None,
+                       spatial_weight: float = 0.3) -> List[PatternNote]:
+        """
+        Find patterns similar to query using dual-index retrieval.
+        
+        Combines:
+        1. Semantic matching: TF-IDF-weighted word overlap (upgraded from raw overlap)
+        2. Spatial matching: cosine similarity over embedding vectors (if provided)
+        
+        Inspired by OpenClaw's Spatial RAG hybrid retrieval.
+        
+        Args:
+            query: Text query
+            top_k: Number of results
+            spatial_embedding: Optional embedding vector for spatial similarity
+            spatial_weight: Weight for spatial vs semantic score [0,1]
+        """
         query_words = set(query.lower().split())
+        
+        # Build document frequency for TF-IDF weighting
+        doc_freq: Dict[str, int] = {}
+        for pattern in self.index.values():
+            pattern_words = set(pattern.keywords) | set(pattern.title.lower().split())
+            for w in pattern_words:
+                doc_freq[w] = doc_freq.get(w, 0) + 1
+        
+        num_docs = max(len(self.index), 1)
         
         scores = []
         for pattern_id, pattern in self.index.items():
             pattern_words = set(pattern.keywords) | set(pattern.title.lower().split())
-            overlap = len(query_words & pattern_words)
-            if overlap > 0:
-                scores.append((pattern_id, overlap))
+            
+            # TF-IDF weighted semantic overlap
+            overlap_words = query_words & pattern_words
+            if not overlap_words and spatial_embedding is None:
+                continue
+            
+            semantic_score = 0.0
+            for w in overlap_words:
+                idf = math.log(num_docs / (doc_freq.get(w, 1) + 1)) + 1
+                semantic_score += idf
+            
+            # Normalize by query size
+            if query_words:
+                semantic_score /= len(query_words)
+            
+            # Spatial similarity (cosine) if embeddings available
+            spatial_score = 0.0
+            if spatial_embedding is not None:
+                pattern_emb = pattern.metadata.get('embedding')
+                if pattern_emb is not None:
+                    # Cosine similarity
+                    a = spatial_embedding
+                    b = pattern_emb
+                    dot = sum(x * y for x, y in zip(a, b))
+                    norm_a = math.sqrt(sum(x * x for x in a) + 1e-8)
+                    norm_b = math.sqrt(sum(x * x for x in b) + 1e-8)
+                    spatial_score = dot / (norm_a * norm_b)
+            
+            # Combined score
+            if spatial_embedding is not None:
+                final_score = (1 - spatial_weight) * semantic_score + spatial_weight * spatial_score
+            else:
+                final_score = semantic_score
+            
+            if final_score > 0:
+                scores.append((pattern_id, final_score))
         
-        # Sort by relevance and return top k
         scores.sort(key=lambda x: x[1], reverse=True)
         return [self.index[pid] for pid, _ in scores[:top_k]]
     

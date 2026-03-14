@@ -69,6 +69,10 @@ from physics.geometric_physics_layer import (
     create_geometric_physics_layer
 )
 
+# Tier 2 integration: VoxelMemory + Spiking LIF layer
+from core.voxel_memory import VoxelMemory
+from core.spiking_lif import SpikingTetrahedralLayer
+
 
 class OctoTetrahedralModel(nn.Module):
     """
@@ -253,6 +257,30 @@ class OctoTetrahedralModel(nn.Module):
             lora_alpha=self.config.lora.alpha,
             buffer_size=self.config.limb.buffer_size
         )
+        
+        # === Voxel Memory (OpenClaw-inspired spatial world model) ===
+        self.voxel_memory = VoxelMemory(
+            grid_size=30,
+            num_dims=2,
+            embed_dim=self.hidden_dim,
+            num_labels=11,
+            decay_rate=0.99,
+        )
+        
+        # === Spiking LIF Layer (connectome-inspired) ===
+        # 64 tetrahedral points = 64 LIF neurons
+        self.spiking_layer = SpikingTetrahedralLayer(
+            hidden_dim=self.hidden_dim,
+            num_neurons=64,
+            num_timesteps=4,
+            leak_rate=0.9,
+            threshold=1.0,
+        )
+        # Initialize synapse weights from tetrahedral geometry
+        if hasattr(self.geometry, 'adjacency') and hasattr(self.geometry, 'distances'):
+            self.spiking_layer.init_from_geometry(
+                self.geometry.adjacency, self.geometry.distances
+            )
         
         # === MetaCognition Limb (Self-Monitoring) ===
         self.metacognition = MetaCognitionLimb(
@@ -572,6 +600,23 @@ class OctoTetrahedralModel(nn.Module):
                 'enabled_modules': gp_result.get('enabled_modules', [])
             }
         
+        # === 3.7 Spiking Tetrahedral Layer (connectome-inspired LIF) ===
+        spiking_info = {}
+        try:
+            ei_signs_for_spiking = editing_info.get('ei_signs') if isinstance(editing_info, dict) else None
+            spiking_result = self.spiking_layer(core_output, ei_signs=ei_signs_for_spiking)
+            spiking_out = spiking_result['output']
+            if not torch.isnan(spiking_out).any():
+                core_output = spiking_out
+                spiking_info['active'] = True
+                spiking_info['energy'] = spiking_result['energy'].item()
+            else:
+                spiking_info['active'] = False
+                spiking_info['skipped_reason'] = 'nan'
+        except Exception:
+            spiking_info['active'] = False
+            spiking_info['skipped_reason'] = 'error'
+        
         # === 4. Working Memory: Read/Write ===
         if use_memory:
             # Use reasoning state as query for memory
@@ -632,6 +677,11 @@ class OctoTetrahedralModel(nn.Module):
             if use_fast_path:
                 # Fast path: only core limbs (perception already done, spatial + action)
                 spatial_out, spatial_conf, _ = self.spatial(memory_enhanced)
+                # Augment with voxel memory attention
+                voxel_context, _ = self.voxel_memory.query_by_attention(
+                    spatial_out, top_k=8
+                )  # [batch, seq_len, hidden]
+                spatial_out = spatial_out + 0.1 * voxel_context
                 fast_output = memory_enhanced + 0.3 * spatial_out
                 reasoned, _, _ = self.reasoning(
                     fast_output, attention_mask=attention_mask,
@@ -646,6 +696,11 @@ class OctoTetrahedralModel(nn.Module):
                 memory_out, memory_conf, _ = self.memory_limb(memory_enhanced)
                 # Spatial Limb
                 spatial_out, spatial_conf, _ = self.spatial(memory_enhanced)
+                # Augment with voxel memory attention
+                voxel_context, _ = self.voxel_memory.query_by_attention(
+                    spatial_out, top_k=8
+                )  # [batch, seq_len, hidden]
+                spatial_out = spatial_out + 0.1 * voxel_context
                 # Language Limb
                 language_out, language_conf, _ = self.language(memory_enhanced)
                 # MetaCognition
@@ -827,6 +882,7 @@ class OctoTetrahedralModel(nn.Module):
                 'ei_balance_loss': editing_info.get('ei_balance_loss'),
                 'two_speed': two_speed_info if 'two_speed_info' in dir() else None,
             },
+            'spiking_info': spiking_info,
         }
         
         if return_confidences:
