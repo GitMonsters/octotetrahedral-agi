@@ -1026,6 +1026,13 @@ class OctoTetrahedralModel(nn.Module):
             return_confidence=return_confidences
         )
 
+        # --- Voxel memory write (compound across iterations) ---
+        # Write the braided spatial output so next iteration sees updated state
+        self.voxel_memory.write_voxels(
+            indices=torch.arange(min(8, spatial_out.shape[1]), device=x.device),
+            embeddings=spatial_out[:1, :8, :].detach().squeeze(0),  # first batch item
+        )
+
         # --- Consequential memory write (feeds next iteration) ---
         if self._loop_memory_state is not None:
             write_content = reasoned.mean(dim=1)  # [batch, hidden]
