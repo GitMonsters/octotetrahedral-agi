@@ -213,16 +213,16 @@ class GeometricPhysicsConfig:
 @dataclass
 class MoEConfig:
     """Mixture-of-Experts configuration for scaled models"""
-    enabled: bool = False  # When False, use standard dense FFN
+    enabled: bool = True  # MoE active: routes tokens to top-k experts
     num_experts: int = 64
     top_k: int = 8
-    expert_ffn_dim: int = 28672  # Per-expert FFN intermediate dim
+    expert_ffn_dim: int = 512  # Per-expert FFN intermediate dim (scaled for 256 hidden)
     jitter_noise: float = 0.01  # Router exploration noise during training
     load_balance_weight: float = 0.001  # Reduced: pruning replaces forced balancing (Yuan LAEP)
     expert_prune_threshold: float = 0.25  # Prune experts below this fraction of mean load
     expert_prune_min: int = 8  # Never prune below this many experts
     # Compounding integration settings
-    compound_enabled: bool = False  # Use CompoundMoELayer instead of base MoELayer
+    compound_enabled: bool = True  # Use CompoundMoELayer with braid feedback
     compound_bias_scale: float = 0.1  # Scale for adaptive routing bias
     enable_cross_transfer: bool = True  # Cross-expert knowledge transfer
 
