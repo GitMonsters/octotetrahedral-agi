@@ -560,6 +560,8 @@ class OctoTetrahedralModel(nn.Module):
             'ei_signs': editing_result.get('ei_signs'),
             'ei_balance_loss': editing_result.get('ei_balance_loss', torch.tensor(0.0, device=encoded.device)),
         }
+        # Store for compound loop access
+        self._current_editing_info = editing_info
         # edited: [batch, seq_len, hidden_dim]
         
         # === 3. Tetrahedral Core: Main Processing ===
@@ -978,8 +980,15 @@ class OctoTetrahedralModel(nn.Module):
             x = x + 0.1 * mem_read
 
         # Parallel limb processing
-        memory_out, _, _ = self.memory_limb(x)
+        # Memory Limb (with quarantine E/I gating from compound loop)
+        _editing = getattr(self, '_current_editing_info', {})
+        _ei_mean = _editing.get('ei_signs', torch.zeros(1)).float().mean().item() if _editing else 0.0
+        _conf = _editing.get('confidence', torch.ones(1)).mean().item() if _editing else 1.0
+        memory_out, _, _ = self.memory_limb(x, ei_signal=_ei_mean, confidence=_conf)
         spatial_out, _, _ = self.spatial(x)
+        # Augment spatial with voxel memory (compound loop integration)
+        voxel_context, _ = self.voxel_memory.query_by_attention(spatial_out, top_k=8)
+        spatial_out = spatial_out + 0.1 * voxel_context
         language_out, _, _ = self.language(x)
         meta_out, _, _ = self.metacognition(x)
         reasoning_out, _, _ = self.reasoning(
