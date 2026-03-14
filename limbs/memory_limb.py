@@ -23,6 +23,7 @@ import math
 from collections import deque
 
 from .base_limb import BaseLimb
+from core.memory_quarantine import MemoryQuarantine, QuarantineDecision
 
 
 class SpatiotemporalContext:
@@ -328,6 +329,15 @@ class MemoryLimb(BaseLimb):
         self._last_retrieval_weights = None
         self._memories_stored = 0
         self._retrievals_performed = 0
+        
+        # Memory quarantine pipeline (Tier 3)
+        self.quarantine = MemoryQuarantine(
+            embed_dim=hidden_dim,
+            buffer_size=32,
+            confidence_threshold=0.6,
+            consistency_threshold=0.4,
+            max_age=50,
+        )
     
     def process(
         self,
@@ -335,6 +345,8 @@ class MemoryLimb(BaseLimb):
         store_memory: bool = True,
         retrieve_memory: bool = True,
         importance: float = 1.0,
+        ei_signal: float = 0.0,
+        confidence: float = 1.0,
         **kwargs
     ) -> torch.Tensor:
         """
@@ -345,18 +357,45 @@ class MemoryLimb(BaseLimb):
             store_memory: Whether to store current input as episodic memory
             retrieve_memory: Whether to retrieve from semantic memory
             importance: Importance score for memory storage
+            ei_signal: Mean E/I signal from RNA editing (-1 to +1)
+            confidence: RNA editing confidence (0-1) for quarantine gating
             
         Returns:
             Memory-enhanced features [batch, seq_len, hidden_dim]
         """
         batch_size, seq_len, _ = x.shape
         
-        # Store to episodic memory if requested
+        # Store to episodic memory through quarantine pipeline
         if store_memory:
             pooled = x.mean(dim=1)  # [batch, hidden_dim]
             for i in range(batch_size):
-                self.episodic_memory.store(pooled[i], importance=importance)
-                self._memories_stored += 1
+                decision = self.quarantine.submit(
+                    memory=pooled[i],
+                    importance=importance,
+                    ei_signal=ei_signal,
+                    confidence=confidence,
+                )
+                if decision == QuarantineDecision.PROMOTE:
+                    self.episodic_memory.store(pooled[i], importance=importance)
+                    self._memories_stored += 1
+                # QUARANTINE and REJECT handled internally by quarantine
+            
+            # Validate quarantined entries against existing trusted memories
+            trusted = self.episodic_memory.retrieve_recent(n=10)
+            if trusted:
+                promoted = self.quarantine.validate(trusted)
+                for entry in self.quarantine.promote():
+                    self.episodic_memory.store(
+                        entry.memory,
+                        importance=entry.importance,
+                        spatial_context=entry.spatial_context,
+                        object_refs=entry.object_refs,
+                        event_type=entry.event_type,
+                    )
+                    self._memories_stored += 1
+            
+            # Clean up stale quarantined items
+            self.quarantine.discard_stale()
         
         # Retrieve from semantic memory
         if retrieve_memory:

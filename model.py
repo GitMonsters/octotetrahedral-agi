@@ -692,8 +692,12 @@ class OctoTetrahedralModel(nn.Module):
             else:
                 two_speed_info = {'path': 'slow', 'confidence': rna_confidence.mean().item()}
                 # Slow path: full deliberation with all 11 limbs
-                # Memory Limb
-                memory_out, memory_conf, _ = self.memory_limb(memory_enhanced)
+                # Memory Limb (with quarantine E/I gating)
+                _ei_mean = editing_info.get('ei_signs', torch.zeros(1)).float().mean().item() if isinstance(editing_info, dict) else 0.0
+                _conf = rna_confidence.mean().item()
+                memory_out, memory_conf, _ = self.memory_limb(
+                    memory_enhanced, ei_signal=_ei_mean, confidence=_conf
+                )
                 # Spatial Limb
                 spatial_out, spatial_conf, _ = self.spatial(memory_enhanced)
                 # Augment with voxel memory attention
@@ -1251,6 +1255,83 @@ class OctoTetrahedralModel(nn.Module):
     def reset_memory(self):
         """Reset working memory slots"""
         self.working_memory.reset()
+    
+    def evolve_connectome(
+        self,
+        eval_fn: 'Callable[[], float]',
+        num_generations: int = 10,
+        population_size: int = 20,
+        device: str = 'cpu',
+    ) -> 'Genome':
+        """
+        Evolve the spiking layer's connectome wiring via genetic algorithms.
+        
+        Args:
+            eval_fn: Fitness function () -> float (higher = better)
+            num_generations: Number of evolution generations
+            population_size: Size of genome population
+            device: Device for computation
+            
+        Returns:
+            Best evolved Genome, already applied to the spiking layer
+        """
+        from core.connectome_evolution import ConnectomeEvolution
+        
+        evo = ConnectomeEvolution(
+            num_neurons=self.spiking_layer.num_neurons,
+            population_size=population_size,
+        )
+        # Seed from current tetrahedral geometry
+        evo.seed_from_geometry(
+            self.geometry.adjacency,
+            self.geometry.distances,
+        )
+        best = evo.run_evolution(
+            model=self,
+            eval_fn=eval_fn,
+            num_generations=num_generations,
+            device=device,
+        )
+        # Apply best genome to spiking layer
+        self.spiking_layer.apply_genome(best)
+        return best
+    
+    def sensorimotor_solve(
+        self,
+        input_grid: 'List[List[int]]',
+        output_grid: 'Optional[List[List[int]]]' = None,
+        max_iterations: int = 5,
+        confidence_threshold: float = 0.85,
+        device: str = 'cpu',
+    ) -> 'SensorimotorResult':
+        """
+        Solve an ARC grid via iterative sensorimotor loop.
+        
+        Perceive → Think → Act → Evaluate → Adapt, repeating until
+        convergence or max iterations.
+        
+        Args:
+            input_grid: 2D list of ints (ARC input grid)
+            output_grid: Optional expected output (for training/eval)
+            max_iterations: Max loop iterations
+            confidence_threshold: Exit when confidence exceeds this
+            device: Computation device
+            
+        Returns:
+            SensorimotorResult with best_grid, confidence, trajectory, etc.
+        """
+        from core.sensorimotor_loop import SensorimotorLoop
+        
+        loop = SensorimotorLoop(
+            max_iterations=max_iterations,
+            confidence_threshold=confidence_threshold,
+        )
+        return loop.solve(
+            model=self,
+            input_grid=input_grid,
+            output_grid=output_grid,
+            device=device,
+        )
     
     def save_checkpoint(self, path: str, optimizer=None, step: int = 0):
         """Save model checkpoint"""

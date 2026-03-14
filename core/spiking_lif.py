@@ -159,6 +159,27 @@ class SpikingTetrahedralLayer(nn.Module):
             inv_dist = inv_dist / inv_dist.max()
             self.synapse_weights.data = adjacency * inv_dist * 0.5
     
+    def apply_genome(self, genome) -> None:
+        """
+        Apply an evolved connectome genome to this spiking layer.
+        
+        Args:
+            genome: Genome dataclass from core.connectome_evolution with:
+                    adjacency_mask [num_neurons, num_neurons],
+                    weight_scales [num_neurons, num_neurons],
+                    ei_labels [num_neurons]
+        """
+        with torch.no_grad():
+            device = self.synapse_weights.device
+            adj = genome.adjacency_mask.to(device)
+            ws = genome.weight_scales.to(device)
+            self.synapse_weights.data = adj * ws
+            # Store E/I labels as a buffer for the LIF neuron to use
+            if not hasattr(self, '_genome_ei_labels'):
+                self.register_buffer('_genome_ei_labels', genome.ei_labels.to(device))
+            else:
+                self._genome_ei_labels.copy_(genome.ei_labels.to(device))
+    
     def forward(
         self,
         x: torch.Tensor,
