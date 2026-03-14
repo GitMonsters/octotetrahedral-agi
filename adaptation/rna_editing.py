@@ -7,11 +7,13 @@ Key biological inspirations:
 2. Editing intensity varies with environment (temperature, stress)
 3. Different tissues have different editing profiles
 4. Changes are reversible and rapid (hours, not generations)
+5. RNA editing changes receptor types between excitatory and inhibitory
 
-This module implements three levels of "editing":
+This module implements four levels of "editing":
 1. Attention head gating - which heads are active
 2. Temperature modulation - how much to edit
 3. Pathway routing - which limb handles the input
+4. E/I classification - excitatory/inhibitory balance per connection
 """
 
 import torch
@@ -20,14 +22,87 @@ import torch.nn.functional as F
 from typing import Optional, Dict, Tuple
 
 
+class ExcitatoryInhibitoryClassifier(nn.Module):
+    """
+    Classifies each connection as excitatory (+) or inhibitory (-).
+    
+    Biological basis: Octopus RNA editing changes glutamate receptor
+    subunits between excitatory and inhibitory forms. This module
+    dynamically classifies connections based on context, enabling
+    stable neural dynamics through E/I balance.
+    
+    Inspired by the connectome insight: only 4 ingredients needed
+    for 91% behavioral accuracy — graph, weights, E/I map, and LIF.
+    """
+    
+    def __init__(self, hidden_dim: int = 256, num_connections: int = 64):
+        super().__init__()
+        self.hidden_dim = hidden_dim
+        self.num_connections = num_connections
+        
+        # Learnable E/I bias per connection (positive = excitatory tendency)
+        self.ei_bias = nn.Parameter(torch.zeros(num_connections))
+        
+        # Context-dependent E/I modulation
+        self.ei_net = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim // 4),
+            nn.GELU(),
+            nn.Linear(hidden_dim // 4, num_connections),
+            nn.Tanh()  # Output in [-1, 1]: negative=inhibitory, positive=excitatory
+        )
+        
+        # E/I balance target (Dale's principle: ~80% excitatory, ~20% inhibitory)
+        self.register_buffer('ei_target_ratio', torch.tensor(0.8))
+    
+    def forward(
+        self,
+        context: torch.Tensor,
+        return_balance: bool = False
+    ) -> Dict[str, torch.Tensor]:
+        """
+        Classify connections as E/I based on context.
+        
+        Args:
+            context: [batch, hidden_dim]
+            return_balance: Whether to return E/I balance metrics
+            
+        Returns:
+            Dict with 'ei_signs' [-1,+1], 'ei_soft' [-1,1], 'ei_balance_loss'
+        """
+        # Context-dependent classification + learned bias
+        ei_raw = self.ei_net(context) + self.ei_bias  # [batch, num_connections]
+        
+        # Soft classification (differentiable)
+        ei_soft = torch.tanh(ei_raw)  # [-1, 1]
+        
+        # Hard classification (for inference, straight-through estimator)
+        ei_signs = torch.sign(ei_soft)
+        ei_signs = ei_soft + (ei_signs - ei_soft).detach()  # STE
+        
+        result = {
+            'ei_signs': ei_signs,
+            'ei_soft': ei_soft,
+        }
+        
+        if return_balance:
+            # E/I balance loss: penalize deviation from target ratio
+            excitatory_ratio = (ei_soft > 0).float().mean(dim=-1)
+            balance_loss = F.mse_loss(excitatory_ratio, self.ei_target_ratio.expand_as(excitatory_ratio))
+            result['ei_balance_loss'] = balance_loss
+            result['excitatory_ratio'] = excitatory_ratio
+        
+        return result
+
+
 class RNAEditingLayer(nn.Module):
     """
     RNA Editing-inspired dynamic modulation layer.
     
-    Provides three mechanisms for adaptive behavior:
+    Provides four mechanisms for adaptive behavior:
     1. Temperature: Controls overall editing intensity
     2. Head gating: Selectively activates/deactivates attention heads
     3. Pathway routing: Routes information to specialized limbs
+    4. E/I classification: Excitatory/inhibitory balance per connection
     
     The "editing" is reversible - it modulates existing weights
     rather than permanently changing them.
@@ -91,6 +166,13 @@ class RNAEditingLayer(nn.Module):
         # Editing site selector (which dimensions to edit)
         # Analogous to ADAR enzyme selectivity
         self.editing_sites = nn.Parameter(torch.ones(hidden_dim))
+        
+        # E/I classifier: classifies hidden_dim connections as excitatory/inhibitory
+        # Biological: octopus ADAR2 edits glutamate receptors between E/I forms
+        self.ei_classifier = ExcitatoryInhibitoryClassifier(
+            hidden_dim=hidden_dim,
+            num_connections=hidden_dim
+        )
         
     def compute_temperature(
         self, 
@@ -233,6 +315,8 @@ class RNAEditingLayer(nn.Module):
                 - 'head_gates': Attention head gates [batch, num_heads]
                 - 'pathway_weights': Routing weights [batch, num_pathways]
                 - 'confidence': Estimated confidence [batch, 1]
+                - 'ei_signs': E/I classification per dimension [batch, hidden_dim]
+                - 'ei_balance_loss': E/I balance regularization loss
                 - 'editing_mask': (optional) Which dimensions edited
         """
         # Handle different input shapes
@@ -262,10 +346,16 @@ class RNAEditingLayer(nn.Module):
         # Compute editing mask
         editing_mask = self.compute_editing_mask(temperature)  # [batch, hidden_dim]
         
-        # Apply editing: modulate input based on mask and temperature
-        # This is a soft "editing" that can be reversed
+        # E/I classification: determine which dimensions are excitatory vs inhibitory
+        ei_result = self.ei_classifier(context, return_balance=True)
+        ei_signs = ei_result['ei_signs']  # [batch, hidden_dim]
+        
+        # Apply editing: modulate input based on mask, temperature, AND E/I signs
+        # E/I signs control the direction of modulation per dimension
+        # Excitatory (+1) amplifies, Inhibitory (-1) suppresses
         editing_strength = temperature / self.temperature_max  # [batch, 1]
-        modulated = x * (1.0 + editing_strength.unsqueeze(1) * (editing_mask.unsqueeze(1) - 0.5) * 0.1)
+        ei_modulation = ei_signs * editing_mask  # E/I-weighted editing mask
+        modulated = x * (1.0 + editing_strength.unsqueeze(1) * ei_modulation.unsqueeze(1) * 0.1)
         
         if squeeze_output:
             modulated = modulated.squeeze(1)
@@ -275,12 +365,16 @@ class RNAEditingLayer(nn.Module):
             'temperature': temperature,
             'head_gates': head_gates,
             'pathway_weights': pathway_weights,
-            'confidence': confidence
+            'confidence': confidence,
+            'ei_signs': ei_signs,
+            'ei_balance_loss': ei_result.get('ei_balance_loss', torch.tensor(0.0, device=x.device)),
         }
         
         if return_diagnostics:
             result['editing_mask'] = editing_mask
             result['context'] = context
+            result['ei_soft'] = ei_result['ei_soft']
+            result['excitatory_ratio'] = ei_result.get('excitatory_ratio')
         
         return result
     
@@ -451,11 +545,28 @@ if __name__ == "__main__":
     print(f"Pathway weights: {result['pathway_weights'].tolist()}")
     print(f"Pathway weights sum: {result['pathway_weights'].sum(dim=-1).tolist()}")
     
+    # E/I classification output
+    print(f"\nE/I signs shape: {result['ei_signs'].shape}")
+    print(f"E/I balance loss: {result['ei_balance_loss'].item():.4f}")
+    excitatory_pct = (result['ei_signs'] > 0).float().mean().item() * 100
+    print(f"Excitatory ratio: {excitatory_pct:.1f}% (target: 80%)")
+    print(f"E/I soft range: [{result['ei_soft'].min().item():.3f}, {result['ei_soft'].max().item():.3f}]")
+    
     # Test with 2D input
     x_2d = torch.randn(batch_size, hidden_dim)
     result_2d = rna_layer(x_2d)
     print(f"\n2D input shape: {x_2d.shape}")
     print(f"2D output shape: {result_2d['output'].shape}")
+    assert 'ei_signs' in result_2d, "E/I signs missing from 2D output"
+    
+    # Test E/I classifier standalone
+    print("\n\nTesting ExcitatoryInhibitoryClassifier...")
+    ei_cls = ExcitatoryInhibitoryClassifier(hidden_dim=hidden_dim, num_connections=64)
+    ctx = torch.randn(batch_size, hidden_dim)
+    ei_out = ei_cls(ctx, return_balance=True)
+    print(f"E/I signs shape: {ei_out['ei_signs'].shape}")
+    print(f"Balance loss: {ei_out['ei_balance_loss'].item():.4f}")
+    print(f"Excitatory ratio: {ei_out['excitatory_ratio'].tolist()}")
     
     # Test adaptive trigger system
     print("\n\nTesting AdaptiveTriggerSystem...")
@@ -471,6 +582,8 @@ if __name__ == "__main__":
     
     # Count parameters
     total_params = sum(p.numel() for p in rna_layer.parameters())
+    ei_params = sum(p.numel() for p in rna_layer.ei_classifier.parameters())
     print(f"\nRNA Editing Layer parameters: {total_params:,}")
+    print(f"  E/I Classifier parameters: {ei_params:,}")
     
     print("\nAll RNA editing tests passed!")

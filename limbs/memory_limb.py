@@ -25,9 +25,36 @@ from collections import deque
 from .base_limb import BaseLimb
 
 
+class SpatiotemporalContext:
+    """
+    Rich context for episodic memories: (where, what, when) triples.
+    
+    Inspired by OpenClaw's spatial agent memory and the connectome's
+    closed sensorimotor loop — every experience is grounded in space and time.
+    """
+    __slots__ = ['spatial_context', 'temporal_context', 'object_refs', 'event_type']
+    
+    def __init__(
+        self,
+        spatial_context: Optional[torch.Tensor] = None,
+        temporal_context: Optional[int] = None,
+        object_refs: Optional[List[str]] = None,
+        event_type: str = 'observation'
+    ):
+        self.spatial_context = spatial_context  # [spatial_dim] position embedding
+        self.temporal_context = temporal_context  # Timestep
+        self.object_refs = object_refs or []  # Semantic labels
+        self.event_type = event_type  # observation, action, state_change
+
+
 class EpisodicMemory:
     """
-    Episodic memory buffer storing experiences with temporal context.
+    Episodic memory buffer storing experiences with spatiotemporal context.
+    
+    Each memory is a (where, what, when) triple enabling:
+    - Temporal retrieval: "what happened recently?"
+    - Spatial retrieval: "what was near position X?"
+    - Importance retrieval: "what mattered most?"
     """
     
     def __init__(self, capacity: int = 1000, hidden_dim: int = 256):
@@ -36,18 +63,28 @@ class EpisodicMemory:
         self.memories: deque = deque(maxlen=capacity)
         self.timestamps: deque = deque(maxlen=capacity)
         self.importance: deque = deque(maxlen=capacity)
+        self.contexts: deque = deque(maxlen=capacity)  # SpatiotemporalContext
         self.current_time = 0
     
     def store(
         self,
         memory: torch.Tensor,
         importance: float = 1.0,
-        context: Optional[Dict] = None
+        context: Optional[Dict] = None,
+        spatial_context: Optional[torch.Tensor] = None,
+        object_refs: Optional[List[str]] = None,
+        event_type: str = 'observation'
     ):
-        """Store a memory with timestamp and importance."""
-        self.memories.append(memory.detach())  # stay on same device
+        """Store a memory with timestamp, importance, and spatiotemporal context."""
+        self.memories.append(memory.detach())
         self.timestamps.append(self.current_time)
         self.importance.append(importance)
+        self.contexts.append(SpatiotemporalContext(
+            spatial_context=spatial_context.detach() if spatial_context is not None else None,
+            temporal_context=self.current_time,
+            object_refs=object_refs,
+            event_type=event_type,
+        ))
         self.current_time += 1
     
     def retrieve_recent(self, n: int = 10) -> List[torch.Tensor]:
@@ -65,6 +102,48 @@ class EpisodicMemory:
             reverse=True
         )[:n]
         return [self.memories[i] for i in indices]
+    
+    def retrieve_by_timerange(
+        self, start_time: int, end_time: int
+    ) -> List[Tuple[torch.Tensor, SpatiotemporalContext]]:
+        """Retrieve memories within a time range."""
+        results = []
+        for i, ts in enumerate(self.timestamps):
+            if start_time <= ts <= end_time:
+                results.append((self.memories[i], self.contexts[i]))
+        return results
+    
+    def retrieve_by_location(
+        self, query_pos: torch.Tensor, radius: float = 1.0, top_k: int = 10
+    ) -> List[Tuple[torch.Tensor, float, SpatiotemporalContext]]:
+        """
+        Retrieve memories near a spatial position.
+        
+        Args:
+            query_pos: Target position [spatial_dim]
+            radius: Maximum distance to include
+            top_k: Maximum results to return
+            
+        Returns:
+            List of (memory, distance, context) sorted by distance
+        """
+        results = []
+        for i, ctx in enumerate(self.contexts):
+            if ctx.spatial_context is not None:
+                dist = torch.norm(query_pos - ctx.spatial_context).item()
+                if dist <= radius:
+                    results.append((self.memories[i], dist, ctx))
+        
+        results.sort(key=lambda x: x[1])
+        return results[:top_k]
+    
+    def retrieve_by_event_type(self, event_type: str) -> List[Tuple[torch.Tensor, SpatiotemporalContext]]:
+        """Retrieve all memories of a specific event type."""
+        results = []
+        for i, ctx in enumerate(self.contexts):
+            if ctx.event_type == event_type:
+                results.append((self.memories[i], ctx))
+        return results
     
     def __len__(self) -> int:
         return len(self.memories)

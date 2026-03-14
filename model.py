@@ -528,7 +528,9 @@ class OctoTetrahedralModel(nn.Module):
             'head_gates': editing_result['head_gates'],
             'pathway_weights': editing_result['pathway_weights'],
             'confidence': editing_result['confidence'],
-            'adaptation_magnitude': editing_result['temperature'].mean()
+            'adaptation_magnitude': editing_result['temperature'].mean(),
+            'ei_signs': editing_result.get('ei_signs'),
+            'ei_balance_loss': editing_result.get('ei_balance_loss', torch.tensor(0.0, device=encoded.device)),
         }
         # edited: [batch, seq_len, hidden_dim]
         
@@ -619,79 +621,99 @@ class OctoTetrahedralModel(nn.Module):
             reasoned = multi_limb_output
         else:
             # Original non-looped path (backward compatible)
+            # === Two-Speed Routing (connectome-inspired) ===
+            # Fast path: high confidence → Perception→Spatial→Action (skip deliberation)
+            # Slow path: low confidence → full 11-limb deliberation
+            # MetaCognition's uncertainty drives the routing decision
             compound_loop_info = None
-            # Memory Limb
-            memory_out, memory_conf, _ = self.memory_limb(memory_enhanced)
-            # Spatial Limb
-            spatial_out, spatial_conf, _ = self.spatial(memory_enhanced)
-            # Language Limb
-            language_out, language_conf, _ = self.language(memory_enhanced)
-            # MetaCognition
-            meta_out, meta_conf, _ = self.metacognition(memory_enhanced)
-            # Reasoning Limb
-            reasoning_out, reasoning_conf, _ = self.reasoning(
-                memory_enhanced,
-                attention_mask=attention_mask,
-                return_confidence=return_confidences
-            )
-            # Perception echo
-            perception_echo = encoded
+            rna_confidence = editing_info['confidence']  # [batch, 1]
+            use_fast_path = (rna_confidence.mean().item() > 0.7) and not return_confidences
             
-            # === New cognitive petals ===
-            # Visualization (reconstructive, memory-based)
-            vis_out, vis_conf, _ = self.visualization(memory_enhanced)
-            # Imagination (generative, novelty-seeking)
-            imag_out, imag_conf, _ = self.imagination(memory_enhanced)
-            # Empathy (Theory of Mind)
-            empathy_out, empathy_conf, _ = self.empathy(memory_enhanced)
-            # Emotion (valence/arousal modulation)
-            emotion_out, emotion_conf, _ = self.emotion(memory_enhanced)
-            # Ethics (safety contraction)
-            ethics_out, ethics_conf, _ = self.ethics(memory_enhanced)
-            
-            # Dream Mode: blend visualization + imagination
-            dream_out, dream_info = self.dream_mode(
-                vis_out, imag_out, ethics_out, dream_mode=dream_mode
-            )
-            
-            # Emotion modulation: apply emotional signal to all limb outputs
-            emo_signal = self.emotion.get_modulation_signal()
-            if emo_signal is not None:
-                emo_vec, emo_strength = emo_signal
-                # Broadcast emotional modulation across sequence
-                emo_bias = (emo_strength.unsqueeze(1) * emo_vec.unsqueeze(1)) * 0.05
-                memory_out = memory_out + emo_bias
-                reasoning_out = reasoning_out + emo_bias
-                language_out = language_out + emo_bias
-            
-            # Store limb outputs for cognitive geometry engine (11 limbs)
-            _limb_outputs_for_cg = [memory_out, spatial_out, language_out,
-                                     meta_out, reasoning_out, perception_echo,
-                                     dream_out, empathy_out, emotion_out,
-                                     ethics_out, vis_out]
-            
-            # Compound Braid (11 limbs)
-            moe_expert_loads = None
-            if self.config.moe.enabled and self.config.moe.compound_enabled:
-                moe_expert_loads = self._get_first_compound_moe_loads()
-            combined_limbs, braid_info = self.compound_braid(
-                [memory_out, spatial_out, language_out, meta_out,
-                 reasoning_out, perception_echo, dream_out,
-                 empathy_out, emotion_out, ethics_out, vis_out],
-                attention_mask=attention_mask,
-                moe_expert_loads=moe_expert_loads,
-            )
-            if braid_info.get('braid_signal') is not None:
-                self._cached_braid_signal = braid_info['braid_signal'].detach()
-            
-            multi_limb_output = memory_enhanced + 0.3 * combined_limbs
-            
-            # Post-Braid Reasoning
-            reasoned, _, _ = self.reasoning(
-                multi_limb_output,
-                attention_mask=attention_mask,
-                return_confidence=return_confidences
-            )
+            if use_fast_path:
+                # Fast path: only core limbs (perception already done, spatial + action)
+                spatial_out, spatial_conf, _ = self.spatial(memory_enhanced)
+                fast_output = memory_enhanced + 0.3 * spatial_out
+                reasoned, _, _ = self.reasoning(
+                    fast_output, attention_mask=attention_mask,
+                    return_confidence=return_confidences
+                )
+                _limb_outputs_for_cg = None
+                two_speed_info = {'path': 'fast', 'confidence': rna_confidence.mean().item()}
+            else:
+                two_speed_info = {'path': 'slow', 'confidence': rna_confidence.mean().item()}
+                # Slow path: full deliberation with all 11 limbs
+                # Memory Limb
+                memory_out, memory_conf, _ = self.memory_limb(memory_enhanced)
+                # Spatial Limb
+                spatial_out, spatial_conf, _ = self.spatial(memory_enhanced)
+                # Language Limb
+                language_out, language_conf, _ = self.language(memory_enhanced)
+                # MetaCognition
+                meta_out, meta_conf, _ = self.metacognition(memory_enhanced)
+                # Reasoning Limb
+                reasoning_out, reasoning_conf, _ = self.reasoning(
+                    memory_enhanced,
+                    attention_mask=attention_mask,
+                    return_confidence=return_confidences
+                )
+                # Perception echo
+                perception_echo = encoded
+                
+                # === New cognitive petals ===
+                # Visualization (reconstructive, memory-based)
+                vis_out, vis_conf, _ = self.visualization(memory_enhanced)
+                # Imagination (generative, novelty-seeking)
+                imag_out, imag_conf, _ = self.imagination(memory_enhanced)
+                # Empathy (Theory of Mind)
+                empathy_out, empathy_conf, _ = self.empathy(memory_enhanced)
+                # Emotion (valence/arousal modulation)
+                emotion_out, emotion_conf, _ = self.emotion(memory_enhanced)
+                # Ethics (safety contraction)
+                ethics_out, ethics_conf, _ = self.ethics(memory_enhanced)
+                
+                # Dream Mode: blend visualization + imagination
+                dream_out, dream_info = self.dream_mode(
+                    vis_out, imag_out, ethics_out, dream_mode=dream_mode
+                )
+                
+                # Emotion modulation: apply emotional signal to all limb outputs
+                emo_signal = self.emotion.get_modulation_signal()
+                if emo_signal is not None:
+                    emo_vec, emo_strength = emo_signal
+                    # Broadcast emotional modulation across sequence
+                    emo_bias = (emo_strength.unsqueeze(1) * emo_vec.unsqueeze(1)) * 0.05
+                    memory_out = memory_out + emo_bias
+                    reasoning_out = reasoning_out + emo_bias
+                    language_out = language_out + emo_bias
+                
+                # Store limb outputs for cognitive geometry engine (11 limbs)
+                _limb_outputs_for_cg = [memory_out, spatial_out, language_out,
+                                         meta_out, reasoning_out, perception_echo,
+                                         dream_out, empathy_out, emotion_out,
+                                         ethics_out, vis_out]
+                
+                # Compound Braid (11 limbs)
+                moe_expert_loads = None
+                if self.config.moe.enabled and self.config.moe.compound_enabled:
+                    moe_expert_loads = self._get_first_compound_moe_loads()
+                combined_limbs, braid_info = self.compound_braid(
+                    [memory_out, spatial_out, language_out, meta_out,
+                     reasoning_out, perception_echo, dream_out,
+                     empathy_out, emotion_out, ethics_out, vis_out],
+                    attention_mask=attention_mask,
+                    moe_expert_loads=moe_expert_loads,
+                )
+                if braid_info.get('braid_signal') is not None:
+                    self._cached_braid_signal = braid_info['braid_signal'].detach()
+                
+                multi_limb_output = memory_enhanced + 0.3 * combined_limbs
+                
+                # Post-Braid Reasoning
+                reasoned, _, _ = self.reasoning(
+                    multi_limb_output,
+                    attention_mask=attention_mask,
+                    return_confidence=return_confidences
+                )
         
         # === 7. Planning Limb: Action Sequencing ===
         # Get current state from reasoned output
@@ -775,6 +797,12 @@ class OctoTetrahedralModel(nn.Module):
                 ethics_align = self.ethics.get_alignment_loss()
                 if isinstance(ethics_align, torch.Tensor):
                     loss = loss + 0.01 * ethics_align
+                
+                # Add E/I balance regularization (connectome-inspired)
+                # Maintains ~80/20 excitatory/inhibitory ratio for stable dynamics
+                ei_loss = editing_info.get('ei_balance_loss', torch.tensor(0.0, device=loss.device))
+                if isinstance(ei_loss, torch.Tensor):
+                    loss = loss + 0.005 * ei_loss
         
         # === Build Output ===
         braid_info = braid_info if not self.use_compound_loop else {}
@@ -794,6 +822,11 @@ class OctoTetrahedralModel(nn.Module):
             'dream_info': dream_info_out,
             'emotional_state': self.emotion.get_emotional_state(),
             'safety_state': self.ethics.get_safety_state(),
+            'editing_info': {
+                'ei_signs': editing_info.get('ei_signs'),
+                'ei_balance_loss': editing_info.get('ei_balance_loss'),
+                'two_speed': two_speed_info if 'two_speed_info' in dir() else None,
+            },
         }
         
         if return_confidences:
