@@ -213,6 +213,10 @@ class VisionEncoder(nn.Module):
         rgb = palette[grid_clamped]  # [B, H, W, 3]
         rgb = rgb.permute(0, 3, 1, 2)  # [B, 3, H, W]
 
+        # Match model dtype (FP16 if model is half precision)
+        model_dtype = next(self.parameters()).dtype
+        rgb = rgb.to(dtype=model_dtype)
+
         # Upscale small grids to minimum patch size
         if rgb.shape[2] < self.patch_size or rgb.shape[3] < self.patch_size:
             scale = max(self.patch_size // min(rgb.shape[2], rgb.shape[3]) + 1, 2)
