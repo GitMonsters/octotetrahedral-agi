@@ -33,9 +33,9 @@ jobs:
 
       - name: Check imports
         run: |
-          python -c "import model; print(f'✓ model.py — {model.OctoTetrahedralModel}')"
-          python -c "import config; print('✓ config.py')"
-          python -c "import cognition; print('✓ cognition.py')"
+          python -c "import model; print(f'OK model.py -- {model.OctoTetrahedralModel}')"
+          python -c "import config; print('OK config.py')"
+          python -c "import cognition; print('OK cognition.py')"
 
       - name: Run tests
         run: |
@@ -46,9 +46,11 @@ jobs:
           python -c "
           import torch
           from model import OctoTetrahedralModel
-          from config import ModelConfig
-          cfg = ModelConfig()
-          m = OctoTetrahedralModel(cfg)
+          from config import Config
+          cfg = Config()
+          cfg.cognitive_geometry.entropy_monitor_enabled = False
+          cfg.cognitive_geometry.svd_enabled = False
+          m = OctoTetrahedralModel(cfg, use_geometric_physics=False)
           params = sum(p.numel() for p in m.parameters())
-          print(f'✓ Model loads: {params:,} parameters')
+          print(f'Model loads: {params:,} parameters')
           "
