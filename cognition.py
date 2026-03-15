@@ -15,8 +15,7 @@ to form a complete cognitive system.
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Optional, Tuple, Dict, Any, List, Set
+from typing import Optional, Tuple, Dict, Any, List
 from dataclasses import dataclass, field
 from collections import deque, defaultdict
 import math
@@ -240,8 +239,8 @@ class CausalDiscovery:
         if was_1d:
             features = features.unsqueeze(0)
         
-        batch_size = features.size(0)
-        device = features.device
+        _batch_size = features.size(0)
+        _device = features.device
         
         # Compute activation of each discovered variable
         var_activations = []
@@ -472,9 +471,9 @@ class AbstractionHierarchy:
         """Get summary statistics."""
         return {
             'total_concepts': len(self.concepts),
-            'concepts_per_level': [len(l) for l in self.levels],
+            'concepts_per_level': [len(lv) for lv in self.levels],
             'max_depth': max(
-                (i + 1 for i, l in enumerate(self.levels) if l),
+                (i + 1 for i, lv in enumerate(self.levels) if lv),
                 default=0
             ),
             'avg_activation': (
@@ -785,7 +784,7 @@ class MetaLearner:
         older_mean = sum(older) / len(older) if older else 0
         
         # Adaptation based on trend
-        adaptation_rate = self.config.meta_param_adaptation_rate
+        _adaptation_rate = self.config.meta_param_adaptation_rate  # noqa: F841
         
         if recent_mean > older_mean:
             # Things are improving - keep current strategy
@@ -1090,12 +1089,10 @@ class AGICognition(nn.Module):
             features = features.unsqueeze(0)
         
         batch_size = features.size(0)
-        results = {}
         
         # Process each sample in batch
         for i in range(batch_size):
             feat = features[i]
-            feat_list = feat.detach().cpu().tolist()
             
             # 1. Causal Discovery
             self.causal_discovery.observe(feat, action, reward)
@@ -1191,16 +1188,16 @@ if __name__ == "__main__":
     summary = cognition.summary()
     print("\n=== Cognitive State ===")
     print(f"Step: {summary['step']}")
-    print(f"\nCausal Discovery:")
+    print("\nCausal Discovery:")
     print(f"  Variables: {summary['causal_discovery']['num_variables']}")
-    print(f"\nAbstraction:")
+    print("\nAbstraction:")
     print(f"  Concepts: {summary['abstraction']['total_concepts']}")
-    print(f"\nWorld Model:")
+    print("\nWorld Model:")
     print(f"  Transitions: {summary['world_model']['num_transitions']}")
-    print(f"\nMeta-Learning:")
+    print("\nMeta-Learning:")
     print(f"  LR: {summary['meta_learning']['current_lr']:.6f}")
     print(f"  Exploration: {summary['meta_learning']['current_exploration']:.3f}")
-    print(f"\nSymbols:")
+    print("\nSymbols:")
     print(f"  Total: {summary['symbols']['total_symbols']}")
     
     # Test imagination

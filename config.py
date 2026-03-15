@@ -289,7 +289,7 @@ class ScaleConfig:
     
     def get_hardware_estimate(self) -> dict:
         """Estimate hardware requirements for current preset."""
-        h, l, heads, experts, ffn, top_k, active_ratio = self.PRESETS[self.preset]
+        h, num_layers, heads, experts, ffn, top_k, active_ratio = self.PRESETS[self.preset]
         
         # Dense params per layer: Q,K,V,O projections + layer norms
         dense_per_layer = 4 * h * h + 4 * h  # attention + norms
@@ -304,7 +304,7 @@ class ScaleConfig:
         braid_overhead = 14 * h * h * 4  # cross-attention per stream
         vision_audio_embod = 3 * h * h * 16  # ~16 layers across 3 encoders
         
-        total_params = l * per_layer + embedding + braid_overhead + vision_audio_embod
+        total_params = num_layers * per_layer + embedding + braid_overhead + vision_audio_embod
         active_params = int(total_params * active_ratio)
         
         # Memory estimates (bf16 = 2 bytes/param, optimizer = 8 bytes/param)
@@ -328,7 +328,7 @@ class ScaleConfig:
             'min_h100_gpus': min_gpus,
             'recommended_gpus': min_gpus * 2,  # 2× for headroom
             'hidden_dim': h,
-            'num_layers': l,
+            'num_layers': num_layers,
             'num_heads': heads,
             'num_experts': experts,
             'expert_ffn_dim': ffn,
@@ -473,7 +473,7 @@ class Config:
         assert self.model.hidden_dim % self.model.num_heads == 0, \
             f"hidden_dim ({self.model.hidden_dim}) must be divisible by num_heads ({self.model.num_heads})"
         assert self.model.head_dim == self.model.hidden_dim // self.model.num_heads, \
-            f"head_dim mismatch"
+            "head_dim mismatch"
         assert self.geometry.num_points == (
             self.geometry.num_vertices + 
             self.geometry.num_edge_midpoints + 

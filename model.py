@@ -36,10 +36,8 @@ from typing import Optional, Tuple, Dict, Any, List
 
 from config import Config, get_config
 from core.tetrahedral_geometry import TetrahedralGeometry
-from core.tetrahedral_attention import TetrahedralAttention
 from core.tetrahedral_core import TetrahedralCore
 from core.working_memory import WorkingMemory
-from adaptation.lora import LoRALayer
 from adaptation.rna_editing import RNAEditingLayer
 from limbs.perception_limb import PerceptionLimb
 from limbs.reasoning_limb import ReasoningLimb
@@ -65,8 +63,7 @@ from cognition import AGICognition, CognitionConfig
 from physics.geometric_physics_layer import (
     GeometricPhysicsLayer,
     GeometricPhysicsConfig,
-    QuantumEnhancedHubSync,
-    create_geometric_physics_layer
+    QuantumEnhancedHubSync
 )
 
 # Tier 2 integration: VoxelMemory + Spiking LIF layer
@@ -728,8 +725,6 @@ class OctoTetrahedralModel(nn.Module):
         # === 4. Working Memory: Read/Write ===
         if use_memory:
             # Use reasoning state as query for memory
-            memory_query = core_output.mean(dim=1, keepdim=True)  # [batch, 1, hidden]
-            
             # Read from working memory
             memory_read, _ = self.working_memory.read(
                 core_output,  # Use full sequence as queries
@@ -898,7 +893,7 @@ class OctoTetrahedralModel(nn.Module):
         # Get current state from reasoned output
         current_state = reasoned.mean(dim=1)  # [batch, hidden]
         goal_state = current_state  # Use same as goal for now
-        planning_output = self.planning(current_state, goal_state)
+        _planning_output = self.planning(current_state, goal_state)  # noqa: F841
         
         # === 8. AGI Cognition: Higher-level reasoning ===
         # Feature vector for cognition module
@@ -1401,11 +1396,11 @@ class OctoTetrahedralModel(nn.Module):
     
     def evolve_connectome(
         self,
-        eval_fn: 'Callable[[], float]',
+        eval_fn,
         num_generations: int = 10,
         population_size: int = 20,
         device: str = 'cpu',
-    ) -> 'Genome':
+    ) -> dict:
         """
         Evolve the spiking layer's connectome wiring via genetic algorithms.
         
@@ -1446,7 +1441,7 @@ class OctoTetrahedralModel(nn.Module):
         max_iterations: int = 5,
         confidence_threshold: float = 0.85,
         device: str = 'cpu',
-    ) -> 'SensorimotorResult':
+    ) -> dict:
         """
         Solve an ARC grid via iterative sensorimotor loop.
         
@@ -1511,7 +1506,7 @@ if __name__ == "__main__":
     config = get_config()
     model = OctoTetrahedralModel(config)
     
-    print(f"\nModel created successfully!")
+    print("\nModel created successfully!")
     print(f"Total parameters: {model.get_num_params():,}")
     print(f"Trainable parameters: {model.get_num_params(trainable_only=True):,}")
     
@@ -1521,7 +1516,7 @@ if __name__ == "__main__":
     input_ids = torch.randint(0, 1000, (batch_size, seq_len))
     labels = torch.randint(0, 1000, (batch_size, seq_len))
     
-    print(f"\nTesting forward pass...")
+    print("\nTesting forward pass...")
     print(f"Input shape: {input_ids.shape}")
     
     output = model(
@@ -1536,7 +1531,7 @@ if __name__ == "__main__":
     print(f"Confidences: {output['confidences']}")
     
     # Test generation
-    print(f"\nTesting generation...")
+    print("\nTesting generation...")
     prompt = torch.randint(0, 1000, (1, 10))
     generated = model.generate(
         prompt,
@@ -1547,7 +1542,7 @@ if __name__ == "__main__":
     print(f"Generated length: {generated.size(1)}")
     
     # Test hub sync
-    print(f"\nTesting hub sync...")
+    print("\nTesting hub sync...")
     for _ in range(15):
         result = model.sync_limbs(performance=0.85)
         if result:
@@ -1555,7 +1550,7 @@ if __name__ == "__main__":
     
     # Get stats
     stats = model.get_stats()
-    print(f"\nModel stats:")
+    print("\nModel stats:")
     print(f"  Forward count: {stats['forward_count']}")
     print(f"  Memory utilization: {stats['memory_utilization']:.4f}")
     

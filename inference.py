@@ -11,7 +11,7 @@ Features:
 
 import torch
 import torch.nn.functional as F
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any
 import logging
 
 try:
@@ -20,7 +20,7 @@ try:
 except ImportError:
     HAS_TIKTOKEN = False
 
-from config import Config, get_config
+from config import get_config
 from model import OctoTetrahedralModel
 
 logging.basicConfig(level=logging.INFO)
@@ -360,7 +360,7 @@ if __name__ == "__main__":
     # Test task completion
     print("\nTask completion test:")
     result = inference.complete_task("What is 7 + 8? ")
-    print(f"  Task: What is 7 + 8?")
+    print("  Task: What is 7 + 8?")
     print(f"  Answer: {result['generated']}")
     
     # Test confidence
