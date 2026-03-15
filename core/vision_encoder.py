@@ -173,18 +173,27 @@ class VisionEncoder(nn.Module):
             'num_patches': num_patches,
         }
 
-    def encode_grid(self, grid: torch.Tensor) -> dict:
+    def encode_grid(self, grid) -> dict:
         """Encode an ARC-style grid as a 'visual' input.
 
-        Converts a [B, H, W] integer grid (values 0-9) into a
-        pseudo-image by mapping colors to RGB, then encoding.
+        Converts a grid (values 0-9) into a pseudo-image by mapping
+        colors to RGB, then encoding.
 
         Args:
-            grid: [B, H, W] tensor with values 0-9
+            grid: [B, H, W] tensor, or a 2D Python list [[int, ...], ...]
 
         Returns:
             Same as forward()
         """
+        # Convert list to tensor if needed
+        if isinstance(grid, list):
+            grid = torch.tensor(grid, dtype=torch.long)
+        if grid.dim() == 2:
+            grid = grid.unsqueeze(0)  # Add batch dim
+
+        device = next(self.parameters()).device
+        grid = grid.to(device)
+
         # ARC color palette (matching the standard visualization)
         palette = torch.tensor([
             [0, 0, 0],        # 0: black
@@ -197,7 +206,7 @@ class VisionEncoder(nn.Module):
             [255, 133, 27],   # 7: orange
             [127, 219, 255],  # 8: azure
             [135, 12, 37],    # 9: maroon
-        ], dtype=torch.float32, device=grid.device) / 255.0
+        ], dtype=torch.float32, device=device) / 255.0
 
         # Map grid values to RGB
         grid_clamped = grid.clamp(0, 9).long()
