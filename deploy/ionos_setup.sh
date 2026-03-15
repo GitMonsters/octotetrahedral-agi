@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-MODEL_CONFIG="${MODEL_CONFIG:-7b}"    # 7b | 70b | 1.72t
+MODEL_CONFIG="${MODEL_CONFIG:-tiny}"    # tiny | base | large | ultra (scale presets)
 REPO_URL="${REPO_URL:-https://github.com/GitMonsters/octotetrahedral-agi.git}"
 APP_DIR="/opt/octotetrahedral"
 PORT=8000
@@ -21,7 +21,7 @@ OCTO_API_KEYS="${OCTO_API_KEYS:-}" # Comma-separated API keys
 
 echo "============================================"
 echo " OctoTetrahedral AGI — GPU VM Setup"
-echo " Config: ${MODEL_CONFIG}"
+echo " Scale: ${MODEL_CONFIG} (multi-modal, genus-13)"
 echo " Domain: ${DOMAIN:-none (HTTP only)}"
 echo "============================================"
 
@@ -54,7 +54,7 @@ cd "$APP_DIR"
 
 # --- 4. Build container ---
 echo "[4/7] Building Docker image..."
-docker build -f deploy/Dockerfile.gpu -t octotetrahedral:${MODEL_CONFIG}-moe .
+docker build -f deploy/Dockerfile.gpu -t octotetrahedral:multimodal .
 
 # --- 5. Run container ---
 echo "[5/7] Starting inference server..."
@@ -72,8 +72,8 @@ docker run -d \
     -p ${PORT}:8000 \
     ${DOCKER_ENV} \
     -v /opt/octotetrahedral/checkpoints:/app/checkpoints \
-    octotetrahedral:${MODEL_CONFIG}-moe \
-    python serve.py --config ${MODEL_CONFIG} --device cuda:0
+    octotetrahedral:multimodal \
+    python serve.py --scale ${MODEL_CONFIG} --device cuda:0
 
 # --- 6. Wait for health ---
 echo "[6/7] Waiting for server to become healthy..."

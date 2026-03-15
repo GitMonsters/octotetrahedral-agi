@@ -1,18 +1,22 @@
 """
-OctoTetrahedral AGI — FastAPI Inference Server
+OctoTetrahedral AGI — FastAPI Inference Server (Multi-Modal)
 
 Serves MoE models via REST API with streaming support.
 Compatible with NVIDIA NIM deployment patterns.
+Supports vision, audio, and embodiment inputs (Genus-13 topology).
 
 Usage:
-    # Local dev
-    python serve.py --config 7b --device cuda:0
+    # Local dev (current 204M model)
+    python serve.py --scale tiny --device cuda:0
 
     # With specific checkpoint
-    python serve.py --config 7b --checkpoint checkpoints/best.pt
+    python serve.py --scale tiny --checkpoint checkpoints/soa_500.pt
+
+    # Legacy config mode
+    python serve.py --config 7b --device cuda:0
 
     # Docker (see deploy/Dockerfile.gpu)
-    docker run --gpus all -p 8000:8000 octotetrahedral:7b-moe
+    docker run --gpus all -p 8000:8000 octotetrahedral:multimodal
 """
 
 import argparse
@@ -72,6 +76,8 @@ class ModelInfoResponse(BaseModel):
     num_experts: int
     top_k: int
     max_seq_len: int
+    modalities: List[str] = []
+    genus: int = 13
 
 
 class HealthResponse(BaseModel):
@@ -86,18 +92,26 @@ class HealthResponse(BaseModel):
 # Model loading
 # ---------------------------------------------------------------------------
 
-def load_model(config_name: str, checkpoint_path: Optional[str], target_device: str):
+def load_model(config_name: str, checkpoint_path: Optional[str], target_device: str,
+               scale_preset: Optional[str] = None):
     """Load the OctoTetrahedral model."""
     global model, config, device, model_info
 
-    from train_distributed import load_config
     from model import OctoTetrahedralModel
 
-    config = load_config(config_name)
+    if scale_preset:
+        from core.distributed_scale import apply_scale_preset
+        config = apply_scale_preset(scale_preset)
+        config_label = f"{scale_preset}"
+    else:
+        from train_distributed import load_config
+        config = load_config(config_name)
+        config_label = config_name
+
     config.device = target_device
     device = torch.device(target_device)
 
-    logger.info(f"Loading {config_name} config (d={config.model.hidden_dim}, "
+    logger.info(f"Loading {config_label} config (d={config.model.hidden_dim}, "
                 f"L={config.model.num_layers}, MoE={config.moe.enabled})")
 
     # Use bf16 for GPU inference
@@ -117,19 +131,22 @@ def load_model(config_name: str, checkpoint_path: Optional[str], target_device: 
     active = model.get_active_params()
 
     model_info = {
-        "model_name": f"OctoTetrahedral-{config_name}-MoE",
+        "model_name": f"OctoTetrahedral-{config_label}-MoE-MultiModal",
         "total_params": f"{total / 1e9:.1f}B",
         "active_params": f"{active / 1e9:.1f}B",
-        "config_name": config_name,
+        "config_name": config_label,
         "device": str(device),
         "dtype": str(dtype),
         "moe_enabled": config.moe.enabled,
         "num_experts": config.moe.num_experts,
         "top_k": config.moe.top_k,
         "max_seq_len": config.model.max_seq_len,
+        "modalities": ["text", "vision", "audio", "embodiment"],
+        "genus": 13,
     }
 
     logger.info(f"Model loaded: {total / 1e9:.1f}B total, {active / 1e9:.1f}B active, {dtype}")
+    logger.info(f"Multi-modal: vision ✓ | audio ✓ | embodiment ✓ | genus-13 topology")
 
 
 def tokenize(text: str) -> torch.Tensor:
@@ -193,8 +210,11 @@ _metrics = {
 
 def parse_args():
     parser = argparse.ArgumentParser(description="OctoTetrahedral Inference Server")
-    parser.add_argument("--config", type=str, default="7b",
+    parser.add_argument("--config", type=str, default="default",
                         choices=["default", "7b", "70b", "1.72t"])
+    parser.add_argument("--scale", type=str, default=None,
+                        choices=["tiny", "base", "large", "ultra"],
+                        help="Scale preset (overrides --config)")
     parser.add_argument("--checkpoint", type=str, default=None,
                         help="Path to model checkpoint")
     parser.add_argument("--device", type=str, default=None,
@@ -213,14 +233,14 @@ async def lifespan(app: FastAPI):
     target_device = _args.device
     if target_device is None:
         target_device = "cuda" if torch.cuda.is_available() else "cpu"
-    load_model(_args.config, _args.checkpoint, target_device)
+    load_model(_args.config, _args.checkpoint, target_device, scale_preset=_args.scale)
     yield
 
 
 app = FastAPI(
     title="OctoTetrahedral AGI API",
-    description="1.72T MoE model inference API",
-    version="1.0.0",
+    description="Multi-Modal MoE inference — text + vision + audio + embodiment (Genus-13)",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
