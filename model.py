@@ -73,6 +73,11 @@ from physics.geometric_physics_layer import (
 from core.voxel_memory import VoxelMemory
 from core.spiking_lif import SpikingTetrahedralLayer
 
+# Multi-modal encoders: Vision + Audio + Embodiment
+from core.vision_encoder import VisionEncoder
+from core.audio_encoder import AudioEncoder
+from core.embodiment import EmbodimentInterface, EmbodimentConfig
+
 
 class OctoTetrahedralModel(nn.Module):
     """
@@ -282,6 +287,41 @@ class OctoTetrahedralModel(nn.Module):
                 self.geometry.adjacency, self.geometry.distances
             )
         
+        # === Multi-Modal Encoders ===
+        # Vision: ViT-style patch encoder (images → embeddings)
+        self.vision_encoder = VisionEncoder(
+            hidden_dim=self.hidden_dim,
+            patch_size=16,
+            in_channels=3,
+            num_layers=4,
+            num_heads=self.num_heads,
+            max_patches=1024,
+        )
+        
+        # Audio: Mel spectrogram → transformer encoder
+        self.audio_encoder = AudioEncoder(
+            hidden_dim=self.hidden_dim,
+            n_mels=80,
+            num_layers=4,
+            num_heads=self.num_heads,
+            max_frames=3000,
+            sample_rate=16000,
+        )
+        
+        # Embodiment: Proprioception + touch + action decoding
+        self.embodiment = EmbodimentInterface(
+            EmbodimentConfig(hidden_dim=self.hidden_dim)
+        )
+        
+        # Multi-modal fusion: cross-attention to merge modalities before compound braid
+        self.modality_fusion = nn.MultiheadAttention(
+            self.hidden_dim, self.num_heads, dropout=self.config.model.dropout, batch_first=True
+        )
+        self.modality_gate = nn.Sequential(
+            nn.Linear(self.hidden_dim * 2, self.hidden_dim),
+            nn.Sigmoid(),
+        )
+        
         # === MetaCognition Limb (Self-Monitoring) ===
         self.metacognition = MetaCognitionLimb(
             hidden_dim=self.hidden_dim,
@@ -346,10 +386,11 @@ class OctoTetrahedralModel(nn.Module):
         self.dream_mode = DreamMode(hidden_dim=self.hidden_dim)
         
         # === Compound Braid (Cross-Limb Information Exchange) ===
+        # 11 original limbs + 3 modalities (vision, audio, embodiment) = 14 streams
         moe_signal_dim = self.config.moe.num_experts if self.config.moe.enabled and self.config.moe.compound_enabled else 0
         self.compound_braid = CompoundBraid(
             hidden_dim=self.hidden_dim,
-            num_limbs=11,  # 6 original + 5 new cognitive petals
+            num_limbs=14,  # 11 cognitive + vision + audio + embodiment
             num_heads=self.num_heads // 4,
             dropout=self.config.model.dropout,
             braid_strength=0.3,
@@ -516,6 +557,10 @@ class OctoTetrahedralModel(nn.Module):
         embeddings: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
         labels: Optional[torch.Tensor] = None,
+        images: Optional[torch.Tensor] = None,
+        audio: Optional[torch.Tensor] = None,
+        proprioception: Optional[torch.Tensor] = None,
+        touch: Optional[torch.Tensor] = None,
         return_dict: bool = True,
         return_confidences: bool = False,
         use_memory: bool = True,
@@ -530,6 +575,10 @@ class OctoTetrahedralModel(nn.Module):
             embeddings: Pre-computed embeddings (alternative to input_ids)
             attention_mask: Attention mask [batch, seq_len]
             labels: Target labels for loss computation [batch, seq_len]
+            images: Visual input [batch, C, H, W] (optional)
+            audio: Audio waveform [batch, T] or spectrogram [batch, T, n_mels] (optional)
+            proprioception: Body state [batch, proprio_dim] (optional)
+            touch: Tactile data [batch, touch_dim] (optional)
             return_dict: Whether to return dict (always True for now)
             return_confidences: Whether to compute limb confidences
             use_memory: Whether to use working memory
@@ -619,6 +668,63 @@ class OctoTetrahedralModel(nn.Module):
             spiking_info['active'] = False
             spiking_info['skipped_reason'] = 'error'
         
+        # === 3.8 Multi-Modal Encoding ===
+        # Encode vision, audio, embodiment inputs (if provided) and fuse with core output
+        multimodal_info = {}
+        vision_emb = None
+        audio_emb = None
+        embodiment_emb = None
+        seq_len = core_output.shape[1]
+        
+        if images is not None:
+            try:
+                vis_result = self.vision_encoder(images, target_seq_len=seq_len)
+                vision_emb = vis_result['embeddings']  # [B, seq_len, D]
+                multimodal_info['vision'] = {'num_patches': vis_result['num_patches']}
+            except Exception:
+                multimodal_info['vision'] = {'error': True}
+        
+        if audio is not None:
+            try:
+                aud_result = self.audio_encoder(audio, target_seq_len=seq_len)
+                audio_emb = aud_result['embeddings']  # [B, seq_len, D]
+                multimodal_info['audio'] = {'num_frames': aud_result['num_frames']}
+            except Exception:
+                multimodal_info['audio'] = {'error': True}
+        
+        if proprioception is not None:
+            try:
+                emb_result = self.embodiment(
+                    proprioception=proprioception,
+                    touch=touch,
+                    vision_embeddings=vision_emb,
+                    audio_embeddings=audio_emb,
+                    return_actions=True,
+                )
+                # Pool embodiment embeddings to match seq_len
+                emb_raw = emb_result['embeddings']  # [B, N, D]
+                if emb_raw.shape[1] != seq_len:
+                    emb_raw = emb_raw.transpose(1, 2)
+                    emb_raw = F.adaptive_avg_pool1d(emb_raw, seq_len)
+                    emb_raw = emb_raw.transpose(1, 2)
+                embodiment_emb = emb_raw
+                multimodal_info['embodiment'] = {
+                    'actions': emb_result.get('actions'),
+                    'world_prediction': emb_result.get('world_prediction'),
+                }
+            except Exception:
+                multimodal_info['embodiment'] = {'error': True}
+        
+        # Fuse modalities with core output via gated cross-attention
+        modality_inputs = [m for m in [vision_emb, audio_emb, embodiment_emb] if m is not None]
+        if modality_inputs:
+            modality_concat = torch.stack(modality_inputs, dim=1).mean(dim=1)  # [B, seq_len, D]
+            fused, _ = self.modality_fusion(core_output, modality_concat, modality_concat)
+            gate = self.modality_gate(torch.cat([core_output, fused], dim=-1))
+            core_output = core_output + gate * fused
+            multimodal_info['fused'] = True
+            multimodal_info['num_modalities'] = len(modality_inputs)
+        
         # === 4. Working Memory: Read/Write ===
         if use_memory:
             # Use reasoning state as query for memory
@@ -640,6 +746,12 @@ class OctoTetrahedralModel(nn.Module):
         
         # === 5-7. Limb Processing — optionally wrapped in compound loop ===
         _limb_outputs_for_cg = None  # Collected for cognitive geometry engine
+        
+        # Stash multi-modal embeddings for compound loop access
+        self._current_vision_emb = vision_emb
+        self._current_audio_emb = audio_emb
+        self._current_embodiment_emb = embodiment_emb
+        
         if self.use_compound_loop and self.compound_loop is not None:
             # Initialize loop memory state (differentiable within loop)
             self._loop_memory_state = self.working_memory.memory.clone()
@@ -753,14 +865,20 @@ class OctoTetrahedralModel(nn.Module):
                                          dream_out, empathy_out, emotion_out,
                                          ethics_out, vis_out]
                 
-                # Compound Braid (11 limbs)
+                # Compound Braid (11 cognitive + 3 modalities = 14 streams)
+                # Use zero tensors for absent modalities to keep braid size consistent
+                _vis_stream = vision_emb if vision_emb is not None else torch.zeros_like(memory_out)
+                _aud_stream = audio_emb if audio_emb is not None else torch.zeros_like(memory_out)
+                _emb_stream = embodiment_emb if embodiment_emb is not None else torch.zeros_like(memory_out)
+                
                 moe_expert_loads = None
                 if self.config.moe.enabled and self.config.moe.compound_enabled:
                     moe_expert_loads = self._get_first_compound_moe_loads()
                 combined_limbs, braid_info = self.compound_braid(
                     [memory_out, spatial_out, language_out, meta_out,
                      reasoning_out, perception_echo, dream_out,
-                     empathy_out, emotion_out, ethics_out, vis_out],
+                     empathy_out, emotion_out, ethics_out, vis_out,
+                     _vis_stream, _aud_stream, _emb_stream],
                     attention_mask=attention_mask,
                     moe_expert_loads=moe_expert_loads,
                 )
@@ -889,6 +1007,7 @@ class OctoTetrahedralModel(nn.Module):
                 'two_speed': two_speed_info if 'two_speed_info' in dir() else None,
             },
             'spiking_info': spiking_info,
+            'multimodal_info': multimodal_info,
         }
         
         if return_confidences:
@@ -1005,14 +1124,22 @@ class OctoTetrahedralModel(nn.Module):
         ethics_out, _, _ = self.ethics(x)
         dream_out, _ = self.dream_mode(vis_out, imag_out, ethics_out)
 
-        # Compound Braid (11 limbs)
+        # Compound Braid (11 cognitive + 3 modalities = 14 streams)
+        _vis_stream = getattr(self, '_current_vision_emb', None)
+        _aud_stream = getattr(self, '_current_audio_emb', None)
+        _emb_stream = getattr(self, '_current_embodiment_emb', None)
+        _zero = torch.zeros_like(memory_out)
+        
         moe_expert_loads = None
         if self.config.moe.enabled and self.config.moe.compound_enabled:
             moe_expert_loads = self._get_first_compound_moe_loads()
         combined_limbs, braid_info = self.compound_braid(
             [memory_out, spatial_out, language_out, meta_out,
              reasoning_out, perception_echo, dream_out,
-             empathy_out, emotion_out, ethics_out, vis_out],
+             empathy_out, emotion_out, ethics_out, vis_out,
+             _vis_stream if _vis_stream is not None else _zero,
+             _aud_stream if _aud_stream is not None else _zero,
+             _emb_stream if _emb_stream is not None else _zero],
             attention_mask=attention_mask,
             moe_expert_loads=moe_expert_loads,
         )

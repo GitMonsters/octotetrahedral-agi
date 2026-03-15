@@ -228,6 +228,42 @@ class MoEConfig:
 
 
 @dataclass
+class VisionConfig:
+    """Configuration for vision encoder"""
+    enabled: bool = True
+    patch_size: int = 16
+    in_channels: int = 3
+    num_layers: int = 4
+    max_patches: int = 1024
+    image_size: int = 224  # Default input size
+
+
+@dataclass
+class AudioConfig:
+    """Configuration for audio encoder"""
+    enabled: bool = True
+    n_mels: int = 80
+    num_layers: int = 4
+    max_frames: int = 3000
+    sample_rate: int = 16000
+    hop_length: int = 160
+
+
+@dataclass 
+class ScaleConfig:
+    """Configuration presets for scaling from 148M to 1.7T params"""
+    preset: str = 'base'  # tiny | base | large | ultra
+    
+    # Preset definitions (hidden_dim, num_layers, num_heads, num_experts, expert_ffn_dim)
+    PRESETS = {
+        'tiny':  (256,   3,  8,   64,    512),    # 148M  — current (CPU prototyping)
+        'base':  (1024, 12, 16,  128,   4096),    # ~2B   — single GPU
+        'large': (4096, 32, 32,  256,  16384),    # ~70B  — multi-GPU
+        'ultra': (8192, 64, 64, 1024,  32768),    # ~1.7T — distributed cluster
+    }
+
+
+@dataclass
 class QuantumCouplingConfig:
     """Configuration for quantum coupling between limbs"""
     # Coupling parameters (z = z³ + 7 → zero-point energy)
@@ -348,6 +384,9 @@ class Config:
     training: TrainingConfig = field(default_factory=TrainingConfig)
     compound_loop: CompoundLoopConfig = field(default_factory=CompoundLoopConfig)
     cognitive_geometry: CognitiveGeometryConfigDC = field(default_factory=CognitiveGeometryConfigDC)
+    vision: VisionConfig = field(default_factory=VisionConfig)
+    audio: AudioConfig = field(default_factory=AudioConfig)
+    scale: ScaleConfig = field(default_factory=ScaleConfig)
     
     # Device
     device: str = field(default_factory=_select_device)
