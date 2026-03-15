@@ -251,16 +251,90 @@ class AudioConfig:
 
 @dataclass 
 class ScaleConfig:
-    """Configuration presets for scaling from 148M to 1.7T params"""
-    preset: str = 'base'  # tiny | base | large | ultra
+    """Configuration presets for scaling from 148M to 1.7T params.
     
-    # Preset definitions (hidden_dim, num_layers, num_heads, num_experts, expert_ffn_dim)
+    Genus-13 topology: 14 streams (11 cognitive + 3 modalities) form a
+    genus-13 information manifold — each compound braid cross-attention
+    head creates a "handle" connecting two streams, yielding rich
+    topological connectivity at every scale.
+    """
+    preset: str = 'tiny'  # tiny | base | large | ultra
+    
+    # Preset definitions:
+    # (hidden_dim, num_layers, num_heads, num_experts, expert_ffn_dim, top_k, active_ratio)
     PRESETS = {
-        'tiny':  (256,   3,  8,   64,    512),    # 148M  — current (CPU prototyping)
-        'base':  (1024, 12, 16,  128,   4096),    # ~2B   — single GPU
-        'large': (4096, 32, 32,  256,  16384),    # ~70B  — multi-GPU
-        'ultra': (8192, 64, 64, 1024,  32768),    # ~1.7T — distributed cluster
+        'tiny':  (256,    3,   8,   64,    512,   8, 0.44),   # 204M total, ~90M active
+        'base':  (1024,  24,  16,  128,   4096,  16, 0.12),   # ~7B total, ~850M active
+        'large': (4096,  48,  32,  256,  16384,  16, 0.06),   # ~110B total, ~7B active
+        'ultra': (8192,  80,  64,  160,   8192,   8, 0.05),   # ~1.7T total, ~85B active
     }
+    
+    # Distributed training config (only relevant for large/ultra)
+    tensor_parallel: int = 1     # GPUs per tensor-parallel group
+    pipeline_parallel: int = 1   # Pipeline stages (layers split across)
+    expert_parallel: int = 1     # GPUs per expert-parallel group
+    data_parallel: int = 1       # Data parallel replicas
+    
+    # DeepSpeed / FSDP
+    zero_stage: int = 3          # ZeRO optimization stage (0-3)
+    offload_param: bool = False  # Offload params to CPU
+    offload_optimizer: bool = False  # Offload optimizer states to CPU
+    gradient_checkpointing: bool = True  # Activation checkpointing
+    mixed_precision: str = 'bf16'  # fp32 | fp16 | bf16
+    
+    # Batch / throughput
+    global_batch_size: int = 2048
+    micro_batch_size: int = 2
+    sequence_length: int = 8192
+    
+    def get_hardware_estimate(self) -> dict:
+        """Estimate hardware requirements for current preset."""
+        h, l, heads, experts, ffn, top_k, active_ratio = self.PRESETS[self.preset]
+        
+        # Dense params per layer: Q,K,V,O projections + layer norms
+        dense_per_layer = 4 * h * h + 4 * h  # attention + norms
+        # MoE params per layer: experts × (up_proj + down_proj)
+        moe_per_layer = experts * 2 * h * ffn
+        # Total per layer
+        per_layer = dense_per_layer + moe_per_layer
+        # Embedding + output head
+        vocab_size = 100277
+        embedding = vocab_size * h * 2  # in + out
+        # 14-stream compound braid + multi-modal encoders
+        braid_overhead = 14 * h * h * 4  # cross-attention per stream
+        vision_audio_embod = 3 * h * h * 16  # ~16 layers across 3 encoders
+        
+        total_params = l * per_layer + embedding + braid_overhead + vision_audio_embod
+        active_params = int(total_params * active_ratio)
+        
+        # Memory estimates (bf16 = 2 bytes/param, optimizer = 8 bytes/param)
+        model_memory_gb = total_params * 2 / 1e9
+        optimizer_memory_gb = total_params * 8 / 1e9
+        total_memory_gb = model_memory_gb + optimizer_memory_gb
+        
+        # GPU estimate (80GB H100s)
+        gpu_memory = 80  # GB per H100
+        min_gpus = int(total_memory_gb / gpu_memory) + 1
+        
+        return {
+            'preset': self.preset,
+            'total_params': total_params,
+            'active_params': active_params,
+            'total_params_str': f'{total_params/1e12:.2f}T' if total_params > 1e12 else f'{total_params/1e9:.1f}B',
+            'active_params_str': f'{active_params/1e9:.1f}B',
+            'model_memory_gb': model_memory_gb,
+            'optimizer_memory_gb': optimizer_memory_gb,
+            'total_training_memory_gb': total_memory_gb,
+            'min_h100_gpus': min_gpus,
+            'recommended_gpus': min_gpus * 2,  # 2× for headroom
+            'hidden_dim': h,
+            'num_layers': l,
+            'num_heads': heads,
+            'num_experts': experts,
+            'expert_ffn_dim': ffn,
+            'top_k': top_k,
+            'genus': 13,  # 14 streams - 1 = genus of information manifold
+        }
 
 
 @dataclass
