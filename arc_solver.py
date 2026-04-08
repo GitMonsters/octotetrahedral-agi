@@ -9,6 +9,7 @@ Production-ready solver combining:
 3. Hierarchical voting with geometric augmentation  
 4. OctoTetrahedral neural backup (optional)
 5. Mercury 2 diffusion LLM fallback (optional)
+6. KnowledgeStore for persistent pattern memory
 
 Expected Performance:
 - Symbolic only (no LLM): 62%+ pass@1
@@ -18,9 +19,10 @@ Expected Performance:
 import sys
 import json
 import copy
+import hashlib
 import numpy as np
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Any
 from collections import Counter, defaultdict
 from itertools import product
 
@@ -6916,7 +6918,10 @@ def quadrant_dots_to_8block(grid, **kw):
 
 
 def stamp_template_at_dots(grid, **kw):
-    """363442ee: Stamp 3-row template at 1-dot positions in 3-col sections."""
+    """363442ee: Stamp template at 1-dot positions in column sections.
+    
+    Fixed: Uses effective template height (content height) instead of hardcoded 3.
+    """
     import copy
     h, w = len(grid), len(grid[0])
     div_col = None
@@ -6926,10 +6931,18 @@ def stamp_template_at_dots(grid, **kw):
             break
     if div_col is None:
         return None
-    th = 3
     tw = div_col
     if tw < 1 or tw > 5:
         return None
+    
+    # Calculate effective template height: find max row with non-zero content
+    th = 0
+    for r in range(h):
+        if any(grid[r][c] != 0 for c in range(tw)):
+            th = r + 1
+    if th == 0:
+        return None
+    
     template = [grid[r][:tw] for r in range(th)]
     if all(v == 0 for row in template for v in row):
         return None
@@ -9045,13 +9058,75 @@ class ProgramSynthesizer:
 # ============================================================================
 
 class ARCSolver:
-    """Production ARC solver with hints + synthesis"""
+    """Production ARC solver with hints + synthesis + persistent memory"""
     
-    def __init__(self):
+    def __init__(self, use_knowledge: bool = True):
         self.hint_gen = HintGenerator()
         self.synthesizer = ProgramSynthesizer(max_depth=2)
         self.transforms = ['identity', 'rotate_90', 'rotate_180', 'rotate_270',
                           'flip_h', 'flip_v', 'transpose']
+        
+        # Initialize KnowledgeStore for persistent pattern memory
+        self.use_knowledge = use_knowledge
+        self.knowledge_store = None
+        if use_knowledge:
+            try:
+                from self_improvement_loop import KnowledgeStore
+                self.knowledge_store = KnowledgeStore()
+            except ImportError:
+                self.use_knowledge = False
+    
+    def _compute_task_signature(self, task: Dict) -> str:
+        """Compute a hash signature for task pattern matching."""
+        train = task.get('train', [])
+        sig_parts = []
+        for ex in train:
+            inp, out = ex['input'], ex['output']
+            in_h, in_w = len(inp), len(inp[0]) if inp else 0
+            out_h, out_w = len(out), len(out[0]) if out else 0
+            in_colors = len(set(c for row in inp for c in row))
+            out_colors = len(set(c for row in out for c in row))
+            sig_parts.append(f"{in_h}x{in_w}->{out_h}x{out_w}:c{in_colors}->{out_colors}")
+        sig = "|".join(sig_parts)
+        return hashlib.sha256(sig.encode()).hexdigest()[:16]
+    
+    def _get_matching_patterns(self, task: Dict) -> List[Dict]:
+        """Retrieve similar patterns from KnowledgeStore."""
+        if not self.knowledge_store:
+            return []
+        
+        task_sig = self._compute_task_signature(task)
+        matching = []
+        
+        for fact in self.knowledge_store.knowledge.get("facts", []):
+            if fact.get("category") == "arc_pattern":
+                # Check if signature matches or similar
+                stored_sig = fact.get("signature", "")
+                if stored_sig == task_sig:
+                    matching.append(fact)
+                # Also check for strategy hints
+                elif fact.get("strategy") and task_sig[:8] == stored_sig[:8]:
+                    matching.append(fact)
+        
+        return matching
+    
+    def _learn_from_solution(self, task: Dict, strategy: str, success: bool):
+        """Store successful solving pattern in KnowledgeStore."""
+        if not self.knowledge_store or not success:
+            return
+        
+        task_sig = self._compute_task_signature(task)
+        fact_text = f"Strategy '{strategy}' solved task with signature {task_sig[:8]}"
+        
+        self.knowledge_store.add_fact(
+            fact=fact_text,
+            source="arc_solver",
+            category="arc_pattern"
+        )
+        # Store with additional metadata
+        self.knowledge_store.knowledge["facts"][-1]["signature"] = task_sig
+        self.knowledge_store.knowledge["facts"][-1]["strategy"] = strategy
+        self.knowledge_store.save()
     
     def solve(self, task: Dict, max_time: float = 10.0, test_idx: int = 0) -> List[List[List[int]]]:
         """Solve task with time limit, return up to 2 predictions"""
@@ -9067,6 +9142,21 @@ class ARCSolver:
         test_input = task['test'][0]['input']
         
         predictions = []
+        successful_strategy = None
+        
+        # 0. Check KnowledgeStore for similar patterns first (fast path)
+        if self.use_knowledge:
+            matching_patterns = self._get_matching_patterns(task)
+            for pattern in matching_patterns:
+                strategy = pattern.get("strategy")
+                if strategy and strategy in OPERATIONS:
+                    try:
+                        pred = OPERATIONS[strategy](test_input)
+                        if pred and pred not in predictions:
+                            predictions.append(pred)
+                            successful_strategy = f"knowledge:{strategy}"
+                    except:
+                        pass
         
         # 1. Try hint-based solving (fast)
         hints = self.hint_gen.analyze(train)
@@ -9259,6 +9349,10 @@ class ARCSolver:
         # Fallback: return input
         if not unique:
             unique.append(copy.deepcopy(test_input))
+        
+        # Learn from this solve attempt if we found any strategy
+        if successful_strategy and unique:
+            self._learn_from_solution(task, successful_strategy, success=True)
         
         return unique[:2]
     
@@ -10238,7 +10332,10 @@ class ARCSolver:
         return None
     
     def _try_enclosed_fill(self, task: Dict) -> Optional[List[List[int]]]:
-        """Fill bg cells enclosed by non-bg cells with a fixed or surrounding color."""
+        """Fill bg cells enclosed by rectangular outlines with a fixed or surrounding color.
+        
+        Uses rectangle enumeration to correctly handle rectangles that use grid boundary as wall.
+        """
         train = task['train']
         test_input = task['test'][0]['input']
         
@@ -10246,182 +10343,341 @@ class ARCSolver:
                    len(ex['output'][0]) == len(ex['input'][0]) for ex in train):
             return None
         
-        for fill_method in ["fixed", "surrounding"]:
-            valid = True
-            fixed_fill = None
+        # Helper to find rectangles enclosed by walls (including boundary)
+        def find_enclosed_cells(grid, wall_color):
+            h, w = len(grid), len(grid[0])
+            bg = self._get_bg(grid)
+            enclosed = set()
             
-            for ex in train:
-                inp, out = ex['input'], ex['output']
-                h, w = len(inp), len(inp[0])
-                bg = self._get_bg(inp)
-                
-                border_bg = set()
-                stack = []
-                for r in range(h):
-                    for c in range(w):
-                        if (r == 0 or r == h - 1 or c == 0 or c == w - 1) and inp[r][c] == bg:
-                            stack.append((r, c))
-                while stack:
-                    r, c = stack.pop()
-                    if (r, c) in border_bg:
-                        continue
-                    border_bg.add((r, c))
-                    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                        nr, nc = r + dr, c + dc
-                        if 0 <= nr < h and 0 <= nc < w and (nr, nc) not in border_bg and inp[nr][nc] == bg:
-                            stack.append((nr, nc))
-                
-                interior = set()
-                for r in range(h):
-                    for c in range(w):
-                        if inp[r][c] == bg and (r, c) not in border_bg:
-                            interior.add((r, c))
-                
-                if not interior:
-                    continue
-                
-                # Check all non-interior cells unchanged
-                for r in range(h):
-                    for c in range(w):
-                        if (r, c) not in interior and inp[r][c] != out[r][c]:
-                            valid = False; break
-                    if not valid:
-                        break
-                if not valid:
-                    break
-                
-                if fill_method == "fixed":
-                    fill_colors = set(out[r][c] for r, c in interior)
-                    if len(fill_colors) != 1:
-                        valid = False; break
-                    fc = fill_colors.pop()
-                    if fc == bg:
-                        valid = False; break
-                    if fixed_fill is None:
-                        fixed_fill = fc
-                    elif fixed_fill != fc:
-                        valid = False; break
-                
-                elif fill_method == "surrounding":
-                    visited = set()
-                    for r, c in interior:
-                        if (r, c) in visited:
-                            continue
-                        region = set()
-                        st = [(r, c)]
-                        while st:
-                            cr, cc = st.pop()
-                            if (cr, cc) in visited:
-                                continue
-                            visited.add((cr, cc))
-                            region.add((cr, cc))
-                            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                                nr, nc = cr + dr, cc + dc
-                                if (nr, nc) in interior and (nr, nc) not in visited:
-                                    st.append((nr, nc))
-                        
-                        from collections import Counter as C2
-                        surround = C2()
-                        for rr, cc in region:
-                            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                                nr, nc = rr + dr, cc + dc
-                                if 0 <= nr < h and 0 <= nc < w and inp[nr][nc] != bg:
-                                    surround[inp[nr][nc]] += 1
-                        if not surround:
-                            valid = False; break
-                        wall_color = surround.most_common(1)[0][0]
-                        for rr, cc in region:
-                            if out[rr][cc] != wall_color:
-                                valid = False; break
-                        if not valid:
-                            break
-            
-            if valid and fill_method == "fixed" and fixed_fill is not None:
-                return self._apply_enclosed_fill_fixed(test_input, fixed_fill)
-            if valid and fill_method == "surrounding":
-                return self._apply_enclosed_fill_surrounding(test_input)
+            for r1 in range(-1, h):
+                for c1 in range(-1, w):
+                    for r2 in range(r1 + 2, h + 1):
+                        for c2 in range(c1 + 2, w + 1):
+                            # Must have at least one actual wall (not all boundary)
+                            real_walls = 0
+                            if r1 >= 0: real_walls += 1
+                            if r2 < h: real_walls += 1
+                            if c1 >= 0: real_walls += 1
+                            if c2 < w: real_walls += 1
+                            if real_walls == 0:
+                                continue  # All 4 sides are boundary, skip
+                            
+                            valid = True
+                            
+                            # Top wall
+                            if r1 >= 0:
+                                for c in range(max(0, c1), min(w, c2 + 1)):
+                                    if grid[r1][c] != wall_color:
+                                        valid = False; break
+                            if not valid: continue
+                            
+                            # Bottom wall
+                            if r2 < h:
+                                for c in range(max(0, c1), min(w, c2 + 1)):
+                                    if grid[r2][c] != wall_color:
+                                        valid = False; break
+                            if not valid: continue
+                            
+                            # Left wall
+                            if c1 >= 0:
+                                for r in range(max(0, r1), min(h, r2 + 1)):
+                                    if grid[r][c1] != wall_color:
+                                        valid = False; break
+                            if not valid: continue
+                            
+                            # Right wall
+                            if c2 < w:
+                                for r in range(max(0, r1), min(h, r2 + 1)):
+                                    if grid[r][c2] != wall_color:
+                                        valid = False; break
+                            if not valid: continue
+                            
+                            # Check wall doesn't extend beyond corners
+                            if r1 >= 0 and c1 >= 0:
+                                if r1 > 0 and grid[r1-1][c1] == wall_color: continue
+                                if c1 > 0 and grid[r1][c1-1] == wall_color: continue
+                            if r1 >= 0 and c2 < w:
+                                if r1 > 0 and grid[r1-1][c2] == wall_color: continue
+                                if c2 < w-1 and grid[r1][c2+1] == wall_color: continue
+                            if r2 < h and c1 >= 0:
+                                if r2 < h-1 and grid[r2+1][c1] == wall_color: continue
+                                if c1 > 0 and grid[r2][c1-1] == wall_color: continue
+                            if r2 < h and c2 < w:
+                                if r2 < h-1 and grid[r2+1][c2] == wall_color: continue
+                                if c2 < w-1 and grid[r2][c2+1] == wall_color: continue
+                            
+                            # Add interior bg cells
+                            ir1, ir2 = max(0, r1+1), min(h, r2)
+                            ic1, ic2 = max(0, c1+1), min(w, c2)
+                            for r in range(ir1, ir2):
+                                for c in range(ic1, ic2):
+                                    if grid[r][c] == bg:
+                                        enclosed.add((r, c))
+            return enclosed
         
-        return None
+        # Try to detect wall color from training examples
+        wall_color = None
+        for ex in train:
+            inp = ex['input']
+            from collections import Counter
+            non_bg = [inp[r][c] for r in range(len(inp)) for c in range(len(inp[0])) if inp[r][c] != self._get_bg(inp)]
+            if non_bg:
+                candidate = Counter(non_bg).most_common(1)[0][0]
+                if wall_color is None:
+                    wall_color = candidate
+                elif wall_color != candidate:
+                    wall_color = None
+                    break
+        
+        if wall_color is None:
+            return None
+        
+        # Validate on training examples
+        fill_color = None
+        for ex in train:
+            inp, out = ex['input'], ex['output']
+            enclosed = find_enclosed_cells(inp, wall_color)
+            
+            if not enclosed:
+                continue
+            
+            # Check that only enclosed cells changed, and all changed to same color
+            for r in range(len(inp)):
+                for c in range(len(inp[0])):
+                    if (r, c) in enclosed:
+                        if out[r][c] == inp[r][c]:  # Should have changed
+                            continue  # Sometimes not all enclosed cells change
+                        if fill_color is None:
+                            fill_color = out[r][c]
+                        elif out[r][c] != fill_color:
+                            return None  # Inconsistent fill color
+                    else:
+                        if inp[r][c] != out[r][c]:
+                            return None  # Non-enclosed cell changed
+        
+        if fill_color is None:
+            return None
+        
+        # Apply to test
+        return self._apply_enclosed_fill_fixed(test_input, fill_color)
     
     def _apply_enclosed_fill_fixed(self, grid, fill_color):
+        """Fill cells enclosed by valid rectangular outlines with fill_color.
+        
+        Uses rectangle enumeration instead of flood-fill to correctly handle:
+        1. Border-adjacent enclosed cells (rectangles using grid boundary as wall)
+        2. Avoid filling non-rectangular corridors between rectangles
+        """
         h, w = len(grid), len(grid[0])
         bg = self._get_bg(grid)
-        border_bg = set()
-        stack = []
-        for r in range(h):
-            for c in range(w):
-                if (r == 0 or r == h - 1 or c == 0 or c == w - 1) and grid[r][c] == bg:
-                    stack.append((r, c))
-        while stack:
-            r, c = stack.pop()
-            if (r, c) in border_bg:
-                continue
-            border_bg.add((r, c))
-            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                nr, nc = r + dr, c + dc
-                if 0 <= nr < h and 0 <= nc < w and (nr, nc) not in border_bg and grid[nr][nc] == bg:
-                    stack.append((nr, nc))
         result = [row[:] for row in grid]
-        for r in range(h):
-            for c in range(w):
-                if grid[r][c] == bg and (r, c) not in border_bg:
-                    result[r][c] = fill_color
+        
+        # Find wall color (most common non-bg color, typically 5)
+        from collections import Counter
+        non_bg = [grid[r][c] for r in range(h) for c in range(w) if grid[r][c] != bg]
+        if not non_bg:
+            return result
+        wall_color = Counter(non_bg).most_common(1)[0][0]
+        
+        # Find all valid rectangular outlines and fill their interiors
+        filled = set()
+        
+        # Check all possible rectangles defined by top-left (r1,c1) and bottom-right (r2,c2)
+        for r1 in range(-1, h):  # -1 means use grid boundary as top wall
+            for c1 in range(-1, w):  # -1 means use grid boundary as left wall
+                for r2 in range(r1 + 2, h + 1):  # +1 means use grid boundary as bottom wall
+                    for c2 in range(c1 + 2, w + 1):  # +1 means use grid boundary as right wall
+                        # Must have at least one actual wall (not all boundary)
+                        real_walls = 0
+                        if r1 >= 0: real_walls += 1
+                        if r2 < h: real_walls += 1
+                        if c1 >= 0: real_walls += 1
+                        if c2 < w: real_walls += 1
+                        if real_walls == 0:
+                            continue  # All 4 sides are boundary, skip
+                        
+                        # Check if this forms a valid rectangle with walls
+                        valid = True
+                        
+                        # Top wall (unless r1=-1, then grid boundary is wall)
+                        if r1 >= 0:
+                            for c in range(max(0, c1), min(w, c2 + 1)):
+                                if grid[r1][c] != wall_color:
+                                    valid = False; break
+                        if not valid:
+                            continue
+                            
+                        # Bottom wall (unless r2=h, then grid boundary is wall)
+                        if r2 < h:
+                            for c in range(max(0, c1), min(w, c2 + 1)):
+                                if grid[r2][c] != wall_color:
+                                    valid = False; break
+                        if not valid:
+                            continue
+                            
+                        # Left wall (unless c1=-1, then grid boundary is wall)
+                        if c1 >= 0:
+                            for r in range(max(0, r1), min(h, r2 + 1)):
+                                if grid[r][c1] != wall_color:
+                                    valid = False; break
+                        if not valid:
+                            continue
+                            
+                        # Right wall (unless c2=w, then grid boundary is wall)
+                        if c2 < w:
+                            for r in range(max(0, r1), min(h, r2 + 1)):
+                                if grid[r][c2] != wall_color:
+                                    valid = False; break
+                        if not valid:
+                            continue
+                        
+                        # Check wall doesn't extend beyond corners (filter accidental rectangles)
+                        # Top-left corner: check cell above-left of wall intersection
+                        if r1 >= 0 and c1 >= 0:
+                            if r1 > 0 and grid[r1-1][c1] == wall_color:
+                                continue  # Top wall extends upward
+                            if c1 > 0 and grid[r1][c1-1] == wall_color:
+                                continue  # Left wall extends leftward
+                        # Top-right corner
+                        if r1 >= 0 and c2 < w:
+                            if r1 > 0 and grid[r1-1][c2] == wall_color:
+                                continue
+                            if c2 < w - 1 and grid[r1][c2+1] == wall_color:
+                                continue
+                        # Bottom-left corner
+                        if r2 < h and c1 >= 0:
+                            if r2 < h - 1 and grid[r2+1][c1] == wall_color:
+                                continue
+                            if c1 > 0 and grid[r2][c1-1] == wall_color:
+                                continue
+                        # Bottom-right corner
+                        if r2 < h and c2 < w:
+                            if r2 < h - 1 and grid[r2+1][c2] == wall_color:
+                                continue
+                            if c2 < w - 1 and grid[r2][c2+1] == wall_color:
+                                continue
+                        
+                        # Fill interior bg cells
+                        interior_r1 = max(0, r1 + 1)
+                        interior_r2 = min(h, r2)
+                        interior_c1 = max(0, c1 + 1)
+                        interior_c2 = min(w, c2)
+                        for r in range(interior_r1, interior_r2):
+                            for c in range(interior_c1, interior_c2):
+                                if grid[r][c] == bg and (r, c) not in filled:
+                                    result[r][c] = fill_color
+                                    filled.add((r, c))
+        
         return result
     
     def _apply_enclosed_fill_surrounding(self, grid):
+        """Fill cells enclosed by valid rectangular outlines with surrounding wall color.
+        
+        Uses rectangle enumeration instead of flood-fill to correctly handle:
+        1. Border-adjacent enclosed cells (rectangles using grid boundary as wall)
+        2. Avoid filling non-rectangular corridors between rectangles
+        """
         from collections import Counter as C2
         h, w = len(grid), len(grid[0])
         bg = self._get_bg(grid)
-        border_bg = set()
-        stack = []
-        for r in range(h):
-            for c in range(w):
-                if (r == 0 or r == h - 1 or c == 0 or c == w - 1) and grid[r][c] == bg:
-                    stack.append((r, c))
-        while stack:
-            r, c = stack.pop()
-            if (r, c) in border_bg:
-                continue
-            border_bg.add((r, c))
-            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                nr, nc = r + dr, c + dc
-                if 0 <= nr < h and 0 <= nc < w and (nr, nc) not in border_bg and grid[nr][nc] == bg:
-                    stack.append((nr, nc))
-        
-        interior = set()
-        for r in range(h):
-            for c in range(w):
-                if grid[r][c] == bg and (r, c) not in border_bg:
-                    interior.add((r, c))
-        
         result = [row[:] for row in grid]
-        visited = set()
-        for r, c in interior:
-            if (r, c) in visited:
-                continue
-            region = set()
-            st = [(r, c)]
-            while st:
-                cr, cc = st.pop()
-                if (cr, cc) in visited:
-                    continue
-                visited.add((cr, cc))
-                region.add((cr, cc))
-                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                    nr, nc = cr + dr, cc + dc
-                    if (nr, nc) in interior and (nr, nc) not in visited:
-                        st.append((nr, nc))
-            
-            surround = C2()
-            for rr, cc in region:
-                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                    nr, nc = rr + dr, cc + dc
-                    if 0 <= nr < h and 0 <= nc < w and grid[nr][nc] != bg:
-                        surround[grid[nr][nc]] += 1
-            if surround:
-                fill_c = surround.most_common(1)[0][0]
-                for rr, cc in region:
-                    result[rr][cc] = fill_c
+        
+        # Find all non-bg colors as potential wall colors
+        non_bg_colors = set()
+        for r in range(h):
+            for c in range(w):
+                if grid[r][c] != bg:
+                    non_bg_colors.add(grid[r][c])
+        
+        if not non_bg_colors:
+            return result
+        
+        filled = {}  # (r,c) -> fill_color
+        
+        # Try each potential wall color
+        for wall_color in non_bg_colors:
+            # Check all possible rectangles defined by top-left (r1,c1) and bottom-right (r2,c2)
+            for r1 in range(-1, h):  # -1 means use grid boundary as top wall
+                for c1 in range(-1, w):  # -1 means use grid boundary as left wall
+                    for r2 in range(r1 + 2, h + 1):  # +1 means use grid boundary as bottom wall
+                        for c2 in range(c1 + 2, w + 1):  # +1 means use grid boundary as right wall
+                            # Must have at least one actual wall (not all boundary)
+                            real_walls = 0
+                            if r1 >= 0: real_walls += 1
+                            if r2 < h: real_walls += 1
+                            if c1 >= 0: real_walls += 1
+                            if c2 < w: real_walls += 1
+                            if real_walls == 0:
+                                continue  # All 4 sides are boundary, skip
+                            
+                            valid = True
+                            
+                            # Top wall (unless r1=-1, then grid boundary is wall)
+                            if r1 >= 0:
+                                for c in range(max(0, c1), min(w, c2 + 1)):
+                                    if grid[r1][c] != wall_color:
+                                        valid = False; break
+                            if not valid:
+                                continue
+                                
+                            # Bottom wall (unless r2=h, then grid boundary is wall)
+                            if r2 < h:
+                                for c in range(max(0, c1), min(w, c2 + 1)):
+                                    if grid[r2][c] != wall_color:
+                                        valid = False; break
+                            if not valid:
+                                continue
+                                
+                            # Left wall (unless c1=-1, then grid boundary is wall)
+                            if c1 >= 0:
+                                for r in range(max(0, r1), min(h, r2 + 1)):
+                                    if grid[r][c1] != wall_color:
+                                        valid = False; break
+                            if not valid:
+                                continue
+                                
+                            # Right wall (unless c2=w, then grid boundary is wall)
+                            if c2 < w:
+                                for r in range(max(0, r1), min(h, r2 + 1)):
+                                    if grid[r][c2] != wall_color:
+                                        valid = False; break
+                            if not valid:
+                                continue
+                            
+                            # Check wall doesn't extend beyond corners
+                            if r1 >= 0 and c1 >= 0:
+                                if r1 > 0 and grid[r1-1][c1] == wall_color:
+                                    continue
+                                if c1 > 0 and grid[r1][c1-1] == wall_color:
+                                    continue
+                            if r1 >= 0 and c2 < w:
+                                if r1 > 0 and grid[r1-1][c2] == wall_color:
+                                    continue
+                                if c2 < w - 1 and grid[r1][c2+1] == wall_color:
+                                    continue
+                            if r2 < h and c1 >= 0:
+                                if r2 < h - 1 and grid[r2+1][c1] == wall_color:
+                                    continue
+                                if c1 > 0 and grid[r2][c1-1] == wall_color:
+                                    continue
+                            if r2 < h and c2 < w:
+                                if r2 < h - 1 and grid[r2+1][c2] == wall_color:
+                                    continue
+                                if c2 < w - 1 and grid[r2][c2+1] == wall_color:
+                                    continue
+                            
+                            # Fill interior bg cells with wall color
+                            interior_r1 = max(0, r1 + 1)
+                            interior_r2 = min(h, r2)
+                            interior_c1 = max(0, c1 + 1)
+                            interior_c2 = min(w, c2)
+                            for r in range(interior_r1, interior_r2):
+                                for c in range(interior_c1, interior_c2):
+                                    if grid[r][c] == bg and (r, c) not in filled:
+                                        filled[(r, c)] = wall_color
+        
+        for (r, c), fill_c in filled.items():
+            result[r][c] = fill_c
         return result
     
     def _try_between_markers(self, task: Dict) -> Optional[List[List[int]]]:

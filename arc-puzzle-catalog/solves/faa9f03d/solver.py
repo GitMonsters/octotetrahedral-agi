@@ -1,153 +1,202 @@
 import json
 import sys
 from copy import deepcopy
+from collections import deque
 
-def solve(grid):
-    """
-    Simple pattern observed from examples:
-    1. Replace 2s based on neighbors
-    2. Extend lines to fill gaps between same colors
-    """
+
+def transform(grid):
+    R, C = len(grid), len(grid[0])
     result = deepcopy(grid)
-    rows, cols = len(grid), len(grid[0])
-    
-    # Step 1: Replace all 2s
-    for r in range(rows):
-        for c in range(cols):
-            if grid[r][c] == 2:
-                # Look at 4-directional neighbors for non-zero values
-                neighbors = []
-                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                    nr, nc = r + dr, c + dc
-                    if 0 <= nr < rows and 0 <= nc < cols:
-                        val = grid[nr][nc]
-                        if val != 0 and val != 2:
-                            neighbors.append(val)
-                
-                if neighbors:
-                    # Use the most frequent non-2 neighbor
-                    from collections import Counter
-                    result[r][c] = Counter(neighbors).most_common(1)[0][0]
-                else:
-                    result[r][c] = 0
-    
-    # Step 2: Fill gaps to extend lines - be very conservative
-    # Only fill if there are exactly matching colors on opposite sides
-    for r in range(rows):
-        for c in range(cols):
-            if result[r][c] == 0:
-                # Check horizontal extension
-                left = result[r][c-1] if c > 0 else None
-                right = result[r][c+1] if c < cols-1 else None
-                
-                if left is not None and left == right and left != 0:
-                    result[r][c] = left
-                    continue
-                
-                # Check vertical extension
-                up = result[r-1][c] if r > 0 else None
-                down = result[r+1][c] if r < rows-1 else None
-                
-                if up is not None and up == down and up != 0:
-                    result[r][c] = up
-    
-    # Step 3: Handle special case where non-2 values need to be overridden
-    # Look at example 1: position (3,3) changes from 3 to 1
-    # This happens when a line needs to pass through
-    for r in range(rows):
-        for c in range(cols):
-            current_val = result[r][c]
-            if current_val != 0 and grid[r][c] != 2:  # Non-zero, non-2 original value
-                
-                # Check if there's a horizontal line that should pass through here
-                left_context = []
-                right_context = []
-                
-                # Look left for a pattern
-                for cc in range(c-1, max(-1, c-4), -1):  # Look 3 positions left
-                    if result[r][cc] != 0 and result[r][cc] != current_val:
-                        left_context.append(result[r][cc])
-                        break
-                
-                # Look right for a pattern  
-                for cc in range(c+1, min(cols, c+4)):  # Look 3 positions right
-                    if result[r][cc] != 0 and result[r][cc] != current_val:
-                        right_context.append(result[r][cc])
-                        break
-                
-                # If same non-current color on both sides, this might be a line extension
-                if (len(left_context) == 1 and len(right_context) == 1 and
-                    left_context[0] == right_context[0]):
-                    # Check if there are 2s or 0s in between that would justify this
-                    has_gap = False
-                    for cc in range(max(0, c-3), min(cols, c+3)):
-                        if grid[r][cc] == 2 or grid[r][cc] == 0:
-                            has_gap = True
+
+    # Step 1: Fill 2-markers iteratively (order: up/down/left/right)
+    changed = True
+    while changed:
+        changed = False
+        for r in range(R):
+            for c in range(C):
+                if result[r][c] == 2:
+                    for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                        nr, nc = r + dr, c + dc
+                        if 0 <= nr < R and 0 <= nc < C and result[nr][nc] not in (0, 2, 4):
+                            result[r][c] = result[nr][nc]
+                            changed = True
                             break
-                    
-                    if has_gap:
-                        result[r][c] = left_context[0]
-    
-    # Step 4: One more round of gap filling
-    for r in range(rows):
-        for c in range(cols):
-            if result[r][c] == 0:
-                left = result[r][c-1] if c > 0 else None
-                right = result[r][c+1] if c < cols-1 else None
-                
-                if left is not None and left == right and left != 0:
-                    result[r][c] = left
+
+    # Step 2: Handle 4-markers with extension + corrected abandonment
+    # Tracks cells placed by extension so they are pre-locked in gap-fill
+    extension_cells = set()
+    for r in range(R):
+        for c in range(C):
+            if grid[r][c] != 4:
+                continue
+            for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < R and 0 <= nc < C and result[nr][nc] not in (0, 2, 4):
+                    path_color = result[nr][nc]
+                    path_r, path_c = nr, nc
+                    ext_dr, ext_dc = -dr, -dc
+
+                    # Extension: fill marker then extend away from path cell to edge
+                    result[r][c] = path_color
+                    extension_cells.add((r, c))
+                    er, ec = r + ext_dr, c + ext_dc
+                    while 0 <= er < R and 0 <= ec < C:
+                        result[er][ec] = path_color
+                        extension_cells.add((er, ec))
+                        er += ext_dr
+                        ec += ext_dc
+
+                    # Abandonment: walk in path direction, skip at most 1 consecutive zero
+                    zeroed = []
+                    ar, ac = r + 2 * dr, c + 2 * dc
+                    zero_run = 0
+                    while 0 <= ar < R and 0 <= ac < C:
+                        if result[ar][ac] == path_color:
+                            result[ar][ac] = 0
+                            zeroed.append((ar, ac))
+                            zero_run = 0
+                        elif result[ar][ac] == 0:
+                            zero_run += 1
+                            if zero_run > 1:
+                                break
+                        else:
+                            break
+                        ar += dr
+                        ac += dc
+
+                    # BFS from zeroed cells to remove connected branches (excluding path/marker)
+                    q2 = deque(zeroed)
+                    visited = set(zeroed)
+                    while q2:
+                        br, bc = q2.popleft()
+                        for dr2, dc2 in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                            nr2, nc2 = br + dr2, bc + dc2
+                            if (nr2, nc2) in {(path_r, path_c), (r, c)} | visited:
+                                continue
+                            if 0 <= nr2 < R and 0 <= nc2 < C and result[nr2][nc2] == path_color:
+                                result[nr2][nc2] = 0
+                                visited.add((nr2, nc2))
+                                q2.append((nr2, nc2))
+                    break
+
+    # Step 3: Gap-fill with incremental updates and lock-on-first-change
+    # Extension cells are pre-locked (4-marker placed them definitively)
+    locked = set(extension_cells)
+
+    def get_component(r0, c0, color, gap_r, gap_c):
+        vis = set()
+        q = deque([(r0, c0)])
+        vis.add((r0, c0))
+        while q:
+            r2, c2 = q.popleft()
+            for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                nr, nc = r2 + dr, c2 + dc
+                if (nr, nc) == (gap_r, gap_c) or (nr, nc) in vis:
                     continue
-                    
-                up = result[r-1][c] if r > 0 else None
-                down = result[r+1][c] if r < rows-1 else None
-                
-                if up is not None and up == down and up != 0:
-                    result[r][c] = up
-    
+                if 0 <= nr < R and 0 <= nc < C and result[nr][nc] == color:
+                    vis.add((nr, nc))
+                    q.append((nr, nc))
+        return vis
+
+    def component_is_L(comp, gap_r, gap_c, axis):
+        for r2, c2 in comp:
+            if axis == 'H' and r2 != gap_r:
+                return True
+            if axis == 'V' and c2 != gap_c:
+                return True
+        return False
+
+    def has_other_neighbor(r2, c2, color, exc_r, exc_c):
+        # Extension cells are non-dead-ends (path arm anchored to grid boundary)
+        if (r2, c2) in extension_cells:
+            return True
+        for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            nr, nc = r2 + dr, c2 + dc
+            if (nr, nc) != (exc_r, exc_c) and 0 <= nr < R and 0 <= nc < C and result[nr][nc] == color:
+                return True
+        return False
+
+    for _ in range(25):
+        changed = False
+        for r in range(R):
+            for c in range(C):
+                if (r, c) in locked:
+                    continue
+                cur = result[r][c]
+                if cur in (2, 4):
+                    continue
+
+                candidates = []  # (color, is_L_shaped)
+                for (r1, c1), (r2, c2), axis in [
+                    ((r, c - 1), (r, c + 1), 'H'),
+                    ((r - 1, c), (r + 1, c), 'V'),
+                ]:
+                    if not (0 <= r1 < R and 0 <= c1 < C and 0 <= r2 < R and 0 <= c2 < C):
+                        continue
+                    v1, v2 = result[r1][c1], result[r2][c2]
+                    if v1 != v2 or v1 in (0, 2, 4):
+                        continue
+                    Y = v1
+
+                    comp1 = get_component(r1, c1, Y, r, c)
+                    if (r2, c2) in comp1:
+                        continue  # endpoints connected — not a bridging gap
+
+                    # Non-empty cells require both sandwich endpoints to be non-dead-ends
+                    if cur != 0:
+                        if not (has_other_neighbor(r1, c1, Y, r, c) and
+                                has_other_neighbor(r2, c2, Y, r, c)):
+                            continue
+
+                    comp2 = get_component(r2, c2, Y, r, c)
+                    l_shaped = (component_is_L(comp1, r, c, axis) or
+                                component_is_L(comp2, r, c, axis))
+                    candidates.append((Y, l_shaped))
+
+                if not candidates:
+                    continue
+
+                # L-shaped non-cur candidates win; otherwise min of all candidates
+                l_noncur = [Y for Y, l in candidates if l and Y != cur]
+                winner = min(l_noncur) if l_noncur else min(Y for Y, _ in candidates)
+
+                if winner != cur:
+                    result[r][c] = winner
+                    locked.add((r, c))
+                    changed = True
+
+        if not changed:
+            break
+
     return result
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python solver.py <path_to_json>")
-        sys.exit(1)
-    
-    with open(sys.argv[1], 'r') as f:
-        data = json.load(f)
-    
-    # Test on training examples
-    for i, example in enumerate(data['train']):
-        input_grid = example['input']
-        expected_output = example['output']
-        predicted_output = solve(input_grid)
-        
-        if predicted_output == expected_output:
-            print(f"Training example {i+1}: PASS")
-        else:
-            print(f"Training example {i+1}: FAIL")
-            print("Expected:")
-            for row in expected_output:
-                print(row)
-            print("Got:")
-            for row in predicted_output:
-                print(row)
-            print()
-    
-    # Test on test examples if present
-    if 'test' in data:
-        for i, example in enumerate(data['test']):
-            input_grid = example['input']
-            expected_output = example['output']
-            predicted_output = solve(input_grid)
-            
-            if predicted_output == expected_output:
-                print(f"Test example {i+1}: PASS")
-            else:
-                print(f"Test example {i+1}: FAIL")
-                print("Expected:")
-                for row in expected_output:
-                    print(row)
-                print("Got:")
-                for row in predicted_output:
-                    print(row)
-                print()
+
+if __name__ == '__main__':
+    task_file = sys.argv[1] if len(sys.argv) > 1 else 'faa9f03d.json'
+    with open(task_file) as f:
+        task = json.load(f)
+
+    total = 0
+    for i, ex in enumerate(task.get('train', [])):
+        pred = transform(ex['input'])
+        ok = pred == ex['output']
+        print(f"Train {i}: {'PASS' if ok else 'FAIL'}")
+        if not ok:
+            for r in range(len(pred)):
+                for c in range(len(pred[0])):
+                    if pred[r][c] != ex['output'][r][c]:
+                        print(f"  ({r},{c}): got {pred[r][c]}, want {ex['output'][r][c]}")
+        total += ok
+
+    for i, ex in enumerate(task.get('test', [])):
+        pred = transform(ex['input'])
+        ok = pred == ex['output']
+        print(f"Test  {i}: {'PASS' if ok else 'FAIL'}")
+        if not ok:
+            for r in range(len(pred)):
+                for c in range(len(pred[0])):
+                    if pred[r][c] != ex['output'][r][c]:
+                        print(f"  ({r},{c}): got {pred[r][c]}, want {ex['output'][r][c]}")
+        total += ok
+
+    print(f"\n{total}/{len(task.get('train',[])) + len(task.get('test',[]))} passing")

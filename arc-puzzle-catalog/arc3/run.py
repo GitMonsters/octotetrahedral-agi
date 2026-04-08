@@ -21,6 +21,7 @@ import arc_agi
 from arcengine import GameAction, GameState
 
 from arc3.agent import OctoTetraAgent
+from arc3.solver import GameAwareSolver
 
 
 def setup_logging(verbose: bool):
@@ -124,11 +125,9 @@ def main():
             use_llm=not args.no_mercury,
         )
     else:
-        agent = OctoTetraAgent(
-            max_actions_per_level=args.max_actions,
-            verbose=args.verbose,
-            use_mercury=not args.no_mercury,
-        )
+        # GameAwareSolver handles LS20/VC33/TN36/WA30 with game-specific BFS,
+        # and falls back to OctoTetraAgent for all other games.
+        agent = GameAwareSolver(verbose=args.verbose)
 
     # Run games
     all_results = []
