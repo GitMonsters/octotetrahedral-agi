@@ -1,0 +1,234 @@
+{
+  "results": [
+    {
+      "game_id": "tn36-ab4f63cc",
+      "game_type": "TN36",
+      "levels_completed": 0,
+      "win_levels": 7,
+      "won": false,
+      "actions": 14033,
+      "elapsed": 3.147008180618286
+    },
+    {
+      "game_id": "cd82-fb555c5d",
+      "game_type": "CD82",
+      "levels_completed": 1,
+      "win_levels": 6,
+      "won": false,
+      "actions": 12001,
+      "elapsed": 1.1540238857269287
+    },
+    {
+      "game_id": "ls20-9607627b",
+      "game_type": "LS20",
+      "levels_completed": 1,
+      "win_levels": 7,
+      "won": false,
+      "actions": 14008,
+      "elapsed": 4.741722106933594
+    },
+    {
+      "game_id": "vc33-9851e02b",
+      "game_type": "VC33",
+      "levels_completed": 7,
+      "win_levels": 7,
+      "won": true,
+      "actions": 170,
+      "elapsed": 151.3382158279419
+    },
+    {
+      "game_id": "wa30-ee6fef47",
+      "game_type": "WA30",
+      "levels_completed": 0,
+      "win_levels": 9,
+      "won": false,
+      "actions": 1,
+      "elapsed": 0.4283461570739746
+    },
+    {
+      "game_id": "sk48-41055498",
+      "game_type": "SK48",
+      "levels_completed": 0,
+      "win_levels": 8,
+      "won": false,
+      "actions": 16001,
+      "elapsed": 2.331242322921753
+    },
+    {
+      "game_id": "r11l-aa269680",
+      "game_type": "R11L",
+      "levels_completed": 0,
+      "win_levels": 6,
+      "won": false,
+      "actions": 3502,
+      "elapsed": 1.44107985496521
+    },
+    {
+      "game_id": "s5i5-a48e4b1d",
+      "game_type": "S5I5",
+      "levels_completed": 1,
+      "win_levels": 8,
+      "won": false,
+      "actions": 16001,
+      "elapsed": 2.6333720684051514
+    },
+    {
+      "game_id": "bp35-0a0ad940",
+      "game_type": "BP35",
+      "levels_completed": 0,
+      "win_levels": 9,
+      "won": false,
+      "actions": 18002,
+      "elapsed": 19.164645195007324
+    },
+    {
+      "game_id": "lf52-271a04aa",
+      "game_type": "LF52",
+      "levels_completed": 0,
+      "win_levels": 10,
+      "won": false,
+      "actions": 20001,
+      "elapsed": 13.766961097717285
+    },
+    {
+      "game_id": "sb26-7fbdac44",
+      "game_type": "SB26",
+      "levels_completed": 0,
+      "win_levels": 8,
+      "won": false,
+      "actions": 16001,
+      "elapsed": 7.68956184387207
+    },
+    {
+      "game_id": "g50t-5849a774",
+      "game_type": "G50T",
+      "levels_completed": 0,
+      "win_levels": 7,
+      "won": false,
+      "actions": 514,
+      "elapsed": 1.4109947681427002
+    },
+    {
+      "game_id": "ka59-9f096b4a",
+      "game_type": "KA59",
+      "levels_completed": 0,
+      "win_levels": 7,
+      "won": false,
+      "actions": 14005,
+      "elapsed": 2.4401111602783203
+    },
+    {
+      "game_id": "sp80-0ee2d095",
+      "game_type": "SP80",
+      "levels_completed": 1,
+      "win_levels": 6,
+      "won": false,
+      "actions": 12002,
+      "elapsed": 2.887079954147339
+    },
+    {
+      "game_id": "dc22-4c9bff3e",
+      "game_type": "DC22",
+      "levels_completed": 1,
+      "win_levels": 6,
+      "won": false,
+      "actions": 12001,
+      "elapsed": 6.105592966079712
+    },
+    {
+      "game_id": "lp85-305b61c3",
+      "game_type": "LP85",
+      "levels_completed": 1,
+      "win_levels": 8,
+      "won": false,
+      "actions": 16001,
+      "elapsed": 2.6660878658294678
+    },
+    {
+      "game_id": "sc25-f9b21a2f",
+      "game_type": "SC25",
+      "levels_completed": 0,
+      "win_levels": 6,
+      "won": false,
+      "actions": 12001,
+      "elapsed": 5.561505079269409
+    },
+    {
+      "game_id": "tr87-cd924810",
+      "game_type": "TR87",
+      "levels_completed": 0,
+      "win_levels": 6,
+      "won": false,
+      "actions": 12005,
+      "elapsed": 3.100466251373291
+    },
+    {
+      "game_id": "ft09-0d8bbf25",
+      "game_type": "FT09",
+      "levels_completed": 6,
+      "win_levels": 6,
+      "won": true,
+      "actions": 743,
+      "elapsed": 0.4513099193572998
+    },
+    {
+      "game_id": "cn04-65d47d14",
+      "game_type": "CN04",
+      "levels_completed": 1,
+      "win_levels": 5,
+      "won": false,
+      "actions": 10001,
+      "elapsed": 0.8842861652374268
+    },
+    {
+      "game_id": "m0r0-dadda488",
+      "game_type": "M0R0",
+      "levels_completed": 1,
+      "win_levels": 6,
+      "won": false,
+      "actions": 12001,
+      "elapsed": 4.576023101806641
+    },
+    {
+      "game_id": "su15-4c352900",
+      "game_type": "SU15",
+      "levels_completed": 0,
+      "win_levels": 9,
+      "won": false,
+      "actions": 645,
+      "elapsed": 1.4214348793029785
+    },
+    {
+      "game_id": "re86-4e57566e",
+      "game_type": "RE86",
+      "levels_completed": 0,
+      "win_levels": 8,
+      "won": false,
+      "actions": 16001,
+      "elapsed": 2.4472689628601074
+    },
+    {
+      "game_id": "ar25-e3c63847",
+      "game_type": "AR25",
+      "levels_completed": 0,
+      "win_levels": 8,
+      "won": false,
+      "actions": 16001,
+      "elapsed": 4.600890159606934
+    },
+    {
+      "game_id": "tu93-2b534c15",
+      "game_type": "TU93",
+      "levels_completed": 1,
+      "win_levels": 9,
+      "won": false,
+      "actions": 3264,
+      "elapsed": 0.9149351119995117
+    }
+  ],
+  "total_completed": 22,
+  "total_levels": 182,
+  "games_won": 2,
+  "total_actions": 266906,
+  "total_time": 247.30476474761963
+}

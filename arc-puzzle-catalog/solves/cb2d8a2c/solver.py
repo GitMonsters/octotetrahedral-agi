@@ -151,3 +151,6 @@ if __name__ == "__main__":
                         print(f"  row {r} got: {got[r]}")
 
     print(f"\n{'All passed!' if all_pass else 'Some failed.'}")
+
+
+solve = transform

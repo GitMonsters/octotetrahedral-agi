@@ -200,3 +200,6 @@ if __name__ == '__main__':
         total += ok
 
     print(f"\n{total}/{len(task.get('train',[])) + len(task.get('test',[]))} passing")
+
+
+solve = transform

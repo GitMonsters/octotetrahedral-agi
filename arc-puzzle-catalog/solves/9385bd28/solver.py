@@ -230,3 +230,6 @@ if __name__ == "__main__":
 
     if all_pass:
         print("\nAll examples passed!")
+
+
+solve = transform

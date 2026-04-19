@@ -1,0 +1,24 @@
+{
+  "source": "https://arcprize.org",
+  "endpoint": "https://arcprize.org/media/data/task/task-data/{task_id}.json",
+  "datasets": {
+    "v2_public_evaluation_set": {
+      "count": 120,
+      "downloaded": 120
+    },
+    "v2_public_training_set": {
+      "count": 1000,
+      "downloaded": 1000
+    },
+    "v1_public_evaluation_set": {
+      "count": 400,
+      "downloaded": 400
+    },
+    "v1_public_training_set": {
+      "count": 400,
+      "downloaded": 400
+    }
+  },
+  "total_unique_tasks": 1147,
+  "tasks_downloaded": 1147
+}

@@ -294,3 +294,6 @@ if __name__ == "__main__":
 
     if all_pass:
         print("\nALL PASS")
+
+
+solve = transform

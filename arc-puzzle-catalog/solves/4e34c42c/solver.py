@@ -267,3 +267,6 @@ if __name__ == "__main__":
         print(f"\nTest {i} ({len(result)}x{len(result[0])}):")
         for row in result:
             print(row)
+
+
+solve = transform

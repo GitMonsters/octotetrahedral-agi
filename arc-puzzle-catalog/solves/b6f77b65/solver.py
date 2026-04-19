@@ -289,3 +289,6 @@ if __name__ == "__main__":
         print(f"\nTest {ti} prediction:")
         for row in predicted:
             print(row)
+
+
+solve = transform
