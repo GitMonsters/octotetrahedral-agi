@@ -423,6 +423,16 @@ class CompoundLoopConfig:
 
 
 @dataclass
+class KimiConfig:
+    """Kimi Attention Residuals — cross-layer + cross-stream cohesion in the limb braid."""
+    enabled: bool = True
+    n_blocks: int = 2       # block levels to run over each stream
+    block_size: int = 3     # transformer layers per block (cross-layer attention scope)
+    n_heads: int = 8        # attention heads for cross-layer / cross-stream attention
+    alpha_init: float = 0.0 # zero-init gate — identity at start of training
+
+
+@dataclass
 class CognitiveGeometryConfigDC:
     """Cognitive Geometry Engine — compound integration of ML vocabulary concepts."""
     enabled: bool = True
@@ -481,6 +491,7 @@ class Config:
     training: TrainingConfig = field(default_factory=TrainingConfig)
     compound_loop: CompoundLoopConfig = field(default_factory=CompoundLoopConfig)
     cognitive_geometry: CognitiveGeometryConfigDC = field(default_factory=CognitiveGeometryConfigDC)
+    kimi: KimiConfig = field(default_factory=KimiConfig)
     vision: VisionConfig = field(default_factory=VisionConfig)
     audio: AudioConfig = field(default_factory=AudioConfig)
     scale: ScaleConfig = field(default_factory=ScaleConfig)

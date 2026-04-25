@@ -77,7 +77,211 @@ from core.audio_encoder import AudioEncoder
 from core.embodiment import EmbodimentInterface, EmbodimentConfig
 
 
-class OctoTetrahedralModel(nn.Module):
+# ─────────────────────────────────────────────────────────────────────────────
+# KimiCognitiveBraid
+# ─────────────────────────────────────────────────────────────────────────────
+
+class _KimiLayerAttn(nn.Module):
+    """
+    Single cross-layer attention step (Kimi paper, §3.2).
+
+    Each call attends from the current hidden state (query) over all previous
+    layer outputs (keys/values), then blends the result back via a zero-init
+    scalar gate `alpha`.
+
+    Complexity per call: O(n_prev × L²) — bounded by block_size.
+    """
+
+    def __init__(self, d_model: int, n_heads: int, alpha_init: float = 0.0):
+        super().__init__()
+        self.attn = nn.MultiheadAttention(d_model, n_heads, batch_first=True)
+        self.norm = nn.LayerNorm(d_model)
+        # Zero-init gate → identity at the start of training (safe warm-up)
+        self.alpha = nn.Parameter(torch.full((1,), alpha_init))
+
+    def forward(
+        self,
+        h: torch.Tensor,                      # [B, L, D] current layer
+        history: List[torch.Tensor],           # list of [B, L, D] previous layers
+    ) -> torch.Tensor:
+        if not history:
+            return h
+        hist = torch.cat(history, dim=1)       # [B, n_prev*L, D]
+        ctx, _ = self.attn(h, hist, hist)
+        return self.norm(h + torch.sigmoid(self.alpha) * ctx)
+
+
+class _KimiBlock(nn.Module):
+    """
+    One Kimi block: `block_size` stacked _KimiLayerAttn layers.
+
+    Within the block every layer attends all preceding layers in the same
+    block (full intra-block cross-layer attention).  At the block boundary a
+    single O(1) summary is produced via a learned projection over the stacked
+    layer outputs.
+    """
+
+    def __init__(
+        self,
+        d_model: int,
+        n_heads: int,
+        block_size: int,
+        alpha_init: float = 0.0,
+    ):
+        super().__init__()
+        self.layers = nn.ModuleList([
+            _KimiLayerAttn(d_model, n_heads, alpha_init)
+            for _ in range(block_size)
+        ])
+        self.summary_proj = nn.Linear(d_model * block_size, d_model, bias=False)
+        self.summary_norm = nn.LayerNorm(d_model)
+
+    def forward(self, h: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Returns:
+            h_out   — updated hidden state [B, L, D]
+            summary — O(1) block boundary summary [B, L, D]
+        """
+        layer_outputs: List[torch.Tensor] = []
+        for layer in self.layers:
+            h = layer(h, layer_outputs)
+            layer_outputs.append(h)
+        summary = self.summary_norm(
+            self.summary_proj(torch.cat(layer_outputs, dim=-1))
+        )
+        return h, summary
+
+
+class KimiCognitiveBraid(nn.Module):
+    """
+    Cross-layer + cross-stream binding for the 11-limb cognitive braid.
+
+    Runs all N cognitive streams through `n_blocks` levels of:
+        1. _KimiBlock     — intra-stream cross-layer attention (PRINCIPLE 1)
+        2. Cross-stream   — each stream attends all others' summaries (PRINCIPLE 2)
+        3. Summary carry  — summaries compound across levels (PRINCIPLE 3)
+
+    Insert point: between limb-output collection and CompoundBraid.
+
+    Parameters
+    ----------
+    d_model    : Model hidden dimension (must match limb output dim).
+    n_streams  : Number of cognitive streams (default 11, one per limb).
+    n_blocks   : Block levels per stream (default 2, lightweight).
+    block_size : Layers per block (default 3).
+    n_heads    : Attention heads.
+    alpha_init : Initial value of cross-layer gate (0 = identity start).
+    """
+
+    def __init__(
+        self,
+        d_model: int,
+        n_streams: int = 11,
+        n_blocks: int = 2,
+        block_size: int = 3,
+        n_heads: int = 8,
+        alpha_init: float = 0.0,
+    ):
+        super().__init__()
+        self.n_streams = n_streams
+        self.n_blocks = n_blocks
+
+        # n_streams × n_blocks independent Kimi blocks
+        self.blocks = nn.ModuleList([
+            nn.ModuleList([
+                _KimiBlock(d_model, n_heads, block_size, alpha_init)
+                for _ in range(n_blocks)
+            ])
+            for _ in range(n_streams)
+        ])
+
+        # Cross-stream cohesion: each stream × each level has its own cross-attn
+        self.cross_attn = nn.ModuleList([
+            nn.ModuleList([
+                nn.MultiheadAttention(d_model, n_heads, batch_first=True)
+                for _ in range(n_streams)
+            ])
+            for _ in range(n_blocks)
+        ])
+        self.cross_norms = nn.ModuleList([
+            nn.ModuleList([nn.LayerNorm(d_model) for _ in range(n_streams)])
+            for _ in range(n_blocks)
+        ])
+        # Per-level cross-stream gate (zero-init — cohesion grows during training)
+        self.cohesion_gates = nn.ParameterList([
+            nn.Parameter(torch.zeros(1)) for _ in range(n_blocks)
+        ])
+
+        # Summary accumulator: lightweight linear over history
+        self.accum_proj = nn.Linear(d_model, d_model, bias=False)
+        self.accum_norm = nn.LayerNorm(d_model)
+
+    def _cross_stream_cohesion(
+        self,
+        hiddens: List[torch.Tensor],
+        summaries: List[torch.Tensor],
+        level: int,
+    ) -> List[torch.Tensor]:
+        """Bind streams: each attends all others' summaries at this block level."""
+        updated = []
+        gate = torch.sigmoid(self.cohesion_gates[level])
+        for i, h in enumerate(hiddens):
+            others = [s for j, s in enumerate(summaries) if j != i]
+            if not others:
+                updated.append(h)
+                continue
+            hist = torch.cat(others, dim=1)                    # [B, n_others*L, D]
+            ctx, _ = self.cross_attn[level][i](h, hist, hist)
+            updated.append(self.cross_norms[level][i](h + gate * ctx))
+        return updated
+
+    def _compound_summary(
+        self,
+        current: torch.Tensor,
+        history: List[torch.Tensor],
+    ) -> torch.Tensor:
+        """Enrich current summary with compounded history."""
+        if not history:
+            return current
+        # Mean of history as compact context
+        hist_mean = torch.stack(history, dim=0).mean(dim=0)   # [B, L, D]
+        return self.accum_norm(current + self.accum_proj(hist_mean))
+
+    def forward(
+        self,
+        stream_tensors: List[torch.Tensor],
+    ) -> Tuple[List[torch.Tensor], Dict]:
+        """
+        Args:
+            stream_tensors: List[Tensor[B, L, D]], one per cognitive stream.
+
+        Returns:
+            updated_streams: List[Tensor[B, L, D]], Kimi-refined per-stream outputs.
+            metrics:         Diagnostic dict.
+        """
+        hiddens = list(stream_tensors)
+        global_summaries: List[torch.Tensor] = []
+        metrics: Dict = {}
+
+        for b in range(self.n_blocks):
+            level_summaries: List[torch.Tensor] = []
+
+            # PRINCIPLE 1: each stream runs its Kimi block independently
+            new_hiddens: List[torch.Tensor] = []
+            for s, h in enumerate(hiddens):
+                h_out, summary = self.blocks[s][b](h)
+                # PRINCIPLE 3: compound summary with all prior history
+                summary = self._compound_summary(summary, global_summaries)
+                new_hiddens.append(h_out)
+                level_summaries.append(summary)
+                global_summaries.append(summary)
+
+            # PRINCIPLE 2: cross-stream cohesion
+            hiddens = self._cross_stream_cohesion(new_hiddens, level_summaries, b)
+            metrics[f'block_{b}_n_summaries'] = len(global_summaries)
+
+        metrics['total_compounded'] = len(global_summaries)
+        return hiddens, metrics
     """
     OctoTetrahedral AGI - Main Model Class
     
@@ -394,6 +598,24 @@ class OctoTetrahedralModel(nn.Module):
             braid_strength=0.3,
             moe_signal_dim=moe_signal_dim,
         )
+
+        # === Kimi Cognitive Braid (cross-layer + cross-stream cohesion) ===
+        # Runs between limb outputs and CompoundBraid to apply Kimi attention
+        # residuals: each limb stream attends previous layers within its block,
+        # then attends all other streams' summaries (cohesion), with summaries
+        # compounding across block levels.
+        _kimi_cfg = self.config.kimi
+        if _kimi_cfg.enabled:
+            self.kimi_braid = KimiCognitiveBraid(
+                d_model=self.hidden_dim,
+                n_streams=11,          # one per cognitive limb
+                n_blocks=_kimi_cfg.n_blocks,
+                block_size=_kimi_cfg.block_size,
+                n_heads=min(_kimi_cfg.n_heads, self.num_heads),
+                alpha_init=_kimi_cfg.alpha_init,
+            )
+        else:
+            self.kimi_braid = None
         
         # === Compound Loop Controller (Adaptive-Depth Reasoning) ===
         self.use_compound_loop = self.config.compound_loop.enabled
@@ -813,6 +1035,7 @@ class OctoTetrahedralModel(nn.Module):
 
             # Use a dummy for reasoning out (already folded into loop output)
             reasoned = multi_limb_output
+            kimi_braid_info = {}  # not used in compound-loop path
         else:
             # Original non-looped path (backward compatible)
             # === Two-Speed Routing (connectome-inspired) ===
@@ -841,6 +1064,7 @@ class OctoTetrahedralModel(nn.Module):
                 )
                 self._log_limb_event('reasoning', 'forward', time.time() - _t_reas, 0.5, reasoned.shape)
                 _limb_outputs_for_cg = None
+                kimi_braid_info = {}
                 two_speed_info = {'path': 'fast', 'confidence': rna_confidence.mean().item()}
             else:
                 two_speed_info = {'path': 'slow', 'confidence': rna_confidence.mean().item()}
@@ -932,6 +1156,25 @@ class OctoTetrahedralModel(nn.Module):
                                          meta_out, reasoning_out, perception_echo,
                                          dream_out, empathy_out, emotion_out,
                                          ethics_out, vis_out]
+
+                # === Kimi Cognitive Braid ===
+                # Apply cross-layer + cross-stream attention residuals to all 11 limb
+                # streams before the main CompoundBraid.  Each stream attends its own
+                # previous layers within a block (LayerAttentionResidual pattern), then
+                # attends all other streams' summaries (cross-stream cohesion), with
+                # block summaries compounding across levels.
+                # Falls back gracefully to unmodified streams if disabled.
+                kimi_braid_info = {}
+                if self.kimi_braid is not None:
+                    try:
+                        _kimi_out, kimi_braid_info = self.kimi_braid(_limb_outputs_for_cg)
+                        (memory_out, spatial_out, language_out,
+                         meta_out, reasoning_out, perception_echo,
+                         dream_out, empathy_out, emotion_out,
+                         ethics_out, vis_out) = _kimi_out
+                        _limb_outputs_for_cg = _kimi_out
+                    except Exception:
+                        pass  # non-fatal: retain original limb outputs
                 
                 # Compound Braid (11 cognitive + 3 modalities = 14 streams)
                 # Use zero tensors for absent modalities to keep braid size consistent
@@ -1065,6 +1308,7 @@ class OctoTetrahedralModel(nn.Module):
             'geometric_physics_info': geometric_physics_info if self.use_geometric_physics else None,
             'compound_loop_info': compound_loop_info,
             'cognitive_geometry_info': cognitive_geometry_info,
+            'kimi_braid_info': kimi_braid_info,
             'cg_aux_loss': cg_aux_loss,
             'dream_info': dream_info_out,
             'emotional_state': self.emotion.get_emotional_state(),
