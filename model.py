@@ -32,6 +32,7 @@ Architecture:
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import time
 from typing import Optional, Tuple, Dict, Any, List
 
 from config import Config, get_config
@@ -404,6 +405,12 @@ class OctoTetrahedralModel(nn.Module):
                 warmup_loops=self.config.compound_loop.warmup_loops,
                 conciseness_reward=self.config.compound_loop.conciseness_reward,
                 max_cheap_loops=self.config.compound_loop.max_cheap_loops,
+                # NEW: Recurrent Depth Transformer config
+                use_recurrent_depth=True,  # Enable RDT for adaptive depth
+                rdt_hidden_dim=self.hidden_dim,
+                rdt_num_heads=self.num_heads // 2,
+                rdt_num_layers=2,
+                rdt_depth_loss_weight=0.01,
             )
             self.compound_loop = CompoundLoopController(
                 hidden_dim=self.hidden_dim, config=loop_cfg
@@ -530,6 +537,9 @@ class OctoTetrahedralModel(nn.Module):
         # Statistics tracking
         self._forward_count = 0
         self._last_confidences: Dict[str, float] = {}
+        
+        # EUPHAN observability (optional logger passed from trainer)
+        self.euphan_logger = None
     
     def _init_weights(self):
         """Initialize model weights"""
@@ -547,6 +557,17 @@ class OctoTetrahedralModel(nn.Module):
         # Don't re-initialize limbs (they have their own init)
         self.core.apply(_init_module)
         self.working_memory.apply(_init_module)
+    
+    def _log_limb_event(self, limb_name: str, action: str, duration: float, confidence: float = 0.5, output_shape: Optional[Tuple] = None):
+        """Helper to log limb event to EUPHAN logger if available"""
+        if self.euphan_logger is not None and hasattr(self.euphan_logger, 'log_limb_event'):
+            self.euphan_logger.log_limb_event(
+                limb_name=limb_name,
+                action=action,
+                duration=duration,
+                confidence=confidence,
+                output_shape=output_shape
+            )
     
     def forward(
         self,
@@ -750,6 +771,15 @@ class OctoTetrahedralModel(nn.Module):
         if self.use_compound_loop and self.compound_loop is not None:
             # Initialize loop memory state (differentiable within loop)
             self._loop_memory_state = self.working_memory.memory.clone()
+            
+            # Get RDT uncertainties for ACT budget allocation (if available)
+            rdt_uncertainties_for_budget = None
+            if self.compound_loop.use_recurrent_depth and self.compound_loop.rdt is not None:
+                # Quick RDT pass to get uncertainties for budget
+                rdt_result = self.compound_loop.rdt(
+                    memory_enhanced, depth=0, attention_mask=attention_mask
+                )
+                rdt_uncertainties_for_budget = rdt_result['uncertainty']  # [batch]
 
             loop_result = self.compound_loop(
                 memory_enhanced,
@@ -758,13 +788,23 @@ class OctoTetrahedralModel(nn.Module):
                     'attention_mask': attention_mask,
                     'return_confidences': return_confidences,
                     'encoded': encoded,
-                }
+                },
+                attention_mask=attention_mask,
+                rdt_uncertainties=rdt_uncertainties_for_budget,  # NEW: for ACT budget
             )
             multi_limb_output = loop_result['output']
             compound_loop_info = {
                 'loop_count': loop_result['loop_count'],
                 'exit_distribution': loop_result['exit_distribution'],
                 'entropy_loss': loop_result['entropy_loss'],
+                'rdt_routing_gates': loop_result.get('rdt_routing_gates'),
+                'rdt_uncertainties': loop_result.get('rdt_uncertainties'),
+                'rdt_depth_loss': loop_result.get('rdt_depth_loss'),
+                # NEW: ACT metrics
+                'act_budgets': loop_result.get('act_budgets'),
+                'act_ponder_costs': loop_result.get('act_ponder_costs'),
+                'act_cost_loss': loop_result.get('act_cost_loss'),
+                'act_routing_intensities': loop_result.get('act_routing_intensities'),
             }
 
             # Commit final memory state (detach to prevent unbounded graph)
@@ -785,17 +825,21 @@ class OctoTetrahedralModel(nn.Module):
             
             if use_fast_path:
                 # Fast path: only core limbs (perception already done, spatial + action)
+                _t_spa = time.time()
                 spatial_out, spatial_conf, _ = self.spatial(memory_enhanced)
+                self._log_limb_event('spatial', 'forward', time.time() - _t_spa, spatial_conf.mean().item() if torch.is_tensor(spatial_conf) else 0.5, spatial_out.shape)
                 # Augment with voxel memory attention
                 voxel_context, _ = self.voxel_memory.query_by_attention(
                     spatial_out, top_k=8
                 )  # [batch, seq_len, hidden]
                 spatial_out = spatial_out + 0.1 * voxel_context
                 fast_output = memory_enhanced + 0.3 * spatial_out
+                _t_reas = time.time()
                 reasoned, _, _ = self.reasoning(
                     fast_output, attention_mask=attention_mask,
                     return_confidence=return_confidences
                 )
+                self._log_limb_event('reasoning', 'forward', time.time() - _t_reas, 0.5, reasoned.shape)
                 _limb_outputs_for_cg = None
                 two_speed_info = {'path': 'fast', 'confidence': rna_confidence.mean().item()}
             else:
@@ -804,40 +848,69 @@ class OctoTetrahedralModel(nn.Module):
                 # Memory Limb (with quarantine E/I gating)
                 _ei_mean = editing_info.get('ei_signs', torch.zeros(1)).float().mean().item() if isinstance(editing_info, dict) else 0.0
                 _conf = rna_confidence.mean().item()
+                _t_mem = time.time()
                 memory_out, memory_conf, _ = self.memory_limb(
                     memory_enhanced, ei_signal=_ei_mean, confidence=_conf
                 )
+                self._log_limb_event('memory', 'forward', time.time() - _t_mem, memory_conf.mean().item() if torch.is_tensor(memory_conf) else _conf, memory_out.shape)
+                
                 # Spatial Limb
+                _t_spa = time.time()
                 spatial_out, spatial_conf, _ = self.spatial(memory_enhanced)
+                self._log_limb_event('spatial', 'forward', time.time() - _t_spa, spatial_conf.mean().item() if torch.is_tensor(spatial_conf) else 0.5, spatial_out.shape)
                 # Augment with voxel memory attention
                 voxel_context, _ = self.voxel_memory.query_by_attention(
                     spatial_out, top_k=8
                 )  # [batch, seq_len, hidden]
                 spatial_out = spatial_out + 0.1 * voxel_context
+                
                 # Language Limb
+                _t_lang = time.time()
                 language_out, language_conf, _ = self.language(memory_enhanced)
+                self._log_limb_event('language', 'forward', time.time() - _t_lang, language_conf.mean().item() if torch.is_tensor(language_conf) else 0.5, language_out.shape)
+                
                 # MetaCognition
+                _t_meta = time.time()
                 meta_out, meta_conf, _ = self.metacognition(memory_enhanced)
+                self._log_limb_event('metacognition', 'forward', time.time() - _t_meta, meta_conf.mean().item() if torch.is_tensor(meta_conf) else 0.5, meta_out.shape)
+                
                 # Reasoning Limb
+                _t_reas = time.time()
                 reasoning_out, reasoning_conf, _ = self.reasoning(
                     memory_enhanced,
                     attention_mask=attention_mask,
                     return_confidence=return_confidences
                 )
+                self._log_limb_event('reasoning', 'forward', time.time() - _t_reas, reasoning_conf.mean().item() if torch.is_tensor(reasoning_conf) else 0.5, reasoning_out.shape)
+                
                 # Perception echo
                 perception_echo = encoded
                 
                 # === New cognitive petals ===
                 # Visualization (reconstructive, memory-based)
+                _t_vis = time.time()
                 vis_out, vis_conf, _ = self.visualization(memory_enhanced)
+                self._log_limb_event('visualization', 'forward', time.time() - _t_vis, vis_conf.mean().item() if torch.is_tensor(vis_conf) else 0.5, vis_out.shape)
+                
                 # Imagination (generative, novelty-seeking)
+                _t_imag = time.time()
                 imag_out, imag_conf, _ = self.imagination(memory_enhanced)
+                self._log_limb_event('imagination', 'forward', time.time() - _t_imag, imag_conf.mean().item() if torch.is_tensor(imag_conf) else 0.5, imag_out.shape)
+                
                 # Empathy (Theory of Mind)
+                _t_emp = time.time()
                 empathy_out, empathy_conf, _ = self.empathy(memory_enhanced)
+                self._log_limb_event('empathy', 'forward', time.time() - _t_emp, empathy_conf.mean().item() if torch.is_tensor(empathy_conf) else 0.5, empathy_out.shape)
+                
                 # Emotion (valence/arousal modulation)
+                _t_emo = time.time()
                 emotion_out, emotion_conf, _ = self.emotion(memory_enhanced)
+                self._log_limb_event('emotion', 'forward', time.time() - _t_emo, emotion_conf.mean().item() if torch.is_tensor(emotion_conf) else 0.5, emotion_out.shape)
+                
                 # Ethics (safety contraction)
+                _t_eth = time.time()
                 ethics_out, ethics_conf, _ = self.ethics(memory_enhanced)
+                self._log_limb_event('ethics', 'forward', time.time() - _t_eth, ethics_conf.mean().item() if torch.is_tensor(ethics_conf) else 0.5, ethics_out.shape)
                 
                 # Dream Mode: blend visualization + imagination
                 dream_out, dream_info = self.dream_mode(

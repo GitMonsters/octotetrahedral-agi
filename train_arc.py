@@ -6,6 +6,11 @@ ARC tasks require:
 - Few-shot learning from example input/output pairs
 - Abstract pattern recognition and generalization
 - Grid-based spatial reasoning
+
+SIMULA Integration:
+- Augments training data with synthetic examples for diversity
+- Prevents overfitting through structured data generation
+- Tracks synthetic data quality and coverage
 """
 
 import os
@@ -38,6 +43,10 @@ from data.arc_dataset import (
     evaluate_arc_prediction,
     tokens_to_grid
 )
+from training.simula_enhanced_trainer import SyntheticDataAugmentation
+from training.euphan_enhanced_trainer import EuphanTrainingIntegration
+from training.hermes_enhanced_trainer import HermesTrainingIntegration
+from core.cognitive_cohesion_braid import CognitiveCohesionBraid, CohesionConfig
 
 logging.basicConfig(
     level=logging.INFO,
@@ -55,6 +64,7 @@ class ARCTrainer:
     - Task-level evaluation (exact match)
     - Periodic full evaluation on held-out tasks
     - Curriculum learning (optional)
+    - SIMULA synthetic data augmentation
     """
     
     def __init__(
@@ -64,7 +74,11 @@ class ARCTrainer:
         train_dataloader,
         val_dataloader=None,
         tokenizer=None,
-        device: str = None
+        device: str = None,
+        use_simula: bool = False,
+        use_euphan: bool = False,
+        use_hermes: bool = False,
+        use_cohesion: bool = False
     ):
         self.model = model
         self.config = config
@@ -95,6 +109,59 @@ class ARCTrainer:
         # Checkpointing
         self.checkpoint_dir = Path("checkpoints/arc")
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        
+        # SIMULA synthetic data augmentation
+        self.simula_augmentation = None
+        if use_simula and config.training.use_simula:
+            self.simula_augmentation = SyntheticDataAugmentation(
+                enabled=True,
+                simula_ratio=config.training.simula_ratio,
+                simula_complexity=config.training.simula_complexity,
+                simula_examples_per_epoch=config.training.simula_examples_per_epoch,
+                use_compound_learning=False  # Set True if compound engine available
+            )
+            self.simula_augmentation.initialize_taxonomy()
+            logger.info("SIMULA augmentation initialized")
+        
+        # EUPHAN limb observability
+        self.euphan_integration = None
+        if use_euphan and config.training.use_euphan:
+            self.euphan_integration = EuphanTrainingIntegration(
+                enabled=True,
+                use_euphan_bridge=False,
+                log_frequency=config.training.euphan_log_frequency
+            )
+            # Pass logger to model
+            self.model.euphan_logger = self.euphan_integration.start_session(task_id="arc_training")
+            logger.info("EUPHAN observability initialized")
+        
+        # HERMES background task orchestration
+        self.hermes_integration = None
+        if use_hermes and config.training.use_hermes:
+            self.hermes_integration = HermesTrainingIntegration(
+                enabled=True,
+                learning_engine=self,
+                log_frequency=config.training.hermes_log_frequency,
+                output_dir=config.training.hermes_output_dir,
+                max_parallel_agents=config.training.hermes_max_agents,
+                max_queue_size=config.training.hermes_queue_size
+            )
+            self.hermes_integration.initialize_agents(num_agents=config.training.hermes_max_agents)
+            logger.info("HERMES background orchestration initialized")
+
+        # Cognitive Cohesion Braid — recompiles SIMULA+EUPHAN+HERMES+limbs+skills
+        # into a single braided substrate with cross-bridge feedback loops.
+        self.cohesion_braid = None
+        if use_cohesion and getattr(config.training, 'use_cohesion', True):
+            self.cohesion_braid = CognitiveCohesionBraid(CohesionConfig(
+                enabled=True,
+                output_dir=getattr(config.training, 'cohesion_output_dir', 'logs/cohesion'),
+            ))
+            self.cohesion_braid.bind_simula(getattr(self, 'simula_augmentation', None))
+            self.cohesion_braid.bind_euphan(getattr(self, 'euphan_integration', None))
+            self.cohesion_braid.bind_hermes(getattr(self, 'hermes_integration', None))
+            logger.info("Cognitive Cohesion Braid initialized "
+                        "(SIMULA↔EUPHAN↔HERMES cross-feedback active)")
     
     def _create_optimizer(self) -> AdamW:
         """Create optimizer with weight decay"""
@@ -371,6 +438,8 @@ class ARCTrainer:
         """
         Main training loop for ARC tasks.
         
+        Includes SIMULA synthetic data augmentation if enabled.
+        
         Args:
             max_steps: Maximum training steps
             eval_generation_every: How often to run generation evaluation
@@ -383,6 +452,34 @@ class ARCTrainer:
         logger.info(f"Training tasks: {len(self.train_dataloader.dataset)} samples")
         if self.val_dataloader:
             logger.info(f"Validation tasks: {len(self.val_dataloader.dataset)} samples")
+        
+        # Generate synthetic data before training if SIMULA enabled
+        if self.simula_augmentation and self.simula_augmentation.enabled:
+            logger.info("Generating initial synthetic data batch...")
+            synthetic_examples = self.simula_augmentation.generate_synthetic_batch(
+                num_examples=self.config.training.simula_examples_per_epoch,
+                domain="arc"
+            )
+            
+            if synthetic_examples:
+                # Augment training dataset
+                original_dataset = self.train_dataloader.dataset
+                augmented_dataset = self.simula_augmentation.inject_into_dataloader(
+                    original_dataset,
+                    synthetic_examples
+                )
+                
+                # Replace dataloader with augmented dataset
+                from torch.utils.data import DataLoader
+                self.train_dataloader = DataLoader(
+                    augmented_dataset,
+                    batch_size=self.train_dataloader.batch_size,
+                    shuffle=True,
+                    num_workers=0  # ARC dataset doesn't support multiprocessing
+                )
+                
+                logger.info(f"Training dataloader augmented with synthetic data")
+                logger.info(f"New training size: {len(self.train_dataloader.dataset)} samples")
         
         start_time = time.time()
         running_loss = 0.0
@@ -473,6 +570,68 @@ class ARCTrainer:
             logger.info(f"  Grid Accuracy: {final_gen['grid_accuracy']:.3f}")
             logger.info(f"  Cell Accuracy: {final_gen['cell_accuracy']:.3f}")
         
+        # Log SIMULA statistics if used
+        if self.simula_augmentation and self.simula_augmentation.enabled:
+            logger.info("\n" + "="*60)
+            logger.info("SIMULA Augmentation Summary")
+            logger.info("="*60)
+            self.simula_augmentation.log_statistics()
+        
+        # Finalize EUPHAN logging if used
+        if self.euphan_integration and self.euphan_integration.enabled:
+            logger.info("\n" + "="*60)
+            logger.info("EUPHAN Observability Summary")
+            logger.info("="*60)
+            euphan_output_dir = self.config.training.euphan_output_dir
+            Path(euphan_output_dir).mkdir(parents=True, exist_ok=True)
+            stats = self.euphan_integration.end_session(output_dir=euphan_output_dir)
+            if stats:
+                logger.info(f"EUPHAN session saved to {euphan_output_dir}")
+                logger.info(f"Total limb events logged: {sum(s.get('count', 0) for s in stats.get('limb_stats', {}).values())}")
+                logger.info(f"Session duration: {stats.get('session_duration', 0):.3f}s")
+                for limb_name, limb_stats in stats.get('limb_stats', {}).items():
+                    logger.info(f"  {limb_name}: {limb_stats['count']} events, {limb_stats['total_time']:.3f}s, conf={limb_stats['avg_confidence']:.2f}")
+        
+        # Finalize HERMES orchestration if used
+        if self.hermes_integration and self.hermes_integration.enabled:
+            logger.info("\n" + "="*60)
+            logger.info("HERMES Background Orchestration Summary")
+            logger.info("="*60)
+            summary = self.hermes_integration.get_summary(training_step=self.global_step)
+            logger.info(f"Total tasks queued: {summary.get('total_tasks_queued', 0)}")
+            logger.info(f"Total results collected: {summary.get('total_results_collected', 0)}")
+            logger.info(f"Overall exact match rate: {summary.get('overall_exact_match', 0):.1%}")
+            logger.info(f"Overall grid accuracy: {summary.get('overall_grid_accuracy', 0):.1%}")
+            
+            for agent_id, agent_stats in summary.get('agent_summaries', {}).items():
+                logger.info(f"  {agent_id}: {agent_stats['tasks_completed']}/{agent_stats['tasks_queued']} success, "
+                           f"exact_match={agent_stats['avg_exact_match']:.1%}, grid_acc={agent_stats['avg_grid_accuracy']:.1%}")
+            
+            # Generate HERMES reports
+            hermes_output_dir = self.config.training.hermes_output_dir
+            Path(hermes_output_dir).mkdir(parents=True, exist_ok=True)
+            self.hermes_integration.generate_html_report(f"{hermes_output_dir}/hermes_training_report.html")
+            self.hermes_integration.save_metrics_json(f"{hermes_output_dir}/hermes_training_metrics.json")
+            logger.info(f"HERMES reports saved to {hermes_output_dir}")
+
+        # Finalize Cognitive Cohesion Braid
+        if self.cohesion_braid:
+            logger.info("\n" + "="*60)
+            logger.info("Cognitive Cohesion Braid Summary")
+            logger.info("="*60)
+            score = self.cohesion_braid.cohesion_score()
+            logger.info(f"Cohesion score:   {score['cohesion_score']:.3f} (EWMA {score['ewma_score']:.3f})")
+            logger.info(f"Limb balance:     {score['limb_balance']:.3f} ({score['limbs_active']}/13 active)")
+            logger.info(f"Skill coverage:   {score['skill_coverage']:.3f} ({score['skills_active']}/14 fired)")
+            logger.info(f"Braid routings:   "
+                        f"S→E={score['braid_stats']['simula_to_euphan']}  "
+                        f"E→H={score['braid_stats']['euphan_to_hermes']}  "
+                        f"H→S={score['braid_stats']['hermes_to_simula']}")
+            html_path = self.cohesion_braid.generate_html_report()
+            json_path = self.cohesion_braid.export_json()
+            logger.info(f"Cohesion report:  {html_path}")
+            logger.info(f"Cohesion metrics: {json_path}")
+        
         total_time = time.time() - start_time
         logger.info(f"\nTraining complete! Total time: {total_time/60:.1f} minutes")
         logger.info(f"Best grid accuracy: {self.best_val_accuracy:.3f}")
@@ -550,6 +709,18 @@ def main():
                         help='ARC data directory')
     parser.add_argument('--resume', type=str, default=None, help='Resume from checkpoint')
     parser.add_argument('--eval-only', action='store_true', help='Only run evaluation')
+    parser.add_argument('--use-simula', action='store_true', help='Enable SIMULA synthetic data augmentation')
+    parser.add_argument('--simula-complexity', type=int, default=3, help='SIMULA complexity level (1-5)')
+    parser.add_argument('--simula-ratio', type=float, default=0.2, help='Fraction of synthetic data')
+    parser.add_argument('--use-euphan', action='store_true', help='Enable EUPHAN limb observability logging')
+    parser.add_argument('--euphan-log-frequency', type=int, default=100, help='Log EUPHAN events every N steps')
+    parser.add_argument('--euphan-output-dir', type=str, default='logs/euphan', help='Directory to save EUPHAN HTML reports')
+    parser.add_argument('--use-hermes', action='store_true', help='Enable HERMES background task orchestration')
+    parser.add_argument('--hermes-log-frequency', type=int, default=50, help='Log HERMES events every N steps')
+    parser.add_argument('--hermes-output-dir', type=str, default='logs/hermes', help='Directory to save HERMES reports')
+    parser.add_argument('--hermes-max-agents', type=int, default=3, help='Maximum parallel HERMES agents')
+    parser.add_argument('--use-cohesion', action='store_true', help='Enable Cognitive Cohesion Braid (cross-bridge feedback)')
+    parser.add_argument('--cohesion-output-dir', type=str, default='logs/cohesion', help='Directory for cohesion reports')
     args = parser.parse_args()
     
     # Configuration
@@ -570,6 +741,31 @@ def main():
     config.training.eval_interval = 100
     config.training.save_interval = 200
     
+    # SIMULA settings from command line
+    if args.use_simula:
+        config.training.use_simula = True
+        config.training.simula_complexity = args.simula_complexity
+        config.training.simula_ratio = args.simula_ratio
+    
+    # EUPHAN settings from command line
+    if args.use_euphan:
+        config.training.use_euphan = True
+        config.training.euphan_log_frequency = args.euphan_log_frequency
+        config.training.euphan_output_dir = args.euphan_output_dir
+    
+    # HERMES settings from command line
+    if args.use_hermes:
+        config.training.use_hermes = True
+        config.training.hermes_log_frequency = args.hermes_log_frequency
+        config.training.hermes_output_dir = args.hermes_output_dir
+        config.training.hermes_max_agents = args.hermes_max_agents
+        config.training.hermes_queue_size = 1000
+
+    # Cohesion braid settings
+    if args.use_cohesion:
+        config.training.use_cohesion = True
+        config.training.cohesion_output_dir = args.cohesion_output_dir
+
     logger.info("=" * 60)
     logger.info("OctoTetrahedral AGI - ARC Training")
     logger.info("=" * 60)
@@ -580,6 +776,12 @@ def main():
     logger.info(f"  Max steps: {config.training.max_steps}")
     logger.info(f"  Batch size: {config.training.batch_size}")
     logger.info(f"  Data dir: {args.data_dir}")
+    if args.use_simula:
+        logger.info(f"  SIMULA enabled (complexity={args.simula_complexity}, ratio={args.simula_ratio})")
+    if args.use_euphan:
+        logger.info(f"  EUPHAN enabled (frequency={args.euphan_log_frequency})")
+    if args.use_hermes:
+        logger.info(f"  HERMES enabled (agents={args.hermes_max_agents}, frequency={args.hermes_log_frequency})")
     
     # Tokenizer
     tokenizer = get_tokenizer()
@@ -619,7 +821,11 @@ def main():
         config=config,
         train_dataloader=train_loader,
         val_dataloader=val_loader,
-        tokenizer=tokenizer
+        tokenizer=tokenizer,
+        use_simula=args.use_simula,
+        use_euphan=args.use_euphan,
+        use_hermes=args.use_hermes,
+        use_cohesion=args.use_cohesion
     )
     
     # Resume if specified

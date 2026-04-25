@@ -384,6 +384,29 @@ class TrainingConfig:
     
     # Gradient clipping
     max_grad_norm: float = 1.0
+    
+    # EUPHAN observability logging
+    use_euphan: bool = False
+    euphan_log_frequency: int = 100        # Log every N steps
+    euphan_output_dir: str = "logs/euphan" # Where to save HTML reports
+    euphan_tracking_limbs: List[str] = None  # Which limbs to track (None = all)
+    
+    # SIMULA synthetic data augmentation
+    use_simula: bool = False
+    simula_ratio: float = 0.2           # Fraction of training data to be synthetic
+    simula_complexity: int = 3          # Complexity level (1-5)
+    simula_examples_per_epoch: int = 50 # Synthetic examples to generate per epoch
+    
+    # HERMES background orchestration
+    use_hermes: bool = False
+    hermes_log_frequency: int = 50
+    hermes_output_dir: str = "logs/hermes"
+    hermes_max_agents: int = 3
+    hermes_queue_size: int = 1000
+    
+    # Cognitive cohesion braid
+    use_cohesion: bool = False
+    cohesion_output_dir: str = "logs/cohesion"
 
 
 @dataclass
