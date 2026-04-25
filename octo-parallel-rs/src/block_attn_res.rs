@@ -1,24 +1,27 @@
 //! block_attn_res.rs — native Rust Block AttnRes (Moonshot AI arXiv:2603.15031)
 //!
-//! This module implements the exact same `_block_attn_res` function as
-//! Python/model.py but natively in Rust using ndarray, so the Rust orchestrator
-//! can run the compound braid without any Python round-trip.
+//! This module implements the same `_block_attn_res` operation as Python/model.py
+//! but natively in Rust using ndarray, so the Rust orchestrator can run the
+//! compound braid without a Python round-trip.
+//!
+//! **Approximation note**: Python uses trained `nn.LayerNorm` with learned γ/β
+//! affine parameters. This Rust implementation uses a non-affine (normalise-only)
+//! layer norm because the affine weights are not exported in kimi_weights.json.
+//! The approximation is good early in training (γ≈1, β≈0) but diverges as the
+//! model trains. For exact equivalence, export and apply the norm affine params.
 //!
 //! Core operation (per sublayer, per stream i):
 //!
-//!   V = stack(blocks[0..i] + [partial_i])      shape [N+1, B*L*D] (flattened B·L)
-//!   K = layer_norm(V)
+//!   V = stack(blocks[0..i] + [partial_i])      shape [N+1, T, D]  (T = B*L)
+//!   K = layer_norm_approx(V)                   non-affine normalisation
 //!   q = pseudo_query[i]                         shape [D]
-//!   logits  = K · q                             shape [N+1, B*L]    (einsum d,nbld->nbl)
-//!   weights = softmax(logits, axis=0)
-//!   h       = weights ⊙ V → sum over N+1        shape [B*L*D]
+//!   logits[n]  = dot(K[n][t], q)               scalar per block per token
+//!   weights    = softmax(logits, axis=0)
+//!   h[t]       = Σ_n  weights[n] * V[n][t]     weighted sum over blocks
 //!
-//! Since we receive tensors as [B, L, D] and D is the only dimension that
-//! participates in the dot product with q, we reshape to [B*L, D] and treat
-//! B*L as independent token positions.
 
 use anyhow::{Context, Result};
-use ndarray::{Array1, Array2, ArrayView2, Axis};
+use ndarray::{Array1, Array2, ArrayView2};
 use rayon::prelude::*;
 use serde::Deserialize;
 use std::fs;
@@ -150,36 +153,40 @@ fn block_attn_res_step(
 // Public API: run Block AttnRes over all streams
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Run KimiCognitiveBraid over the 13 limb streams.
+/// Run KimiCognitiveBraid over all limb streams.
 ///
-/// Mirrors `KimiCognitiveBraid.forward()` in Python exactly:
+/// Mirrors `KimiCognitiveBraid.forward()` in Python:
 ///   for each stream i:
-///     h = block_attn_res(blocks[0..i], partial_i, attn_q[i])   # before-attn
-///     h = block_attn_res(blocks[0..i], h,          mlp_q[i])    # before-mlp
-///     blocks.push(partial_i)
+///     h  = block_attn_res(blocks[0..i], partial_i, attn_q[i])   # attention sublayer
+///     h2 = block_attn_res(blocks[0..i], h,          mlp_q[i])   # MLP sublayer
+///     blocks.push(h2)   ← push the braided result, not the original
 ///
-/// Returns the number of completed blocks (= number of streams processed).
-/// Side-effects: the function logs timing but does not mutate the TensorWires
-/// (compound results are computed and logged; for a production system you would
-/// return the updated tensors).
+/// Returns the braided stream tensors as flat Vec<f32> (one per stream, row-major
+/// [T, D] where T = B*L), together with the shape [B, L, D].
+///
+/// **Approximation**: layer norm here is non-affine; see module doc.
 pub fn block_attn_res_all_streams(
     weights: &KimiWeights,
     streams: &[&TensorWire],
-) -> Result<usize> {
+) -> Result<(Vec<Vec<f32>>, Vec<usize>)> {
     let n = streams.len().min(weights.n_streams);
     let mut blocks: Vec<Array2<f32>> = Vec::with_capacity(n);
+    let mut braided_flat: Vec<Vec<f32>> = Vec::with_capacity(n);
+    let mut out_shape: Vec<usize> = vec![];
 
     for i in 0..n {
         let wire = streams[i];
         let vals = wire.to_f32_vec().with_context(|| format!("stream {i} decode"))?;
 
-        // Reshape to [T, D] where T = B * L
         let shape = &wire.shape;
         let (b, l, d) = match shape.as_slice() {
             &[b, l, d] => (b, l, d),
             &[l, d]    => (1, l, d),
             other => anyhow::bail!("unexpected tensor shape {other:?}"),
         };
+        if out_shape.is_empty() {
+            out_shape = vec![b, l, d];
+        }
         let t = b * l;
         if vals.len() != t * d {
             anyhow::bail!("stream {i}: expected {} floats, got {}", t * d, vals.len());
@@ -189,14 +196,16 @@ pub fn block_attn_res_all_streams(
 
         let block_views: Vec<ArrayView2<f32>> = blocks.iter().map(|a| a.view()).collect();
 
-        // Before-attn sublayer
-        let h = block_attn_res_step(&block_views, &partial, &weights.attn_q[i]);
-        // Before-MLP sublayer
-        let _h2 = block_attn_res_step(&block_views, &h, &weights.mlp_q[i]);
+        // Attention sublayer then MLP sublayer
+        let h  = block_attn_res_step(&block_views, &partial, &weights.attn_q[i]);
+        let h2 = block_attn_res_step(&block_views, &h,       &weights.mlp_q[i]);
 
-        // Push original partial to completed blocks (per paper)
-        blocks.push(partial);
+        // Store the braided output as flat vec
+        braided_flat.push(h2.as_slice().unwrap_or(&[]).to_vec());
+
+        // Push braided result to completed blocks (not the original partial)
+        blocks.push(h2);
     }
 
-    Ok(blocks.len())
+    Ok((braided_flat, out_shape))
 }

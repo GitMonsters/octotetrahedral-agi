@@ -1736,9 +1736,11 @@ class OctoTetrahedralModel(nn.Module):
         except Exception:
             pass
 
-        # 6. Working memory read
+        # 6. Working memory read (pure read — encode_for_parallel is stateless)
         memory_read, _ = self.working_memory.read(core_output, return_weights=False)
-        self.working_memory.write(reasoning_state)
+        # Note: we intentionally do NOT call working_memory.write() here because
+        # encode_for_parallel is a stateless inference helper — write() returns a
+        # new state without mutating in-place, so a call here would be a no-op anyway.
         return core_output + 0.1 * memory_read   # memory_enhanced [B, L, D]
 
     @torch.no_grad()
@@ -1748,11 +1750,16 @@ class OctoTetrahedralModel(nn.Module):
         memory_enhanced: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor, dict]:
         """
-        Run a single named cognitive limb given `memory_enhanced`.
-        Returns (output [B,L,D], confidence scalar-or-tensor, info_dict).
-        Used by the parallel limb server to fan out to Rust/Go orchestrators.
+        Run a single named cognitive limb given `memory_enhanced` [B,L,D].
+        Returns (output [B,L,D], confidence tensor, info_dict).
+
+        All 12 post-encode limbs return hidden-space tensors of the same shape
+        [B,L,D] so outputs can be stacked for Rust Block AttnRes braiding.
+
+        Note: ActionLimb normally projects to vocab-space logits [B,L,V].
+        We instead return its pre-logit hidden state so the shape contract holds.
         """
-        # Perception is the encode step — not a post-encode limb
+        # Perception is the encode step — it takes token IDs, not memory_enhanced
         _POST_ENCODE_LIMBS = {
             'memory', 'planning', 'language', 'spatial', 'reasoning',
             'metacognition', 'action', 'visualization', 'imagination',
@@ -1764,23 +1771,31 @@ class OctoTetrahedralModel(nn.Module):
                 f"Unknown or non-parallelizable limb '{limb_name}'. "
                 f"Choose from: {sorted(_POST_ENCODE_LIMBS)}"
             )
-        # ActionLimb needs embedding weight for its output projection
-        extra = {}
-        if limb_name == "action" and hasattr(self, "embedding"):
-            extra["embedding_weight"] = self.embedding.weight
+
+        # ActionLimb: extract pre-logit hidden state instead of vocab logits
+        # so the output shape stays [B,L,D] compatible with all other limbs.
+        if limb_name == "action":
+            with torch.no_grad():
+                adapted = limb.transform(memory_enhanced) + limb.lora(memory_enhanced)
+                out = limb.process(adapted)  # [B, L, hidden_dim]
+            return out, torch.tensor(0.5), {}
+
+        # All other limbs: call with return_confidence=True so real gate values flow
         try:
-            out, conf, info = limb(memory_enhanced, **extra)
+            out, conf, info = limb(memory_enhanced, return_confidence=True)
         except TypeError:
+            # Limb doesn't accept return_confidence kwarg — try base call
             try:
                 out, conf, info = limb(memory_enhanced)
             except TypeError:
                 out = memory_enhanced
                 conf, info = torch.tensor(0.5), {}
+
         if conf is None:
             conf = torch.tensor(0.5)
-        # action limb returns vocab logits [B,L,V] — project back to hidden dim
-        if limb_name == "action" and out.shape[-1] != memory_enhanced.shape[-1]:
-            out = out[..., :memory_enhanced.shape[-1]]
+        elif not torch.is_tensor(conf):
+            conf = torch.tensor(float(conf))
+
         return out, conf, info if isinstance(info, dict) else {}
 
     def export_kimi_weights(self, path: str = "kimi_weights.json") -> None:

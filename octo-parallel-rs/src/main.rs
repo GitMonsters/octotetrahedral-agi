@@ -36,6 +36,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use base64::Engine as _;
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 use tokio::task::JoinSet;
@@ -96,14 +97,24 @@ struct LimbResult {
 }
 
 #[derive(Serialize)]
+struct BraidedStream {
+    limb: String,
+    /// Base64 little-endian float32 braided tensor
+    data: String,
+    shape: Vec<usize>,
+}
+
+#[derive(Serialize)]
 struct InferResponse {
-    /// Per-limb results (before braid)
+    /// Per-limb metadata (confidence, shape, timing)
     limbs: Vec<LimbResult>,
+    /// Braided output tensors from Rust Block AttnRes (one per braid-eligible stream)
+    braided: Vec<BraidedStream>,
     /// Whether native Rust Block AttnRes was applied
     rust_braid_applied: bool,
     /// Total wall-clock time in ms
     total_ms: f32,
-    /// Number of completed blocks in the braid
+    /// Number of streams processed by the braid
     n_braid_blocks: usize,
 }
 
@@ -128,9 +139,11 @@ async fn infer(
 
     let mem_enh = Arc::new(encoded);
 
-    // ── 2. Fan-out: call all 13 limbs in parallel (tokio join_all) ────────
+    // ── 2. Fan-out: call all 12 post-encode limbs in parallel (tokio JoinSet) ─
+    // Note: "perception" is the *encode* step — it takes token IDs, not
+    // memory_enhanced.  All 12 names here are post-encode cognitive limbs.
     let limb_names = vec![
-        "perception", "memory", "planning", "language", "spatial",
+        "memory", "planning", "language", "spatial",
         "reasoning", "metacognition", "action",
         "visualization", "imagination", "empathy", "emotion", "ethics",
     ];
@@ -182,19 +195,42 @@ async fn infer(
     });
 
     // ── 3. Block AttnRes in Rust (if weights loaded) ─────────────────────
-    let (rust_braid_applied, n_braid_blocks) = if let Some(kimi) = state.kimi.as_ref().as_ref() {
-        let streams: Vec<&TensorWire> = limb_outputs.iter().map(|(_, w)| w).collect();
-        match block_attn_res_all_streams(kimi, &streams) {
-            Ok(n) => (true, n),
-            Err(e) => {
-                tracing::warn!("Rust Block AttnRes failed (falling back): {e}");
-                (false, 0)
+    let (rust_braid_applied, n_braid_blocks, braided) =
+        if let Some(kimi) = state.kimi.as_ref().as_ref() {
+            let streams: Vec<&TensorWire> = limb_outputs.iter().map(|(_, w)| w).collect();
+            match block_attn_res_all_streams(kimi, &streams) {
+                Ok((flat_vecs, shape)) => {
+                    let braid_count = flat_vecs.len();
+                    // Encode braided tensors as base64 LE float32
+                    let braided_streams: Vec<BraidedStream> = flat_vecs
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, v)| {
+                            let bytes: Vec<u8> = v
+                                .iter()
+                                .flat_map(|f| f.to_le_bytes())
+                                .collect();
+                            BraidedStream {
+                                limb: limb_outputs
+                                    .get(i)
+                                    .map(|(n, _)| n.clone())
+                                    .unwrap_or_else(|| format!("stream_{i}")),
+                                data: base64::engine::general_purpose::STANDARD.encode(&bytes),
+                                shape: shape.clone(),
+                            }
+                        })
+                        .collect();
+                    (true, braid_count, braided_streams)
+                }
+                Err(e) => {
+                    tracing::warn!("Rust Block AttnRes failed (falling back): {e}");
+                    (false, 0, vec![])
+                }
             }
-        }
-    } else {
-        info!("No kimi_weights.json loaded — Block AttnRes skipped (pure fan-out mode)");
-        (false, 0)
-    };
+        } else {
+            info!("No kimi_weights.json loaded — Block AttnRes skipped (pure fan-out mode)");
+            (false, 0, vec![])
+        };
 
     let total_ms = t_total.elapsed().as_secs_f32() * 1000.0;
     info!(
@@ -206,6 +242,7 @@ async fn infer(
 
     Ok(Json(InferResponse {
         limbs: limb_results_meta,
+        braided,
         rust_braid_applied,
         total_ms,
         n_braid_blocks,

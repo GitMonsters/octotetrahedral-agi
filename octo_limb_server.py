@@ -55,7 +55,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 _model = None   # loaded once at startup
 
 LIMB_NAMES = [
-    "perception", "memory", "planning", "language", "spatial",
+    "memory", "planning", "language", "spatial",
     "reasoning", "metacognition", "action",
     "visualization", "imagination", "empathy", "emotion", "ethics",
 ]
@@ -66,7 +66,8 @@ LIMB_NAMES = [
 # ──────────────────────────────────────────────────────────────────────────────
 
 def tensor_to_wire(t: torch.Tensor) -> tuple[str, list[int]]:
-    arr = t.detach().cpu().to(torch.float32).numpy()
+    # Explicit little-endian float32 so Rust (which assumes LE) is always correct
+    arr = t.detach().cpu().to(torch.float32).numpy().astype(np.dtype("<f4"))
     return base64.b64encode(arr.tobytes()).decode(), list(arr.shape)
 
 
