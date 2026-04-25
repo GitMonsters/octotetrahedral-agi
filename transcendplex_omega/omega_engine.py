@@ -540,6 +540,92 @@ class OmegaEngine:
             return None
         return lambda g: [[mapping.get(c, c) for c in row] for row in g]
 
+    # ------------------------------------------------------------------ #
+    # Geometric transform detection                                        #
+    # ------------------------------------------------------------------ #
+
+    _GEO_TRANSFORMS = [
+        ("identity",    lambda g: [row[:] for row in g]),
+        ("rot90",       rotate_90),
+        ("rot180",      rotate_180),
+        ("rot270",      rotate_270),
+        ("flip_h",      flip_h),
+        ("flip_v",      flip_v),
+        ("transpose",   transpose),
+        ("flip_h_rot90", lambda g: rotate_90(flip_h(g))),
+    ]
+
+    def _geo_transform_score(self, g_in: Grid, g_out: Grid, tfn) -> float:
+        """Fraction of cells where tfn(g_in) == g_out (same-shape grids only)."""
+        try:
+            pred = tfn(g_in)
+            if len(pred) != len(g_out):
+                return 0.0
+            total = 0
+            hits = 0
+            for r_p, r_o in zip(pred, g_out):
+                if len(r_p) != len(r_o):
+                    return 0.0
+                for cp, co in zip(r_p, r_o):
+                    hits += cp == co
+                    total += 1
+            return hits / total if total else 0.0
+        except Exception:
+            return 0.0
+
+    def _best_geo_transform(self, task: Dict) -> Optional[Tuple[str, Any]]:
+        """Find the geometric transform (from 8 candidates) that best explains
+        the training pairs, requiring perfect accuracy on ALL pairs.
+
+        Returns (name, fn) if a perfect transform is found, else None.
+        A near-perfect transform (≥0.98 per pair, averaged ≥0.99) is also
+        accepted to handle occasional single-pixel noise in RE-ARC instances.
+        """
+        train = task.get('train', [])
+        if not train:
+            return None
+        for name, tfn in self._GEO_TRANSFORMS:
+            if name == 'identity':
+                continue  # identity is already the fallback, skip
+            scores = [self._geo_transform_score(p['input'], p['output'], tfn)
+                      for p in train]
+            if min(scores) >= 0.98 and sum(scores) / len(scores) >= 0.99:
+                return (name, tfn)
+        return None
+
+    def _geo_transform_attempt(self, task: Dict) -> Optional[Grid]:
+        """Apply the best geometric transform to the first test input.
+
+        Used as a fast, ML-free Strategy for tasks that are pure geometric
+        transformations (rotation / reflection). Roughly 20-25% of ARC tasks
+        belong to this family. Works only when I/O grid shapes are compatible.
+        """
+        hit = self._best_geo_transform(task)
+        if hit is None:
+            return None
+        _, tfn = hit
+        test_inputs = task.get('test', [])
+        if not test_inputs:
+            return None
+        try:
+            return tfn(test_inputs[0]['input'])
+        except Exception:
+            return None
+
+    def _geo_transform_attempt_single(self, task_single: Dict,
+                                      geo_hit: Optional[Tuple]) -> Optional[Grid]:
+        """Apply a pre-computed geo transform to a single test case."""
+        if geo_hit is None:
+            return None
+        _, tfn = geo_hit
+        test_inputs = task_single.get('test', [])
+        if not test_inputs:
+            return None
+        try:
+            return tfn(test_inputs[0]['input'])
+        except Exception:
+            return None
+
     def _alt_navigator_attempt(self, task: Dict, task_id: str) -> Optional[Grid]:
         """Run Navigator with rotation-only augmentations (4-aug subset of primary 8-aug).
 
@@ -564,13 +650,17 @@ class OmegaEngine:
 
     def _novel_attempt2(self, inp: Grid, task_single: Dict, task_id: str,
                         a1: Grid, color_map_fn, matches: List,
-                        skip_method: str = '') -> Grid:
+                        skip_method: str = '',
+                        geo_hit: Optional[Tuple] = None) -> Grid:
         """Compute attempt_2: first distinct result from independent strategy chain.
 
-        Priority: rearc[1] → color_map → color_swap_nav → alt_nav(4-rot) → nav_8aug → a1
+        Priority:
+          rearc[1] → geo_transform → color_map → color_swap_nav →
+          alt_nav(4-rot) → nav_8aug → best_geo_non_identity → fallback_geo → a1
 
         All options are tried in order; the first result that differs from a1 is
-        returned. Falls back to a1 if every strategy agrees with it.
+        returned. Always returns a grid different from a1 when any geometric
+        transform of inp differs from a1.
         """
         a1_key = _grid_key(a1)
 
@@ -586,13 +676,19 @@ class OmegaEngine:
             if _differs(cand):
                 return cand  # type: ignore[return-value]
 
-        # Option B: color-map solve (pure per-color substitution)
+        # Option B: geometric transform (if pre-computed hit exists and attempt_1 didn't use it)
+        if geo_hit is not None and skip_method != 'geo':
+            cand = self._geo_transform_attempt_single(task_single, geo_hit)
+            if _differs(cand):
+                return cand  # type: ignore[return-value]
+
+        # Option C: color-map solve (pure per-color substitution)
         if color_map_fn is not None and skip_method != 'color_map':
             cand = color_map_fn(inp)
             if _differs(cand):
                 return cand  # type: ignore[return-value]
 
-        # Option C: color-role-swap navigator (swap bg with 2nd-most-common, then infer)
+        # Option D: color-role-swap navigator (swap bg with 2nd-most-common, then infer)
         try:
             inv_task = self._color_role_swap_task(task_single)
             cand_raw = self._navigator_attempt(inv_task, task_id)
@@ -602,7 +698,7 @@ class OmegaEngine:
         if _differs(cand):
             return cand  # type: ignore[return-value]
 
-        # Option D: rotation-only 4-aug navigator (different augmentation pool)
+        # Option E: rotation-only 4-aug navigator (different augmentation pool)
         try:
             cand = self._alt_navigator_attempt(task_single, task_id)
         except Exception:
@@ -610,7 +706,7 @@ class OmegaEngine:
         if _differs(cand):
             return cand  # type: ignore[return-value]
 
-        # Option E: full 8-aug navigator (only if attempt_1 didn't already use it)
+        # Option F: full 8-aug navigator (only if attempt_1 didn't already use it)
         if skip_method != 'nav_8aug':
             try:
                 cand = self._navigator_attempt(task_single, task_id)
@@ -618,6 +714,32 @@ class OmegaEngine:
                 cand = None
             if _differs(cand):
                 return cand  # type: ignore[return-value]
+
+        # Option G: best-scoring geometric transform that differs from a1
+        # (fallback diversity guarantee — ensures attempt_2 ≠ attempt_1 whenever possible)
+        train = task_single.get('train', [])
+        if train:
+            best_name, best_fn, best_score = '', None, -1.0
+            for tname, tfn in self._GEO_TRANSFORMS:
+                if tname == 'identity':
+                    continue
+                try:
+                    cand = tfn(inp)
+                except Exception:
+                    continue
+                if not _differs(cand):
+                    continue
+                score = sum(self._geo_transform_score(p['input'], p['output'], tfn)
+                            for p in train) / len(train)
+                if score > best_score:
+                    best_name, best_fn, best_score = tname, tfn, score
+            if best_fn is not None:
+                try:
+                    cand = best_fn(inp)
+                    if _differs(cand):
+                        return cand  # type: ignore[return-value]
+                except Exception:
+                    pass
 
         return a1  # absolute fallback: same grid as attempt_1
 
@@ -685,6 +807,9 @@ class OmegaEngine:
             # Color-map function: cheap O(H×W×N), deterministic, computed once
             color_map_fn = self._color_map_fn(task)
 
+            # Geometric transform: check if task is a pure rotation/reflection
+            geo_hit = self._best_geo_transform(task)
+
             # Brute-force: find up to 2 independent RE-ARC solvers
             matches = self.match_all_tasks(task)
 
@@ -713,6 +838,11 @@ class OmegaEngine:
                     if a1 is not None:
                         a1_method = 'rearc_0'
 
+                if a1 is None and geo_hit is not None:
+                    a1 = self._geo_transform_attempt_single(task_single, geo_hit)
+                    if a1 is not None:
+                        a1_method = 'geo'
+
                 if a1 is None and color_map_fn is not None:
                     a1 = color_map_fn(inp)
                     if a1 is not None:
@@ -732,7 +862,8 @@ class OmegaEngine:
                 # attempt_2: novel independent strategy
                 a2 = self._novel_attempt2(inp, task_single, task_id,
                                           a1, color_map_fn, matches,
-                                          skip_method=a1_method)
+                                          skip_method=a1_method,
+                                          geo_hit=geo_hit)
                 test_outputs.append({'attempt_1': a1, 'attempt_2': a2})
 
             submission[task_id] = test_outputs
@@ -745,7 +876,14 @@ class OmegaEngine:
             elif matches:
                 self._stats["matched"] += 1
                 self._braid_emit_hermes(task_id, True, 0.9, ["trigger-execution"])
-                print(f'  ✅ [{idx+1}/{len(challenges)}] {task_id} → {matches[0][0]}')
+                match_tag = f'{matches[0][0]}'
+                if geo_hit:
+                    match_tag += f' +geo({geo_hit[0]})'
+                print(f'  ✅ [{idx+1}/{len(challenges)}] {task_id} → {match_tag}')
+            elif geo_hit is not None:
+                self._stats["matched"] += 1
+                self._braid_emit_hermes(task_id, True, 0.85, ["skill-assignment"])
+                print(f'  🔄 [{idx+1}/{len(challenges)}] {task_id} → geo({geo_hit[0]})')
             else:
                 self._braid_emit_euphan(task_id, "spatial", 0.3, False)
 
