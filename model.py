@@ -1692,6 +1692,123 @@ class OctoTetrahedralModel(nn.Module):
         
         return model, checkpoint
 
+    # ─────────────────────────────────────────────────────────────────────────
+    # Parallel-inference helpers (used by octo_limb_server.py)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    @torch.no_grad()
+    def encode_for_parallel(self, input_ids: torch.Tensor) -> torch.Tensor:
+        """
+        Run the encode path through perception → RNA editing → tetrahedral core
+        → geometric physics → spiking → working memory read and return
+        `memory_enhanced` [B, L, D] — the shared representation fed to all 11 limbs.
+
+        This is the split point for multi-language parallel limb execution.
+        """
+        # 1. Perception
+        encoded, _ = self.perception(token_ids=input_ids, return_confidence=False)
+
+        # 2. RNA editing
+        editing_result = self.rna_editing(encoded)
+        edited = editing_result['output']
+        head_gates = editing_result['head_gates']
+
+        # 3. Tetrahedral core
+        braid_signal = getattr(self, '_cached_braid_signal', None)
+        core_result = self.core(edited, head_gates=head_gates, braid_signal=braid_signal)
+        core_output = core_result['hidden_states']
+        reasoning_state = core_result['reasoning_state']
+
+        # 4. Geometric physics (skip NaN)
+        if self.use_geometric_physics and self.geometric_physics is not None:
+            try:
+                gp = self.geometric_physics(core_output, return_components=False)
+                if not torch.isnan(gp['output']).any():
+                    core_output = gp['output']
+            except Exception:
+                pass
+
+        # 5. Spiking layer (skip NaN/error)
+        try:
+            sp = self.spiking_layer(core_output)
+            if not torch.isnan(sp['output']).any():
+                core_output = sp['output']
+        except Exception:
+            pass
+
+        # 6. Working memory read
+        memory_read, _ = self.working_memory.read(core_output, return_weights=False)
+        self.working_memory.write(reasoning_state)
+        return core_output + 0.1 * memory_read   # memory_enhanced [B, L, D]
+
+    @torch.no_grad()
+    def run_limb(
+        self,
+        limb_name: str,
+        memory_enhanced: torch.Tensor,
+    ) -> Tuple[torch.Tensor, torch.Tensor, dict]:
+        """
+        Run a single named cognitive limb given `memory_enhanced`.
+        Returns (output [B,L,D], confidence scalar-or-tensor, info_dict).
+        Used by the parallel limb server to fan out to Rust/Go orchestrators.
+        """
+        # Perception is the encode step — not a post-encode limb
+        _POST_ENCODE_LIMBS = {
+            'memory', 'planning', 'language', 'spatial', 'reasoning',
+            'metacognition', 'action', 'visualization', 'imagination',
+            'empathy', 'emotion', 'ethics',
+        }
+        limb = self._limbs.get(limb_name)
+        if limb is None or limb_name not in _POST_ENCODE_LIMBS:
+            raise ValueError(
+                f"Unknown or non-parallelizable limb '{limb_name}'. "
+                f"Choose from: {sorted(_POST_ENCODE_LIMBS)}"
+            )
+        # ActionLimb needs embedding weight for its output projection
+        extra = {}
+        if limb_name == "action" and hasattr(self, "embedding"):
+            extra["embedding_weight"] = self.embedding.weight
+        try:
+            out, conf, info = limb(memory_enhanced, **extra)
+        except TypeError:
+            try:
+                out, conf, info = limb(memory_enhanced)
+            except TypeError:
+                out = memory_enhanced
+                conf, info = torch.tensor(0.5), {}
+        if conf is None:
+            conf = torch.tensor(0.5)
+        # action limb returns vocab logits [B,L,V] — project back to hidden dim
+        if limb_name == "action" and out.shape[-1] != memory_enhanced.shape[-1]:
+            out = out[..., :memory_enhanced.shape[-1]]
+        return out, conf, info if isinstance(info, dict) else {}
+
+    def export_kimi_weights(self, path: str = "kimi_weights.json") -> None:
+        """
+        Export KimiCognitiveBraid pseudo-query vectors as JSON so the Rust
+        server can run Block AttnRes natively without Python.
+
+        Format: { "attn_proj": [[D floats] * n_streams],
+                  "mlp_proj":  [[D floats] * n_streams] }
+        """
+        import json
+        if self.kimi_braid is None:
+            print("kimi_braid not enabled — nothing to export")
+            return
+        weights = {
+            "attn_proj": [
+                p.weight[0].tolist() for p in self.kimi_braid.attn_proj
+            ],
+            "mlp_proj": [
+                p.weight[0].tolist() for p in self.kimi_braid.mlp_proj
+            ],
+            "hidden_dim": self.hidden_dim,
+            "n_streams": self.kimi_braid.n_streams,
+        }
+        with open(path, "w") as f:
+            json.dump(weights, f)
+        print(f"Kimi weights exported → {path}  ({self.kimi_braid.n_streams} streams × {self.hidden_dim}D)")
+
 
 if __name__ == "__main__":
     print("Testing OctoTetrahedralModel...")
