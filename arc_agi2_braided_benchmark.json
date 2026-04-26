@@ -1,0 +1,976 @@
+{
+  "n_tasks": 120,
+  "total_s": 35.27,
+  "throughput_tasks_per_s": 3.402,
+  "latency": {
+    "p50_ms": 290.6,
+    "p95_ms": 313.2,
+    "p99_ms": 329.0,
+    "mean_ms": 291.9
+  },
+  "rust_braid_pct": 100.0,
+  "avg_limbs_per_task": 12,
+  "domain_sensitivity_avg": 1.0,
+  "tasks": [
+    {
+      "task": "0934a4d8",
+      "elapsed_ms": 331.2238339999567,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "135a2760",
+      "elapsed_ms": 320.24437500012937,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "136b0064",
+      "elapsed_ms": 299.6340830000008,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "13e47133",
+      "elapsed_ms": 295.9939590000431,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "142ca369",
+      "elapsed_ms": 289.8032499997498,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "16b78196",
+      "elapsed_ms": 297.93754199999967,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "16de56c4",
+      "elapsed_ms": 289.3507080002564,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "1818057f",
+      "elapsed_ms": 287.6129169999331,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "195c6913",
+      "elapsed_ms": 287.1801249998498,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "1ae2feb7",
+      "elapsed_ms": 314.7830409998278,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "20270e3b",
+      "elapsed_ms": 291.23462499956076,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "20a9e565",
+      "elapsed_ms": 292.3502499997994,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "21897d95",
+      "elapsed_ms": 290.78866700001527,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "221dfab4",
+      "elapsed_ms": 291.62991700013663,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "247ef758",
+      "elapsed_ms": 296.2052920001952,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "269e22fb",
+      "elapsed_ms": 297.2632500000145,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "271d71e2",
+      "elapsed_ms": 294.0093749998596,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "28a6681f",
+      "elapsed_ms": 290.3230000001713,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "291dc1e1",
+      "elapsed_ms": 298.1552080000256,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "2b83f449",
+      "elapsed_ms": 296.986625000045,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "2ba387bc",
+      "elapsed_ms": 295.64350000009654,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "2c181942",
+      "elapsed_ms": 294.06429199980266,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "2d0172a1",
+      "elapsed_ms": 287.8981669996392,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "31f7f899",
+      "elapsed_ms": 288.34745799986194,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "332f06d7",
+      "elapsed_ms": 283.7120829999549,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "35ab12c3",
+      "elapsed_ms": 289.95679199988444,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "36a08778",
+      "elapsed_ms": 282.75112499977695,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "38007db0",
+      "elapsed_ms": 283.5934580002686,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "3a25b0d8",
+      "elapsed_ms": 280.6505409998863,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "3dc255db",
+      "elapsed_ms": 329.0180829999372,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "3e6067c3",
+      "elapsed_ms": 290.71295900030236,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "409aa875",
+      "elapsed_ms": 286.9854589998795,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "446ef5d2",
+      "elapsed_ms": 292.36783399983324,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "45a5af55",
+      "elapsed_ms": 293.22783299994626,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "4a21e3da",
+      "elapsed_ms": 306.6936249997525,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "4c3d4a41",
+      "elapsed_ms": 304.44795899984456,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "4c416de3",
+      "elapsed_ms": 295.6645000003846,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "4c7dc4dd",
+      "elapsed_ms": 298.8673340000787,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "4e34c42c",
+      "elapsed_ms": 292.31479100008073,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "53fb4810",
+      "elapsed_ms": 282.14458299999023,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "5545f144",
+      "elapsed_ms": 292.1425829999862,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "581f7754",
+      "elapsed_ms": 287.1991249999155,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "58490d8a",
+      "elapsed_ms": 284.33199999972203,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "58f5dbd5",
+      "elapsed_ms": 287.0037089996913,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "5961cc34",
+      "elapsed_ms": 294.1604160000679,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "5dbc8537",
+      "elapsed_ms": 288.21683399974063,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "62593bfd",
+      "elapsed_ms": 280.40774999999485,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "64efde09",
+      "elapsed_ms": 288.52437500017913,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "65b59efc",
+      "elapsed_ms": 288.13050000007934,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "67e490f4",
+      "elapsed_ms": 288.5621670002365,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "6e453dd6",
+      "elapsed_ms": 281.87966699988465,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "6e4f6532",
+      "elapsed_ms": 287.7006660000916,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "6ffbe589",
+      "elapsed_ms": 288.11220800025694,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "71e489b6",
+      "elapsed_ms": 281.7453750003551,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "7491f3cf",
+      "elapsed_ms": 291.7400840001392,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "7666fa5d",
+      "elapsed_ms": 292.08779200007484,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "78332cb0",
+      "elapsed_ms": 289.22449999981836,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "7b0280bc",
+      "elapsed_ms": 282.91716700005054,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "7b3084d4",
+      "elapsed_ms": 289.4530000003215,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "7b5033c1",
+      "elapsed_ms": 283.6188750002293,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "7b80bb43",
+      "elapsed_ms": 284.6172090003165,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "7c66cb00",
+      "elapsed_ms": 288.8687919999029,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "7ed72f31",
+      "elapsed_ms": 279.78712499998437,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "800d221b",
+      "elapsed_ms": 289.4877909998286,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "80a900e0",
+      "elapsed_ms": 289.75783300029434,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "8698868d",
+      "elapsed_ms": 291.0682500000803,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "88bcf3b4",
+      "elapsed_ms": 284.8701670000082,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "88e364bc",
+      "elapsed_ms": 293.35104099982345,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "89565ca0",
+      "elapsed_ms": 288.54308400013906,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "898e7135",
+      "elapsed_ms": 289.065083999958,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "8b7bacbf",
+      "elapsed_ms": 294.4342499999948,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "8b9c3697",
+      "elapsed_ms": 293.51758299981157,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "8e5c0c38",
+      "elapsed_ms": 286.8724999998449,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "8f215267",
+      "elapsed_ms": 289.3562080002994,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "8f3a5a89",
+      "elapsed_ms": 288.25595799980874,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "9385bd28",
+      "elapsed_ms": 317.94920900028956,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "97d7923e",
+      "elapsed_ms": 313.15600000016275,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "981571dc",
+      "elapsed_ms": 312.72824999996374,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "9aaea919",
+      "elapsed_ms": 292.62054199989507,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "9bbf930d",
+      "elapsed_ms": 293.42641599987473,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "a251c730",
+      "elapsed_ms": 292.64599999987695,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "a25697e4",
+      "elapsed_ms": 289.1265410003143,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "a32d8b75",
+      "elapsed_ms": 292.5020420002511,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "a395ee82",
+      "elapsed_ms": 302.948416000163,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "a47bf94d",
+      "elapsed_ms": 290.3009999999995,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "a6f40cea",
+      "elapsed_ms": 281.43725000018094,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "aa4ec2a5",
+      "elapsed_ms": 292.42304100034744,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "abc82100",
+      "elapsed_ms": 290.4268749998664,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "b0039139",
+      "elapsed_ms": 286.86991700033104,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "b10624e5",
+      "elapsed_ms": 294.6791670001403,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "b5ca7ac4",
+      "elapsed_ms": 287.72916600019016,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "b6f77b65",
+      "elapsed_ms": 290.51220800010924,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "b99e7126",
+      "elapsed_ms": 292.31420899986915,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "b9e38dc0",
+      "elapsed_ms": 285.64137500006836,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "bf45cf4b",
+      "elapsed_ms": 300.8701670000846,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "c4d067a0",
+      "elapsed_ms": 283.1248340003185,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "c7f57c3e",
+      "elapsed_ms": 283.5603749999791,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "cb2d8a2c",
+      "elapsed_ms": 291.01133400035906,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "cbebaa4b",
+      "elapsed_ms": 286.5138330002992,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "d35bdbdc",
+      "elapsed_ms": 281.83545900037643,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "d59b0160",
+      "elapsed_ms": 294.7755000000143,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "d8e07eb2",
+      "elapsed_ms": 291.6694999998981,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "da515329",
+      "elapsed_ms": 291.2214589996438,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "db0c5428",
+      "elapsed_ms": 283.5736669999278,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "db695cfb",
+      "elapsed_ms": 286.3556659999631,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "dbff022c",
+      "elapsed_ms": 291.6027500000382,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "dd6b8c4b",
+      "elapsed_ms": 291.71720800013645,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "de809cff",
+      "elapsed_ms": 295.79995799986136,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "dfadab01",
+      "elapsed_ms": 291.3075830001617,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "e12f9a14",
+      "elapsed_ms": 283.57229199991707,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "e3721c99",
+      "elapsed_ms": 294.7132499998588,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "e376de54",
+      "elapsed_ms": 289.4755829997848,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "e8686506",
+      "elapsed_ms": 293.6610420001671,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "e87109e9",
+      "elapsed_ms": 291.48162499996033,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "edb79dae",
+      "elapsed_ms": 283.6865829999624,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "eee78d87",
+      "elapsed_ms": 288.7618750000911,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "f560132c",
+      "elapsed_ms": 290.0097079996158,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "f931b4a8",
+      "elapsed_ms": 290.7511660000637,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "faa9f03d",
+      "elapsed_ms": 293.9665420003621,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    },
+    {
+      "task": "fc7cae8d",
+      "elapsed_ms": 291.2332079999942,
+      "braid": true,
+      "n_braid_blocks": 12,
+      "limbs_returned": 12,
+      "sensitivity": 1.0
+    }
+  ]
+}

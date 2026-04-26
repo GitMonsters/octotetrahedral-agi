@@ -116,10 +116,10 @@ class KimiCognitiveBraid(nn.Module):
     Parameters
     ----------
     d_model   : Hidden dimension (must match limb output dim).
-    n_streams : Number of cognitive streams (default 11, one per limb).
+    n_streams : Number of cognitive streams (default 12, one per cognitive limb).
     """
 
-    def __init__(self, d_model: int, n_streams: int = 11):
+    def __init__(self, d_model: int, n_streams: int = 12):
         super().__init__()
         self.n_streams = n_streams
         # Two proj+norm pairs per stream: before-attn sublayer and before-MLP sublayer
@@ -156,7 +156,9 @@ class KimiCognitiveBraid(nn.Module):
             h = _block_attn_res(blocks, partial, self.attn_proj[i], self.attn_norm[i])
             # Before-MLP sublayer analogue (uses updated h as new partial)
             h = _block_attn_res(blocks, h, self.mlp_proj[i], self.mlp_norm[i])
-            blocks.append(partial)   # push original partial to completed blocks
+            # Residual skip: add original partial back to preserve each limb's own signal
+            h = h + partial
+            blocks.append(h)   # push braided+residual output — later streams see refined context
             updated.append(h)
 
         return updated, {'n_blocks': len(blocks)}
@@ -489,7 +491,7 @@ class OctoTetrahedralModel(nn.Module):
         if _kimi_cfg.enabled:
             self.kimi_braid = KimiCognitiveBraid(
                 d_model=self.hidden_dim,
-                n_streams=11,          # one per cognitive limb
+                n_streams=12,          # one per cognitive limb (12 post-encode limbs)
             )
         else:
             self.kimi_braid = None
@@ -1817,6 +1819,11 @@ class OctoTetrahedralModel(nn.Module):
             "mlp_proj": [
                 p.weight[0].tolist() for p in self.kimi_braid.mlp_proj
             ],
+            # LayerNorm affine params — exported so Rust can apply exact norm (not approx)
+            "attn_norm_weight": [n.weight.tolist() for n in self.kimi_braid.attn_norm],
+            "attn_norm_bias":   [n.bias.tolist()   for n in self.kimi_braid.attn_norm],
+            "mlp_norm_weight":  [n.weight.tolist() for n in self.kimi_braid.mlp_norm],
+            "mlp_norm_bias":    [n.bias.tolist()   for n in self.kimi_braid.mlp_norm],
             "hidden_dim": self.hidden_dim,
             "n_streams": self.kimi_braid.n_streams,
         }

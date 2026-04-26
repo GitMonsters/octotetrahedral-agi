@@ -23,8 +23,10 @@
 //! compound-braid computation never needs to round-trip back to Python.
 
 mod block_attn_res;
+mod domain_analysis;
 mod limb_client;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -45,6 +47,7 @@ use tower_http::trace::TraceLayer;
 use tracing::info;
 
 use block_attn_res::{block_attn_res_all_streams, KimiWeights};
+use domain_analysis::{analyse as domain_analyse, DomainAnalysis};
 use limb_client::{encode, run_limb, TensorWire};
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -86,6 +89,9 @@ struct AppState {
 struct InferRequest {
     /// Token IDs for a single sequence
     input_ids: Vec<u32>,
+    /// Optional raw text — used for domain analysis (keyword classification).
+    /// If omitted, domain analysis is skipped and the field is None in the response.
+    text: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -116,6 +122,9 @@ struct InferResponse {
     total_ms: f32,
     /// Number of streams processed by the braid
     n_braid_blocks: usize,
+    /// Domain sensitivity analysis (present when `text` was provided in the request)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    domain_analysis: Option<DomainAnalysis>,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -142,10 +151,15 @@ async fn infer(
     // ── 2. Fan-out: call all 12 post-encode limbs in parallel (tokio JoinSet) ─
     // Note: "perception" is the *encode* step — it takes token IDs, not
     // memory_enhanced.  All 12 names here are post-encode cognitive limbs.
+    //
+    // Ordering matters for Block AttnRes: streams processed later attend richer context.
+    // Factual/structural limbs go first; ethics + affect limbs go last so they see
+    // the full braid of all prior cognitive streams before producing their signal.
     let limb_names = vec![
-        "memory", "planning", "language", "spatial",
-        "reasoning", "metacognition", "action",
-        "visualization", "imagination", "empathy", "emotion", "ethics",
+        "memory", "spatial", "language", "reasoning",
+        "planning", "metacognition", "action",
+        "visualization", "imagination",
+        "empathy", "emotion", "ethics",   // affect/safety last — richest context
     ];
 
     let mut join_set = JoinSet::new();
@@ -233,6 +247,25 @@ async fn infer(
         };
 
     let total_ms = t_total.elapsed().as_secs_f32() * 1000.0;
+
+    // ── 4. Domain analysis (if text provided) ─────────────────────────────
+    let domain_analysis: Option<DomainAnalysis> = req.text.as_deref().map(|text| {
+        let conf_map: HashMap<String, f32> = limb_results_meta
+            .iter()
+            .map(|lr| (lr.limb.clone(), lr.confidence))
+            .collect();
+        domain_analyse(text, &conf_map)
+    });
+
+    if let Some(ref da) = domain_analysis {
+        info!(
+            "Domain analysis  active={:?}  planning_goal={}  sensitivity={:.2}",
+            da.active_domains.iter().map(|d| &d.domain).collect::<Vec<_>>(),
+            da.planning_has_goal,
+            da.sensitivity_score,
+        );
+    }
+
     info!(
         "Infer complete  limbs={}  braid={}  total={:.1}ms",
         limb_outputs.len(),
@@ -246,6 +279,7 @@ async fn infer(
         rust_braid_applied,
         total_ms,
         n_braid_blocks,
+        domain_analysis,
     }))
 }
 

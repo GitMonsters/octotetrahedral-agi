@@ -4,16 +4,16 @@
 //! but natively in Rust using ndarray, so the Rust orchestrator can run the
 //! compound braid without a Python round-trip.
 //!
-//! **Approximation note**: Python uses trained `nn.LayerNorm` with learned γ/β
-//! affine parameters. This Rust implementation uses a non-affine (normalise-only)
-//! layer norm because the affine weights are not exported in kimi_weights.json.
-//! The approximation is good early in training (γ≈1, β≈0) but diverges as the
-//! model trains. For exact equivalence, export and apply the norm affine params.
+//! LayerNorm: uses affine γ/β exported from Python nn.LayerNorm via
+//! `model.export_kimi_weights()`.  When the weight file contains
+//! `attn_norm_weight`/`attn_norm_bias`/`mlp_norm_weight`/`mlp_norm_bias` arrays
+//! the implementation is numerically identical to PyTorch.  Older weight files
+//! that omit these keys fall back to γ=1, β=0 (non-affine approximation).
 //!
 //! Core operation (per sublayer, per stream i):
 //!
 //!   V = stack(blocks[0..i] + [partial_i])      shape [N+1, T, D]  (T = B*L)
-//!   K = layer_norm_approx(V)                   non-affine normalisation
+//!   K = layer_norm(V, γ[i], β[i])              affine normalisation
 //!   q = pseudo_query[i]                         shape [D]
 //!   logits[n]  = dot(K[n][t], q)               scalar per block per token
 //!   weights    = softmax(logits, axis=0)
@@ -38,6 +38,11 @@ struct KimiWeightsFile {
     attn_proj: Vec<Vec<f32>>,
     /// mlp_proj  pseudo-queries: Vec<Vec<f32>>  shape [n_streams, D]
     mlp_proj: Vec<Vec<f32>>,
+    /// LayerNorm affine params (optional — falls back to γ=1, β=0 if absent)
+    attn_norm_weight: Option<Vec<Vec<f32>>>,
+    attn_norm_bias:   Option<Vec<Vec<f32>>>,
+    mlp_norm_weight:  Option<Vec<Vec<f32>>>,
+    mlp_norm_bias:    Option<Vec<Vec<f32>>>,
     hidden_dim: usize,
     n_streams: usize,
 }
@@ -48,6 +53,14 @@ pub struct KimiWeights {
     pub attn_q: Vec<Array1<f32>>,
     /// mlp pseudo-query per stream [n_streams × D]
     pub mlp_q: Vec<Array1<f32>>,
+    /// LayerNorm γ (scale) per stream for attn sublayer [n_streams × D]
+    pub attn_norm_w: Vec<Array1<f32>>,
+    /// LayerNorm β (bias) per stream for attn sublayer [n_streams × D]
+    pub attn_norm_b: Vec<Array1<f32>>,
+    /// LayerNorm γ per stream for mlp sublayer [n_streams × D]
+    pub mlp_norm_w: Vec<Array1<f32>>,
+    /// LayerNorm β per stream for mlp sublayer [n_streams × D]
+    pub mlp_norm_b: Vec<Array1<f32>>,
     pub hidden_dim: usize,
     pub n_streams: usize,
 }
@@ -59,11 +72,26 @@ impl KimiWeights {
         let f: KimiWeightsFile =
             serde_json::from_str(&raw).context("parsing kimi_weights.json")?;
 
+        let d = f.hidden_dim;
+        let n = f.n_streams;
+
+        // Helper: use exported affine params if present, otherwise identity (γ=1, β=0)
+        let ones  = || (0..n).map(|_| Array1::<f32>::ones(d)).collect::<Vec<_>>();
+        let zeros = || (0..n).map(|_| Array1::<f32>::zeros(d)).collect::<Vec<_>>();
+        let load_or = |opt: Option<Vec<Vec<f32>>>, fallback: Vec<Array1<f32>>| -> Vec<Array1<f32>> {
+            opt.map(|vv| vv.into_iter().map(Array1::from).collect())
+               .unwrap_or(fallback)
+        };
+
         Ok(Self {
-            attn_q: f.attn_proj.into_iter().map(Array1::from).collect(),
-            mlp_q:  f.mlp_proj.into_iter().map(Array1::from).collect(),
-            hidden_dim: f.hidden_dim,
-            n_streams:  f.n_streams,
+            attn_q:      f.attn_proj.into_iter().map(Array1::from).collect(),
+            mlp_q:       f.mlp_proj.into_iter().map(Array1::from).collect(),
+            attn_norm_w: load_or(f.attn_norm_weight, ones()),
+            attn_norm_b: load_or(f.attn_norm_bias,   zeros()),
+            mlp_norm_w:  load_or(f.mlp_norm_weight,  ones()),
+            mlp_norm_b:  load_or(f.mlp_norm_bias,    zeros()),
+            hidden_dim: d,
+            n_streams:  n,
         })
     }
 }
@@ -72,14 +100,16 @@ impl KimiWeights {
 // Numerics helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Layer-norm over the last axis (D) of a 2-D array [T, D].
-fn layer_norm(x: &Array2<f32>, eps: f32) -> Array2<f32> {
+/// Affine layer-norm over the last axis (D) of a 2-D array [T, D].
+/// Matches PyTorch nn.LayerNorm: x̂ = (x - μ) / σ  then  γ * x̂ + β.
+fn layer_norm(x: &Array2<f32>, gamma: &Array1<f32>, beta: &Array1<f32>, eps: f32) -> Array2<f32> {
     let mut out = x.clone();
     for mut row in out.rows_mut() {
         let mean = row.mean().unwrap_or(0.0);
         let var  = row.mapv(|v| (v - mean).powi(2)).mean().unwrap_or(0.0);
         let std  = (var + eps).sqrt();
-        row.mapv_inplace(|v| (v - mean) / std);
+        row.zip_mut_with(gamma, |v, &g| *v = g * (*v - mean) / std);
+        row.zip_mut_with(beta,  |v, &b| *v += b);
     }
     out
 }
@@ -101,12 +131,16 @@ fn softmax_1d(x: &Array1<f32>) -> Array1<f32> {
 /// * `blocks`  — completed block tensors, each [T, D]  (T = B*L)
 /// * `partial` — current partial tensor [T, D]
 /// * `q`       — pseudo-query vector [D]
+/// * `gamma`   — LayerNorm scale [D]
+/// * `beta`    — LayerNorm bias  [D]
 ///
 /// Returns updated hidden state [T, D].
 fn block_attn_res_step(
     blocks:  &[ArrayView2<f32>],
     partial: &Array2<f32>,
     q:       &Array1<f32>,
+    gamma:   &Array1<f32>,
+    beta:    &Array1<f32>,
 ) -> Array2<f32> {
     let (t, d) = partial.dim();
     let n = blocks.len() + 1;
@@ -115,8 +149,10 @@ fn block_attn_res_step(
     let mut v_stack: Vec<Array2<f32>> = blocks.iter().map(|b| b.to_owned()).collect();
     v_stack.push(partial.clone());
 
-    // Layer-norm each block
-    let k_stack: Vec<Array2<f32>> = v_stack.iter().map(|v| layer_norm(v, 1e-5)).collect();
+    // Affine layer-norm each block
+    let k_stack: Vec<Array2<f32>> = v_stack.iter()
+        .map(|v| layer_norm(v, gamma, beta, 1e-5))
+        .collect();
 
     // For each token position t, compute softmax over blocks, then weighted sum
     let mut out = Array2::<f32>::zeros((t, d));
@@ -157,14 +193,12 @@ fn block_attn_res_step(
 ///
 /// Mirrors `KimiCognitiveBraid.forward()` in Python:
 ///   for each stream i:
-///     h  = block_attn_res(blocks[0..i], partial_i, attn_q[i])   # attention sublayer
-///     h2 = block_attn_res(blocks[0..i], h,          mlp_q[i])   # MLP sublayer
-///     blocks.push(h2)   ← push the braided result, not the original
+///     h  = block_attn_res(blocks[0..i], partial_i, attn_q[i], attn_γ[i], attn_β[i])
+///     h2 = block_attn_res(blocks[0..i], h,          mlp_q[i],  mlp_γ[i],  mlp_β[i])
+///     blocks.push(h2)   ← push braided result so later streams see refined context
 ///
 /// Returns the braided stream tensors as flat Vec<f32> (one per stream, row-major
 /// [T, D] where T = B*L), together with the shape [B, L, D].
-///
-/// **Approximation**: layer norm here is non-affine; see module doc.
 pub fn block_attn_res_all_streams(
     weights: &KimiWeights,
     streams: &[&TensorWire],
@@ -196,15 +230,19 @@ pub fn block_attn_res_all_streams(
 
         let block_views: Vec<ArrayView2<f32>> = blocks.iter().map(|a| a.view()).collect();
 
-        // Attention sublayer then MLP sublayer
-        let h  = block_attn_res_step(&block_views, &partial, &weights.attn_q[i]);
-        let h2 = block_attn_res_step(&block_views, &h,       &weights.mlp_q[i]);
+        // Attention sublayer then MLP sublayer (affine layer norm — exact PyTorch match)
+        let h  = block_attn_res_step(&block_views, &partial, &weights.attn_q[i],
+                                     &weights.attn_norm_w[i], &weights.attn_norm_b[i]);
+        let h2 = block_attn_res_step(&block_views, &h,       &weights.mlp_q[i],
+                                     &weights.mlp_norm_w[i],  &weights.mlp_norm_b[i]);
 
-        // Store the braided output as flat vec
-        braided_flat.push(h2.as_slice().unwrap_or(&[]).to_vec());
+        // Residual skip: preserve each limb's own signal alongside the cross-stream context
+        let h2_res = h2 + &partial;
 
-        // Push braided result to completed blocks (not the original partial)
-        blocks.push(h2);
+        braided_flat.push(h2_res.as_slice().unwrap_or(&[]).to_vec());
+
+        // Push braided+residual result so stream i+1 sees refined context
+        blocks.push(h2_res);
     }
 
     Ok((braided_flat, out_shape))
