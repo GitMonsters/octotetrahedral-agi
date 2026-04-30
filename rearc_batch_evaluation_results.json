@@ -1,0 +1,2219 @@
+{
+  "metadata": {
+    "total_tasks": 120,
+    "solvers_tested": 3,
+    "timestamp": 1777573467.235001
+  },
+  "solver_metrics": {
+    "CompoundArcSolverRefactored": {
+      "solved": 0,
+      "errors": 120,
+      "skipped": 0,
+      "accuracy": 0.0
+    },
+    "EnsembleSolverRefactored": {
+      "solved": 120,
+      "errors": 0,
+      "skipped": 0,
+      "accuracy": 100.0
+    },
+    "TransformSolverRefactored": {
+      "solved": 0,
+      "errors": 120,
+      "skipped": 0,
+      "accuracy": 0.0
+    }
+  },
+  "per_task_results": {
+    "CompoundArcSolverRefactored": {
+      "50c961ff": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "10da12c9": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "43c71380": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "12c608e1": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "1dbb1bbb": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "278e6668": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "380f15b5": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "1b78776c": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "0b8628f2": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "0d0a7637": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "58525ed9": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "576a7a47": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "5c2c6d8c": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "4a734dfc": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "114252b6": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "4b445b92": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "19af11e4": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "20cb4da6": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "34e64915": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "637c2d46": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "292a4aa2": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "11336fc7": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "797074cc": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "174f184f": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "3097458c": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "7c2867e3": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "0e280380": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "41852a55": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "10c83299": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "729165d6": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "4c373934": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "46e7489e": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "7ac15f92": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "13cc69db": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "06a07555": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "304870ab": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "0a65631b": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "68542930": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "294b5286": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "21620c88": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "514a1634": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "5f947a69": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "65fd6c01": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "6ffe3472": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "3e1b5439": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "4ef6669a": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "1b1c66bf": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "6c9638c1": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "78cc720f": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "69c75db4": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "5a2f3f04": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "5d1a631e": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "0c1307da": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "03525c8c": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "0d7038c2": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "30e43d7c": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "172815c4": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "367e0332": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "466a6fe4": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "198d5e4e": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "6da4557b": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "76106efb": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "671f63b5": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "5ed2639f": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "67876211": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "5db12d8e": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "2848462f": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "6075050e": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "578959db": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "3e260c6b": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "73b405a6": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "790d4dea": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "65703972": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "50b07d37": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "29a471b3": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "23d8661a": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "0b7a6b91": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "228d466a": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "5fec266a": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "072a1a05": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "1eb120a0": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "28c26160": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "6afd26a4": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "77e41869": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "512179cf": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "200b24a6": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "30a369ff": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "37b154f3": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "14010be1": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "23394ce1": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "2363541a": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "6eba0420": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "6b8c6f25": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "1dd10137": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "4f612972": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "50bf055b": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "7cd974a2": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "23ce7d0c": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "679d4345": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "73d909a9": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "20190dd8": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "39a92d0a": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "03777992": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "4f460fd6": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "3a7f03d9": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "4c8635b8": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "279e53e9": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "3958205b": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "56713672": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "29621060": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "25af6715": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "00fa4642": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "1ed048a9": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "3b9b3e81": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "2e9a738b": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "05e131c5": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "136c1929": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "2aad42b1": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "2f154610": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "1c86cb80": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      }
+    },
+    "EnsembleSolverRefactored": {
+      "50c961ff": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "10da12c9": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "43c71380": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "12c608e1": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "1dbb1bbb": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "278e6668": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "380f15b5": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "1b78776c": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "0b8628f2": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "0d0a7637": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "58525ed9": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "576a7a47": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "5c2c6d8c": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "4a734dfc": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "114252b6": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "4b445b92": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "19af11e4": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "20cb4da6": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "34e64915": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "637c2d46": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "292a4aa2": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "11336fc7": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "797074cc": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "174f184f": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "3097458c": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "7c2867e3": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "0e280380": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "41852a55": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "10c83299": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "729165d6": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "4c373934": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "46e7489e": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "7ac15f92": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "13cc69db": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "06a07555": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "304870ab": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "0a65631b": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "68542930": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "294b5286": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "21620c88": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "514a1634": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "5f947a69": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "65fd6c01": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "6ffe3472": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "3e1b5439": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "4ef6669a": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "1b1c66bf": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "6c9638c1": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "78cc720f": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "69c75db4": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "5a2f3f04": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "5d1a631e": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "0c1307da": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "03525c8c": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "0d7038c2": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "30e43d7c": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "172815c4": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "367e0332": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "466a6fe4": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "198d5e4e": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "6da4557b": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "76106efb": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "671f63b5": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "5ed2639f": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "67876211": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "5db12d8e": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "2848462f": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "6075050e": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "578959db": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "3e260c6b": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "73b405a6": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "790d4dea": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "65703972": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "50b07d37": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "29a471b3": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "23d8661a": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "0b7a6b91": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "228d466a": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "5fec266a": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "072a1a05": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "1eb120a0": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "28c26160": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "6afd26a4": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "77e41869": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "512179cf": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "200b24a6": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "30a369ff": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "37b154f3": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "14010be1": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "23394ce1": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "2363541a": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "6eba0420": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "6b8c6f25": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "1dd10137": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "4f612972": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "50bf055b": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "7cd974a2": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "23ce7d0c": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "679d4345": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "73d909a9": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "20190dd8": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "39a92d0a": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "03777992": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "4f460fd6": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "3a7f03d9": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "4c8635b8": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "279e53e9": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "3958205b": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "56713672": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "29621060": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "25af6715": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "00fa4642": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "1ed048a9": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "3b9b3e81": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "2e9a738b": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "05e131c5": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "136c1929": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "2aad42b1": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "2f154610": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      },
+      "1c86cb80": {
+        "solved": true,
+        "error": null,
+        "strategy_used": "EnsembleSolverRefactored",
+        "confidence": 0.75
+      }
+    },
+    "TransformSolverRefactored": {
+      "50c961ff": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "10da12c9": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "43c71380": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "12c608e1": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "1dbb1bbb": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "278e6668": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "380f15b5": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "1b78776c": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "0b8628f2": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "0d0a7637": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "58525ed9": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "576a7a47": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "5c2c6d8c": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "4a734dfc": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "114252b6": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "4b445b92": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "19af11e4": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "20cb4da6": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "34e64915": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "637c2d46": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "292a4aa2": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "11336fc7": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "797074cc": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "174f184f": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "3097458c": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "7c2867e3": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "0e280380": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "41852a55": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "10c83299": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "729165d6": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "4c373934": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "46e7489e": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "7ac15f92": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "13cc69db": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "06a07555": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "304870ab": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "0a65631b": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "68542930": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "294b5286": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "21620c88": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "514a1634": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "5f947a69": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "65fd6c01": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "6ffe3472": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "3e1b5439": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "4ef6669a": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "1b1c66bf": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "6c9638c1": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "78cc720f": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "69c75db4": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "5a2f3f04": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "5d1a631e": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "0c1307da": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "03525c8c": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "0d7038c2": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "30e43d7c": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "172815c4": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "367e0332": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "466a6fe4": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "198d5e4e": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "6da4557b": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "76106efb": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "671f63b5": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "5ed2639f": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "67876211": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "5db12d8e": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "2848462f": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "6075050e": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "578959db": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "3e260c6b": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "73b405a6": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "790d4dea": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "65703972": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "50b07d37": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "29a471b3": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "23d8661a": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "0b7a6b91": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "228d466a": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "5fec266a": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "072a1a05": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "1eb120a0": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "28c26160": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "6afd26a4": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "77e41869": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "512179cf": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "200b24a6": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "30a369ff": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "37b154f3": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "14010be1": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "23394ce1": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "2363541a": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "6eba0420": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "6b8c6f25": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "1dd10137": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "4f612972": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "50bf055b": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "7cd974a2": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "23ce7d0c": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "679d4345": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "73d909a9": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "20190dd8": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "39a92d0a": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "03777992": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "4f460fd6": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "3a7f03d9": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "4c8635b8": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "279e53e9": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "3958205b": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "56713672": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "29621060": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "25af6715": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "00fa4642": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "1ed048a9": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "3b9b3e81": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "2e9a738b": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "05e131c5": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "136c1929": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "2aad42b1": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "2f154610": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      },
+      "1c86cb80": {
+        "solved": false,
+        "error": "0",
+        "strategy_used": null,
+        "confidence": 0.0
+      }
+    }
+  },
+  "summary": {
+    "best_solver": "EnsembleSolverRefactored",
+    "best_accuracy": 100.0,
+    "all_metrics": {
+      "CompoundArcSolverRefactored": {
+        "solved": 0,
+        "errors": 120,
+        "skipped": 0,
+        "accuracy": 0.0
+      },
+      "EnsembleSolverRefactored": {
+        "solved": 120,
+        "errors": 0,
+        "skipped": 0,
+        "accuracy": 100.0
+      },
+      "TransformSolverRefactored": {
+        "solved": 0,
+        "errors": 120,
+        "skipped": 0,
+        "accuracy": 0.0
+      }
+    }
+  }
+}
