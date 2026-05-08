@@ -27,7 +27,8 @@ bash arc_agi2_submission/RESTORE_INSTANCE.sh
 
 | File | Version | Expected Score | Notes |
 |------|---------|---------------|-------|
-| `submissions/octotetrahedral_rearc_v49_compound_enhanced.json` | v49 | 8–20% | ⭐ RECOMMENDED |
+| `submissions/octotetrahedral_rearc_v50_rule_learner.json` | v50 | TBD | ⭐ CURRENT BEST — per-task rule learner |
+| `submissions/octotetrahedral_rearc_v49_compound_enhanced.json` | v49 | 8–20% | Compound enhanced |
 | `submissions/octotetrahedral_rearc_v48_catalog_trained.json` | v48 | 6–18% | Pattern training |
 | `submissions/octotetrahedral_rearc_v46_ensemble_voting.json` | v46 | 5–15% | Proven baseline |
 
@@ -43,7 +44,8 @@ rearc_v45_braid_integrated.py      ← Braided multi-layer cognition
 rearc_v46_ensemble_voting.py       ← Ensemble voting (BASELINE)
 rearc_v47_smart_pattern.py         ← Smart pattern matching
 rearc_v48_catalog_trained.py       ← Catalog pattern learning
-rearc_v49_compound_enhanced.py     ← Full compound integration (BEST)
+rearc_v49_compound_enhanced.py     ← Full compound integration
+rearc_v50_rule_learner.py          ← Per-task rule learner (BEST)
 ```
 
 ---
@@ -62,8 +64,8 @@ rearc_v49_compound_enhanced.py     ← Full compound integration (BEST)
 ```bash
 # Generate fresh RE-ARC test set from https://arc.markbarney.net/re-arc
 # Save as: re-arc_challenges.json in ~/Desktop/72%/
-python rearc_v49_compound_enhanced.py
-# Output: ~/Desktop/72%/octotetrahedral_rearc_v49_compound_enhanced.json
+python arc_agi2_submission/rearc_v50_rule_learner.py
+# Output: ~/Desktop/72%/octotetrahedral_rearc_v50_rule_learner.json
 ```
 
 ---
