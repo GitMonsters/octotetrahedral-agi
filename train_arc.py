@@ -555,11 +555,26 @@ class ARCTrainer:
                 # Periodic checkpointing
                 if self.global_step % self.config.training.save_interval == 0:
                     self.save_checkpoint(f'arc_step_{self.global_step}.pt')
+
+                # Cohesion dashboard — export every 500 steps
+                if self.global_step % 500 == 0:
+                    try:
+                        report_path = self.model.export_cohesion_report()
+                        logger.info(f"Cohesion report written: {report_path}")
+                    except Exception as _cohesion_err:
+                        logger.warning(f"Cohesion report skipped: {_cohesion_err}")
             
             self.epoch += 1
         
         # Final checkpoint
         self.save_checkpoint('arc_final.pt')
+
+        # Final cohesion report
+        try:
+            report_path = self.model.export_cohesion_report()
+            logger.info(f"Final cohesion report written: {report_path}")
+        except Exception as _cohesion_err:
+            logger.warning(f"Final cohesion report skipped: {_cohesion_err}")
         
         # Final generation evaluation
         logger.info("\nFinal generation evaluation...")
