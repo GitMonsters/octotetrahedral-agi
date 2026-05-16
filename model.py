@@ -760,11 +760,15 @@ class OctoTetrahedralModel(nn.Module):
         self._forward_count += 1
         
         # === 1. Perception: Encode Input ===
+        _t_perc = time.time()
         encoded, perception_conf = self.perception(
             token_ids=input_ids,
             embeddings=embeddings,
             return_confidence=return_confidences
         )
+        self._log_limb_event('perception', 'forward', time.time() - _t_perc,
+                             perception_conf.mean().item() if torch.is_tensor(perception_conf) else 0.5,
+                             encoded.shape)
         # encoded: [batch, seq_len, hidden_dim]
         
         # === 2. RNA Editing: Dynamic Adaptation ===
@@ -1205,27 +1209,35 @@ class OctoTetrahedralModel(nn.Module):
                 )
         
         # === 7. Planning Limb: Action Sequencing ===
-        # Get current state from reasoned output
         current_state = reasoned.mean(dim=1)  # [batch, hidden]
-        goal_state = current_state  # Use same as goal for now
-        _planning_output = self.planning(current_state, goal_state)  # noqa: F841
-        
+        goal_state = current_state
+        _t_plan = time.time()
+        planning_out, planning_conf, planning_extras = self.planning(
+            current_state, goal_state,
+            return_confidence=True, return_policy=True, return_value=True
+        )
+        self._log_limb_event('planning', 'forward', time.time() - _t_plan,
+                             planning_conf if isinstance(planning_conf, float) else 0.5,
+                             planning_out.shape)
+        # Blend planning output back into sequence representation
+        reasoned = reasoned + 0.1 * planning_out.unsqueeze(1)
+
         # === 8. AGI Cognition: Higher-level reasoning ===
-        # Feature vector for cognition module
         cognition_features = reasoned.mean(dim=1)  # [batch, hidden]
         cognition_output = self.cognition(cognition_features)
-        
-        # Use the projected features (fixed hidden_dim) instead of augmented
-        # (augmented_features can have variable dimension due to discovered variables)
         enhanced_features = cognition_output['features']  # [batch, hidden] - fixed size
         cognition_enhanced = reasoned + 0.1 * enhanced_features.unsqueeze(1)
         
         # === 9. Action Limb: Generate Output ===
+        _t_act = time.time()
         logits, action_conf, gate_values = self.action(
             cognition_enhanced,
             return_confidence=return_confidences,
             embedding_weight=self.perception.get_embedding_weight()
         )
+        self._log_limb_event('action', 'forward', time.time() - _t_act,
+                             action_conf.mean().item() if torch.is_tensor(action_conf) else 0.5,
+                             logits.shape)
         # logits: [batch, seq_len, vocab_size]
         
         # === 9.5 Cognitive Geometry Engine: compound ML vocabulary integration ===

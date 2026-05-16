@@ -2,194 +2,144 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>OctoTetrahedral AGI — Sim</title>
+<title>OctoTetrahedral AGI — Geometric Sim</title>
 <style>
 :root {
-  --bg:   #07080f;
-  --panel:#0e1018;
-  --border:rgba(80,120,200,0.18);
-  --text: #c8d8f0;
-  --muted:#556688;
-  --accent:#5b9cf6;
+  --bg:#07080f; --panel:#0d0f18; --border:rgba(80,120,200,0.15);
+  --text:#c8d8f0; --muted:#4d6080; --accent:#5b9cf6;
 }
-* { margin:0; padding:0; box-sizing:border-box; }
-body { background:var(--bg); color:var(--text); font-family:-apple-system,'SF Mono',monospace; overflow:hidden; height:100vh; display:flex; flex-direction:column; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,'SF Mono',monospace;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+canvas{display:block;position:absolute;top:0;left:0;width:100%;height:100%}
+#bg-c{z-index:0}#main-c{z-index:1}
 
-/* ── Header ─────────────────────────────────── */
-#header {
-  flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
-  padding:.55rem 1.2rem;
-  background:var(--panel);
-  border-bottom:1px solid var(--border);
-  z-index:20;
+#header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:.5rem 1.1rem;background:var(--panel);border-bottom:1px solid var(--border);z-index:20}
+#header h1{font-size:.9rem;font-weight:600;color:var(--accent);letter-spacing:.09em}
+#header p{font-size:.62rem;color:var(--muted);margin-top:.1rem}
+#pass-badge{font-size:.7rem;background:rgba(91,156,246,.1);border:1px solid rgba(91,156,246,.25);border-radius:4px;padding:.18rem .55rem;color:var(--accent)}
+
+#body{flex:1;display:flex;min-height:0}
+#canvas-wrap{flex:1;position:relative;overflow:hidden}
+
+#sidebar{flex:0 0 270px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;z-index:20}
+.s-sec{padding:.62rem .9rem;border-bottom:1px solid var(--border)}
+.s-title{font-size:.55rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
+
+#kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem}
+.kpi{background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:5px;padding:.38rem .55rem}
+.kpi-val{font-size:1.15rem;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.kpi-lbl{font-size:.55rem;color:var(--muted);margin-top:.08rem}
+
+#sp-wrap{height:48px}.sp{width:100%;height:100%;display:block}
+.sp-leg{display:flex;gap:.7rem;margin-top:.25rem}
+.sp-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px;vertical-align:middle}
+.sp-lbl{font-size:.58rem;color:var(--muted)}
+
+#calc-bars{display:flex;flex-direction:column;gap:.3rem}
+.cr{display:flex;align-items:center;gap:.45rem}
+.cn{font-size:.6rem;color:var(--muted);width:30px;text-align:right;flex-shrink:0}
+.ct{flex:1;height:5px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden}
+.cf{height:100%;border-radius:3px;transition:width .22s}
+.cv{font-size:.58rem;color:var(--text);width:38px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+
+#braid-nodes{display:flex;justify-content:space-around}
+.bn{text-align:center}
+.bo{width:34px;height:34px;border-radius:50%;margin:0 auto .25rem;display:flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:700;border:1.5px solid}
+.bl{font-size:.58rem;color:var(--muted)}
+.bv{font-size:.68rem;font-weight:600}
+
+#limb-list{display:flex;flex-direction:column;gap:.22rem;flex:1;overflow-y:auto;padding:.55rem .9rem}
+.lr{display:flex;align-items:center;gap:.45rem;padding:.18rem .3rem;border-radius:4px;transition:background .2s}
+.lr.hi{background:rgba(255,220,100,.06);border:1px solid rgba(255,200,60,.15)}
+.ld{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.lname{font-size:.62rem;flex:1;text-transform:capitalize}
+.lr.hi .lname{color:#fde68a;font-weight:600}
+.lbw{width:50px;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.lb2{height:100%;border-radius:2px}
+.lc{font-size:.58rem;color:var(--muted);width:22px;text-align:right}
+
+#online-banner{
+  position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+  background:rgba(16,28,16,.9);border:1px solid rgba(74,222,128,.3);
+  border-radius:6px;padding:.3rem .8rem;font-size:.65rem;color:#4ade80;
+  z-index:5;letter-spacing:.06em;pointer-events:none;
 }
-#header h1 { font-size:.95rem; font-weight:600; color:var(--accent); letter-spacing:.1em; }
-#header p  { font-size:.65rem; color:var(--muted); margin-top:.15rem; }
-#pass-badge {
-  font-size:.72rem; background:rgba(91,156,246,.12); border:1px solid rgba(91,156,246,.3);
-  border-radius:4px; padding:.2rem .6rem; color:var(--accent); letter-spacing:.06em;
-}
-
-/* ── Body ────────────────────────────────────── */
-#body { flex:1; display:flex; min-height:0; }
-
-/* ── Canvas area ─────────────────────────────── */
-#canvas-wrap {
-  flex:1; position:relative; overflow:hidden;
-}
-canvas { position:absolute; top:0; left:0; width:100%; height:100%; }
-#bg-c { z-index:0; }
-#main-c { z-index:1; }
-
-/* ── Right sidebar ───────────────────────────── */
-#sidebar {
-  flex:0 0 260px; background:var(--panel);
-  border-left:1px solid var(--border);
-  display:flex; flex-direction:column; overflow:hidden;
-  z-index:20;
-}
-
-.s-section {
-  padding:.7rem 1rem;
-  border-bottom:1px solid var(--border);
-}
-.s-title {
-  font-size:.58rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase;
-  color:var(--muted); margin-bottom:.55rem;
-}
-
-/* KPI grid */
-#kpi-grid { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
-.kpi {
-  background:rgba(255,255,255,.03); border:1px solid var(--border);
-  border-radius:6px; padding:.45rem .6rem;
-}
-.kpi-val { font-size:1.2rem; font-weight:700; color:#fff; font-variant-numeric:tabular-nums; }
-.kpi-lbl { font-size:.58rem; color:var(--muted); margin-top:.1rem; }
-
-/* Sparkline */
-#sp-wrap { height:52px; }
-#sp { width:100%; height:100%; display:block; }
-.sp-legend { display:flex; gap:.8rem; margin-top:.3rem; }
-.sp-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:3px; vertical-align:middle; }
-.sp-lbl { font-size:.6rem; color:var(--muted); }
-
-/* Calculus bars */
-#calc-bars { display:flex; flex-direction:column; gap:.35rem; }
-.calc-row { display:flex; align-items:center; gap:.5rem; }
-.calc-name { font-size:.62rem; color:var(--muted); width:32px; text-align:right; flex-shrink:0; }
-.calc-track { flex:1; height:6px; background:rgba(255,255,255,.06); border-radius:3px; overflow:hidden; }
-.calc-fill  { height:100%; border-radius:3px; transition:width .25s; }
-.calc-num   { font-size:.6rem; color:var(--text); width:36px; text-align:right; flex-shrink:0; font-variant-numeric:tabular-nums; }
-
-/* Limbs */
-#limb-list { display:flex; flex-direction:column; gap:.28rem; flex:1; overflow-y:auto; }
-.limb-row { display:flex; align-items:center; gap:.5rem; }
-.limb-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-.limb-name { font-size:.63rem; color:var(--text); flex:1; text-transform:capitalize; }
-.limb-bar-wrap { width:55px; height:4px; background:rgba(255,255,255,.07); border-radius:2px; overflow:hidden; }
-.limb-bar { height:100%; border-radius:2px; }
-.limb-cnt { font-size:.58rem; color:var(--muted); width:18px; text-align:right; }
-
-/* Braid status */
-#braid-nodes { display:flex; justify-content:space-around; }
-.braid-node { text-align:center; }
-.braid-orb {
-  width:36px; height:36px; border-radius:50%; margin:0 auto .3rem;
-  display:flex; align-items:center; justify-content:center;
-  font-size:.58rem; font-weight:700; border:1.5px solid;
-}
-.braid-lbl { font-size:.6rem; color:var(--muted); }
-.braid-cnt { font-size:.7rem; font-weight:600; }
 </style>
 </head>
 <body>
 
-<!-- Header -->
 <div id="header">
   <div>
-    <h1>&#x1F9EC; OctoTetrahedral AGI — Geometric Sim</h1>
-    <p>208.0M params &middot; 8&times;8 tet grid &middot; 210 edges &middot; 98 faces</p>
+    <h1>&#x1F9EC; OctoTetrahedral AGI &mdash; Geometric Sim</h1>
+    <p>208.0M params &middot; 8&times;8 tet grid &middot; 210 edges &middot; 98 faces &middot; 13 limbs active</p>
   </div>
   <div id="pass-badge">PASS <span id="pc">001</span> / 080</div>
 </div>
 
-<!-- Body -->
 <div id="body">
-
-  <!-- Canvas -->
   <div id="canvas-wrap">
     <canvas id="bg-c"></canvas>
     <canvas id="main-c"></canvas>
+    <div id="online-banner">&#x25CF; PERCEPTION &nbsp; &#x25CF; PLANNING &nbsp; &#x25CF; ACTION &nbsp; now online</div>
   </div>
 
-  <!-- Sidebar -->
   <div id="sidebar">
-
-    <!-- KPIs -->
-    <div class="s-section">
+    <div class="s-sec">
       <div class="s-title">Cohesion Metrics</div>
       <div id="kpi-grid">
-        <div class="kpi"><div class="kpi-val" id="kv-c">—</div><div class="kpi-lbl">Cohesion</div></div>
-        <div class="kpi"><div class="kpi-val" id="kv-e">—</div><div class="kpi-lbl">EWMA</div></div>
-        <div class="kpi"><div class="kpi-val" id="kv-lb">—</div><div class="kpi-lbl">Limb Bal</div></div>
-        <div class="kpi"><div class="kpi-val" id="kv-sk">—</div><div class="kpi-lbl">Skill Cov</div></div>
+        <div class="kpi"><div class="kpi-val" id="kv-c">&mdash;</div><div class="kpi-lbl">Cohesion</div></div>
+        <div class="kpi"><div class="kpi-val" id="kv-e">&mdash;</div><div class="kpi-lbl">EWMA</div></div>
+        <div class="kpi"><div class="kpi-val" id="kv-lb">&mdash;</div><div class="kpi-lbl">Limb Bal</div></div>
+        <div class="kpi"><div class="kpi-val" id="kv-sk">&mdash;</div><div class="kpi-lbl">Skill Cov</div></div>
       </div>
     </div>
 
-    <!-- Sparkline -->
-    <div class="s-section">
+    <div class="s-sec">
       <div class="s-title">Cohesion Timeline</div>
-      <div id="sp-wrap"><canvas id="sp"></canvas></div>
-      <div class="sp-legend">
+      <div id="sp-wrap"><canvas id="sp" class="sp"></canvas></div>
+      <div class="sp-leg">
         <span><span class="sp-dot" style="background:#7ee8a2"></span><span class="sp-lbl">Cohesion</span></span>
         <span><span class="sp-dot" style="background:#f6a05b"></span><span class="sp-lbl">EWMA</span></span>
       </div>
     </div>
 
-    <!-- Calculus fields -->
-    <div class="s-section">
+    <div class="s-sec">
       <div class="s-title">Calculus Fields</div>
       <div id="calc-bars">
-        <div class="calc-row"><span class="calc-name">&#x2207;</span><div class="calc-track"><div class="calc-fill" id="cb-g" style="background:#5b9cf6"></div></div><span class="calc-num" id="cn-g">—</span></div>
-        <div class="calc-row"><span class="calc-name">div</span><div class="calc-track"><div class="calc-fill" id="cb-d" style="background:#a78bfa"></div></div><span class="calc-num" id="cn-d">—</span></div>
-        <div class="calc-row"><span class="calc-name">&#x394;</span><div class="calc-track"><div class="calc-fill" id="cb-l" style="background:#34d399"></div></div><span class="calc-num" id="cn-l">—</span></div>
-        <div class="calc-row"><span class="calc-name">curl</span><div class="calc-track"><div class="calc-fill" id="cb-k" style="background:#f472b6"></div></div><span class="calc-num" id="cn-k">—</span></div>
+        <div class="cr"><span class="cn">&#x2207;</span><div class="ct"><div class="cf" id="cb-g" style="background:#5b9cf6"></div></div><span class="cv" id="cv-g">&mdash;</span></div>
+        <div class="cr"><span class="cn">div</span><div class="ct"><div class="cf" id="cb-d" style="background:#a78bfa"></div></div><span class="cv" id="cv-d">&mdash;</span></div>
+        <div class="cr"><span class="cn">&#x394;</span><div class="ct"><div class="cf" id="cb-l" style="background:#34d399"></div></div><span class="cv" id="cv-l">&mdash;</span></div>
+        <div class="cr"><span class="cn">curl</span><div class="ct"><div class="cf" id="cb-k" style="background:#f472b6"></div></div><span class="cv" id="cv-k">&mdash;</span></div>
       </div>
     </div>
 
-    <!-- Braid routing -->
-    <div class="s-section">
+    <div class="s-sec">
       <div class="s-title">Braid Routing</div>
       <div id="braid-nodes">
-        <div class="braid-node">
-          <div class="braid-orb" style="color:#f6a05b;border-color:rgba(246,160,91,.4);background:rgba(246,160,91,.08)">SIM</div>
-          <div class="braid-lbl">SIMULA</div>
+        <div class="bn">
+          <div class="bo" style="color:#f6a05b;border-color:rgba(246,160,91,.35);background:rgba(246,160,91,.07)">SIM</div>
+          <div class="bl">SIMULA</div>
         </div>
-        <div class="braid-node">
-          <div class="braid-orb" style="color:#4ade80;border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.08)">EUP</div>
-          <div class="braid-lbl">EUPHAN</div>
+        <div class="bn">
+          <div class="bo" style="color:#4ade80;border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.07)">EUP</div>
+          <div class="bl">EUPHAN</div>
         </div>
-        <div class="braid-node">
-          <div class="braid-orb" style="color:#c084fc;border-color:rgba(192,132,252,.4);background:rgba(192,132,252,.08)">HER</div>
-          <div class="braid-cnt" id="braid-ev">—</div>
-          <div class="braid-lbl">HERMES</div>
+        <div class="bn">
+          <div class="bo" style="color:#c084fc;border-color:rgba(192,132,252,.35);background:rgba(192,132,252,.07)">HER</div>
+          <div class="bv" id="braid-ev">&mdash;</div>
+          <div class="bl">events</div>
         </div>
       </div>
     </div>
 
-    <!-- Limb activations -->
-    <div class="s-section" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
-      <div class="s-title">Limb Activations</div>
-      <div id="limb-list"></div>
-    </div>
-
-  </div><!-- /sidebar -->
-</div><!-- /body -->
+    <div class="s-title" style="padding:.55rem .9rem .2rem">Limb Activations</div>
+    <div id="limb-list"></div>
+  </div>
+</div>
 
 <script>
 
-const TL     = [{"cohesion": 0.673, "ewma": 0.0337, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4361, "div": 2.1667, "lap": 2.1667, "curl": 0.1605, "events": 11, "h2s": 1}, {"cohesion": 0.673, "ewma": 0.0656, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4379, "div": 2.1771, "lap": 2.1771, "curl": 0.1606, "events": 22, "h2s": 2}, {"cohesion": 0.673, "ewma": 0.096, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4399, "div": 2.1834, "lap": 2.1834, "curl": 0.161, "events": 33, "h2s": 3}, {"cohesion": 0.673, "ewma": 0.1248, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4401, "div": 2.1886, "lap": 2.1886, "curl": 0.1609, "events": 44, "h2s": 4}, {"cohesion": 0.673, "ewma": 0.1523, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4396, "div": 2.1851, "lap": 2.1851, "curl": 0.1613, "events": 55, "h2s": 5}, {"cohesion": 0.673, "ewma": 0.1783, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4435, "div": 2.2054, "lap": 2.2054, "curl": 0.162, "events": 66, "h2s": 6}, {"cohesion": 0.673, "ewma": 0.203, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4425, "div": 2.2035, "lap": 2.2035, "curl": 0.1621, "events": 77, "h2s": 7}, {"cohesion": 0.673, "ewma": 0.2265, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4388, "div": 2.1847, "lap": 2.1847, "curl": 0.1621, "events": 88, "h2s": 8}, {"cohesion": 0.673, "ewma": 0.2489, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4388, "div": 2.1836, "lap": 2.1836, "curl": 0.1612, "events": 99, "h2s": 9}, {"cohesion": 0.673, "ewma": 0.2701, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4416, "div": 2.1953, "lap": 2.1953, "curl": 0.1615, "events": 110, "h2s": 10}, {"cohesion": 0.673, "ewma": 0.2902, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4387, "div": 2.1801, "lap": 2.1801, "curl": 0.1604, "events": 121, "h2s": 11}, {"cohesion": 0.673, "ewma": 0.3094, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4347, "div": 2.159, "lap": 2.159, "curl": 0.1599, "events": 132, "h2s": 12}, {"cohesion": 0.673, "ewma": 0.3275, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4394, "div": 2.1828, "lap": 2.1828, "curl": 0.1607, "events": 143, "h2s": 13}, {"cohesion": 0.673, "ewma": 0.3448, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4378, "div": 2.173, "lap": 2.173, "curl": 0.1609, "events": 154, "h2s": 14}, {"cohesion": 0.673, "ewma": 0.3612, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4367, "div": 2.1667, "lap": 2.1667, "curl": 0.1604, "events": 165, "h2s": 15}, {"cohesion": 0.673, "ewma": 0.3768, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4419, "div": 2.1927, "lap": 2.1927, "curl": 0.1621, "events": 176, "h2s": 16}, {"cohesion": 0.673, "ewma": 0.3916, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4416, "div": 2.1923, "lap": 2.1923, "curl": 0.1624, "events": 187, "h2s": 17}, {"cohesion": 0.673, "ewma": 0.4057, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4394, "div": 2.1826, "lap": 2.1826, "curl": 0.161, "events": 198, "h2s": 18}, {"cohesion": 0.673, "ewma": 0.4191, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4396, "div": 2.1843, "lap": 2.1843, "curl": 0.161, "events": 209, "h2s": 19}, {"cohesion": 0.673, "ewma": 0.4318, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4396, "div": 2.1806, "lap": 2.1806, "curl": 0.161, "events": 220, "h2s": 20}, {"cohesion": 0.673, "ewma": 0.4438, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4406, "div": 2.1899, "lap": 2.1899, "curl": 0.1619, "events": 231, "h2s": 21}, {"cohesion": 0.673, "ewma": 0.4553, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.439, "div": 2.1824, "lap": 2.1824, "curl": 0.1608, "events": 242, "h2s": 22}, {"cohesion": 0.673, "ewma": 0.4662, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4384, "div": 2.1769, "lap": 2.1769, "curl": 0.1608, "events": 253, "h2s": 23}, {"cohesion": 0.673, "ewma": 0.4765, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4408, "div": 2.1955, "lap": 2.1955, "curl": 0.1614, "events": 264, "h2s": 24}, {"cohesion": 0.673, "ewma": 0.4863, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4393, "div": 2.1831, "lap": 2.1831, "curl": 0.1614, "events": 275, "h2s": 25}, {"cohesion": 0.673, "ewma": 0.4957, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4395, "div": 2.1852, "lap": 2.1852, "curl": 0.161, "events": 286, "h2s": 26}, {"cohesion": 0.673, "ewma": 0.5046, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4399, "div": 2.1891, "lap": 2.1891, "curl": 0.1616, "events": 297, "h2s": 27}, {"cohesion": 0.673, "ewma": 0.513, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4405, "div": 2.1925, "lap": 2.1925, "curl": 0.1612, "events": 308, "h2s": 28}, {"cohesion": 0.673, "ewma": 0.521, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4397, "div": 2.1848, "lap": 2.1848, "curl": 0.161, "events": 319, "h2s": 29}, {"cohesion": 0.673, "ewma": 0.5286, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4387, "div": 2.1789, "lap": 2.1789, "curl": 0.1617, "events": 330, "h2s": 30}, {"cohesion": 0.673, "ewma": 0.5358, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4389, "div": 2.1859, "lap": 2.1859, "curl": 0.161, "events": 341, "h2s": 31}, {"cohesion": 0.673, "ewma": 0.5427, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4423, "div": 2.1993, "lap": 2.1993, "curl": 0.1623, "events": 352, "h2s": 32}, {"cohesion": 0.673, "ewma": 0.5492, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4419, "div": 2.2003, "lap": 2.2003, "curl": 0.1621, "events": 363, "h2s": 33}, {"cohesion": 0.673, "ewma": 0.5554, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4397, "div": 2.1847, "lap": 2.1847, "curl": 0.1616, "events": 374, "h2s": 34}, {"cohesion": 0.673, "ewma": 0.5613, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4401, "div": 2.185, "lap": 2.185, "curl": 0.1614, "events": 385, "h2s": 35}, {"cohesion": 0.673, "ewma": 0.5669, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4426, "div": 2.201, "lap": 2.201, "curl": 0.1623, "events": 396, "h2s": 36}, {"cohesion": 0.673, "ewma": 0.5722, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.439, "div": 2.1839, "lap": 2.1839, "curl": 0.161, "events": 407, "h2s": 37}, {"cohesion": 0.673, "ewma": 0.5772, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.441, "div": 2.2001, "lap": 2.2001, "curl": 0.162, "events": 418, "h2s": 38}, {"cohesion": 0.673, "ewma": 0.582, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4385, "div": 2.1764, "lap": 2.1764, "curl": 0.1611, "events": 429, "h2s": 39}, {"cohesion": 0.673, "ewma": 0.5865, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4388, "div": 2.1787, "lap": 2.1787, "curl": 0.1611, "events": 440, "h2s": 40}, {"cohesion": 0.673, "ewma": 0.5909, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4366, "div": 2.1659, "lap": 2.1659, "curl": 0.1603, "events": 451, "h2s": 41}, {"cohesion": 0.673, "ewma": 0.595, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4407, "div": 2.1849, "lap": 2.1849, "curl": 0.1618, "events": 462, "h2s": 42}, {"cohesion": 0.673, "ewma": 0.5989, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4392, "div": 2.1822, "lap": 2.1822, "curl": 0.1617, "events": 473, "h2s": 43}, {"cohesion": 0.673, "ewma": 0.6026, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4386, "div": 2.1852, "lap": 2.1852, "curl": 0.1611, "events": 484, "h2s": 44}, {"cohesion": 0.673, "ewma": 0.6061, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4395, "div": 2.188, "lap": 2.188, "curl": 0.1616, "events": 495, "h2s": 45}, {"cohesion": 0.673, "ewma": 0.6095, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4366, "div": 2.1683, "lap": 2.1683, "curl": 0.1605, "events": 506, "h2s": 46}, {"cohesion": 0.673, "ewma": 0.6126, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4382, "div": 2.1855, "lap": 2.1855, "curl": 0.161, "events": 517, "h2s": 47}, {"cohesion": 0.673, "ewma": 0.6157, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4375, "div": 2.1773, "lap": 2.1773, "curl": 0.1604, "events": 528, "h2s": 48}, {"cohesion": 0.673, "ewma": 0.6185, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4422, "div": 2.1941, "lap": 2.1941, "curl": 0.1625, "events": 539, "h2s": 49}, {"cohesion": 0.673, "ewma": 0.6213, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4401, "div": 2.1877, "lap": 2.1877, "curl": 0.1615, "events": 550, "h2s": 50}, {"cohesion": 0.673, "ewma": 0.6238, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.444, "div": 2.2049, "lap": 2.2049, "curl": 0.1625, "events": 561, "h2s": 51}, {"cohesion": 0.673, "ewma": 0.6263, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4402, "div": 2.1878, "lap": 2.1878, "curl": 0.1614, "events": 572, "h2s": 52}, {"cohesion": 0.673, "ewma": 0.6286, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4384, "div": 2.1763, "lap": 2.1763, "curl": 0.1606, "events": 583, "h2s": 53}, {"cohesion": 0.673, "ewma": 0.6309, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4388, "div": 2.1812, "lap": 2.1812, "curl": 0.1613, "events": 594, "h2s": 54}, {"cohesion": 0.673, "ewma": 0.633, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4406, "div": 2.1885, "lap": 2.1885, "curl": 0.162, "events": 605, "h2s": 55}, {"cohesion": 0.673, "ewma": 0.635, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4362, "div": 2.1621, "lap": 2.1621, "curl": 0.1599, "events": 616, "h2s": 56}, {"cohesion": 0.673, "ewma": 0.6369, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4376, "div": 2.1707, "lap": 2.1707, "curl": 0.1606, "events": 627, "h2s": 57}, {"cohesion": 0.673, "ewma": 0.6387, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.437, "div": 2.177, "lap": 2.177, "curl": 0.1604, "events": 638, "h2s": 58}, {"cohesion": 0.673, "ewma": 0.6404, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4378, "div": 2.1724, "lap": 2.1724, "curl": 0.1608, "events": 649, "h2s": 59}, {"cohesion": 0.673, "ewma": 0.642, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4396, "div": 2.1879, "lap": 2.1879, "curl": 0.1605, "events": 660, "h2s": 60}, {"cohesion": 0.673, "ewma": 0.6436, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.436, "div": 2.1692, "lap": 2.1692, "curl": 0.1601, "events": 671, "h2s": 61}, {"cohesion": 0.673, "ewma": 0.6451, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4396, "div": 2.1844, "lap": 2.1844, "curl": 0.1607, "events": 682, "h2s": 62}, {"cohesion": 0.673, "ewma": 0.6465, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4384, "div": 2.1765, "lap": 2.1765, "curl": 0.1606, "events": 693, "h2s": 63}, {"cohesion": 0.673, "ewma": 0.6478, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4375, "div": 2.1784, "lap": 2.1784, "curl": 0.1605, "events": 704, "h2s": 64}, {"cohesion": 0.673, "ewma": 0.6491, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4397, "div": 2.1864, "lap": 2.1864, "curl": 0.1617, "events": 715, "h2s": 65}, {"cohesion": 0.673, "ewma": 0.6503, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4407, "div": 2.1949, "lap": 2.1949, "curl": 0.1612, "events": 726, "h2s": 66}, {"cohesion": 0.673, "ewma": 0.6514, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4398, "div": 2.1816, "lap": 2.1816, "curl": 0.1613, "events": 737, "h2s": 67}, {"cohesion": 0.673, "ewma": 0.6525, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4403, "div": 2.1865, "lap": 2.1865, "curl": 0.1613, "events": 748, "h2s": 68}, {"cohesion": 0.673, "ewma": 0.6535, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4411, "div": 2.1929, "lap": 2.1929, "curl": 0.1616, "events": 759, "h2s": 69}, {"cohesion": 0.673, "ewma": 0.6545, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4378, "div": 2.1775, "lap": 2.1775, "curl": 0.1611, "events": 770, "h2s": 70}, {"cohesion": 0.673, "ewma": 0.6554, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4398, "div": 2.185, "lap": 2.185, "curl": 0.1617, "events": 781, "h2s": 71}, {"cohesion": 0.673, "ewma": 0.6563, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4408, "div": 2.1893, "lap": 2.1893, "curl": 0.1621, "events": 792, "h2s": 72}, {"cohesion": 0.673, "ewma": 0.6571, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.44, "div": 2.1894, "lap": 2.1894, "curl": 0.1614, "events": 803, "h2s": 73}, {"cohesion": 0.673, "ewma": 0.6579, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4379, "div": 2.172, "lap": 2.172, "curl": 0.1602, "events": 814, "h2s": 74}, {"cohesion": 0.673, "ewma": 0.6587, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4379, "div": 2.177, "lap": 2.177, "curl": 0.1613, "events": 825, "h2s": 75}, {"cohesion": 0.673, "ewma": 0.6594, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4407, "div": 2.19, "lap": 2.19, "curl": 0.1618, "events": 836, "h2s": 76}, {"cohesion": 0.673, "ewma": 0.6601, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4416, "div": 2.1935, "lap": 2.1935, "curl": 0.1624, "events": 847, "h2s": 77}, {"cohesion": 0.673, "ewma": 0.6607, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4398, "div": 2.189, "lap": 2.189, "curl": 0.1616, "events": 858, "h2s": 78}, {"cohesion": 0.673, "ewma": 0.6613, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.4406, "div": 2.188, "lap": 2.188, "curl": 0.162, "events": 869, "h2s": 79}, {"cohesion": 0.673, "ewma": 0.6619, "limb_bal": 0.8857, "skill_cov": 0.0625, "grad": 0.438, "div": 2.1738, "lap": 2.1738, "curl": 0.161, "events": 880, "h2s": 80}];
+const TL     = [{"cohesion": 0.7149, "ewma": 0.0357, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4302, "div": 2.1449, "lap": 2.1449, "curl": 0.1583, "events": 14, "h2s": 1}, {"cohesion": 0.7149, "ewma": 0.0697, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1456, "lap": 2.1456, "curl": 0.1583, "events": 28, "h2s": 2}, {"cohesion": 0.7149, "ewma": 0.102, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4267, "div": 2.1282, "lap": 2.1282, "curl": 0.1571, "events": 42, "h2s": 3}, {"cohesion": 0.7149, "ewma": 0.1326, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4296, "div": 2.1402, "lap": 2.1402, "curl": 0.1581, "events": 56, "h2s": 4}, {"cohesion": 0.7149, "ewma": 0.1617, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4298, "div": 2.1404, "lap": 2.1404, "curl": 0.1579, "events": 70, "h2s": 5}, {"cohesion": 0.7149, "ewma": 0.1894, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4318, "div": 2.1521, "lap": 2.1521, "curl": 0.1575, "events": 84, "h2s": 6}, {"cohesion": 0.7149, "ewma": 0.2156, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4312, "div": 2.1483, "lap": 2.1483, "curl": 0.1582, "events": 98, "h2s": 7}, {"cohesion": 0.7149, "ewma": 0.2406, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4271, "div": 2.1276, "lap": 2.1276, "curl": 0.157, "events": 112, "h2s": 8}, {"cohesion": 0.7149, "ewma": 0.2643, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4305, "div": 2.1524, "lap": 2.1524, "curl": 0.1585, "events": 126, "h2s": 9}, {"cohesion": 0.7149, "ewma": 0.2868, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4287, "div": 2.1321, "lap": 2.1321, "curl": 0.1573, "events": 140, "h2s": 10}, {"cohesion": 0.7149, "ewma": 0.3082, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4253, "div": 2.1181, "lap": 2.1181, "curl": 0.1563, "events": 154, "h2s": 11}, {"cohesion": 0.7149, "ewma": 0.3286, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.428, "div": 2.1336, "lap": 2.1336, "curl": 0.1572, "events": 168, "h2s": 12}, {"cohesion": 0.7149, "ewma": 0.3479, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4272, "div": 2.127, "lap": 2.127, "curl": 0.1565, "events": 182, "h2s": 13}, {"cohesion": 0.7149, "ewma": 0.3662, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4273, "div": 2.1315, "lap": 2.1315, "curl": 0.1565, "events": 196, "h2s": 14}, {"cohesion": 0.7149, "ewma": 0.3837, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4291, "div": 2.1386, "lap": 2.1386, "curl": 0.1575, "events": 210, "h2s": 15}, {"cohesion": 0.7149, "ewma": 0.4002, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4279, "div": 2.1338, "lap": 2.1338, "curl": 0.1574, "events": 224, "h2s": 16}, {"cohesion": 0.7149, "ewma": 0.416, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4287, "div": 2.1356, "lap": 2.1356, "curl": 0.1573, "events": 238, "h2s": 17}, {"cohesion": 0.7149, "ewma": 0.4309, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.427, "div": 2.1241, "lap": 2.1241, "curl": 0.158, "events": 252, "h2s": 18}, {"cohesion": 0.7149, "ewma": 0.4451, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1411, "lap": 2.1411, "curl": 0.1586, "events": 266, "h2s": 19}, {"cohesion": 0.7149, "ewma": 0.4586, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4322, "div": 2.1488, "lap": 2.1488, "curl": 0.1591, "events": 280, "h2s": 20}, {"cohesion": 0.7149, "ewma": 0.4714, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4285, "div": 2.1328, "lap": 2.1328, "curl": 0.1569, "events": 294, "h2s": 21}, {"cohesion": 0.7149, "ewma": 0.4836, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4297, "div": 2.138, "lap": 2.138, "curl": 0.1576, "events": 308, "h2s": 22}, {"cohesion": 0.7149, "ewma": 0.4951, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4336, "div": 2.1572, "lap": 2.1572, "curl": 0.1594, "events": 322, "h2s": 23}, {"cohesion": 0.7149, "ewma": 0.5061, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1461, "lap": 2.1461, "curl": 0.1587, "events": 336, "h2s": 24}, {"cohesion": 0.7149, "ewma": 0.5166, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4291, "div": 2.1371, "lap": 2.1371, "curl": 0.1577, "events": 350, "h2s": 25}, {"cohesion": 0.7149, "ewma": 0.5265, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4291, "div": 2.1316, "lap": 2.1316, "curl": 0.1566, "events": 364, "h2s": 26}, {"cohesion": 0.7149, "ewma": 0.5359, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4322, "div": 2.1538, "lap": 2.1538, "curl": 0.1585, "events": 378, "h2s": 27}, {"cohesion": 0.7149, "ewma": 0.5449, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4276, "div": 2.1253, "lap": 2.1253, "curl": 0.1571, "events": 392, "h2s": 28}, {"cohesion": 0.7149, "ewma": 0.5534, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4276, "div": 2.132, "lap": 2.132, "curl": 0.1572, "events": 406, "h2s": 29}, {"cohesion": 0.7149, "ewma": 0.5614, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4257, "div": 2.1194, "lap": 2.1194, "curl": 0.1569, "events": 420, "h2s": 30}, {"cohesion": 0.7149, "ewma": 0.5691, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4304, "div": 2.1408, "lap": 2.1408, "curl": 0.1578, "events": 434, "h2s": 31}, {"cohesion": 0.7149, "ewma": 0.5764, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4278, "div": 2.1294, "lap": 2.1294, "curl": 0.1572, "events": 448, "h2s": 32}, {"cohesion": 0.7149, "ewma": 0.5833, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4308, "div": 2.1483, "lap": 2.1483, "curl": 0.1583, "events": 462, "h2s": 33}, {"cohesion": 0.7149, "ewma": 0.5899, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4261, "div": 2.1208, "lap": 2.1208, "curl": 0.1563, "events": 476, "h2s": 34}, {"cohesion": 0.7149, "ewma": 0.5961, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4263, "div": 2.1166, "lap": 2.1166, "curl": 0.1568, "events": 490, "h2s": 35}, {"cohesion": 0.7149, "ewma": 0.6021, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4293, "div": 2.134, "lap": 2.134, "curl": 0.157, "events": 504, "h2s": 36}, {"cohesion": 0.7149, "ewma": 0.6077, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1428, "lap": 2.1428, "curl": 0.1578, "events": 518, "h2s": 37}, {"cohesion": 0.7149, "ewma": 0.6131, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4304, "div": 2.1367, "lap": 2.1367, "curl": 0.1579, "events": 532, "h2s": 38}, {"cohesion": 0.7149, "ewma": 0.6182, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4289, "div": 2.1366, "lap": 2.1366, "curl": 0.157, "events": 546, "h2s": 39}, {"cohesion": 0.7149, "ewma": 0.623, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4278, "div": 2.1258, "lap": 2.1258, "curl": 0.1577, "events": 560, "h2s": 40}, {"cohesion": 0.7149, "ewma": 0.6276, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4282, "div": 2.1295, "lap": 2.1295, "curl": 0.1565, "events": 574, "h2s": 41}, {"cohesion": 0.7149, "ewma": 0.632, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4267, "div": 2.1213, "lap": 2.1213, "curl": 0.1565, "events": 588, "h2s": 42}, {"cohesion": 0.7149, "ewma": 0.6361, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4296, "div": 2.1488, "lap": 2.1488, "curl": 0.1572, "events": 602, "h2s": 43}, {"cohesion": 0.7149, "ewma": 0.64, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4292, "div": 2.1382, "lap": 2.1382, "curl": 0.1579, "events": 616, "h2s": 44}, {"cohesion": 0.7149, "ewma": 0.6438, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4311, "div": 2.1388, "lap": 2.1388, "curl": 0.1578, "events": 630, "h2s": 45}, {"cohesion": 0.7149, "ewma": 0.6473, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.431, "div": 2.147, "lap": 2.147, "curl": 0.1583, "events": 644, "h2s": 46}, {"cohesion": 0.7149, "ewma": 0.6507, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4306, "div": 2.1421, "lap": 2.1421, "curl": 0.1584, "events": 658, "h2s": 47}, {"cohesion": 0.7149, "ewma": 0.6539, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4286, "div": 2.1359, "lap": 2.1359, "curl": 0.1569, "events": 672, "h2s": 48}, {"cohesion": 0.7149, "ewma": 0.657, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4294, "div": 2.1346, "lap": 2.1346, "curl": 0.1572, "events": 686, "h2s": 49}, {"cohesion": 0.7149, "ewma": 0.6599, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4292, "div": 2.1363, "lap": 2.1363, "curl": 0.1579, "events": 700, "h2s": 50}, {"cohesion": 0.7149, "ewma": 0.6626, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4286, "div": 2.136, "lap": 2.136, "curl": 0.1575, "events": 714, "h2s": 51}, {"cohesion": 0.7149, "ewma": 0.6652, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4329, "div": 2.1501, "lap": 2.1501, "curl": 0.158, "events": 728, "h2s": 52}, {"cohesion": 0.7149, "ewma": 0.6677, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.429, "div": 2.1348, "lap": 2.1348, "curl": 0.1577, "events": 742, "h2s": 53}, {"cohesion": 0.7149, "ewma": 0.6701, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4318, "div": 2.1481, "lap": 2.1481, "curl": 0.1584, "events": 756, "h2s": 54}, {"cohesion": 0.7149, "ewma": 0.6723, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4277, "div": 2.1277, "lap": 2.1277, "curl": 0.1577, "events": 770, "h2s": 55}, {"cohesion": 0.7149, "ewma": 0.6744, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.429, "div": 2.1307, "lap": 2.1307, "curl": 0.1585, "events": 784, "h2s": 56}, {"cohesion": 0.7149, "ewma": 0.6765, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4305, "div": 2.1454, "lap": 2.1454, "curl": 0.1578, "events": 798, "h2s": 57}, {"cohesion": 0.7149, "ewma": 0.6784, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4304, "div": 2.1409, "lap": 2.1409, "curl": 0.1576, "events": 812, "h2s": 58}, {"cohesion": 0.7149, "ewma": 0.6802, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4275, "div": 2.1311, "lap": 2.1311, "curl": 0.1568, "events": 826, "h2s": 59}, {"cohesion": 0.7149, "ewma": 0.6819, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4284, "div": 2.1285, "lap": 2.1285, "curl": 0.1572, "events": 840, "h2s": 60}, {"cohesion": 0.7149, "ewma": 0.6836, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4295, "div": 2.14, "lap": 2.14, "curl": 0.1572, "events": 854, "h2s": 61}, {"cohesion": 0.7149, "ewma": 0.6851, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4316, "div": 2.1488, "lap": 2.1488, "curl": 0.1588, "events": 868, "h2s": 62}, {"cohesion": 0.7149, "ewma": 0.6866, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4292, "div": 2.136, "lap": 2.136, "curl": 0.1572, "events": 882, "h2s": 63}, {"cohesion": 0.7149, "ewma": 0.688, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1453, "lap": 2.1453, "curl": 0.1575, "events": 896, "h2s": 64}, {"cohesion": 0.7149, "ewma": 0.6894, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4263, "div": 2.1295, "lap": 2.1295, "curl": 0.1566, "events": 910, "h2s": 65}, {"cohesion": 0.7149, "ewma": 0.6907, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4262, "div": 2.117, "lap": 2.117, "curl": 0.1565, "events": 924, "h2s": 66}, {"cohesion": 0.7149, "ewma": 0.6919, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4295, "div": 2.1321, "lap": 2.1321, "curl": 0.1579, "events": 938, "h2s": 67}, {"cohesion": 0.7149, "ewma": 0.693, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4292, "div": 2.1412, "lap": 2.1412, "curl": 0.1575, "events": 952, "h2s": 68}, {"cohesion": 0.7149, "ewma": 0.6941, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4266, "div": 2.1237, "lap": 2.1237, "curl": 0.1569, "events": 966, "h2s": 69}, {"cohesion": 0.7149, "ewma": 0.6951, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.427, "div": 2.1275, "lap": 2.1275, "curl": 0.1569, "events": 980, "h2s": 70}, {"cohesion": 0.7149, "ewma": 0.6961, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.426, "div": 2.1185, "lap": 2.1185, "curl": 0.1573, "events": 994, "h2s": 71}, {"cohesion": 0.7149, "ewma": 0.6971, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4306, "div": 2.143, "lap": 2.143, "curl": 0.158, "events": 1008, "h2s": 72}, {"cohesion": 0.7149, "ewma": 0.698, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.425, "div": 2.1129, "lap": 2.1129, "curl": 0.1558, "events": 1022, "h2s": 73}, {"cohesion": 0.7149, "ewma": 0.6988, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4291, "div": 2.1378, "lap": 2.1378, "curl": 0.1579, "events": 1036, "h2s": 74}, {"cohesion": 0.7149, "ewma": 0.6996, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4272, "div": 2.1306, "lap": 2.1306, "curl": 0.1562, "events": 1050, "h2s": 75}, {"cohesion": 0.7149, "ewma": 0.7004, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4281, "div": 2.132, "lap": 2.132, "curl": 0.1576, "events": 1064, "h2s": 76}, {"cohesion": 0.7149, "ewma": 0.7011, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4266, "div": 2.1213, "lap": 2.1213, "curl": 0.1568, "events": 1078, "h2s": 77}, {"cohesion": 0.7149, "ewma": 0.7018, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4311, "div": 2.1453, "lap": 2.1453, "curl": 0.1583, "events": 1092, "h2s": 78}, {"cohesion": 0.7149, "ewma": 0.7024, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4254, "div": 2.1139, "lap": 2.1139, "curl": 0.1565, "events": 1106, "h2s": 79}, {"cohesion": 0.7149, "ewma": 0.7031, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4299, "div": 2.14, "lap": 2.14, "curl": 0.1578, "events": 1120, "h2s": 80}];
 const PX     = [-1.0, -0.7142857142857143, -0.4285714285714286, -0.1428571428571429, 0.1428571428571428, 0.4285714285714286, 0.7142857142857142, 1.0, -1.0, -0.7142857142857143, -0.4285714285714286, -0.1428571428571429, 0.1428571428571428, 0.4285714285714286, 0.7142857142857142, 1.0, -1.0, -0.7142857142857143, -0.4285714285714286, -0.1428571428571429, 0.1428571428571428, 0.4285714285714286, 0.7142857142857142, 1.0, -1.0, -0.7142857142857143, -0.4285714285714286, -0.1428571428571429, 0.1428571428571428, 0.4285714285714286, 0.7142857142857142, 1.0, -1.0, -0.7142857142857143, -0.4285714285714286, -0.1428571428571429, 0.1428571428571428, 0.4285714285714286, 0.7142857142857142, 1.0, -1.0, -0.7142857142857143, -0.4285714285714286, -0.1428571428571429, 0.1428571428571428, 0.4285714285714286, 0.7142857142857142, 1.0, -1.0, -0.7142857142857143, -0.4285714285714286, -0.1428571428571429, 0.1428571428571428, 0.4285714285714286, 0.7142857142857142, 1.0, -1.0, -0.7142857142857143, -0.4285714285714286, -0.1428571428571429, 0.1428571428571428, 0.4285714285714286, 0.7142857142857142, 1.0];
 const PY     = [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -0.7142857142857143, -0.7142857142857143, -0.7142857142857143, -0.7142857142857143, -0.7142857142857143, -0.7142857142857143, -0.7142857142857143, -0.7142857142857143, -0.4285714285714286, -0.4285714285714286, -0.4285714285714286, -0.4285714285714286, -0.4285714285714286, -0.4285714285714286, -0.4285714285714286, -0.4285714285714286, -0.1428571428571429, -0.1428571428571429, -0.1428571428571429, -0.1428571428571429, -0.1428571428571429, -0.1428571428571429, -0.1428571428571429, -0.1428571428571429, 0.1428571428571428, 0.1428571428571428, 0.1428571428571428, 0.1428571428571428, 0.1428571428571428, 0.1428571428571428, 0.1428571428571428, 0.1428571428571428, 0.4285714285714286, 0.4285714285714286, 0.4285714285714286, 0.4285714285714286, 0.4285714285714286, 0.4285714285714286, 0.4285714285714286, 0.4285714285714286, 0.7142857142857142, 0.7142857142857142, 0.7142857142857142, 0.7142857142857142, 0.7142857142857142, 0.7142857142857142, 0.7142857142857142, 0.7142857142857142, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
 const EI_SRC = [0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 16, 16, 16, 17, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 19, 20, 20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 23, 23, 24, 24, 24, 25, 25, 25, 25, 26, 26, 26, 26, 27, 27, 27, 27, 28, 28, 28, 28, 29, 29, 29, 29, 30, 30, 30, 30, 31, 31, 32, 32, 32, 33, 33, 33, 33, 34, 34, 34, 34, 35, 35, 35, 35, 36, 36, 36, 36, 37, 37, 37, 37, 38, 38, 38, 38, 39, 39, 40, 40, 40, 41, 41, 41, 41, 42, 42, 42, 42, 43, 43, 43, 43, 44, 44, 44, 44, 45, 45, 45, 45, 46, 46, 46, 46, 47, 47, 48, 48, 48, 49, 49, 49, 49, 50, 50, 50, 50, 51, 51, 51, 51, 52, 52, 52, 52, 53, 53, 53, 53, 54, 54, 54, 54, 55, 55, 56, 57, 58, 59, 60, 61, 62];
@@ -199,13 +149,13 @@ const FI0    = [0, 9, 1, 10, 2, 11, 3, 12, 4, 13, 5, 14, 6, 15, 8, 17, 9, 18, 10
 const FI1    = [8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54, 54, 56, 56, 57, 57, 58, 58, 59, 59, 60, 60, 61, 61, 62, 62];
 const FI2    = [1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54, 54, 55, 55];
 const LIMBS  = ["memory", "planning", "language", "spatial", "reasoning", "metacognition", "perception", "action", "emotion", "empathy", "ethics", "imagination", "visualization"];
-const LCOUNTS= [80, 0, 80, 160, 80, 80, 0, 0, 80, 80, 80, 80, 80];
+const LCOUNTS= [80, 80, 80, 160, 80, 80, 80, 80, 80, 80, 80, 80, 80];
 const PARAMS_M = 208.0;
 const N_EDGES  = 210;
 const N_FACES  = 98;
 
+const LIMB_HI = [false, true, false, false, false, false, true, true, false, false, false, false, false];
 
-// ── Setup ─────────────────────────────────────────────────────────────────────
 const MAX_LC = Math.max(...LCOUNTS, 1);
 let W, H, frame = 0, passIdx = 0, lastPassMs = 0;
 const PASS_INTERVAL = 200;
@@ -226,235 +176,171 @@ function resize() {
 }
 resize(); window.addEventListener('resize', resize);
 
-// ── Build limb list ───────────────────────────────────────────────────────────
-const limbList = document.getElementById('limb-list');
+// Build limb list
+const limbListEl = document.getElementById('limb-list');
 LIMBS.forEach((l, i) => {
   const hue = (i / LIMBS.length * 360) | 0;
+  const name = l.replace(/_limb$/, '').replace(/_/g, ' ');
+  const isHi = LIMB_HI[i];
   const row = document.createElement('div');
-  row.className = 'limb-row';
+  row.className = 'lr' + (isHi ? ' hi' : '');
   row.innerHTML = `
-    <div class="limb-dot" style="background:hsl(${hue},70%,55%)"></div>
-    <div class="limb-name">${l.replace(/_limb$/,'').replace(/_/g,' ')}</div>
-    <div class="limb-bar-wrap"><div class="limb-bar" id="lb-${i}" style="background:hsl(${hue},70%,55%);width:${(LCOUNTS[i]/MAX_LC*100).toFixed(0)}%"></div></div>
-    <div class="limb-cnt">${LCOUNTS[i]}</div>`;
-  limbList.appendChild(row);
+    <div class="ld" style="background:hsl(${hue},70%,${isHi?65:50}%)${isHi?';box-shadow:0 0 6px hsl('+hue+',80%,60%)':''}"></div>
+    <div class="lname">${name}</div>
+    <div class="lbw"><div class="lb2" style="background:hsl(${hue},70%,${isHi?60:45}%);width:${(LCOUNTS[i]/MAX_LC*100).toFixed(0)}%"></div></div>
+    <div class="lc">${LCOUNTS[i]}</div>`;
+  limbListEl.appendChild(row);
 });
 
-// ── Mouse ─────────────────────────────────────────────────────────────────────
 let mx = 0, my = 0;
 window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
 
-// ── Background: slow dark aurora ──────────────────────────────────────────────
 let bgHue = 220;
 function drawBg(t) {
-  bgHue = (bgHue + 0.08) % 360;
-  bgX.clearRect(0, 0, W, H);
-  bgX.fillStyle = '#07080f';
-  bgX.fillRect(0, 0, W, H);
+  bgHue = (bgHue + 0.07) % 360;
+  bgX.fillStyle = '#07080f'; bgX.fillRect(0, 0, W, H);
   const blobs = [
-    { x: W*(0.25+0.18*Math.sin(t*0.00022)), y: H*(0.35+0.18*Math.cos(t*0.00017)), r:W*0.38, h:(bgHue)%360,      a:0.10 },
-    { x: W*(0.75+0.15*Math.cos(t*0.00018)), y: H*(0.65+0.15*Math.sin(t*0.00024)), r:W*0.32, h:(bgHue+110)%360,  a:0.09 },
-    { x: W*(0.50+0.12*Math.sin(t*0.00029+1)),y:H*(0.50+0.12*Math.cos(t*0.00021+2)),r:W*0.28,h:(bgHue+230)%360,  a:0.08 },
+    { x:W*(0.25+0.18*Math.sin(t*0.00022)), y:H*(0.35+0.18*Math.cos(t*0.00017)), r:W*0.38, h:bgHue%360, a:0.10 },
+    { x:W*(0.75+0.15*Math.cos(t*0.00018)), y:H*(0.65+0.15*Math.sin(t*0.00024)), r:W*0.32, h:(bgHue+110)%360, a:0.09 },
+    { x:W*(0.50+0.12*Math.sin(t*0.00029+1)), y:H*(0.50+0.12*Math.cos(t*0.00021+2)), r:W*0.28, h:(bgHue+230)%360, a:0.08 },
   ];
   for (const b of blobs) {
     const g = bgX.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
-    g.addColorStop(0, `hsla(${b.h},60%,28%,${b.a})`);
+    g.addColorStop(0, `hsla(${b.h},55%,25%,${b.a})`);
     g.addColorStop(1, 'transparent');
     bgX.fillStyle = g; bgX.fillRect(0, 0, W, H);
   }
 }
 
-// ── Tet grid ──────────────────────────────────────────────────────────────────
 function drawTetGrid(t, ci) {
-  const cx = W/2, cy = H/2;
-  const rot = t * 0.00018;
-  const scl = Math.min(W, H) * 0.32;
-  const wobble = Math.sin(t * 0.0008) * 0.04;
-  const px2 = (mx / (W + 260) - 0.5) * 0.10;  // account for sidebar
-  const py2 = (my / H - 0.5) * 0.10;
-  const cosR = Math.cos(rot+wobble), sinR = Math.sin(rot+wobble);
-
+  const cx=W/2, cy=H/2, rot=t*0.00018, scl=Math.min(W,H)*0.32;
+  const wobble=Math.sin(t*0.0008)*0.04;
+  const ppx=(mx/(W+270)-0.5)*0.10, ppy=(my/H-0.5)*0.10;
+  const cosR=Math.cos(rot+wobble), sinR=Math.sin(rot+wobble);
   function nxy(i) {
-    const rx = PX[i]*cosR - PY[i]*sinR + px2;
-    const ry = PX[i]*sinR + PY[i]*cosR + py2;
-    return [cx+rx*scl, cy+ry*scl];
+    return [cx+(PX[i]*cosR-PY[i]*sinR+ppx)*scl, cy+(PX[i]*sinR+PY[i]*cosR+ppy)*scl];
   }
-
-  // Faces — very subtle
-  ctx.save(); ctx.globalAlpha = 0.035 + ci.curl*0.07;
-  for (let f=0; f<N_FACES; f++) {
-    const [ax,ay]=nxy(FI0[f]), [bx,by]=nxy(FI1[f]), [cx2,cy2]=nxy(FI2[f]);
-    const hue=(f/N_FACES*360+frame*0.25)%360;
-    ctx.fillStyle=`hsl(${hue},75%,58%)`;
-    ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.lineTo(cx2,cy2);
-    ctx.closePath(); ctx.fill();
+  ctx.save(); ctx.globalAlpha=0.032+ci.curl*0.07;
+  for(let f=0;f<N_FACES;f++) {
+    const [ax,ay]=nxy(FI0[f]),[bx,by]=nxy(FI1[f]),[cx2,cy2]=nxy(FI2[f]);
+    ctx.fillStyle=`hsl(${(f/N_FACES*360+frame*0.25)%360},75%,58%)`;
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.lineTo(cx2,cy2);ctx.closePath();ctx.fill();
   }
   ctx.restore();
-
-  // Edges
   ctx.save();
-  for (let e=0; e<N_EDGES; e++) {
-    const [ax,ay]=nxy(EI_SRC[e]), [bx,by]=nxy(EI_DST[e]);
-    const hue=(e/N_EDGES*360+frame*0.35+ci.cohesion*80)%360;
-    const pulse=0.18+0.28*Math.abs(Math.sin(t*0.0016+e*0.09));
+  for(let e=0;e<N_EDGES;e++) {
+    const [ax,ay]=nxy(EI_SRC[e]),[bx,by]=nxy(EI_DST[e]);
+    const hue=(e/N_EDGES*360+frame*0.38+ci.cohesion*80)%360;
+    const pulse=0.18+0.26*Math.abs(Math.sin(t*0.0016+e*0.09));
     ctx.strokeStyle=`hsla(${hue},85%,62%,${pulse})`;
-    ctx.lineWidth=0.6+EW[e]*1.2*(0.4+ci.grad*0.6);
-    ctx.shadowColor=`hsl(${hue},100%,65%)`; ctx.shadowBlur=4;
-    ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.stroke();
+    ctx.lineWidth=0.55+EW[e]*1.2*(0.4+ci.grad*0.6);
+    ctx.shadowColor=`hsl(${hue},100%,65%)`;ctx.shadowBlur=4;
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();
   }
   ctx.restore();
-
-  // Nodes
-  ctx.save(); ctx.shadowBlur=0;
-  for (let n=0; n<64; n++) {
+  ctx.save();ctx.shadowBlur=0;
+  for(let n=0;n<64;n++) {
     const [nx,ny]=nxy(n);
     const hue=(n/64*360+frame*0.4+ci.curl*160)%360;
     const pulse=0.5+0.5*Math.sin(t*0.003+n*0.32);
     const r=1.8+pulse*3.5*ci.cohesion;
     const grd=ctx.createRadialGradient(nx,ny,0,nx,ny,r*4);
-    grd.addColorStop(0,`hsla(${hue},100%,80%,0.55)`);
-    grd.addColorStop(1,`hsla(${hue},100%,50%,0)`);
-    ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(nx,ny,r*4,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle=`hsl(${hue},100%,90%)`; ctx.beginPath(); ctx.arc(nx,ny,r,0,Math.PI*2); ctx.fill();
+    grd.addColorStop(0,`hsla(${hue},100%,80%,0.5)`);grd.addColorStop(1,'transparent');
+    ctx.fillStyle=grd;ctx.beginPath();ctx.arc(nx,ny,r*4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=`hsl(${hue},100%,90%)`;ctx.beginPath();ctx.arc(nx,ny,r,0,Math.PI*2);ctx.fill();
   }
   ctx.restore();
 }
 
-// ── Braid routing (canvas only — no labels, sidebar has those) ────────────────
-const BNODES = [
-  { rx:0.20, ry:0.28, hue:38  },
-  { rx:0.50, ry:0.14, hue:150 },
-  { rx:0.80, ry:0.28, hue:275 },
-];
-const bParts = [];
-
+const BNODES=[{rx:0.20,ry:0.28,hue:38},{rx:0.50,ry:0.14,hue:150},{rx:0.80,ry:0.28,hue:275}];
+const bParts=[];
 function updateBraid() {
-  if (frame%16===0) {
-    const arc=frame%3;
-    bParts.push({ arc, prog:0, speed:0.011+Math.random()*0.009, hue:BNODES[(arc+1)%3].hue, size:2+Math.random()*2.5 });
-  }
-  for (let i=bParts.length-1;i>=0;i--) {
-    bParts[i].prog+=bParts[i].speed;
-    if(bParts[i].prog>=1) bParts.splice(i,1);
-  }
+  if(frame%16===0){ const arc=frame%3; bParts.push({arc,prog:0,speed:0.011+Math.random()*0.009,hue:BNODES[(arc+1)%3].hue,size:2+Math.random()*2.5}); }
+  for(let i=bParts.length-1;i>=0;i--){ bParts[i].prog+=bParts[i].speed; if(bParts[i].prog>=1) bParts.splice(i,1); }
 }
-
 function drawBraid(t) {
   const bx=i=>W*BNODES[i].rx, by=i=>H*BNODES[i].ry;
-  for (let i=0;i<3;i++) {
-    const j=(i+1)%3;
-    const ax=bx(i),ay=by(i),ex=bx(j),ey=by(j);
-    const cmx=(ax+ex)/2+(ay-ey)*0.3, cmy=(ay+ey)/2+(ex-ax)*0.3;
-    const hue=BNODES[i].hue, a=0.08+0.07*Math.sin(t*0.002+i*2);
-    ctx.save();
-    ctx.strokeStyle=`hsla(${hue},75%,58%,${a})`;
-    ctx.lineWidth=1.2; ctx.setLineDash([4,8]);
-    ctx.shadowColor=`hsl(${hue},90%,60%)`; ctx.shadowBlur=6;
-    ctx.beginPath(); ctx.moveTo(ax,ay); ctx.quadraticCurveTo(cmx,cmy,ex,ey);
-    ctx.stroke(); ctx.restore();
+  for(let i=0;i<3;i++) {
+    const j=(i+1)%3,ax=bx(i),ay=by(i),ex=bx(j),ey=by(j);
+    const cmx=(ax+ex)/2+(ay-ey)*0.3,cmy=(ay+ey)/2+(ex-ax)*0.3;
+    const a=0.08+0.06*Math.sin(t*0.002+i*2);
+    ctx.save();ctx.strokeStyle=`hsla(${BNODES[i].hue},75%,58%,${a})`;
+    ctx.lineWidth=1.2;ctx.setLineDash([4,8]);
+    ctx.shadowColor=`hsl(${BNODES[i].hue},90%,60%)`;ctx.shadowBlur=6;
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.quadraticCurveTo(cmx,cmy,ex,ey);ctx.stroke();ctx.restore();
   }
-  for (const p of bParts) {
-    const i=p.arc, j=(i+1)%3;
-    const ax=bx(i),ay=by(i),ex=bx(j),ey=by(j);
-    const cmx=(ax+ex)/2+(ay-ey)*0.3, cmy=(ay+ey)/2+(ex-ax)*0.3;
+  for(const p of bParts) {
+    const i=p.arc,j=(i+1)%3,ax=bx(i),ay=by(i),ex=bx(j),ey=by(j);
+    const cmx=(ax+ex)/2+(ay-ey)*0.3,cmy=(ay+ey)/2+(ex-ax)*0.3;
     const u=p.prog,v=1-u;
-    const ppx=v*v*ax+2*v*u*cmx+u*u*ex;
-    const ppy=v*v*ay+2*v*u*cmy+u*u*ey;
-    ctx.save();
-    ctx.shadowColor=`hsl(${p.hue},100%,65%)`; ctx.shadowBlur=14;
-    ctx.fillStyle=`hsl(${p.hue},100%,80%)`;
-    ctx.beginPath(); ctx.arc(ppx,ppy,p.size,0,Math.PI*2); ctx.fill();
-    ctx.restore();
+    const ppx2=v*v*ax+2*v*u*cmx+u*u*ex,ppy2=v*v*ay+2*v*u*cmy+u*u*ey;
+    ctx.save();ctx.shadowColor=`hsl(${p.hue},100%,65%)`;ctx.shadowBlur=14;
+    ctx.fillStyle=`hsl(${p.hue},100%,80%)`;ctx.beginPath();ctx.arc(ppx2,ppy2,p.size,0,Math.PI*2);ctx.fill();ctx.restore();
   }
-  // Node dots (small — sidebar has labels)
+  const labels=['SIM','EUP','HER'];
   BNODES.forEach((n,i)=>{
-    const x=W*n.rx,y=H*n.ry;
-    const pulse=1+0.22*Math.sin(t*0.003+i*1.4);
-    const r=14*pulse;
+    const x=W*n.rx,y=H*n.ry,pulse=1+0.22*Math.sin(t*0.003+i*1.4),r=14*pulse;
     const grd=ctx.createRadialGradient(x,y,r*0.1,x,y,r);
-    grd.addColorStop(0,`hsla(${n.hue},85%,60%,0.40)`);
-    grd.addColorStop(1,'transparent');
-    ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
-    ctx.save();
-    ctx.shadowColor=`hsl(${n.hue},100%,65%)`; ctx.shadowBlur=8;
-    ctx.fillStyle=`hsl(${n.hue},90%,82%)`;
-    ctx.font='bold 9px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    const labels=['SIM','EUP','HER'];
-    ctx.fillText(labels[i],x,y);
-    ctx.restore();
+    grd.addColorStop(0,`hsla(${n.hue},85%,60%,0.38)`);grd.addColorStop(1,'transparent');
+    ctx.fillStyle=grd;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+    ctx.save();ctx.shadowColor=`hsl(${n.hue},100%,65%)`;ctx.shadowBlur=8;
+    ctx.fillStyle=`hsl(${n.hue},90%,82%)`;ctx.font='bold 9px monospace';
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(labels[i],x,y);ctx.restore();
   });
 }
 
-// ── Sparkline ─────────────────────────────────────────────────────────────────
 function drawSparkline(upTo) {
   const sw=spC.width,sh=spC.height;
   spX.clearRect(0,0,sw,sh);
-  const slice=TL.slice(0,upTo+1);
-  if(slice.length<2) return;
-  const vals=slice.map(d=>d.cohesion);
-  const lo=Math.min(...vals),hi=Math.max(...vals),rng=hi-lo||0.01;
-  const sx=i=>(i/(TL.length-1))*sw;
-  const sy=v=>sh-(v-lo)/rng*sh*0.80-sh*0.08;
-  // Fill under cohesion
-  spX.beginPath(); spX.moveTo(sx(0),sh);
-  vals.forEach((v,i)=>spX.lineTo(sx(i),sy(v)));
-  spX.lineTo(sx(vals.length-1),sh); spX.closePath();
-  spX.fillStyle='rgba(126,232,162,0.12)'; spX.fill();
-  // Cohesion line
-  spX.beginPath(); spX.moveTo(sx(0),sy(vals[0]));
-  vals.forEach((v,i)=>{ if(i) spX.lineTo(sx(i),sy(v)); });
-  spX.strokeStyle='#7ee8a2'; spX.lineWidth=1.5; spX.stroke();
-  // EWMA line
-  const ewma=slice.map(d=>d.ewma);
-  spX.beginPath(); spX.moveTo(sx(0),sy(ewma[0]));
-  ewma.forEach((v,i)=>{ if(i) spX.lineTo(sx(i),sy(v)); });
-  spX.strokeStyle='rgba(246,160,91,0.9)'; spX.lineWidth=1; spX.stroke();
-  // Current position dot
-  const last=vals.length-1;
-  spX.beginPath(); spX.arc(sx(last),sy(vals[last]),3,0,Math.PI*2);
-  spX.fillStyle='#7ee8a2'; spX.fill();
+  const sl=TL.slice(0,upTo+1);
+  if(sl.length<2) return;
+  const v=sl.map(d=>d.cohesion),lo=Math.min(...v),hi=Math.max(...v),rng=hi-lo||0.01;
+  const sx=i=>i/(TL.length-1)*sw, sy=vv=>sh-(vv-lo)/rng*sh*0.80-sh*0.08;
+  spX.beginPath();spX.moveTo(sx(0),sh);v.forEach((vv,i)=>spX.lineTo(sx(i),sy(vv)));
+  spX.lineTo(sx(v.length-1),sh);spX.closePath();spX.fillStyle='rgba(126,232,162,0.10)';spX.fill();
+  spX.beginPath();spX.moveTo(sx(0),sy(v[0]));v.forEach((vv,i)=>{if(i)spX.lineTo(sx(i),sy(vv));});
+  spX.strokeStyle='#7ee8a2';spX.lineWidth=1.5;spX.stroke();
+  const ew2=sl.map(d=>d.ewma);
+  spX.beginPath();spX.moveTo(sx(0),sy(ew2[0]));ew2.forEach((vv,i)=>{if(i)spX.lineTo(sx(i),sy(vv));});
+  spX.strokeStyle='rgba(246,160,91,0.85)';spX.lineWidth=1;spX.stroke();
+  spX.beginPath();spX.arc(sx(v.length-1),sy(v[v.length-1]),3,0,Math.PI*2);
+  spX.fillStyle='#7ee8a2';spX.fill();
 }
 
-// ── Sidebar updates ───────────────────────────────────────────────────────────
-const MAX_CALC = 10;  // rough cap for bar width
 function updateSidebar(ci, idx) {
-  // Pass counter
-  document.getElementById('pc').textContent = String(idx+1).padStart(3,'0');
-  // KPIs
+  document.getElementById('pc').textContent=String(idx+1).padStart(3,'0');
   const hue=(ci.cohesion*120)|0;
   const kvc=document.getElementById('kv-c');
-  kvc.textContent=ci.cohesion.toFixed(3); kvc.style.color=`hsl(${hue},75%,60%)`;
+  kvc.textContent=ci.cohesion.toFixed(3);kvc.style.color=`hsl(${hue},75%,60%)`;
   document.getElementById('kv-e').textContent=ci.ewma.toFixed(3);
   document.getElementById('kv-lb').textContent=ci.limb_bal.toFixed(3);
   document.getElementById('kv-sk').textContent=ci.skill_cov.toFixed(3);
-  // Calculus bars
-  const fields=[['g',ci.grad],['d',ci.div],['l',ci.lap],['k',ci.curl]];
-  const maxF=Math.max(...fields.map(f=>f[1]),0.01);
-  for(const [k,v] of fields) {
-    const pct=Math.min(100,(v/maxF*100)).toFixed(0);
-    document.getElementById(`cb-${k}`).style.width=pct+'%';
-    document.getElementById(`cn-${k}`).textContent=v.toFixed(3);
+  const fields=[['g',ci.grad,'#5b9cf6'],['d',ci.div,'#a78bfa'],['l',ci.lap,'#34d399'],['k',ci.curl,'#f472b6']];
+  const maxF=Math.max(...fields.map(f=>f[1]),0.001);
+  for(const [k,v,c] of fields) {
+    document.getElementById(`cb-${k}`).style.width=Math.min(100,v/maxF*100).toFixed(0)+'%';
+    document.getElementById(`cv-${k}`).textContent=v.toFixed(3);
   }
-  // Braid events
   document.getElementById('braid-ev').textContent=ci.events;
 }
 
-// ── Main loop ─────────────────────────────────────────────────────────────────
+// Fade banner after 6s
+setTimeout(()=>{ const b=document.getElementById('online-banner'); if(b) b.style.transition='opacity 1.5s'; b.style.opacity='0'; setTimeout(()=>b.remove(),1600); }, 6000);
+
 function loop(t) {
   try {
     requestAnimationFrame(loop);
     frame++;
-    if(t-lastPassMs>PASS_INTERVAL){ lastPassMs=t; passIdx=(passIdx+1)%TL.length; }
+    if(t-lastPassMs>PASS_INTERVAL){lastPassMs=t;passIdx=(passIdx+1)%TL.length;}
     const ci=TL[passIdx];
     ctx.clearRect(0,0,W,H);
     drawBg(t);
     drawTetGrid(t,ci);
-    updateBraid(); drawBraid(t);
+    updateBraid();drawBraid(t);
     drawSparkline(passIdx);
     updateSidebar(ci,passIdx);
-  } catch(e){ console.error(e); }
+  }catch(e){console.error(e);}
 }
 requestAnimationFrame(loop);
 </script>
-</body>
-</html>
+</body></html>
