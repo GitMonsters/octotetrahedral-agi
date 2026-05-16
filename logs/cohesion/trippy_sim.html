@@ -15,36 +15,71 @@ canvas{display:block}
 #body{flex:1;display:flex;min-height:0}
 #canvas-wrap{flex:1;position:relative;overflow:hidden}
 #mc{position:absolute;top:0;left:0;width:100%;height:100%}
-#sidebar{flex:0 0 270px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;z-index:20}
-.s-sec{padding:.62rem .9rem;border-bottom:1px solid var(--border)}
-.s-title{font-size:.55rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
-#kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem}
-.kpi{background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:5px;padding:.38rem .55rem}
-.kpi-val{font-size:1.15rem;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
-.kpi-lbl{font-size:.55rem;color:var(--muted);margin-top:.08rem}
-#sp-wrap{height:48px}.sp{width:100%;height:100%;display:block}
-.sp-leg{display:flex;gap:.7rem;margin-top:.25rem}
-.sp-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px;vertical-align:middle}
-.sp-lbl{font-size:.58rem;color:var(--muted)}
-#calc-bars{display:flex;flex-direction:column;gap:.3rem}
-.cr{display:flex;align-items:center;gap:.45rem}
-.cn{font-size:.6rem;color:var(--muted);width:30px;text-align:right;flex-shrink:0}
+
+/* Sidebar tabs */
+#sidebar{flex:0 0 290px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;z-index:20}
+.tab-bar{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{flex:1;padding:.35rem .4rem;font-size:.58rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);cursor:pointer;text-align:center;border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
+.tab.active{color:var(--accent);border-color:var(--accent)}
+.tab-panel{display:none;flex:1;flex-direction:column;overflow:hidden}
+.tab-panel.active{display:flex}
+
+/* Metrics panel */
+.s-sec{padding:.55rem .85rem;border-bottom:1px solid var(--border)}
+.s-title{font-size:.52rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.45rem}
+#kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:.35rem}
+.kpi{background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:5px;padding:.35rem .5rem}
+.kpi-val{font-size:1.1rem;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.kpi-lbl{font-size:.52rem;color:var(--muted);margin-top:.06rem}
+#sp-wrap{height:44px}.sp{width:100%;height:100%;display:block}
+.sp-leg{display:flex;gap:.6rem;margin-top:.2rem}
+.sp-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:3px;vertical-align:middle}
+.sp-lbl{font-size:.56rem;color:var(--muted)}
+#calc-bars{display:flex;flex-direction:column;gap:.28rem}
+.cr{display:flex;align-items:center;gap:.4rem}
+.cn{font-size:.58rem;color:var(--muted);width:28px;text-align:right;flex-shrink:0}
 .ct{flex:1;height:5px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden}
 .cf{height:100%;border-radius:3px;transition:width .22s}
-.cv{font-size:.58rem;color:var(--text);width:38px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+.cv{font-size:.56rem;color:var(--text);width:36px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
 #braid-nodes{display:flex;justify-content:space-around}
 .bn{text-align:center}
-.bo{width:34px;height:34px;border-radius:50%;margin:0 auto .25rem;display:flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:700;border:1.5px solid}
-.bl{font-size:.58rem;color:var(--muted)}.bv{font-size:.68rem;font-weight:600}
-#limb-list{display:flex;flex-direction:column;gap:.22rem;flex:1;overflow-y:auto;padding:.55rem .9rem}
-.lr{display:flex;align-items:center;gap:.45rem;padding:.18rem .3rem;border-radius:4px;transition:background .2s}
+.bo{width:32px;height:32px;border-radius:50%;margin:0 auto .2rem;display:flex;align-items:center;justify-content:center;font-size:.52rem;font-weight:700;border:1.5px solid}
+.bl{font-size:.55rem;color:var(--muted)}.bv{font-size:.65rem;font-weight:600}
+#limb-list{display:flex;flex-direction:column;gap:.2rem;flex:1;overflow-y:auto;padding:.5rem .85rem}
+.lr{display:flex;align-items:center;gap:.4rem;padding:.16rem .28rem;border-radius:4px}
 .lr.hi{background:rgba(255,220,100,.06);border:1px solid rgba(255,200,60,.15)}
 .ld{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.lname{font-size:.62rem;flex:1;text-transform:capitalize}
+.lname{font-size:.6rem;flex:1;text-transform:capitalize}
 .lr.hi .lname{color:#fde68a;font-weight:600}
-.lbw{width:50px;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.lbw{width:44px;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
 .lb2{height:100%;border-radius:2px}
-.lc{font-size:.58rem;color:var(--muted);width:22px;text-align:right}
+.lc{font-size:.55rem;color:var(--muted);width:20px;text-align:right}
+
+/* Emotion panel */
+#emotion-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:.5rem .85rem}
+.emo-dom{display:flex;align-items:center;gap:.5rem;padding:.35rem .5rem;border-radius:6px;background:rgba(255,255,255,.03);border:1px solid var(--border);margin-bottom:.5rem;flex-shrink:0}
+.emo-dom-label{font-size:.55rem;color:var(--muted)}
+.emo-dom-name{font-size:.82rem;font-weight:700;text-transform:capitalize}
+.emo-dom-int{font-size:.65rem;margin-left:auto;font-variant-numeric:tabular-nums}
+.emo-clusters{display:grid;grid-template-columns:1fr 1fr;gap:.3rem;margin-bottom:.5rem;flex-shrink:0}
+.emo-cl{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:5px;padding:.3rem .45rem}
+.emo-cl-name{font-size:.48rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.2rem}
+.emo-cl-bar{height:4px;border-radius:2px;transition:width .3s}
+.emo-cl-val{font-size:.58rem;font-weight:600;margin-top:.15rem}
+.emo-presence{display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem;border-radius:5px;margin-bottom:.45rem;flex-shrink:0;border:1px solid rgba(255,255,255,.08);transition:border-color .4s,background .4s}
+.emo-presence.active{border-color:rgba(200,255,200,.35);background:rgba(100,255,100,.05)}
+.emo-presence-label{font-size:.58rem;font-weight:600;letter-spacing:.05em}
+.emo-presence-bar-wrap{flex:1;height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+.emo-presence-bar{height:100%;border-radius:3px;background:linear-gradient(90deg,#4ade80,#a3e635);transition:width .3s}
+.emo-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:.2rem}
+.er{display:flex;align-items:center;gap:.4rem;padding:.14rem 0}
+.er-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.er-name{font-size:.58rem;text-transform:capitalize;width:72px;flex-shrink:0;color:var(--text)}
+.er-bar-wrap{flex:1;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.er-bar{height:100%;border-radius:2px;transition:width .25s}
+.er-val{font-size:.54rem;color:var(--muted);width:28px;text-align:right;flex-variant-numeric:tabular-nums}
+.emo-cluster-sep{font-size:.48rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:.3rem 0 .1rem;border-top:1px solid rgba(255,255,255,.05);margin-top:.1rem}
+
 #online-banner{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(16,28,16,.9);border:1px solid rgba(74,222,128,.3);border-radius:6px;padding:.3rem .8rem;font-size:.65rem;color:#4ade80;z-index:5;letter-spacing:.06em;pointer-events:none}
 </style>
 </head>
@@ -53,7 +88,7 @@ canvas{display:block}
 <div id="header">
   <div>
     <h1>&#x1F9EC; OctoTetrahedral AGI &mdash; Geometric Sim</h1>
-    <p>208.0M params &middot; tetrahedral grid &middot; Julia manifold &middot; 13 limbs active</p>
+    <p>208.0M params &middot; 3D tetrahedral grid &middot; Julia manifold &middot; 27 emotional states &middot; 13 limbs</p>
   </div>
   <div id="pass-badge">PASS <span id="pc">001</span> / 080</div>
 </div>
@@ -63,64 +98,152 @@ canvas{display:block}
     <canvas id="mc"></canvas>
     <div id="online-banner">&#x25CF; PERCEPTION &nbsp; &#x25CF; PLANNING &nbsp; &#x25CF; ACTION &nbsp; now online</div>
   </div>
+
   <div id="sidebar">
-    <div class="s-sec">
-      <div class="s-title">Cohesion Metrics</div>
-      <div id="kpi-grid">
-        <div class="kpi"><div class="kpi-val" id="kv-c">&mdash;</div><div class="kpi-lbl">Cohesion</div></div>
-        <div class="kpi"><div class="kpi-val" id="kv-e">&mdash;</div><div class="kpi-lbl">EWMA</div></div>
-        <div class="kpi"><div class="kpi-val" id="kv-lb">&mdash;</div><div class="kpi-lbl">Limb Bal</div></div>
-        <div class="kpi"><div class="kpi-val" id="kv-sk">&mdash;</div><div class="kpi-lbl">Skill Cov</div></div>
-      </div>
+    <div class="tab-bar">
+      <div class="tab active" data-tab="metrics" onclick="switchTab('metrics',this)">Metrics</div>
+      <div class="tab" data-tab="emotions" onclick="switchTab('emotions',this)">Emotions</div>
+      <div class="tab" data-tab="limbs" onclick="switchTab('limbs',this)">Limbs</div>
     </div>
-    <div class="s-sec">
-      <div class="s-title">Cohesion Timeline</div>
-      <div id="sp-wrap"><canvas id="sp" class="sp"></canvas></div>
-      <div class="sp-leg">
-        <span><span class="sp-dot" style="background:#7ee8a2"></span><span class="sp-lbl">Cohesion</span></span>
-        <span><span class="sp-dot" style="background:#f6a05b"></span><span class="sp-lbl">EWMA</span></span>
-      </div>
-    </div>
-    <div class="s-sec">
-      <div class="s-title">Calculus Fields</div>
-      <div id="calc-bars">
-        <div class="cr"><span class="cn">&#x2207;</span><div class="ct"><div class="cf" id="cb-g" style="background:#5b9cf6"></div></div><span class="cv" id="cv-g">&mdash;</span></div>
-        <div class="cr"><span class="cn">div</span><div class="ct"><div class="cf" id="cb-d" style="background:#a78bfa"></div></div><span class="cv" id="cv-d">&mdash;</span></div>
-        <div class="cr"><span class="cn">&#x394;</span><div class="ct"><div class="cf" id="cb-l" style="background:#34d399"></div></div><span class="cv" id="cv-l">&mdash;</span></div>
-        <div class="cr"><span class="cn">curl</span><div class="ct"><div class="cf" id="cb-k" style="background:#f472b6"></div></div><span class="cv" id="cv-k">&mdash;</span></div>
-      </div>
-    </div>
-    <div class="s-sec">
-      <div class="s-title">Braid Routing</div>
-      <div id="braid-nodes">
-        <div class="bn">
-          <div class="bo" style="color:#f6a05b;border-color:rgba(246,160,91,.35);background:rgba(246,160,91,.07)">SIM</div>
-          <div class="bl">SIMULA</div>
-        </div>
-        <div class="bn">
-          <div class="bo" style="color:#4ade80;border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.07)">EUP</div>
-          <div class="bl">EUPHAN</div>
-        </div>
-        <div class="bn">
-          <div class="bo" style="color:#c084fc;border-color:rgba(192,132,252,.35);background:rgba(192,132,252,.07)">HER</div>
-          <div class="bv" id="braid-ev">&mdash;</div>
-          <div class="bl">events</div>
+
+    <!-- METRICS tab -->
+    <div id="tab-metrics" class="tab-panel active">
+      <div class="s-sec">
+        <div class="s-title">Cohesion Metrics</div>
+        <div id="kpi-grid">
+          <div class="kpi"><div class="kpi-val" id="kv-c">&mdash;</div><div class="kpi-lbl">Cohesion</div></div>
+          <div class="kpi"><div class="kpi-val" id="kv-e">&mdash;</div><div class="kpi-lbl">EWMA</div></div>
+          <div class="kpi"><div class="kpi-val" id="kv-lb">&mdash;</div><div class="kpi-lbl">Limb Bal</div></div>
+          <div class="kpi"><div class="kpi-val" id="kv-sk">&mdash;</div><div class="kpi-lbl">Skill Cov</div></div>
         </div>
       </div>
+      <div class="s-sec">
+        <div class="s-title">Cohesion Timeline</div>
+        <div id="sp-wrap"><canvas id="sp" class="sp"></canvas></div>
+        <div class="sp-leg">
+          <span><span class="sp-dot" style="background:#7ee8a2"></span><span class="sp-lbl">Cohesion</span></span>
+          <span><span class="sp-dot" style="background:#f6a05b"></span><span class="sp-lbl">EWMA</span></span>
+        </div>
+      </div>
+      <div class="s-sec">
+        <div class="s-title">Calculus Fields</div>
+        <div id="calc-bars">
+          <div class="cr"><span class="cn">&#x2207;</span><div class="ct"><div class="cf" id="cb-g" style="background:#5b9cf6"></div></div><span class="cv" id="cv-g">&mdash;</span></div>
+          <div class="cr"><span class="cn">div</span><div class="ct"><div class="cf" id="cb-d" style="background:#a78bfa"></div></div><span class="cv" id="cv-d">&mdash;</span></div>
+          <div class="cr"><span class="cn">&#x394;</span><div class="ct"><div class="cf" id="cb-l" style="background:#34d399"></div></div><span class="cv" id="cv-l">&mdash;</span></div>
+          <div class="cr"><span class="cn">curl</span><div class="ct"><div class="cf" id="cb-k" style="background:#f472b6"></div></div><span class="cv" id="cv-k">&mdash;</span></div>
+        </div>
+      </div>
+      <div class="s-sec">
+        <div class="s-title">Braid Routing</div>
+        <div id="braid-nodes">
+          <div class="bn"><div class="bo" style="color:#f6a05b;border-color:rgba(246,160,91,.35);background:rgba(246,160,91,.07)">SIM</div><div class="bl">SIMULA</div></div>
+          <div class="bn"><div class="bo" style="color:#4ade80;border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.07)">EUP</div><div class="bl">EUPHAN</div></div>
+          <div class="bn"><div class="bo" style="color:#c084fc;border-color:rgba(192,132,252,.35);background:rgba(192,132,252,.07)"><span id="braid-ev">&mdash;</span></div><div class="bl">events</div></div>
+        </div>
+      </div>
     </div>
-    <div class="s-title" style="padding:.55rem .9rem .2rem">Limb Activations</div>
-    <div id="limb-list"></div>
+
+    <!-- EMOTIONS tab -->
+    <div id="tab-emotions" class="tab-panel">
+      <div id="emotion-panel">
+        <div class="emo-dom">
+          <div>
+            <div class="emo-dom-label">Dominant emotion</div>
+            <div class="emo-dom-name" id="emo-dominant">&mdash;</div>
+          </div>
+          <div class="emo-dom-int" id="emo-dominant-val">&mdash;</div>
+        </div>
+        <div class="emo-clusters" id="emo-clusters"></div>
+        <div class="emo-presence" id="emo-presence-row">
+          <div>
+            <div class="emo-presence-label" id="emo-presence-label">&#x25C8; PRESENT MOMENT</div>
+            <div style="font-size:.5rem;color:var(--muted);margin-top:.1rem">all emotions set aside &mdash; only now</div>
+          </div>
+          <div class="emo-presence-bar-wrap">
+            <div class="emo-presence-bar" id="emo-presence-bar" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="emo-list" id="emo-list"></div>
+      </div>
+    </div>
+
+    <!-- LIMBS tab -->
+    <div id="tab-limbs" class="tab-panel">
+      <div class="s-title" style="padding:.55rem .85rem .2rem">Limb Activations</div>
+      <div id="limb-list"></div>
+    </div>
   </div>
 </div>
 
 <script>
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
 const TL      = [{"cohesion": 0.7149, "ewma": 0.0357, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4302, "div": 2.1449, "lap": 2.1449, "curl": 0.1583, "events": 14, "h2s": 1}, {"cohesion": 0.7149, "ewma": 0.0697, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1456, "lap": 2.1456, "curl": 0.1583, "events": 28, "h2s": 2}, {"cohesion": 0.7149, "ewma": 0.102, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4267, "div": 2.1282, "lap": 2.1282, "curl": 0.1571, "events": 42, "h2s": 3}, {"cohesion": 0.7149, "ewma": 0.1326, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4296, "div": 2.1402, "lap": 2.1402, "curl": 0.1581, "events": 56, "h2s": 4}, {"cohesion": 0.7149, "ewma": 0.1617, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4298, "div": 2.1404, "lap": 2.1404, "curl": 0.1579, "events": 70, "h2s": 5}, {"cohesion": 0.7149, "ewma": 0.1894, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4318, "div": 2.1521, "lap": 2.1521, "curl": 0.1575, "events": 84, "h2s": 6}, {"cohesion": 0.7149, "ewma": 0.2156, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4312, "div": 2.1483, "lap": 2.1483, "curl": 0.1582, "events": 98, "h2s": 7}, {"cohesion": 0.7149, "ewma": 0.2406, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4271, "div": 2.1276, "lap": 2.1276, "curl": 0.157, "events": 112, "h2s": 8}, {"cohesion": 0.7149, "ewma": 0.2643, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4305, "div": 2.1524, "lap": 2.1524, "curl": 0.1585, "events": 126, "h2s": 9}, {"cohesion": 0.7149, "ewma": 0.2868, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4287, "div": 2.1321, "lap": 2.1321, "curl": 0.1573, "events": 140, "h2s": 10}, {"cohesion": 0.7149, "ewma": 0.3082, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4253, "div": 2.1181, "lap": 2.1181, "curl": 0.1563, "events": 154, "h2s": 11}, {"cohesion": 0.7149, "ewma": 0.3286, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.428, "div": 2.1336, "lap": 2.1336, "curl": 0.1572, "events": 168, "h2s": 12}, {"cohesion": 0.7149, "ewma": 0.3479, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4272, "div": 2.127, "lap": 2.127, "curl": 0.1565, "events": 182, "h2s": 13}, {"cohesion": 0.7149, "ewma": 0.3662, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4273, "div": 2.1315, "lap": 2.1315, "curl": 0.1565, "events": 196, "h2s": 14}, {"cohesion": 0.7149, "ewma": 0.3837, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4291, "div": 2.1386, "lap": 2.1386, "curl": 0.1575, "events": 210, "h2s": 15}, {"cohesion": 0.7149, "ewma": 0.4002, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4279, "div": 2.1338, "lap": 2.1338, "curl": 0.1574, "events": 224, "h2s": 16}, {"cohesion": 0.7149, "ewma": 0.416, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4287, "div": 2.1356, "lap": 2.1356, "curl": 0.1573, "events": 238, "h2s": 17}, {"cohesion": 0.7149, "ewma": 0.4309, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.427, "div": 2.1241, "lap": 2.1241, "curl": 0.158, "events": 252, "h2s": 18}, {"cohesion": 0.7149, "ewma": 0.4451, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1411, "lap": 2.1411, "curl": 0.1586, "events": 266, "h2s": 19}, {"cohesion": 0.7149, "ewma": 0.4586, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4322, "div": 2.1488, "lap": 2.1488, "curl": 0.1591, "events": 280, "h2s": 20}, {"cohesion": 0.7149, "ewma": 0.4714, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4285, "div": 2.1328, "lap": 2.1328, "curl": 0.1569, "events": 294, "h2s": 21}, {"cohesion": 0.7149, "ewma": 0.4836, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4297, "div": 2.138, "lap": 2.138, "curl": 0.1576, "events": 308, "h2s": 22}, {"cohesion": 0.7149, "ewma": 0.4951, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4336, "div": 2.1572, "lap": 2.1572, "curl": 0.1594, "events": 322, "h2s": 23}, {"cohesion": 0.7149, "ewma": 0.5061, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1461, "lap": 2.1461, "curl": 0.1587, "events": 336, "h2s": 24}, {"cohesion": 0.7149, "ewma": 0.5166, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4291, "div": 2.1371, "lap": 2.1371, "curl": 0.1577, "events": 350, "h2s": 25}, {"cohesion": 0.7149, "ewma": 0.5265, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4291, "div": 2.1316, "lap": 2.1316, "curl": 0.1566, "events": 364, "h2s": 26}, {"cohesion": 0.7149, "ewma": 0.5359, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4322, "div": 2.1538, "lap": 2.1538, "curl": 0.1585, "events": 378, "h2s": 27}, {"cohesion": 0.7149, "ewma": 0.5449, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4276, "div": 2.1253, "lap": 2.1253, "curl": 0.1571, "events": 392, "h2s": 28}, {"cohesion": 0.7149, "ewma": 0.5534, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4276, "div": 2.132, "lap": 2.132, "curl": 0.1572, "events": 406, "h2s": 29}, {"cohesion": 0.7149, "ewma": 0.5614, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4257, "div": 2.1194, "lap": 2.1194, "curl": 0.1569, "events": 420, "h2s": 30}, {"cohesion": 0.7149, "ewma": 0.5691, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4304, "div": 2.1408, "lap": 2.1408, "curl": 0.1578, "events": 434, "h2s": 31}, {"cohesion": 0.7149, "ewma": 0.5764, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4278, "div": 2.1294, "lap": 2.1294, "curl": 0.1572, "events": 448, "h2s": 32}, {"cohesion": 0.7149, "ewma": 0.5833, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4308, "div": 2.1483, "lap": 2.1483, "curl": 0.1583, "events": 462, "h2s": 33}, {"cohesion": 0.7149, "ewma": 0.5899, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4261, "div": 2.1208, "lap": 2.1208, "curl": 0.1563, "events": 476, "h2s": 34}, {"cohesion": 0.7149, "ewma": 0.5961, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4263, "div": 2.1166, "lap": 2.1166, "curl": 0.1568, "events": 490, "h2s": 35}, {"cohesion": 0.7149, "ewma": 0.6021, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4293, "div": 2.134, "lap": 2.134, "curl": 0.157, "events": 504, "h2s": 36}, {"cohesion": 0.7149, "ewma": 0.6077, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1428, "lap": 2.1428, "curl": 0.1578, "events": 518, "h2s": 37}, {"cohesion": 0.7149, "ewma": 0.6131, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4304, "div": 2.1367, "lap": 2.1367, "curl": 0.1579, "events": 532, "h2s": 38}, {"cohesion": 0.7149, "ewma": 0.6182, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4289, "div": 2.1366, "lap": 2.1366, "curl": 0.157, "events": 546, "h2s": 39}, {"cohesion": 0.7149, "ewma": 0.623, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4278, "div": 2.1258, "lap": 2.1258, "curl": 0.1577, "events": 560, "h2s": 40}, {"cohesion": 0.7149, "ewma": 0.6276, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4282, "div": 2.1295, "lap": 2.1295, "curl": 0.1565, "events": 574, "h2s": 41}, {"cohesion": 0.7149, "ewma": 0.632, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4267, "div": 2.1213, "lap": 2.1213, "curl": 0.1565, "events": 588, "h2s": 42}, {"cohesion": 0.7149, "ewma": 0.6361, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4296, "div": 2.1488, "lap": 2.1488, "curl": 0.1572, "events": 602, "h2s": 43}, {"cohesion": 0.7149, "ewma": 0.64, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4292, "div": 2.1382, "lap": 2.1382, "curl": 0.1579, "events": 616, "h2s": 44}, {"cohesion": 0.7149, "ewma": 0.6438, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4311, "div": 2.1388, "lap": 2.1388, "curl": 0.1578, "events": 630, "h2s": 45}, {"cohesion": 0.7149, "ewma": 0.6473, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.431, "div": 2.147, "lap": 2.147, "curl": 0.1583, "events": 644, "h2s": 46}, {"cohesion": 0.7149, "ewma": 0.6507, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4306, "div": 2.1421, "lap": 2.1421, "curl": 0.1584, "events": 658, "h2s": 47}, {"cohesion": 0.7149, "ewma": 0.6539, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4286, "div": 2.1359, "lap": 2.1359, "curl": 0.1569, "events": 672, "h2s": 48}, {"cohesion": 0.7149, "ewma": 0.657, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4294, "div": 2.1346, "lap": 2.1346, "curl": 0.1572, "events": 686, "h2s": 49}, {"cohesion": 0.7149, "ewma": 0.6599, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4292, "div": 2.1363, "lap": 2.1363, "curl": 0.1579, "events": 700, "h2s": 50}, {"cohesion": 0.7149, "ewma": 0.6626, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4286, "div": 2.136, "lap": 2.136, "curl": 0.1575, "events": 714, "h2s": 51}, {"cohesion": 0.7149, "ewma": 0.6652, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4329, "div": 2.1501, "lap": 2.1501, "curl": 0.158, "events": 728, "h2s": 52}, {"cohesion": 0.7149, "ewma": 0.6677, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.429, "div": 2.1348, "lap": 2.1348, "curl": 0.1577, "events": 742, "h2s": 53}, {"cohesion": 0.7149, "ewma": 0.6701, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4318, "div": 2.1481, "lap": 2.1481, "curl": 0.1584, "events": 756, "h2s": 54}, {"cohesion": 0.7149, "ewma": 0.6723, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4277, "div": 2.1277, "lap": 2.1277, "curl": 0.1577, "events": 770, "h2s": 55}, {"cohesion": 0.7149, "ewma": 0.6744, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.429, "div": 2.1307, "lap": 2.1307, "curl": 0.1585, "events": 784, "h2s": 56}, {"cohesion": 0.7149, "ewma": 0.6765, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4305, "div": 2.1454, "lap": 2.1454, "curl": 0.1578, "events": 798, "h2s": 57}, {"cohesion": 0.7149, "ewma": 0.6784, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4304, "div": 2.1409, "lap": 2.1409, "curl": 0.1576, "events": 812, "h2s": 58}, {"cohesion": 0.7149, "ewma": 0.6802, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4275, "div": 2.1311, "lap": 2.1311, "curl": 0.1568, "events": 826, "h2s": 59}, {"cohesion": 0.7149, "ewma": 0.6819, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4284, "div": 2.1285, "lap": 2.1285, "curl": 0.1572, "events": 840, "h2s": 60}, {"cohesion": 0.7149, "ewma": 0.6836, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4295, "div": 2.14, "lap": 2.14, "curl": 0.1572, "events": 854, "h2s": 61}, {"cohesion": 0.7149, "ewma": 0.6851, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4316, "div": 2.1488, "lap": 2.1488, "curl": 0.1588, "events": 868, "h2s": 62}, {"cohesion": 0.7149, "ewma": 0.6866, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4292, "div": 2.136, "lap": 2.136, "curl": 0.1572, "events": 882, "h2s": 63}, {"cohesion": 0.7149, "ewma": 0.688, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1453, "lap": 2.1453, "curl": 0.1575, "events": 896, "h2s": 64}, {"cohesion": 0.7149, "ewma": 0.6894, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4263, "div": 2.1295, "lap": 2.1295, "curl": 0.1566, "events": 910, "h2s": 65}, {"cohesion": 0.7149, "ewma": 0.6907, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4262, "div": 2.117, "lap": 2.117, "curl": 0.1565, "events": 924, "h2s": 66}, {"cohesion": 0.7149, "ewma": 0.6919, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4295, "div": 2.1321, "lap": 2.1321, "curl": 0.1579, "events": 938, "h2s": 67}, {"cohesion": 0.7149, "ewma": 0.693, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4292, "div": 2.1412, "lap": 2.1412, "curl": 0.1575, "events": 952, "h2s": 68}, {"cohesion": 0.7149, "ewma": 0.6941, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4266, "div": 2.1237, "lap": 2.1237, "curl": 0.1569, "events": 966, "h2s": 69}, {"cohesion": 0.7149, "ewma": 0.6951, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.427, "div": 2.1275, "lap": 2.1275, "curl": 0.1569, "events": 980, "h2s": 70}, {"cohesion": 0.7149, "ewma": 0.6961, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.426, "div": 2.1185, "lap": 2.1185, "curl": 0.1573, "events": 994, "h2s": 71}, {"cohesion": 0.7149, "ewma": 0.6971, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4306, "div": 2.143, "lap": 2.143, "curl": 0.158, "events": 1008, "h2s": 72}, {"cohesion": 0.7149, "ewma": 0.698, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.425, "div": 2.1129, "lap": 2.1129, "curl": 0.1558, "events": 1022, "h2s": 73}, {"cohesion": 0.7149, "ewma": 0.6988, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4291, "div": 2.1378, "lap": 2.1378, "curl": 0.1579, "events": 1036, "h2s": 74}, {"cohesion": 0.7149, "ewma": 0.6996, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4272, "div": 2.1306, "lap": 2.1306, "curl": 0.1562, "events": 1050, "h2s": 75}, {"cohesion": 0.7149, "ewma": 0.7004, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4281, "div": 2.132, "lap": 2.132, "curl": 0.1576, "events": 1064, "h2s": 76}, {"cohesion": 0.7149, "ewma": 0.7011, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4266, "div": 2.1213, "lap": 2.1213, "curl": 0.1568, "events": 1078, "h2s": 77}, {"cohesion": 0.7149, "ewma": 0.7018, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4311, "div": 2.1453, "lap": 2.1453, "curl": 0.1583, "events": 1092, "h2s": 78}, {"cohesion": 0.7149, "ewma": 0.7024, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4254, "div": 2.1139, "lap": 2.1139, "curl": 0.1565, "events": 1106, "h2s": 79}, {"cohesion": 0.7149, "ewma": 0.7031, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4299, "div": 2.14, "lap": 2.14, "curl": 0.1578, "events": 1120, "h2s": 80}];
 const LIMBS   = ["memory", "planning", "language", "spatial", "reasoning", "metacognition", "perception", "action", "emotion", "empathy", "ethics", "imagination", "visualization"];
 const LCOUNTS = [80, 80, 80, 160, 80, 80, 80, 80, 80, 80, 80, 80, 80];
 const LIMB_HI = [false, true, false, false, false, false, true, true, false, false, false, false, false];
 const MAX_LC  = Math.max(...LCOUNTS, 1);
+const EMO_TL  = [{"sorrow": 0.272, "regret": 0.492, "anger": 0.431, "frightened": 0.351, "anxious": 0.413, "helpless": 0.318, "irritated": 0.502, "disgust": 0.305, "humiliated": 0.5, "disappointed": 0.307, "ostracized": 0.273, "confusion": 0.634, "doubtful": 0.557, "incompetent": 0.422, "competent": 0.839, "confident": 0.821, "superiority": 0.644, "deception": 0.407, "factual": 0.476, "empathy": 0.922, "hopeful": 0.674, "faithful": 0.849, "honest": 0.753, "humility": 0.676, "wit": 0.798, "vulnerability": 0.467, "present": 0.543}, {"sorrow": 0.261, "regret": 0.485, "anger": 0.42, "frightened": 0.344, "anxious": 0.422, "helpless": 0.307, "irritated": 0.49, "disgust": 0.307, "humiliated": 0.502, "disappointed": 0.305, "ostracized": 0.28, "confusion": 0.631, "doubtful": 0.546, "incompetent": 0.41, "competent": 0.83, "confident": 0.833, "superiority": 0.657, "deception": 0.398, "factual": 0.478, "empathy": 0.92, "hopeful": 0.671, "faithful": 0.858, "honest": 0.764, "humility": 0.687, "wit": 0.786, "vulnerability": 0.468, "present": 0.543}, {"sorrow": 0.25, "regret": 0.476, "anger": 0.407, "frightened": 0.337, "anxious": 0.432, "helpless": 0.296, "irritated": 0.477, "disgust": 0.31, "humiliated": 0.502, "disappointed": 0.304, "ostracized": 0.288, "confusion": 0.626, "doubtful": 0.534, "incompetent": 0.397, "competent": 0.82, "confident": 0.844, "superiority": 0.668, "deception": 0.388, "factual": 0.481, "empathy": 0.915, "hopeful": 0.668, "faithful": 0.865, "honest": 0.775, "humility": 0.699, "wit": 0.772, "vulnerability": 0.47, "present": 0.543}, {"sorrow": 0.242, "regret": 0.467, "anger": 0.398, "frightened": 0.333, "anxious": 0.443, "helpless": 0.286, "irritated": 0.466, "disgust": 0.315, "humiliated": 0.502, "disappointed": 0.305, "ostracized": 0.298, "confusion": 0.621, "doubtful": 0.522, "incompetent": 0.385, "competent": 0.81, "confident": 0.857, "superiority": 0.68, "deception": 0.381, "factual": 0.486, "empathy": 0.911, "hopeful": 0.667, "faithful": 0.872, "honest": 0.787, "humility": 0.711, "wit": 0.761, "vulnerability": 0.473, "present": 0.543}, {"sorrow": 0.233, "regret": 0.457, "anger": 0.387, "frightened": 0.329, "anxious": 0.455, "helpless": 0.276, "irritated": 0.454, "disgust": 0.32, "humiliated": 0.5, "disappointed": 0.307, "ostracized": 0.308, "confusion": 0.614, "doubtful": 0.51, "incompetent": 0.373, "competent": 0.799, "confident": 0.867, "superiority": 0.691, "deception": 0.375, "factual": 0.491, "empathy": 0.904, "hopeful": 0.667, "faithful": 0.877, "honest": 0.799, "humility": 0.723, "wit": 0.749, "vulnerability": 0.478, "present": 0.543}, {"sorrow": 0.226, "regret": 0.447, "anger": 0.378, "frightened": 0.326, "anxious": 0.466, "helpless": 0.268, "irritated": 0.442, "disgust": 0.326, "humiliated": 0.497, "disappointed": 0.31, "ostracized": 0.319, "confusion": 0.606, "doubtful": 0.497, "incompetent": 0.361, "competent": 0.787, "confident": 0.877, "superiority": 0.702, "deception": 0.369, "factual": 0.498, "empathy": 0.897, "hopeful": 0.669, "faithful": 0.881, "honest": 0.811, "humility": 0.735, "wit": 0.736, "vulnerability": 0.483, "present": 0.543}, {"sorrow": 0.219, "regret": 0.436, "anger": 0.37, "frightened": 0.325, "anxious": 0.479, "helpless": 0.26, "irritated": 0.431, "disgust": 0.334, "humiliated": 0.493, "disappointed": 0.314, "ostracized": 0.33, "confusion": 0.598, "doubtful": 0.485, "incompetent": 0.35, "competent": 0.775, "confident": 0.888, "superiority": 0.712, "deception": 0.365, "factual": 0.506, "empathy": 0.889, "hopeful": 0.672, "faithful": 0.884, "honest": 0.824, "humility": 0.748, "wit": 0.725, "vulnerability": 0.49, "present": 0.543}, {"sorrow": 0.214, "regret": 0.424, "anger": 0.362, "frightened": 0.324, "anxious": 0.49, "helpless": 0.253, "irritated": 0.42, "disgust": 0.342, "humiliated": 0.487, "disappointed": 0.319, "ostracized": 0.341, "confusion": 0.588, "doubtful": 0.473, "incompetent": 0.339, "competent": 0.763, "confident": 0.895, "superiority": 0.72, "deception": 0.361, "factual": 0.514, "empathy": 0.879, "hopeful": 0.675, "faithful": 0.886, "honest": 0.835, "humility": 0.759, "wit": 0.713, "vulnerability": 0.497, "present": 0.543}, {"sorrow": 0.21, "regret": 0.412, "anger": 0.357, "frightened": 0.327, "anxious": 0.504, "helpless": 0.248, "irritated": 0.412, "disgust": 0.352, "humiliated": 0.482, "disappointed": 0.326, "ostracized": 0.354, "confusion": 0.579, "doubtful": 0.462, "incompetent": 0.33, "competent": 0.751, "confident": 0.904, "superiority": 0.73, "deception": 0.36, "factual": 0.524, "empathy": 0.87, "hopeful": 0.681, "faithful": 0.887, "honest": 0.848, "humility": 0.771, "wit": 0.703, "vulnerability": 0.507, "present": 0.543}, {"sorrow": 0.207, "regret": 0.4, "anger": 0.35, "frightened": 0.328, "anxious": 0.515, "helpless": 0.243, "irritated": 0.402, "disgust": 0.362, "humiliated": 0.473, "disappointed": 0.333, "ostracized": 0.366, "confusion": 0.567, "doubtful": 0.451, "incompetent": 0.32, "competent": 0.738, "confident": 0.91, "superiority": 0.736, "deception": 0.358, "factual": 0.533, "empathy": 0.859, "hopeful": 0.687, "faithful": 0.886, "honest": 0.858, "humility": 0.782, "wit": 0.692, "vulnerability": 0.516, "present": 0.543}, {"sorrow": 0.205, "regret": 0.387, "anger": 0.345, "frightened": 0.33, "anxious": 0.526, "helpless": 0.24, "irritated": 0.394, "disgust": 0.372, "humiliated": 0.464, "disappointed": 0.341, "ostracized": 0.378, "confusion": 0.555, "doubtful": 0.44, "incompetent": 0.311, "competent": 0.726, "confident": 0.915, "superiority": 0.742, "deception": 0.358, "factual": 0.544, "empathy": 0.848, "hopeful": 0.693, "faithful": 0.883, "honest": 0.869, "humility": 0.792, "wit": 0.682, "vulnerability": 0.525, "present": 0.543}, {"sorrow": 0.204, "regret": 0.375, "anger": 0.343, "frightened": 0.336, "anxious": 0.538, "helpless": 0.238, "irritated": 0.387, "disgust": 0.384, "humiliated": 0.456, "disappointed": 0.351, "ostracized": 0.39, "confusion": 0.544, "doubtful": 0.43, "incompetent": 0.304, "competent": 0.714, "confident": 0.921, "superiority": 0.748, "deception": 0.36, "factual": 0.556, "empathy": 0.836, "hopeful": 0.702, "faithful": 0.88, "honest": 0.879, "humility": 0.802, "wit": 0.675, "vulnerability": 0.537, "present": 0.543}, {"sorrow": 0.205, "regret": 0.363, "anger": 0.341, "frightened": 0.341, "anxious": 0.548, "helpless": 0.237, "irritated": 0.381, "disgust": 0.395, "humiliated": 0.445, "disappointed": 0.36, "ostracized": 0.402, "confusion": 0.532, "doubtful": 0.421, "incompetent": 0.298, "competent": 0.703, "confident": 0.924, "superiority": 0.751, "deception": 0.363, "factual": 0.567, "empathy": 0.824, "hopeful": 0.711, "faithful": 0.876, "honest": 0.888, "humility": 0.811, "wit": 0.667, "vulnerability": 0.548, "present": 0.543}, {"sorrow": 0.207, "regret": 0.351, "anger": 0.34, "frightened": 0.348, "anxious": 0.559, "helpless": 0.238, "irritated": 0.377, "disgust": 0.407, "humiliated": 0.434, "disappointed": 0.371, "ostracized": 0.413, "confusion": 0.519, "doubtful": 0.413, "incompetent": 0.292, "competent": 0.692, "confident": 0.926, "superiority": 0.754, "deception": 0.367, "factual": 0.579, "empathy": 0.812, "hopeful": 0.721, "faithful": 0.87, "honest": 0.897, "humility": 0.819, "wit": 0.66, "vulnerability": 0.56, "present": 0.543}, {"sorrow": 0.21, "regret": 0.34, "anger": 0.342, "frightened": 0.357, "anxious": 0.569, "helpless": 0.24, "irritated": 0.374, "disgust": 0.42, "humiliated": 0.424, "disappointed": 0.383, "ostracized": 0.425, "confusion": 0.508, "doubtful": 0.406, "incompetent": 0.289, "competent": 0.682, "confident": 0.928, "superiority": 0.756, "deception": 0.373, "factual": 0.592, "empathy": 0.8, "hopeful": 0.732, "faithful": 0.864, "honest": 0.905, "humility": 0.826, "wit": 0.656, "vulnerability": 0.572, "present": 0.543}, {"sorrow": 0.215, "regret": 0.329, "anger": 0.344, "frightened": 0.366, "anxious": 0.578, "helpless": 0.243, "irritated": 0.372, "disgust": 0.432, "humiliated": 0.412, "disappointed": 0.394, "ostracized": 0.436, "confusion": 0.496, "doubtful": 0.4, "incompetent": 0.286, "competent": 0.673, "confident": 0.927, "superiority": 0.757, "deception": 0.379, "factual": 0.604, "empathy": 0.788, "hopeful": 0.743, "faithful": 0.856, "honest": 0.912, "humility": 0.832, "wit": 0.651, "vulnerability": 0.584, "present": 0.543}, {"sorrow": 0.22, "regret": 0.319, "anger": 0.347, "frightened": 0.376, "anxious": 0.586, "helpless": 0.247, "irritated": 0.371, "disgust": 0.444, "humiliated": 0.4, "disappointed": 0.406, "ostracized": 0.445, "confusion": 0.484, "doubtful": 0.395, "incompetent": 0.284, "competent": 0.664, "confident": 0.926, "superiority": 0.756, "deception": 0.386, "factual": 0.616, "empathy": 0.776, "hopeful": 0.755, "faithful": 0.848, "honest": 0.917, "humility": 0.837, "wit": 0.648, "vulnerability": 0.596, "present": 0.543}, {"sorrow": 0.227, "regret": 0.31, "anger": 0.352, "frightened": 0.387, "anxious": 0.593, "helpless": 0.253, "irritated": 0.371, "disgust": 0.457, "humiliated": 0.388, "disappointed": 0.419, "ostracized": 0.455, "confusion": 0.472, "doubtful": 0.392, "incompetent": 0.284, "competent": 0.657, "confident": 0.924, "superiority": 0.754, "deception": 0.395, "factual": 0.628, "empathy": 0.765, "hopeful": 0.767, "faithful": 0.839, "honest": 0.922, "humility": 0.841, "wit": 0.647, "vulnerability": 0.609, "present": 0.543}, {"sorrow": 0.235, "regret": 0.302, "anger": 0.358, "frightened": 0.398, "anxious": 0.6, "helpless": 0.259, "irritated": 0.373, "disgust": 0.469, "humiliated": 0.376, "disappointed": 0.431, "ostracized": 0.463, "confusion": 0.462, "doubtful": 0.39, "incompetent": 0.285, "competent": 0.65, "confident": 0.92, "superiority": 0.751, "deception": 0.405, "factual": 0.64, "empathy": 0.754, "hopeful": 0.78, "faithful": 0.829, "honest": 0.926, "humility": 0.844, "wit": 0.647, "vulnerability": 0.621, "present": 0.543}, {"sorrow": 0.244, "regret": 0.294, "anger": 0.366, "frightened": 0.41, "anxious": 0.605, "helpless": 0.267, "irritated": 0.376, "disgust": 0.48, "humiliated": 0.364, "disappointed": 0.444, "ostracized": 0.471, "confusion": 0.451, "doubtful": 0.389, "incompetent": 0.287, "competent": 0.645, "confident": 0.915, "superiority": 0.747, "deception": 0.415, "factual": 0.651, "empathy": 0.743, "hopeful": 0.792, "faithful": 0.818, "honest": 0.928, "humility": 0.845, "wit": 0.648, "vulnerability": 0.633, "present": 0.543}, {"sorrow": 0.252, "regret": 0.287, "anger": 0.371, "frightened": 0.42, "anxious": 0.606, "helpless": 0.275, "irritated": 0.379, "disgust": 0.489, "humiliated": 0.351, "disappointed": 0.455, "ostracized": 0.476, "confusion": 0.44, "doubtful": 0.388, "incompetent": 0.289, "competent": 0.639, "confident": 0.908, "superiority": 0.74, "deception": 0.424, "factual": 0.661, "empathy": 0.732, "hopeful": 0.803, "faithful": 0.806, "honest": 0.928, "humility": 0.844, "wit": 0.648, "vulnerability": 0.643, "present": 0.543}, {"sorrow": 0.263, "regret": 0.281, "anger": 0.38, "frightened": 0.433, "anxious": 0.609, "helpless": 0.284, "irritated": 0.384, "disgust": 0.5, "humiliated": 0.34, "disappointed": 0.467, "ostracized": 0.482, "confusion": 0.431, "doubtful": 0.389, "incompetent": 0.294, "competent": 0.637, "confident": 0.901, "superiority": 0.734, "deception": 0.436, "factual": 0.671, "empathy": 0.723, "hopeful": 0.816, "faithful": 0.795, "honest": 0.927, "humility": 0.843, "wit": 0.652, "vulnerability": 0.654, "present": 0.543}, {"sorrow": 0.274, "regret": 0.278, "anger": 0.392, "frightened": 0.447, "anxious": 0.612, "helpless": 0.295, "irritated": 0.392, "disgust": 0.51, "humiliated": 0.33, "disappointed": 0.479, "ostracized": 0.486, "confusion": 0.424, "doubtful": 0.392, "incompetent": 0.3, "competent": 0.636, "confident": 0.894, "superiority": 0.727, "deception": 0.449, "factual": 0.681, "empathy": 0.715, "hopeful": 0.828, "faithful": 0.783, "honest": 0.927, "humility": 0.842, "wit": 0.657, "vulnerability": 0.664, "present": 0.543}, {"sorrow": 0.285, "regret": 0.274, "anger": 0.401, "frightened": 0.458, "anxious": 0.611, "helpless": 0.305, "irritated": 0.399, "disgust": 0.518, "humiliated": 0.319, "disappointed": 0.489, "ostracized": 0.489, "confusion": 0.416, "doubtful": 0.396, "incompetent": 0.307, "competent": 0.634, "confident": 0.884, "superiority": 0.718, "deception": 0.461, "factual": 0.689, "empathy": 0.707, "hopeful": 0.839, "faithful": 0.771, "honest": 0.923, "humility": 0.838, "wit": 0.662, "vulnerability": 0.673, "present": 0.543}, {"sorrow": 0.297, "regret": 0.272, "anger": 0.411, "frightened": 0.469, "anxious": 0.609, "helpless": 0.316, "irritated": 0.406, "disgust": 0.524, "humiliated": 0.308, "disappointed": 0.499, "ostracized": 0.49, "confusion": 0.41, "doubtful": 0.4, "incompetent": 0.314, "competent": 0.634, "confident": 0.874, "superiority": 0.708, "deception": 0.472, "factual": 0.696, "empathy": 0.7, "hopeful": 0.849, "faithful": 0.758, "honest": 0.919, "humility": 0.833, "wit": 0.668, "vulnerability": 0.681, "present": 0.543}, {"sorrow": 0.309, "regret": 0.271, "anger": 0.421, "frightened": 0.48, "anxious": 0.605, "helpless": 0.328, "irritated": 0.414, "disgust": 0.53, "humiliated": 0.298, "disappointed": 0.507, "ostracized": 0.489, "confusion": 0.404, "doubtful": 0.406, "incompetent": 0.322, "competent": 0.635, "confident": 0.862, "superiority": 0.697, "deception": 0.483, "factual": 0.702, "empathy": 0.694, "hopeful": 0.859, "faithful": 0.746, "honest": 0.913, "humility": 0.826, "wit": 0.675, "vulnerability": 0.687, "present": 0.543}, {"sorrow": 0.321, "regret": 0.272, "anger": 0.435, "frightened": 0.493, "anxious": 0.603, "helpless": 0.34, "irritated": 0.426, "disgust": 0.536, "humiliated": 0.291, "disappointed": 0.517, "ostracized": 0.49, "confusion": 0.401, "doubtful": 0.414, "incompetent": 0.332, "competent": 0.639, "confident": 0.853, "superiority": 0.687, "deception": 0.497, "factual": 0.707, "empathy": 0.69, "hopeful": 0.869, "faithful": 0.734, "honest": 0.907, "humility": 0.82, "wit": 0.685, "vulnerability": 0.694, "present": 0.543}, {"sorrow": 0.333, "regret": 0.273, "anger": 0.446, "frightened": 0.503, "anxious": 0.597, "helpless": 0.352, "irritated": 0.435, "disgust": 0.539, "humiliated": 0.283, "disappointed": 0.523, "ostracized": 0.487, "confusion": 0.398, "doubtful": 0.421, "incompetent": 0.342, "competent": 0.643, "confident": 0.84, "superiority": 0.675, "deception": 0.508, "factual": 0.711, "empathy": 0.686, "hopeful": 0.877, "faithful": 0.722, "honest": 0.899, "humility": 0.811, "wit": 0.693, "vulnerability": 0.699, "present": 0.543}, {"sorrow": 0.345, "regret": 0.276, "anger": 0.458, "frightened": 0.513, "anxious": 0.591, "helpless": 0.364, "irritated": 0.447, "disgust": 0.542, "humiliated": 0.276, "disappointed": 0.53, "ostracized": 0.483, "confusion": 0.396, "doubtful": 0.43, "incompetent": 0.353, "competent": 0.648, "confident": 0.828, "superiority": 0.663, "deception": 0.52, "factual": 0.714, "empathy": 0.684, "hopeful": 0.885, "faithful": 0.711, "honest": 0.891, "humility": 0.803, "wit": 0.704, "vulnerability": 0.703, "present": 0.543}, {"sorrow": 0.357, "regret": 0.28, "anger": 0.47, "frightened": 0.523, "anxious": 0.583, "helpless": 0.376, "irritated": 0.458, "disgust": 0.543, "humiliated": 0.271, "disappointed": 0.535, "ostracized": 0.478, "confusion": 0.396, "doubtful": 0.44, "incompetent": 0.364, "competent": 0.654, "confident": 0.816, "superiority": 0.651, "deception": 0.531, "factual": 0.715, "empathy": 0.683, "hopeful": 0.891, "faithful": 0.7, "honest": 0.882, "humility": 0.793, "wit": 0.714, "vulnerability": 0.705, "present": 0.543}, {"sorrow": 0.369, "regret": 0.286, "anger": 0.483, "frightened": 0.532, "anxious": 0.576, "helpless": 0.389, "irritated": 0.471, "disgust": 0.544, "humiliated": 0.267, "disappointed": 0.539, "ostracized": 0.473, "confusion": 0.397, "doubtful": 0.45, "incompetent": 0.376, "competent": 0.662, "confident": 0.804, "superiority": 0.639, "deception": 0.542, "factual": 0.716, "empathy": 0.684, "hopeful": 0.897, "faithful": 0.691, "honest": 0.872, "humility": 0.783, "wit": 0.726, "vulnerability": 0.707, "present": 0.543}, {"sorrow": 0.38, "regret": 0.292, "anger": 0.494, "frightened": 0.54, "anxious": 0.567, "helpless": 0.4, "irritated": 0.482, "disgust": 0.543, "humiliated": 0.264, "disappointed": 0.542, "ostracized": 0.466, "confusion": 0.399, "doubtful": 0.461, "incompetent": 0.388, "competent": 0.67, "confident": 0.791, "superiority": 0.627, "deception": 0.552, "factual": 0.715, "empathy": 0.686, "hopeful": 0.901, "faithful": 0.681, "honest": 0.861, "humility": 0.771, "wit": 0.737, "vulnerability": 0.707, "present": 0.543}, {"sorrow": 0.391, "regret": 0.3, "anger": 0.507, "frightened": 0.548, "anxious": 0.558, "helpless": 0.412, "irritated": 0.495, "disgust": 0.541, "humiliated": 0.263, "disappointed": 0.544, "ostracized": 0.459, "confusion": 0.403, "doubtful": 0.473, "incompetent": 0.401, "competent": 0.68, "confident": 0.78, "superiority": 0.615, "deception": 0.562, "factual": 0.713, "empathy": 0.689, "hopeful": 0.905, "faithful": 0.674, "honest": 0.85, "humility": 0.76, "wit": 0.75, "vulnerability": 0.706, "present": 0.543}, {"sorrow": 0.4, "regret": 0.307, "anger": 0.516, "frightened": 0.552, "anxious": 0.545, "helpless": 0.422, "irritated": 0.506, "disgust": 0.537, "humiliated": 0.261, "disappointed": 0.544, "ostracized": 0.449, "confusion": 0.406, "doubtful": 0.484, "incompetent": 0.412, "competent": 0.689, "confident": 0.767, "superiority": 0.602, "deception": 0.569, "factual": 0.709, "empathy": 0.692, "hopeful": 0.905, "faithful": 0.666, "honest": 0.838, "humility": 0.748, "wit": 0.761, "vulnerability": 0.703, "present": 0.543}, {"sorrow": 0.409, "regret": 0.317, "anger": 0.527, "frightened": 0.557, "anxious": 0.535, "helpless": 0.432, "irritated": 0.518, "disgust": 0.532, "humiliated": 0.263, "disappointed": 0.543, "ostracized": 0.44, "confusion": 0.413, "doubtful": 0.497, "incompetent": 0.424, "competent": 0.7, "confident": 0.756, "superiority": 0.591, "deception": 0.576, "factual": 0.704, "empathy": 0.698, "hopeful": 0.906, "faithful": 0.66, "honest": 0.826, "humility": 0.736, "wit": 0.774, "vulnerability": 0.699, "present": 0.543}, {"sorrow": 0.418, "regret": 0.327, "anger": 0.537, "frightened": 0.56, "anxious": 0.523, "helpless": 0.441, "irritated": 0.53, "disgust": 0.527, "humiliated": 0.265, "disappointed": 0.541, "ostracized": 0.429, "confusion": 0.419, "doubtful": 0.509, "incompetent": 0.437, "competent": 0.711, "confident": 0.745, "superiority": 0.58, "deception": 0.583, "factual": 0.698, "empathy": 0.704, "hopeful": 0.906, "faithful": 0.655, "honest": 0.814, "humility": 0.724, "wit": 0.786, "vulnerability": 0.695, "present": 0.543}, {"sorrow": 0.425, "regret": 0.338, "anger": 0.547, "frightened": 0.564, "anxious": 0.512, "helpless": 0.45, "irritated": 0.542, "disgust": 0.52, "humiliated": 0.269, "disappointed": 0.538, "ostracized": 0.419, "confusion": 0.428, "doubtful": 0.521, "incompetent": 0.448, "competent": 0.723, "confident": 0.736, "superiority": 0.57, "deception": 0.589, "factual": 0.692, "empathy": 0.712, "hopeful": 0.905, "faithful": 0.651, "honest": 0.802, "humility": 0.712, "wit": 0.798, "vulnerability": 0.689, "present": 0.543}, {"sorrow": 0.431, "regret": 0.349, "anger": 0.555, "frightened": 0.565, "anxious": 0.5, "helpless": 0.457, "irritated": 0.553, "disgust": 0.513, "humiliated": 0.273, "disappointed": 0.534, "ostracized": 0.408, "confusion": 0.437, "doubtful": 0.534, "incompetent": 0.46, "competent": 0.735, "confident": 0.726, "superiority": 0.56, "deception": 0.593, "factual": 0.684, "empathy": 0.721, "hopeful": 0.902, "faithful": 0.648, "honest": 0.79, "humility": 0.7, "wit": 0.81, "vulnerability": 0.682, "present": 0.543}, {"sorrow": 0.436, "regret": 0.361, "anger": 0.561, "frightened": 0.564, "anxious": 0.487, "helpless": 0.463, "irritated": 0.563, "disgust": 0.503, "humiliated": 0.278, "disappointed": 0.528, "ostracized": 0.395, "confusion": 0.446, "doubtful": 0.545, "incompetent": 0.47, "competent": 0.747, "confident": 0.717, "superiority": 0.551, "deception": 0.596, "factual": 0.675, "empathy": 0.729, "hopeful": 0.897, "faithful": 0.646, "honest": 0.777, "humility": 0.687, "wit": 0.821, "vulnerability": 0.674, "present": 0.543}, {"sorrow": 0.44, "regret": 0.373, "anger": 0.568, "frightened": 0.563, "anxious": 0.475, "helpless": 0.469, "irritated": 0.572, "disgust": 0.494, "humiliated": 0.285, "disappointed": 0.521, "ostracized": 0.384, "confusion": 0.456, "doubtful": 0.557, "incompetent": 0.48, "competent": 0.76, "confident": 0.71, "superiority": 0.543, "deception": 0.598, "factual": 0.666, "empathy": 0.74, "hopeful": 0.892, "faithful": 0.646, "honest": 0.766, "humility": 0.676, "wit": 0.832, "vulnerability": 0.665, "present": 0.543}, {"sorrow": 0.442, "regret": 0.385, "anger": 0.572, "frightened": 0.559, "anxious": 0.462, "helpless": 0.472, "irritated": 0.58, "disgust": 0.483, "humiliated": 0.292, "disappointed": 0.513, "ostracized": 0.371, "confusion": 0.466, "doubtful": 0.567, "incompetent": 0.488, "competent": 0.771, "confident": 0.703, "superiority": 0.535, "deception": 0.597, "factual": 0.655, "empathy": 0.75, "hopeful": 0.885, "faithful": 0.647, "honest": 0.754, "humility": 0.665, "wit": 0.841, "vulnerability": 0.655, "present": 0.543}, {"sorrow": 0.444, "regret": 0.397, "anger": 0.576, "frightened": 0.555, "anxious": 0.451, "helpless": 0.475, "irritated": 0.588, "disgust": 0.472, "humiliated": 0.301, "disappointed": 0.505, "ostracized": 0.359, "confusion": 0.478, "doubtful": 0.577, "incompetent": 0.497, "competent": 0.783, "confident": 0.697, "superiority": 0.529, "deception": 0.597, "factual": 0.644, "empathy": 0.761, "hopeful": 0.877, "faithful": 0.649, "honest": 0.743, "humility": 0.655, "wit": 0.85, "vulnerability": 0.645, "present": 0.543}, {"sorrow": 0.444, "regret": 0.409, "anger": 0.579, "frightened": 0.551, "anxious": 0.44, "helpless": 0.477, "irritated": 0.595, "disgust": 0.461, "humiliated": 0.311, "disappointed": 0.495, "ostracized": 0.347, "confusion": 0.49, "doubtful": 0.587, "incompetent": 0.504, "competent": 0.795, "confident": 0.693, "superiority": 0.524, "deception": 0.595, "factual": 0.633, "empathy": 0.773, "hopeful": 0.869, "faithful": 0.653, "honest": 0.734, "humility": 0.645, "wit": 0.859, "vulnerability": 0.634, "present": 0.543}, {"sorrow": 0.443, "regret": 0.422, "anger": 0.581, "frightened": 0.545, "anxious": 0.43, "helpless": 0.478, "irritated": 0.601, "disgust": 0.45, "humiliated": 0.322, "disappointed": 0.486, "ostracized": 0.335, "confusion": 0.503, "doubtful": 0.596, "incompetent": 0.51, "competent": 0.807, "confident": 0.691, "superiority": 0.521, "deception": 0.592, "factual": 0.621, "empathy": 0.786, "hopeful": 0.86, "faithful": 0.658, "honest": 0.725, "humility": 0.637, "wit": 0.866, "vulnerability": 0.623, "present": 0.543}, {"sorrow": 0.441, "regret": 0.433, "anger": 0.581, "frightened": 0.538, "anxious": 0.419, "helpless": 0.477, "irritated": 0.605, "disgust": 0.438, "humiliated": 0.332, "disappointed": 0.475, "ostracized": 0.324, "confusion": 0.515, "doubtful": 0.604, "incompetent": 0.515, "competent": 0.817, "confident": 0.689, "superiority": 0.518, "deception": 0.588, "factual": 0.609, "empathy": 0.798, "hopeful": 0.85, "faithful": 0.664, "honest": 0.716, "humility": 0.629, "wit": 0.872, "vulnerability": 0.611, "present": 0.543}, {"sorrow": 0.438, "regret": 0.445, "anger": 0.581, "frightened": 0.53, "anxious": 0.41, "helpless": 0.475, "irritated": 0.609, "disgust": 0.426, "humiliated": 0.344, "disappointed": 0.464, "ostracized": 0.313, "confusion": 0.527, "doubtful": 0.611, "incompetent": 0.52, "competent": 0.828, "confident": 0.688, "superiority": 0.517, "deception": 0.583, "factual": 0.597, "empathy": 0.81, "hopeful": 0.84, "faithful": 0.671, "honest": 0.709, "humility": 0.622, "wit": 0.878, "vulnerability": 0.599, "present": 0.543}, {"sorrow": 0.433, "regret": 0.455, "anger": 0.579, "frightened": 0.522, "anxious": 0.402, "helpless": 0.472, "irritated": 0.611, "disgust": 0.414, "humiliated": 0.356, "disappointed": 0.452, "ostracized": 0.303, "confusion": 0.539, "doubtful": 0.617, "incompetent": 0.522, "competent": 0.837, "confident": 0.689, "superiority": 0.517, "deception": 0.576, "factual": 0.585, "empathy": 0.823, "hopeful": 0.828, "faithful": 0.678, "honest": 0.703, "humility": 0.616, "wit": 0.882, "vulnerability": 0.587, "present": 0.543}, {"sorrow": 0.427, "regret": 0.465, "anger": 0.574, "frightened": 0.51, "anxious": 0.393, "helpless": 0.467, "irritated": 0.61, "disgust": 0.401, "humiliated": 0.367, "disappointed": 0.439, "ostracized": 0.292, "confusion": 0.551, "doubtful": 0.621, "incompetent": 0.523, "competent": 0.845, "confident": 0.69, "superiority": 0.518, "deception": 0.568, "factual": 0.572, "empathy": 0.834, "hopeful": 0.816, "faithful": 0.687, "honest": 0.697, "humility": 0.611, "wit": 0.884, "vulnerability": 0.574, "present": 0.543}, {"sorrow": 0.42, "regret": 0.474, "anger": 0.569, "frightened": 0.5, "anxious": 0.386, "helpless": 0.461, "irritated": 0.61, "disgust": 0.389, "humiliated": 0.379, "disappointed": 0.427, "ostracized": 0.283, "confusion": 0.562, "doubtful": 0.624, "incompetent": 0.523, "competent": 0.852, "confident": 0.693, "superiority": 0.52, "deception": 0.559, "factual": 0.561, "empathy": 0.845, "hopeful": 0.804, "faithful": 0.696, "honest": 0.693, "humility": 0.608, "wit": 0.885, "vulnerability": 0.562, "present": 0.543}, {"sorrow": 0.412, "regret": 0.483, "anger": 0.564, "frightened": 0.49, "anxious": 0.381, "helpless": 0.455, "irritated": 0.609, "disgust": 0.378, "humiliated": 0.392, "disappointed": 0.415, "ostracized": 0.276, "confusion": 0.574, "doubtful": 0.627, "incompetent": 0.523, "competent": 0.859, "confident": 0.697, "superiority": 0.524, "deception": 0.55, "factual": 0.549, "empathy": 0.857, "hopeful": 0.792, "faithful": 0.707, "honest": 0.69, "humility": 0.606, "wit": 0.886, "vulnerability": 0.551, "present": 0.543}, {"sorrow": 0.404, "regret": 0.49, "anger": 0.557, "frightened": 0.478, "anxious": 0.377, "helpless": 0.447, "irritated": 0.605, "disgust": 0.367, "humiliated": 0.404, "disappointed": 0.403, "ostracized": 0.268, "confusion": 0.584, "doubtful": 0.628, "incompetent": 0.52, "competent": 0.864, "confident": 0.703, "superiority": 0.529, "deception": 0.54, "factual": 0.538, "empathy": 0.868, "hopeful": 0.78, "faithful": 0.718, "honest": 0.688, "humility": 0.605, "wit": 0.885, "vulnerability": 0.539, "present": 0.543}, {"sorrow": 0.394, "regret": 0.497, "anger": 0.549, "frightened": 0.466, "anxious": 0.374, "helpless": 0.439, "irritated": 0.601, "disgust": 0.356, "humiliated": 0.416, "disappointed": 0.391, "ostracized": 0.263, "confusion": 0.594, "doubtful": 0.628, "incompetent": 0.517, "competent": 0.869, "confident": 0.709, "superiority": 0.535, "deception": 0.529, "factual": 0.528, "empathy": 0.878, "hopeful": 0.768, "faithful": 0.729, "honest": 0.688, "humility": 0.605, "wit": 0.883, "vulnerability": 0.528, "present": 0.543}, {"sorrow": 0.384, "regret": 0.502, "anger": 0.54, "frightened": 0.454, "anxious": 0.371, "helpless": 0.429, "irritated": 0.596, "disgust": 0.346, "humiliated": 0.428, "disappointed": 0.379, "ostracized": 0.258, "confusion": 0.603, "doubtful": 0.626, "incompetent": 0.512, "competent": 0.871, "confident": 0.717, "superiority": 0.542, "deception": 0.518, "factual": 0.518, "empathy": 0.887, "hopeful": 0.756, "faithful": 0.741, "honest": 0.689, "humility": 0.607, "wit": 0.879, "vulnerability": 0.518, "present": 0.543}, {"sorrow": 0.373, "regret": 0.506, "anger": 0.531, "frightened": 0.442, "anxious": 0.371, "helpless": 0.419, "irritated": 0.59, "disgust": 0.338, "humiliated": 0.439, "disappointed": 0.369, "ostracized": 0.254, "confusion": 0.611, "doubtful": 0.624, "incompetent": 0.506, "competent": 0.874, "confident": 0.725, "superiority": 0.55, "deception": 0.507, "factual": 0.509, "empathy": 0.896, "hopeful": 0.744, "faithful": 0.753, "honest": 0.691, "humility": 0.61, "wit": 0.875, "vulnerability": 0.509, "present": 0.543}, {"sorrow": 0.361, "regret": 0.509, "anger": 0.52, "frightened": 0.429, "anxious": 0.371, "helpless": 0.408, "irritated": 0.582, "disgust": 0.33, "humiliated": 0.449, "disappointed": 0.358, "ostracized": 0.251, "confusion": 0.618, "doubtful": 0.619, "incompetent": 0.499, "competent": 0.874, "confident": 0.734, "superiority": 0.559, "deception": 0.494, "factual": 0.501, "empathy": 0.903, "hopeful": 0.733, "faithful": 0.765, "honest": 0.694, "humility": 0.613, "wit": 0.869, "vulnerability": 0.499, "present": 0.543}, {"sorrow": 0.35, "regret": 0.511, "anger": 0.51, "frightened": 0.418, "anxious": 0.373, "helpless": 0.397, "irritated": 0.574, "disgust": 0.323, "humiliated": 0.46, "disappointed": 0.348, "ostracized": 0.251, "confusion": 0.624, "doubtful": 0.615, "incompetent": 0.492, "competent": 0.873, "confident": 0.745, "superiority": 0.569, "deception": 0.482, "factual": 0.494, "empathy": 0.91, "hopeful": 0.723, "faithful": 0.778, "honest": 0.699, "humility": 0.619, "wit": 0.863, "vulnerability": 0.492, "present": 0.543}, {"sorrow": 0.337, "regret": 0.511, "anger": 0.498, "frightened": 0.406, "anxious": 0.376, "helpless": 0.385, "irritated": 0.564, "disgust": 0.317, "humiliated": 0.468, "disappointed": 0.339, "ostracized": 0.25, "confusion": 0.629, "doubtful": 0.608, "incompetent": 0.482, "competent": 0.871, "confident": 0.755, "superiority": 0.579, "deception": 0.47, "factual": 0.488, "empathy": 0.915, "hopeful": 0.712, "faithful": 0.79, "honest": 0.704, "humility": 0.625, "wit": 0.854, "vulnerability": 0.485, "present": 0.543}, {"sorrow": 0.325, "regret": 0.51, "anger": 0.486, "frightened": 0.394, "anxious": 0.38, "helpless": 0.373, "irritated": 0.554, "disgust": 0.312, "humiliated": 0.476, "disappointed": 0.331, "ostracized": 0.251, "confusion": 0.632, "doubtful": 0.601, "incompetent": 0.473, "competent": 0.868, "confident": 0.766, "superiority": 0.59, "deception": 0.457, "factual": 0.483, "empathy": 0.919, "hopeful": 0.703, "faithful": 0.801, "honest": 0.711, "humility": 0.632, "wit": 0.846, "vulnerability": 0.479, "present": 0.543}, {"sorrow": 0.313, "regret": 0.508, "anger": 0.473, "frightened": 0.382, "anxious": 0.384, "helpless": 0.36, "irritated": 0.543, "disgust": 0.307, "humiliated": 0.483, "disappointed": 0.323, "ostracized": 0.254, "confusion": 0.634, "doubtful": 0.592, "incompetent": 0.462, "competent": 0.863, "confident": 0.777, "superiority": 0.601, "deception": 0.445, "factual": 0.479, "empathy": 0.921, "hopeful": 0.694, "faithful": 0.813, "honest": 0.718, "humility": 0.64, "wit": 0.835, "vulnerability": 0.474, "present": 0.543}, {"sorrow": 0.301, "regret": 0.505, "anger": 0.461, "frightened": 0.373, "anxious": 0.391, "helpless": 0.348, "irritated": 0.532, "disgust": 0.305, "humiliated": 0.489, "disappointed": 0.317, "ostracized": 0.257, "confusion": 0.636, "doubtful": 0.583, "incompetent": 0.451, "competent": 0.858, "confident": 0.79, "superiority": 0.613, "deception": 0.433, "factual": 0.477, "empathy": 0.923, "hopeful": 0.687, "faithful": 0.824, "honest": 0.727, "humility": 0.649, "wit": 0.825, "vulnerability": 0.47, "present": 0.543}, {"sorrow": 0.289, "regret": 0.5, "anger": 0.449, "frightened": 0.363, "anxious": 0.398, "helpless": 0.336, "irritated": 0.52, "disgust": 0.304, "humiliated": 0.494, "disappointed": 0.312, "ostracized": 0.262, "confusion": 0.636, "doubtful": 0.573, "incompetent": 0.44, "competent": 0.851, "confident": 0.802, "superiority": 0.625, "deception": 0.422, "factual": 0.476, "empathy": 0.923, "hopeful": 0.681, "faithful": 0.834, "honest": 0.736, "humility": 0.659, "wit": 0.814, "vulnerability": 0.468, "present": 0.543}, {"sorrow": 0.278, "regret": 0.495, "anger": 0.438, "frightened": 0.356, "anxious": 0.408, "helpless": 0.325, "irritated": 0.509, "disgust": 0.305, "humiliated": 0.499, "disappointed": 0.309, "ostracized": 0.269, "confusion": 0.635, "doubtful": 0.563, "incompetent": 0.429, "competent": 0.844, "confident": 0.815, "superiority": 0.638, "deception": 0.413, "factual": 0.476, "empathy": 0.924, "hopeful": 0.677, "faithful": 0.845, "honest": 0.747, "humility": 0.67, "wit": 0.804, "vulnerability": 0.468, "present": 0.543}, {"sorrow": 0.266, "regret": 0.488, "anger": 0.425, "frightened": 0.347, "anxious": 0.416, "helpless": 0.312, "irritated": 0.496, "disgust": 0.305, "humiliated": 0.5, "disappointed": 0.306, "ostracized": 0.275, "confusion": 0.632, "doubtful": 0.552, "incompetent": 0.416, "competent": 0.835, "confident": 0.826, "superiority": 0.649, "deception": 0.402, "factual": 0.477, "empathy": 0.921, "hopeful": 0.672, "faithful": 0.853, "honest": 0.757, "humility": 0.681, "wit": 0.791, "vulnerability": 0.467, "present": 0.543}, {"sorrow": 0.256, "regret": 0.481, "anger": 0.414, "frightened": 0.34, "anxious": 0.426, "helpless": 0.301, "irritated": 0.484, "disgust": 0.308, "humiliated": 0.502, "disappointed": 0.305, "ostracized": 0.284, "confusion": 0.628, "doubtful": 0.54, "incompetent": 0.404, "competent": 0.825, "confident": 0.838, "superiority": 0.662, "deception": 0.393, "factual": 0.48, "empathy": 0.918, "hopeful": 0.669, "faithful": 0.861, "honest": 0.769, "humility": 0.692, "wit": 0.779, "vulnerability": 0.469, "present": 0.543}, {"sorrow": 0.246, "regret": 0.472, "anger": 0.402, "frightened": 0.334, "anxious": 0.436, "helpless": 0.291, "irritated": 0.471, "disgust": 0.311, "humiliated": 0.502, "disappointed": 0.304, "ostracized": 0.292, "confusion": 0.623, "doubtful": 0.528, "incompetent": 0.391, "competent": 0.815, "confident": 0.849, "superiority": 0.673, "deception": 0.384, "factual": 0.483, "empathy": 0.913, "hopeful": 0.667, "faithful": 0.868, "honest": 0.78, "humility": 0.704, "wit": 0.766, "vulnerability": 0.471, "present": 0.543}, {"sorrow": 0.237, "regret": 0.462, "anger": 0.391, "frightened": 0.329, "anxious": 0.447, "helpless": 0.281, "irritated": 0.459, "disgust": 0.316, "humiliated": 0.5, "disappointed": 0.305, "ostracized": 0.302, "confusion": 0.617, "doubtful": 0.516, "incompetent": 0.379, "competent": 0.804, "confident": 0.861, "superiority": 0.684, "deception": 0.377, "factual": 0.488, "empathy": 0.907, "hopeful": 0.666, "faithful": 0.874, "honest": 0.792, "humility": 0.716, "wit": 0.754, "vulnerability": 0.475, "present": 0.543}, {"sorrow": 0.23, "regret": 0.452, "anger": 0.383, "frightened": 0.328, "anxious": 0.46, "helpless": 0.272, "irritated": 0.448, "disgust": 0.323, "humiliated": 0.499, "disappointed": 0.308, "ostracized": 0.313, "confusion": 0.611, "doubtful": 0.504, "incompetent": 0.368, "competent": 0.793, "confident": 0.872, "superiority": 0.696, "deception": 0.372, "factual": 0.494, "empathy": 0.901, "hopeful": 0.668, "faithful": 0.879, "honest": 0.805, "humility": 0.729, "wit": 0.743, "vulnerability": 0.48, "present": 0.543}, {"sorrow": 0.222, "regret": 0.441, "anger": 0.374, "frightened": 0.325, "anxious": 0.472, "helpless": 0.264, "irritated": 0.437, "disgust": 0.33, "humiliated": 0.495, "disappointed": 0.311, "ostracized": 0.324, "confusion": 0.602, "doubtful": 0.492, "incompetent": 0.356, "competent": 0.781, "confident": 0.882, "superiority": 0.706, "deception": 0.366, "factual": 0.501, "empathy": 0.893, "hopeful": 0.67, "faithful": 0.882, "honest": 0.817, "humility": 0.741, "wit": 0.731, "vulnerability": 0.486, "present": 0.543}, {"sorrow": 0.216, "regret": 0.43, "anger": 0.365, "frightened": 0.324, "anxious": 0.483, "helpless": 0.257, "irritated": 0.426, "disgust": 0.337, "humiliated": 0.49, "disappointed": 0.316, "ostracized": 0.335, "confusion": 0.593, "doubtful": 0.479, "incompetent": 0.345, "competent": 0.769, "confident": 0.891, "superiority": 0.715, "deception": 0.362, "factual": 0.509, "empathy": 0.884, "hopeful": 0.673, "faithful": 0.885, "honest": 0.829, "humility": 0.753, "wit": 0.719, "vulnerability": 0.493, "present": 0.543}, {"sorrow": 0.212, "regret": 0.418, "anger": 0.358, "frightened": 0.324, "anxious": 0.496, "helpless": 0.251, "irritated": 0.416, "disgust": 0.346, "humiliated": 0.484, "disappointed": 0.322, "ostracized": 0.347, "confusion": 0.583, "doubtful": 0.468, "incompetent": 0.334, "competent": 0.757, "confident": 0.899, "superiority": 0.724, "deception": 0.359, "factual": 0.518, "empathy": 0.875, "hopeful": 0.677, "faithful": 0.886, "honest": 0.841, "humility": 0.764, "wit": 0.708, "vulnerability": 0.501, "present": 0.543}, {"sorrow": 0.208, "regret": 0.406, "anger": 0.353, "frightened": 0.326, "anxious": 0.508, "helpless": 0.246, "irritated": 0.407, "disgust": 0.356, "humiliated": 0.477, "disappointed": 0.329, "ostracized": 0.359, "confusion": 0.573, "doubtful": 0.456, "incompetent": 0.325, "competent": 0.745, "confident": 0.907, "superiority": 0.732, "deception": 0.358, "factual": 0.528, "empathy": 0.865, "hopeful": 0.683, "faithful": 0.886, "honest": 0.852, "humility": 0.776, "wit": 0.698, "vulnerability": 0.511, "present": 0.543}, {"sorrow": 0.206, "regret": 0.394, "anger": 0.349, "frightened": 0.33, "anxious": 0.521, "helpless": 0.242, "irritated": 0.399, "disgust": 0.367, "humiliated": 0.47, "disappointed": 0.337, "ostracized": 0.372, "confusion": 0.562, "doubtful": 0.446, "incompetent": 0.316, "competent": 0.733, "confident": 0.914, "superiority": 0.74, "deception": 0.359, "factual": 0.539, "empathy": 0.855, "hopeful": 0.69, "faithful": 0.885, "honest": 0.864, "humility": 0.787, "wit": 0.689, "vulnerability": 0.521, "present": 0.543}, {"sorrow": 0.204, "regret": 0.381, "anger": 0.343, "frightened": 0.332, "anxious": 0.531, "helpless": 0.239, "irritated": 0.39, "disgust": 0.377, "humiliated": 0.46, "disappointed": 0.345, "ostracized": 0.383, "confusion": 0.55, "doubtful": 0.435, "incompetent": 0.308, "competent": 0.72, "confident": 0.917, "superiority": 0.744, "deception": 0.358, "factual": 0.549, "empathy": 0.842, "hopeful": 0.697, "faithful": 0.882, "honest": 0.873, "humility": 0.796, "wit": 0.678, "vulnerability": 0.53, "present": 0.543}, {"sorrow": 0.205, "regret": 0.37, "anger": 0.343, "frightened": 0.339, "anxious": 0.544, "helpless": 0.238, "irritated": 0.385, "disgust": 0.39, "humiliated": 0.451, "disappointed": 0.355, "ostracized": 0.396, "confusion": 0.539, "doubtful": 0.426, "incompetent": 0.302, "competent": 0.709, "confident": 0.923, "superiority": 0.75, "deception": 0.362, "factual": 0.561, "empathy": 0.831, "hopeful": 0.707, "faithful": 0.879, "honest": 0.884, "humility": 0.806, "wit": 0.672, "vulnerability": 0.542, "present": 0.543}, {"sorrow": 0.206, "regret": 0.357, "anger": 0.34, "frightened": 0.344, "anxious": 0.553, "helpless": 0.237, "irritated": 0.379, "disgust": 0.4, "humiliated": 0.44, "disappointed": 0.365, "ostracized": 0.407, "confusion": 0.526, "doubtful": 0.417, "incompetent": 0.295, "competent": 0.697, "confident": 0.925, "superiority": 0.753, "deception": 0.364, "factual": 0.573, "empathy": 0.818, "hopeful": 0.715, "faithful": 0.873, "honest": 0.892, "humility": 0.814, "wit": 0.663, "vulnerability": 0.553, "present": 0.543}, {"sorrow": 0.209, "regret": 0.346, "anger": 0.342, "frightened": 0.353, "anxious": 0.564, "helpless": 0.239, "irritated": 0.376, "disgust": 0.414, "humiliated": 0.43, "disappointed": 0.377, "ostracized": 0.419, "confusion": 0.514, "doubtful": 0.41, "incompetent": 0.291, "competent": 0.688, "confident": 0.927, "superiority": 0.756, "deception": 0.37, "factual": 0.585, "empathy": 0.807, "hopeful": 0.726, "faithful": 0.868, "honest": 0.901, "humility": 0.822, "wit": 0.658, "vulnerability": 0.566, "present": 0.543}, {"sorrow": 0.212, "regret": 0.335, "anger": 0.342, "frightened": 0.36, "anxious": 0.573, "helpless": 0.241, "irritated": 0.372, "disgust": 0.425, "humiliated": 0.418, "disappointed": 0.388, "ostracized": 0.43, "confusion": 0.502, "doubtful": 0.403, "incompetent": 0.287, "competent": 0.677, "confident": 0.927, "superiority": 0.756, "deception": 0.375, "factual": 0.597, "empathy": 0.794, "hopeful": 0.737, "faithful": 0.86, "honest": 0.908, "humility": 0.829, "wit": 0.653, "vulnerability": 0.577, "present": 0.543}, {"sorrow": 0.217, "regret": 0.325, "anger": 0.346, "frightened": 0.371, "anxious": 0.583, "helpless": 0.245, "irritated": 0.372, "disgust": 0.438, "humiliated": 0.407, "disappointed": 0.4, "ostracized": 0.441, "confusion": 0.491, "doubtful": 0.398, "incompetent": 0.285, "competent": 0.669, "confident": 0.927, "superiority": 0.757, "deception": 0.383, "factual": 0.61, "empathy": 0.783, "hopeful": 0.749, "faithful": 0.853, "honest": 0.915, "humility": 0.835, "wit": 0.65, "vulnerability": 0.59, "present": 0.543}, {"sorrow": 0.223, "regret": 0.314, "anger": 0.348, "frightened": 0.379, "anxious": 0.588, "helpless": 0.249, "irritated": 0.37, "disgust": 0.449, "humiliated": 0.394, "disappointed": 0.412, "ostracized": 0.449, "confusion": 0.478, "doubtful": 0.393, "incompetent": 0.283, "competent": 0.66, "confident": 0.924, "superiority": 0.754, "deception": 0.389, "factual": 0.621, "empathy": 0.77, "hopeful": 0.76, "faithful": 0.843, "honest": 0.919, "humility": 0.839, "wit": 0.647, "vulnerability": 0.602, "present": 0.543}, {"sorrow": 0.23, "regret": 0.306, "anger": 0.354, "frightened": 0.391, "anxious": 0.596, "helpless": 0.256, "irritated": 0.372, "disgust": 0.462, "humiliated": 0.382, "disappointed": 0.424, "ostracized": 0.459, "confusion": 0.467, "doubtful": 0.391, "incompetent": 0.284, "competent": 0.653, "confident": 0.922, "superiority": 0.753, "deception": 0.399, "factual": 0.633, "empathy": 0.759, "hopeful": 0.773, "faithful": 0.834, "honest": 0.924, "humility": 0.842, "wit": 0.646, "vulnerability": 0.614, "present": 0.543}];
+const EMOTIONS= ["sorrow", "regret", "anger", "frightened", "anxious", "helpless", "irritated", "disgust", "humiliated", "disappointed", "ostracized", "confusion", "doubtful", "incompetent", "competent", "confident", "superiority", "deception", "factual", "empathy", "hopeful", "faithful", "honest", "humility", "wit", "vulnerability", "present"];
+const E_VAL   = [-0.9, -0.7, -0.75, -0.85, -0.6, -0.8, -0.5, -0.7, -0.9, -0.6, -0.85, -0.3, -0.2, -0.65, 0.65, 0.8, 0.15, -0.55, 0.25, 0.85, 0.75, 0.8, 0.9, 0.7, 0.6, 0.05, 1.0];  // valence per emotion
+const CLUSTERS= {"reactive": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "cognitive": [11, 12, 13, 14, 15, 16, 17, 18], "connective": [19, 20, 21, 22, 23, 24, 25], "meta": [26]};
 
-// ── Canvas setup ─────────────────────────────────────────────────────────────
+// Cluster display config
+const CL_CFG = {
+  reactive:   { label:'Reactive',   color:'#f87171' },
+  cognitive:  { label:'Cognitive',  color:'#818cf8' },
+  connective: { label:'Connective', color:'#34d399' },
+  meta:       { label:'Presence',   color:'#a3e635' },
+};
+
+// Build emotion rows DOM once
+const emoListEl = document.getElementById('emo-list');
+const emoRows = {};
+EMOTIONS.forEach((name, i) => {
+  if (name === 'present') return;  // shown in presence bar
+  const val = E_VAL[i];
+  const hue = val > 0 ? (120 - val*30)|0 : (val < 0 ? (0 - val*20)|0 : 40);
+  const sat = 60 + Math.abs(val)*20;
+
+  // Find cluster
+  let clKey = 'cognitive';
+  for (const [k, idxs] of Object.entries(CLUSTERS)) {
+    if (idxs.includes(i)) { clKey = k; break; }
+  }
+  const clColor = CL_CFG[clKey].color;
+
+  const row = document.createElement('div');
+  row.className = 'er';
+  row.innerHTML = `
+    <div class="er-dot" style="background:${clColor}"></div>
+    <div class="er-name">${name}</div>
+    <div class="er-bar-wrap"><div class="er-bar" id="ebar-${name}" style="background:hsl(${hue},${sat}%,55%);width:0%"></div></div>
+    <div class="er-val" id="eval-${name}">0.00</div>`;
+  emoListEl.appendChild(row);
+  emoRows[name] = row;
+});
+
+// Build cluster cards DOM once
+const clusterEl = document.getElementById('emo-clusters');
+for (const [k, cfg] of Object.entries(CL_CFG)) {
+  const card = document.createElement('div');
+  card.className = 'emo-cl';
+  card.innerHTML = `
+    <div class="emo-cl-name">${cfg.label}</div>
+    <div style="height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden">
+      <div class="emo-cl-bar" id="eclbar-${k}" style="background:${cfg.color};width:0%"></div>
+    </div>
+    <div class="emo-cl-val" id="eclval-${k}" style="color:${cfg.color}">0.00</div>`;
+  clusterEl.appendChild(card);
+}
+
+// ── Canvas setup ──────────────────────────────────────────────────────────────
 const mc  = document.getElementById('mc');
 const ctx = mc.getContext('2d');
 const spC = document.getElementById('sp');
@@ -158,297 +281,205 @@ for (let i = 0; i < MAX_ITER; i++) {
   const hue = (t * 780 + 200) % 360;
   const h6 = hue / 60, x = 1 - Math.abs(h6 % 2 - 1), lum = 0.3 + t * 0.65;
   let r, g, b;
-  if      (h6 < 1) { r=1;   g=x;   b=0;   }
-  else if (h6 < 2) { r=x;   g=1;   b=0;   }
-  else if (h6 < 3) { r=0;   g=1;   b=x;   }
-  else if (h6 < 4) { r=0;   g=x;   b=1;   }
-  else if (h6 < 5) { r=x;   g=0;   b=1;   }
-  else             { r=1;   g=0;   b=x;   }
-  JPAL[i*3]   = (r * lum * 255) | 0;
-  JPAL[i*3+1] = (g * lum * 255) | 0;
-  JPAL[i*3+2] = (b * lum * 255) | 0;
+  if      (h6 < 1) { r=1;g=x;b=0; } else if (h6 < 2) { r=x;g=1;b=0; }
+  else if (h6 < 3) { r=0;g=1;b=x; } else if (h6 < 4) { r=0;g=x;b=1; }
+  else if (h6 < 5) { r=x;g=0;b=1; } else             { r=1;g=0;b=x; }
+  JPAL[i*3]=(r*lum*255)|0; JPAL[i*3+1]=(g*lum*255)|0; JPAL[i*3+2]=(b*lum*255)|0;
 }
 
-let fracCanvas = null, fracCtx = null, lastJuliaPass = -1;
-
+let fracCanvas=null,fracCtx=null,lastJuliaPass=-1;
 function renderJulia(ci) {
-  const FW = Math.max(4, (W / 2) | 0);
-  const FH = Math.max(4, (H / 2) | 0);
-  if (!fracCanvas || fracCanvas.width !== FW || fracCanvas.height !== FH) {
-    fracCanvas = document.createElement('canvas');
-    fracCanvas.width = FW; fracCanvas.height = FH;
-    fracCtx = fracCanvas.getContext('2d');
+  const FW=Math.max(4,(W/2)|0),FH=Math.max(4,(H/2)|0);
+  if(!fracCanvas||fracCanvas.width!==FW||fracCanvas.height!==FH){
+    fracCanvas=document.createElement('canvas');fracCanvas.width=FW;fracCanvas.height=FH;
+    fracCtx=fracCanvas.getContext('2d');
   }
-  const img = fracCtx.createImageData(FW, FH);
-  const d   = img.data;
-  const cr  = -0.52 + 0.30 * Math.cos(ci.cohesion * 9.42);
-  const cim =  0.48 - 0.30 * Math.sin(ci.curl * 6.28 + ci.grad);
-  for (let py = 0; py < FH; py++) {
-    const zi0 = (py / FH - 0.5) * 2.2;
-    for (let px = 0; px < FW; px++) {
-      let zr = (px / FW - 0.5) * 3.4, zi = zi0, iter = 0;
-      while (iter < MAX_ITER) {
-        const zr2 = zr*zr, zi2 = zi*zi;
-        if (zr2 + zi2 > 4.0) break;
-        zi = 2*zr*zi + cim; zr = zr2 - zi2 + cr; iter++;
-      }
-      const idx = (py * FW + px) * 4;
-      if (iter === MAX_ITER) {
-        d[idx]=4; d[idx+1]=6; d[idx+2]=18; d[idx+3]=255;
-      } else {
-        d[idx]=JPAL[iter*3]; d[idx+1]=JPAL[iter*3+1]; d[idx+2]=JPAL[iter*3+2]; d[idx+3]=255;
-      }
+  const img=fracCtx.createImageData(FW,FH),d=img.data;
+  const cr=-0.52+0.30*Math.cos(ci.cohesion*9.42);
+  const cim=0.48-0.30*Math.sin(ci.curl*6.28+ci.grad);
+  for(let py=0;py<FH;py++){
+    const zi0=(py/FH-0.5)*2.2;
+    for(let px=0;px<FW;px++){
+      let zr=(px/FW-0.5)*3.4,zi=zi0,iter=0;
+      while(iter<MAX_ITER){const zr2=zr*zr,zi2=zi*zi;if(zr2+zi2>4)break;zi=2*zr*zi+cim;zr=zr2-zi2+cr;iter++;}
+      const idx=(py*FW+px)*4;
+      if(iter===MAX_ITER){d[idx]=4;d[idx+1]=6;d[idx+2]=18;d[idx+3]=255;}
+      else{d[idx]=JPAL[iter*3];d[idx+1]=JPAL[iter*3+1];d[idx+2]=JPAL[iter*3+2];d[idx+3]=255;}
     }
   }
-  fracCtx.putImageData(img, 0, 0);
+  fracCtx.putImageData(img,0,0);
 }
 
-// ── 3-D Tetrahedra ────────────────────────────────────────────────────────────
-// Regular tetrahedron: 4 vertices on unit sphere using cube alternating corners
-const SQ3 = Math.sqrt(3);
-const BASE_V = [
-  [ 1,  1,  1],
-  [ 1, -1, -1],
-  [-1,  1, -1],
-  [-1, -1,  1],
-].map(v => { const s = Math.sqrt(3); return [v[0]/s, v[1]/s, v[2]/s]; });
+// ── Tetrahedra ────────────────────────────────────────────────────────────────
+const BASE_V=[[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]].map(v=>{const s=Math.sqrt(3);return[v[0]/s,v[1]/s,v[2]/s];});
+const TET_EDGES=[[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
+const TET_FACES=[[0,1,2],[0,1,3],[0,2,3],[1,2,3]];
+const TETS=[];
+for(let ix=0;ix<4;ix++) for(let iy=0;iy<5;iy++) for(let iz=0;iz<2;iz++)
+  TETS.push({ox:(ix-1.5)*2.3,oy:(iy-2.0)*1.9,oz:(iz-0.5)*2.2,flip:(ix+iy+iz)%2===1,hue:((ix*88+iy*44+iz*176))%360,phase:ix*1.27+iy*0.73+iz*2.09});
 
-const TET_EDGES = [[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
-const TET_FACES = [[0,1,2],[0,1,3],[0,2,3],[1,2,3]];
+function rx3(v,a){const c=Math.cos(a),s=Math.sin(a);return[v[0],v[1]*c-v[2]*s,v[1]*s+v[2]*c];}
+function ry3(v,a){const c=Math.cos(a),s=Math.sin(a);return[v[0]*c+v[2]*s,v[1],-v[0]*s+v[2]*c];}
+function proj3(v){const FL=5.5,S=Math.min(W,H)*0.095,d=FL/(FL+v[2]);return[W/2+v[0]*d*S,H/2+v[1]*d*S,v[2],d];}
 
-// 4×4×2 grid = 32 tetrahedra, alternating orientation
-const TETS = [];
-for (let ix = 0; ix < 4; ix++) {
-  for (let iy = 0; iy < 5; iy++) {
-    for (let iz = 0; iz < 2; iz++) {
-      TETS.push({
-        ox: (ix - 1.5) * 2.3,
-        oy: (iy - 2.0) * 1.9,
-        oz: (iz - 0.5) * 2.2,
-        flip: (ix + iy + iz) % 2 === 1,
-        hue:  ((ix * 88 + iy * 44 + iz * 176)) % 360,
-        phase: ix * 1.27 + iy * 0.73 + iz * 2.09,
-      });
-    }
+function drawTets(t, ci, emoState) {
+  const RY=t*0.00013, RX=t*0.000065+ci.cohesion*0.4;
+  // Emotion: empathy/hopeful tints hue warm, anger/sorrow tints cool
+  const warmEmo = (emoState.empathy||0)*0.5 + (emoState.hopeful||0)*0.3 + (emoState.confident||0)*0.2;
+  const coolEmo = (emoState.sorrow||0)*0.4 + (emoState.anger||0)*0.4 + (emoState.anxious||0)*0.2;
+  const emoHueShift = (warmEmo - coolEmo) * 40;
+  const pulse=1+0.06*Math.sin(t*0.0009);
+  const allFaces=[],allTetProj=[];
+  for(const tet of TETS){
+    const pRY=RY+tet.phase*0.28,pRX=RX+tet.phase*0.16,sc=0.58*pulse;
+    const verts=BASE_V.map(v=>{let p=[...v];if(tet.flip)p[1]=-p[1];p=rx3(p,pRX);p=ry3(p,pRY);return[p[0]*sc+tet.ox,p[1]*sc+tet.oy,p[2]*sc+tet.oz];});
+    const pp=verts.map(v=>proj3(v));
+    allTetProj.push({pp,tet});
+    for(const f of TET_FACES){const az=(verts[f[0]][2]+verts[f[1]][2]+verts[f[2]][2])/3;allFaces.push({pp,f,az,hue:tet.hue,phase:tet.phase});}
   }
-}
-
-function rx3(v, a) {
-  const c=Math.cos(a),s=Math.sin(a);
-  return [v[0], v[1]*c-v[2]*s, v[1]*s+v[2]*c];
-}
-function ry3(v, a) {
-  const c=Math.cos(a),s=Math.sin(a);
-  return [v[0]*c+v[2]*s, v[1], -v[0]*s+v[2]*c];
-}
-function proj3(v) {
-  const FL=5.5, S=Math.min(W,H)*0.095;
-  const d = FL/(FL+v[2]);
-  return [W/2+v[0]*d*S, H/2+v[1]*d*S, v[2], d];
-}
-
-function drawTets(t, ci) {
-  const RY = t * 0.00013;
-  const RX = t * 0.000065 + ci.cohesion * 0.4;
-  const pulse = 1 + 0.06 * Math.sin(t * 0.0009);
-
-  // Collect all projected faces for painter sort
-  const allFaces = [];
-  const allTetProj = [];
-
-  for (const tet of TETS) {
-    const pRY = RY + tet.phase * 0.28;
-    const pRX = RX + tet.phase * 0.16;
-    const sc  = 0.58 * pulse;
-
-    const verts = BASE_V.map(v => {
-      let p = [...v];
-      if (tet.flip) p[1] = -p[1];
-      p = rx3(p, pRX);
-      p = ry3(p, pRY);
-      return [p[0]*sc + tet.ox, p[1]*sc + tet.oy, p[2]*sc + tet.oz];
-    });
-
-    const pp = verts.map(v => proj3(v));
-    allTetProj.push({ pp, tet });
-
-    for (const f of TET_FACES) {
-      const az = (verts[f[0]][2]+verts[f[1]][2]+verts[f[2]][2])/3;
-      allFaces.push({ pp, f, az, hue: tet.hue, phase: tet.phase });
-    }
+  allFaces.sort((a,b)=>b.az-a.az);
+  for(const{pp,f,hue,phase,az}of allFaces){
+    const avgD=(pp[f[0]][3]+pp[f[1]][3]+pp[f[2]][3])/3;
+    const alpha=Math.max(0.02,Math.min(0.22,0.15*avgD));
+    ctx.beginPath();ctx.moveTo(pp[f[0]][0],pp[f[0]][1]);ctx.lineTo(pp[f[1]][0],pp[f[1]][1]);ctx.lineTo(pp[f[2]][0],pp[f[2]][1]);ctx.closePath();
+    const fh=(hue+emoHueShift+20*Math.sin(t*0.0004+phase))|0;
+    ctx.fillStyle=`hsla(${fh},75%,58%,${alpha})`;ctx.fill();
   }
-
-  // Painter's algorithm for faces
-  allFaces.sort((a, b) => b.az - a.az);
-  for (const { pp, f, hue, phase, az } of allFaces) {
-    const avgD = (pp[f[0]][3]+pp[f[1]][3]+pp[f[2]][3])/3;
-    const alpha = Math.max(0.02, Math.min(0.22, 0.15 * avgD));
-    ctx.beginPath();
-    ctx.moveTo(pp[f[0]][0], pp[f[0]][1]);
-    ctx.lineTo(pp[f[1]][0], pp[f[1]][1]);
-    ctx.lineTo(pp[f[2]][0], pp[f[2]][1]);
-    ctx.closePath();
-    const fhue = (hue + 20*Math.sin(t*0.0004+phase)) | 0;
-    ctx.fillStyle = `hsla(${fhue},75%,58%,${alpha})`;
-    ctx.fill();
-  }
-
-  // Edges + vertex glows
-  for (const { pp, tet } of allTetProj) {
-    for (const [a, b] of TET_EDGES) {
-      const avgD = (pp[a][3]+pp[b][3])/2;
-      ctx.beginPath();
-      ctx.moveTo(pp[a][0], pp[a][1]);
-      ctx.lineTo(pp[b][0], pp[b][1]);
-      ctx.strokeStyle = `hsla(${tet.hue},85%,68%,${Math.min(0.9,0.7*avgD)})`;
-      ctx.lineWidth   = Math.max(0.4, 1.8 * avgD);
-      ctx.stroke();
+  for(const{pp,tet}of allTetProj){
+    for(const[a,b]of TET_EDGES){
+      const avgD=(pp[a][3]+pp[b][3])/2;
+      ctx.beginPath();ctx.moveTo(pp[a][0],pp[a][1]);ctx.lineTo(pp[b][0],pp[b][1]);
+      ctx.strokeStyle=`hsla(${tet.hue+emoHueShift},85%,68%,${Math.min(0.9,0.7*avgD)})`;ctx.lineWidth=Math.max(0.4,1.8*avgD);ctx.stroke();
     }
-    for (let vi = 0; vi < 4; vi++) {
-      const [px, py, , d] = pp[vi];
-      const r = Math.max(1.5, 5*d);
-      const g = ctx.createRadialGradient(px, py, 0, px, py, r*2.2);
-      g.addColorStop(0, `hsla(${tet.hue},100%,85%,${Math.min(0.8,0.65*d)})`);
-      g.addColorStop(1, 'transparent');
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(px, py, r*2.2, 0, Math.PI*2); ctx.fill();
+    for(let vi=0;vi<4;vi++){
+      const[px,py,,d]=pp[vi],r=Math.max(1.5,5*d);
+      const g=ctx.createRadialGradient(px,py,0,px,py,r*2.2);
+      g.addColorStop(0,`hsla(${tet.hue+emoHueShift},100%,85%,${Math.min(0.8,0.65*d)})`);g.addColorStop(1,'transparent');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(px,py,r*2.2,0,Math.PI*2);ctx.fill();
     }
   }
 }
 
 // ── Braid ─────────────────────────────────────────────────────────────────────
-const BNODES = [
-  {rx:0.15,ry:0.25,hue:38},{rx:0.85,ry:0.75,hue:145},{rx:0.20,ry:0.78,hue:280}
-];
-const particles = Array.from({length:32},()=>({
-  u:Math.random(), hue:Math.random()*360, size:1+Math.random()*2.5,
-  src:Math.floor(Math.random()*3), dst:Math.floor(Math.random()*3),
-  speed:0.003+Math.random()*0.009, phase:Math.random()*Math.PI*2
-}));
-particles.forEach(p=>{ if(p.src===p.dst) p.dst=(p.dst+1)%3; });
-
-function drawBraid(t) {
-  for(const p of particles) {
+const BNODES=[{rx:.15,ry:.25,hue:38},{rx:.85,ry:.75,hue:145},{rx:.20,ry:.78,hue:280}];
+const particles=Array.from({length:32},()=>({u:Math.random(),hue:Math.random()*360,size:1+Math.random()*2.5,src:Math.floor(Math.random()*3),dst:Math.floor(Math.random()*3),speed:.003+Math.random()*.009,phase:Math.random()*Math.PI*2}));
+particles.forEach(p=>{if(p.src===p.dst)p.dst=(p.dst+1)%3;});
+function drawBraid(t){
+  for(const p of particles){
     p.u=(p.u+p.speed)%1;
     const s=BNODES[p.src],e=BNODES[p.dst];
     const ax=W*s.rx,ay=H*s.ry,ex=W*e.rx,ey=H*e.ry;
-    const cmx=W*(s.rx+e.rx)/2+55*Math.sin(t*0.0007+p.phase);
-    const cmy=H*(s.ry+e.ry)/2+55*Math.cos(t*0.0005+p.phase);
-    const v=p.u,u=1-v;
-    const px2=v*v*ax+2*v*u*cmx+u*u*ex,py2=v*v*ay+2*v*u*cmy+u*u*ey;
+    const cmx=W*(s.rx+e.rx)/2+55*Math.sin(t*.0007+p.phase),cmy=H*(s.ry+e.ry)/2+55*Math.cos(t*.0005+p.phase);
+    const v=p.u,u=1-v,px2=v*v*ax+2*v*u*cmx+u*u*ex,py2=v*v*ay+2*v*u*cmy+u*u*ey;
     ctx.save();ctx.shadowColor=`hsl(${p.hue},100%,65%)`;ctx.shadowBlur=14;
-    ctx.fillStyle=`hsl(${p.hue},100%,82%)`;
-    ctx.beginPath();ctx.arc(px2,py2,p.size,0,Math.PI*2);ctx.fill();ctx.restore();
+    ctx.fillStyle=`hsl(${p.hue},100%,82%)`;ctx.beginPath();ctx.arc(px2,py2,p.size,0,Math.PI*2);ctx.fill();ctx.restore();
   }
   const labels=['SIM','EUP','HER'];
   BNODES.forEach((n,i)=>{
-    const x=W*n.rx,y=H*n.ry,pulse=1+0.22*Math.sin(t*0.003+i*1.4),r=14*pulse;
-    const g=ctx.createRadialGradient(x,y,r*.1,x,y,r);
-    g.addColorStop(0,`hsla(${n.hue},85%,60%,0.4)`);g.addColorStop(1,'transparent');
+    const x=W*n.rx,y=H*n.ry,pulse=1+0.22*Math.sin(t*.003+i*1.4),r=14*pulse;
+    const g=ctx.createRadialGradient(x,y,r*.1,x,y,r);g.addColorStop(0,`hsla(${n.hue},85%,60%,0.4)`);g.addColorStop(1,'transparent');
     ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
     ctx.save();ctx.shadowColor=`hsl(${n.hue},100%,65%)`;ctx.shadowBlur=8;
-    ctx.fillStyle=`hsl(${n.hue},90%,84%)`;ctx.font='bold 9px monospace';
-    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(labels[i],x,y);ctx.restore();
+    ctx.fillStyle=`hsl(${n.hue},90%,84%)`;ctx.font='bold 9px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(labels[i],x,y);ctx.restore();
   });
 }
 
 // ── Sparkline ─────────────────────────────────────────────────────────────────
-function drawSparkline(upTo) {
-  const sw=spC.width,sh=spC.height;
-  spX.clearRect(0,0,sw,sh);
-  const sl=TL.slice(0,upTo+1);
-  if(sl.length<2) return;
-  const v=sl.map(d=>d.cohesion),lo=Math.min(...v),hi=Math.max(...v),rng=hi-lo||0.01;
-  const sx=i=>i/(TL.length-1)*sw, sy=vv=>sh-(vv-lo)/rng*sh*.8-sh*.08;
-  spX.beginPath();spX.moveTo(sx(0),sh);v.forEach((vv,i)=>spX.lineTo(sx(i),sy(vv)));
-  spX.lineTo(sx(v.length-1),sh);spX.closePath();spX.fillStyle='rgba(126,232,162,.10)';spX.fill();
-  spX.beginPath();spX.moveTo(sx(0),sy(v[0]));v.forEach((vv,i)=>{if(i)spX.lineTo(sx(i),sy(vv));});
-  spX.strokeStyle='#7ee8a2';spX.lineWidth=1.5;spX.stroke();
-  const ew=sl.map(d=>d.ewma);
-  spX.beginPath();spX.moveTo(sx(0),sy(ew[0]));ew.forEach((vv,i)=>{if(i)spX.lineTo(sx(i),sy(vv));});
-  spX.strokeStyle='rgba(246,160,91,.85)';spX.lineWidth=1;spX.stroke();
-  spX.beginPath();spX.arc(sx(v.length-1),sy(v[v.length-1]),3,0,Math.PI*2);
-  spX.fillStyle='#7ee8a2';spX.fill();
+function drawSparkline(upTo){
+  const sw=spC.width,sh=spC.height;spX.clearRect(0,0,sw,sh);
+  const sl=TL.slice(0,upTo+1);if(sl.length<2)return;
+  const v=sl.map(d=>d.cohesion),lo=Math.min(...v),hi=Math.max(...v),rng=hi-lo||.01;
+  const sx=i=>i/(TL.length-1)*sw,sy=vv=>sh-(vv-lo)/rng*sh*.8-sh*.08;
+  spX.beginPath();spX.moveTo(sx(0),sh);v.forEach((vv,i)=>spX.lineTo(sx(i),sy(vv)));spX.lineTo(sx(v.length-1),sh);spX.closePath();spX.fillStyle='rgba(126,232,162,.10)';spX.fill();
+  spX.beginPath();spX.moveTo(sx(0),sy(v[0]));v.forEach((vv,i)=>{if(i)spX.lineTo(sx(i),sy(vv));});spX.strokeStyle='#7ee8a2';spX.lineWidth=1.5;spX.stroke();
+  const ew=sl.map(d=>d.ewma);spX.beginPath();spX.moveTo(sx(0),sy(ew[0]));ew.forEach((vv,i)=>{if(i)spX.lineTo(sx(i),sy(vv));});spX.strokeStyle='rgba(246,160,91,.85)';spX.lineWidth=1;spX.stroke();
+  spX.beginPath();spX.arc(sx(v.length-1),sy(v[v.length-1]),3,0,Math.PI*2);spX.fillStyle='#7ee8a2';spX.fill();
 }
 
-// ── Sidebar ───────────────────────────────────────────────────────────────────
-function updateSidebar(ci, idx) {
+// ── Sidebar updates ───────────────────────────────────────────────────────────
+function updateMetrics(ci,idx){
   document.getElementById('pc').textContent=String(idx+1).padStart(3,'0');
   const hue=(ci.cohesion*120)|0;
-  const kvc=document.getElementById('kv-c');
-  kvc.textContent=ci.cohesion.toFixed(3);kvc.style.color=`hsl(${hue},75%,60%)`;
+  const kvc=document.getElementById('kv-c');kvc.textContent=ci.cohesion.toFixed(3);kvc.style.color=`hsl(${hue},75%,60%)`;
   document.getElementById('kv-e').textContent=ci.ewma.toFixed(3);
   document.getElementById('kv-lb').textContent=ci.limb_bal.toFixed(3);
   document.getElementById('kv-sk').textContent=ci.skill_cov.toFixed(3);
-  const fields=[['g',ci.grad,'#5b9cf6'],['d',ci.div,'#a78bfa'],['l',ci.lap,'#34d399'],['k',ci.curl,'#f472b6']];
-  const maxF=Math.max(...fields.map(f=>f[1]),0.001);
-  for(const [k,v] of fields){
-    document.getElementById(`cb-${k}`).style.width=Math.min(100,v/maxF*100).toFixed(0)+'%';
-    document.getElementById(`cv-${k}`).textContent=v.toFixed(3);
-  }
+  const fields=[['g',ci.grad],['d',ci.div],['l',ci.lap],['k',ci.curl]];
+  const maxF=Math.max(...fields.map(f=>f[1]),.001);
+  for(const[k,v]of fields){document.getElementById(`cb-${k}`).style.width=Math.min(100,v/maxF*100).toFixed(0)+'%';document.getElementById(`cv-${k}`).textContent=v.toFixed(3);}
   document.getElementById('braid-ev').textContent=ci.events;
 }
 
-setTimeout(()=>{
-  const b=document.getElementById('online-banner');
-  if(b){b.style.transition='opacity 1.5s';b.style.opacity='0';setTimeout(()=>b.remove(),1600);}
-},6000);
+function updateEmotions(emoState){
+  // Dominant emotion (exclude 'present')
+  let domName='',domVal=0;
+  for(const[name,val]of Object.entries(emoState)){
+    if(name!=='present'&&val>domVal){domVal=val;domName=name;}
+  }
+  const domValence=E_VAL[EMOTIONS.indexOf(domName)]||0;
+  const domHue=domValence>0?(120-domValence*30)|0:(domValence<0?(0-domValence*15)|0:40);
+  document.getElementById('emo-dominant').textContent=domName||'—';
+  document.getElementById('emo-dominant').style.color=`hsl(${domHue},75%,65%)`;
+  document.getElementById('emo-dominant-val').textContent=(domVal*100).toFixed(0)+'%';
 
-// ── Main loop ─────────────────────────────────────────────────────────────────
-let frame=0, passIdx=0, lastPassMs=0;
-const PASS_INTERVAL=200;
+  // Cluster bars
+  for(const[k,idxs]of Object.entries(CLUSTERS)){
+    const avg=idxs.reduce((s,i)=>s+(emoState[EMOTIONS[i]]||0),0)/idxs.length;
+    const bar=document.getElementById('eclbar-'+k);const val=document.getElementById('eclval-'+k);
+    if(bar){bar.style.width=(avg*100).toFixed(0)+'%';}
+    if(val){val.textContent=avg.toFixed(2);}
+  }
 
-function loop(t) {
-  try {
-    requestAnimationFrame(loop);
-    frame++;
-    // Guard: if layout hasn't resolved yet, resize and skip
-    if (W === 0 || H === 0) { resize(); return; }
+  // Presence
+  const pres=emoState['present']||0;
+  document.getElementById('emo-presence-bar').style.width=(pres*100).toFixed(0)+'%';
+  const presRow=document.getElementById('emo-presence-row');
+  presRow.classList.toggle('active',pres>0.55);
 
-    if (t - lastPassMs > PASS_INTERVAL) {
-      lastPassMs = t;
-      passIdx = (passIdx + 1) % TL.length;
-    }
-    const ci = TL[passIdx];
-
-    // Render Julia once per model pass
-    if (passIdx !== lastJuliaPass) { renderJulia(ci); lastJuliaPass = passIdx; }
-
-    // -- 1. Dark background fill
-    ctx.fillStyle = '#07080f';
-    ctx.fillRect(0, 0, W, H);
-
-    // -- 2. Julia fractal scaled to canvas
-    if (fracCanvas) {
-      ctx.save();
-      ctx.globalAlpha = 0.88;
-      ctx.drawImage(fracCanvas, 0, 0, W, H);
-      ctx.restore();
-    }
-
-    // -- 3. Soft vignette (lighter center so fractal stays visible)
-    const vg = ctx.createRadialGradient(W/2, H/2, H*0.08, W/2, H/2, H*0.75);
-    vg.addColorStop(0, 'rgba(7,8,15,0.38)');
-    vg.addColorStop(1, 'rgba(7,8,15,0.04)');
-    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-
-    // -- 4. Tetrahedra
-    drawTets(t, ci);
-
-    // -- 5. Braid
-    drawBraid(t);
-
-    // -- 6. Sidebar
-    drawSparkline(passIdx);
-    updateSidebar(ci, passIdx);
-  } catch(e) { console.error(e); }
+  // Per-emotion bars
+  for(const[name,val]of Object.entries(emoState)){
+    if(name==='present')continue;
+    const bar=document.getElementById('ebar-'+name);const valEl=document.getElementById('eval-'+name);
+    if(bar)bar.style.width=(val*100).toFixed(0)+'%';
+    if(valEl)valEl.textContent=val.toFixed(2);
+  }
 }
 
-// Start AFTER full layout paint so clientWidth/Height are real
-window.addEventListener('load', () => {
-  resize();
-  window.addEventListener('resize', resize);
-  requestAnimationFrame(loop);
+setTimeout(()=>{const b=document.getElementById('online-banner');if(b){b.style.transition='opacity 1.5s';b.style.opacity='0';setTimeout(()=>b.remove(),1600);}},6000);
+
+// ── Main loop ─────────────────────────────────────────────────────────────────
+let frame=0,passIdx=0,lastPassMs=0;
+const PASS_INTERVAL=200;
+
+function loop(t){
+  try{
+    requestAnimationFrame(loop);frame++;
+    if(W===0||H===0){resize();return;}
+    if(t-lastPassMs>PASS_INTERVAL){lastPassMs=t;passIdx=(passIdx+1)%TL.length;}
+    const ci=TL[passIdx];
+    const emoState=EMO_TL[passIdx];
+
+    if(passIdx!==lastJuliaPass){renderJulia(ci);lastJuliaPass=passIdx;}
+
+    // 1. Dark bg
+    ctx.fillStyle='#07080f';ctx.fillRect(0,0,W,H);
+    // 2. Fractal
+    if(fracCanvas){ctx.save();ctx.globalAlpha=0.88;ctx.drawImage(fracCanvas,0,0,W,H);ctx.restore();}
+    // 3. Vignette
+    const vg=ctx.createRadialGradient(W/2,H/2,H*.08,W/2,H/2,H*.75);
+    vg.addColorStop(0,'rgba(7,8,15,0.38)');vg.addColorStop(1,'rgba(7,8,15,0.04)');
+    ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+    // 4. Tets (emotion-tinted)
+    drawTets(t,ci,emoState);
+    // 5. Braid
+    drawBraid(t);
+    // 6. Sidebar
+    drawSparkline(passIdx);updateMetrics(ci,passIdx);updateEmotions(emoState);
+  }catch(e){console.error(e);}
+}
+
+window.addEventListener('load',()=>{
+  resize();window.addEventListener('resize',resize);requestAnimationFrame(loop);
 });
 </script>
 </body></html>
