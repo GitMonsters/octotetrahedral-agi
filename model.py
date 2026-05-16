@@ -60,6 +60,7 @@ from core.compound_loop import CompoundLoopController, CompoundLoopConfig as _Lo
 from core.cognitive_geometry import CognitiveGeometryEngine, CognitiveGeometryConfig
 from core.cross_domain_transfer import CrossDomainTransferLayer, CrossDomainConfig
 from core.cognitive_cohesion_braid import CognitiveCohesionBraid, CohesionConfig
+from core.tetrahedral_vision_calculus import TetrahedralVisionCalculus
 from core.s2_to_s1_cache import S2ToS1Cache
 from cognition import AGICognition, CognitionConfig
 
@@ -385,7 +386,16 @@ class OctoTetrahedralModel(nn.Module):
             num_heads=self.num_heads,
             max_patches=1024,
         )
-        
+
+        # Tetrahedral Grid Graph Vision Calculus — discrete exterior calculus on tet grid
+        # Enriches vision tokens with gradient, divergence, Laplacian, and curl features
+        # computed on a tetrahedral simplicial complex overlaid on the feature map.
+        self.tet_vision_calculus = TetrahedralVisionCalculus(
+            hidden_dim=self.hidden_dim,
+            grid_h=8, grid_w=8,
+            dropout=0.1,
+        )
+
         # Audio: Mel spectrogram → transformer encoder
         self.audio_encoder = AudioEncoder(
             hidden_dim=self.hidden_dim,
@@ -884,8 +894,9 @@ class OctoTetrahedralModel(nn.Module):
             core_output = core_output + gate * fused
             multimodal_info['fused'] = True
             multimodal_info['num_modalities'] = len(modality_inputs)
-        
-        # === 4. Working Memory: Read/Write ===
+
+        # Apply tetrahedral grid calculus to vision-enriched features
+        core_output, tet_calc_info = self.tet_vision_calculus(core_output)
         if use_memory:
             # Use reasoning state as query for memory
             # Read from working memory
@@ -1309,6 +1320,7 @@ class OctoTetrahedralModel(nn.Module):
             'spiking_info': spiking_info,
             'multimodal_info': multimodal_info,
             'cohesion_info': self.cohesion_braid.cohesion_score(),
+            'tet_calc_info': tet_calc_info,
             's2_s1_cache_stats': self.s2_s1_cache.stats(),
             'two_speed_info': two_speed_info if 'two_speed_info' in dir() else {},
         }
