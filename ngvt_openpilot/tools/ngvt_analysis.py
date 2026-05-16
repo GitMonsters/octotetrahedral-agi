@@ -28,7 +28,6 @@ import json
 import sys
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
-from typing import List, Optional
 
 # Ensure the tools/ directory is on the path so backend modules resolve
 _TOOLS_DIR = str(Path(__file__).parent)
@@ -58,10 +57,12 @@ except ImportError:
       from ngvt_braid_torch import NgvtBraidEngineTorch as NgvtBraidEngine  # type: ignore[assignment]
       _BACKEND = "torch"
     except ImportError:
-      print("ERROR: No NgvtBraidEngine backend available.\n"
-            "  Build the Rust crate:  maturin develop --manifest-path selfdrive/controls/lib/ngvt_braid/Cargo.toml\n"
-            "  Or install tinygrad:   pip install tinygrad\n"
-            "  Or install PyTorch:    pip install torch")
+      print(
+        "ERROR: No NgvtBraidEngine backend available.\n"
+        + "  Build the Rust crate:  maturin develop --manifest-path selfdrive/controls/lib/ngvt_braid/Cargo.toml\n"
+        + "  Or install tinygrad:   pip install tinygrad\n"
+        + "  Or install PyTorch:    pip install torch"
+      )
       sys.exit(1)
 
 
@@ -76,7 +77,7 @@ class AnalyzedNode:
   raw_x: float          # longitudinal distance from modelV2 (meters)
   raw_y: float          # lateral offset from modelV2 (meters)
   raw_prob: float       # existence probability [0, 1] from modelV2
-  torus_coords: List[float]   # [X, Y, Z] on the NGVT manifold
+  torus_coords: list[float]   # [X, Y, Z] on the NGVT manifold
   adjusted_score: float       # Braid-boosted score, clamped to [0, 1]
   flagged_unstable: bool      # True if this node was added to the failure cache
 
@@ -84,8 +85,8 @@ class AnalyzedNode:
 class FrameResult:
   frame_id: int
   log_mono_time: int
-  nodes: List[AnalyzedNode] = field(default_factory=list)
-  active_failure_zones: List[List[float]] = field(default_factory=list)
+  nodes: list[AnalyzedNode] = field(default_factory=list)
+  active_failure_zones: list[list[float]] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -98,19 +99,19 @@ INSTABILITY_SCORE_THRESHOLD = 0.4
 INSTABILITY_DISTANCE_THRESHOLD = 40.0   # meters
 
 
-def analyze_log(log_path: str, engine: NgvtBraidEngine) -> List[FrameResult]:
+def analyze_log(log_path: str, engine: NgvtBraidEngine) -> list[FrameResult]:
   """
   Iterate over every modelV2 message in *log_path* and apply the NGVT Braid
   analysis to each detected lead.  Returns one FrameResult per frame.
   """
-  results: List[FrameResult] = []
+  results: list[FrameResult] = []
   frame_id = 0
 
   lr = LogReader(log_path)
   # lr.filter() returns the already-unwrapped struct (no .which() needed)
   for model in lr.filter("modelV2"):
     frame_result = FrameResult(frame_id=frame_id, log_mono_time=0)
-    unstable_this_frame: List[List[float]] = []
+    unstable_this_frame: list[list[float]] = []
 
     # leadsV3 is current (LeadDataV3): up to 3 leads at different time horizons.
     # x[0] = forward distance (m), y[0] = lateral offset (m), prob = existence probability.
@@ -151,7 +152,7 @@ def analyze_log(log_path: str, engine: NgvtBraidEngine) -> List[FrameResult]:
 # Summary statistics
 # ---------------------------------------------------------------------------
 
-def print_summary(results: List[FrameResult]) -> None:
+def print_summary(results: list[FrameResult]) -> None:
   total_nodes = sum(len(f.nodes) for f in results)
   unstable_nodes = sum(
     sum(1 for n in f.nodes if n.flagged_unstable) for f in results
@@ -159,13 +160,12 @@ def print_summary(results: List[FrameResult]) -> None:
   frames_with_zones = sum(1 for f in results if f.active_failure_zones)
 
   print(f"\n{'='*60}")
-  print(f"  NGVT Braid Analysis Summary")
+  print("  NGVT Braid Analysis Summary")
   print(f"{'='*60}")
   print(f"  Frames analyzed       : {len(results)}")
   print(f"  Total lead nodes      : {total_nodes}")
-  print(f"  Unstable nodes flagged: {unstable_nodes} "
-        f"({100*unstable_nodes/max(total_nodes,1):.1f}%)")
-  print(f"  Frames with active")
+  print(f"  Unstable nodes flagged: {unstable_nodes} ({100*unstable_nodes/max(total_nodes,1):.1f}%)")
+  print("  Frames with active")
   print(f"    failure zones       : {frames_with_zones}")
   print(f"{'='*60}\n")
 
@@ -175,10 +175,12 @@ def print_summary(results: List[FrameResult]) -> None:
     for frame in results:
       for node in frame.nodes:
         if node.flagged_unstable:
-          print(f"    frame={node.frame_id} lead={node.lead_index} "
-                f"x={node.raw_x:.1f}m prob={node.raw_prob:.3f} "
-                f"→ score={node.adjusted_score:.3f} "
-                f"torus={[round(c,2) for c in node.torus_coords]}")
+          print(
+            f"    frame={node.frame_id} lead={node.lead_index} "
+            + f"x={node.raw_x:.1f}m prob={node.raw_prob:.3f} "
+            + f"→ score={node.adjusted_score:.3f} "
+            + f"torus={[round(c,2) for c in node.torus_coords]}"
+          )
           shown += 1
           if shown >= 5:
             break
@@ -212,7 +214,7 @@ def main() -> None:
   )
   print(f"Backend: {_BACKEND}")
 
-  log_paths: List[str] = []
+  log_paths: list[str] = []
 
   if args.route:
     route = Route(args.route)
@@ -223,7 +225,7 @@ def main() -> None:
     print("Provide a log path or --route. Use --help for usage.")
     sys.exit(1)
 
-  all_results: List[FrameResult] = []
+  all_results: list[FrameResult] = []
   for lp in log_paths:
     print(f"Analyzing: {lp}")
     all_results.extend(analyze_log(lp, engine))
