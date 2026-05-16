@@ -2,62 +2,190 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>OctoTetrahedral AGI — Geometric Visual Sim</title>
+<title>OctoTetrahedral AGI — Sim</title>
 <style>
+:root {
+  --bg:   #07080f;
+  --panel:#0e1018;
+  --border:rgba(80,120,200,0.18);
+  --text: #c8d8f0;
+  --muted:#556688;
+  --accent:#5b9cf6;
+}
 * { margin:0; padding:0; box-sizing:border-box; }
-body { background:#000; overflow:hidden; font-family: monospace; }
-canvas { display:block; position:absolute; top:0; left:0; }
-#bg  { z-index:0; }
-#main{ z-index:1; }
-#hud {
-  position:fixed; z-index:10; top:0; left:0; right:0;
-  display:flex; justify-content:space-between; align-items:flex-start;
-  padding:.7rem 1.1rem;
-  background: linear-gradient(180deg, rgba(0,0,0,.8) 0%, transparent 100%);
-  pointer-events:none;
+body { background:var(--bg); color:var(--text); font-family:-apple-system,'SF Mono',monospace; overflow:hidden; height:100vh; display:flex; flex-direction:column; }
+
+/* ── Header ─────────────────────────────────── */
+#header {
+  flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
+  padding:.55rem 1.2rem;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  z-index:20;
 }
-#hud h1 { font-size:.95rem; color:#88bbff; letter-spacing:.12em; text-transform:uppercase; }
-#hud p  { font-size:.65rem; color:#446699; margin-top:.1rem; }
-#kpis { display:flex; gap:1.4rem; }
-.kpi { text-align:right; }
-.kpi-val { font-size:1.25rem; font-weight:700; font-variant-numeric:tabular-nums; color:#fff; }
-.kpi-lbl { font-size:.58rem; color:#445566; text-transform:uppercase; letter-spacing:.07em; }
-#btm {
-  position:fixed; z-index:10; bottom:0; left:0; right:0;
-  padding:.4rem 1rem .7rem;
-  background: linear-gradient(0deg, rgba(0,0,0,.85) 0%, transparent 100%);
-  pointer-events:none;
+#header h1 { font-size:.95rem; font-weight:600; color:var(--accent); letter-spacing:.1em; }
+#header p  { font-size:.65rem; color:var(--muted); margin-top:.15rem; }
+#pass-badge {
+  font-size:.72rem; background:rgba(91,156,246,.12); border:1px solid rgba(91,156,246,.3);
+  border-radius:4px; padding:.2rem .6rem; color:var(--accent); letter-spacing:.06em;
 }
-#sp-wrap { height:36px; }
-#sp { width:100%; height:100%; }
-#lbar { display:flex; gap:2px; height:5px; margin-top:4px; }
-.lb { flex:1; border-radius:3px; }
-#stat { font-size:.6rem; color:#223355; text-align:right; margin-top:3px; }
+
+/* ── Body ────────────────────────────────────── */
+#body { flex:1; display:flex; min-height:0; }
+
+/* ── Canvas area ─────────────────────────────── */
+#canvas-wrap {
+  flex:1; position:relative; overflow:hidden;
+}
+canvas { position:absolute; top:0; left:0; width:100%; height:100%; }
+#bg-c { z-index:0; }
+#main-c { z-index:1; }
+
+/* ── Right sidebar ───────────────────────────── */
+#sidebar {
+  flex:0 0 260px; background:var(--panel);
+  border-left:1px solid var(--border);
+  display:flex; flex-direction:column; overflow:hidden;
+  z-index:20;
+}
+
+.s-section {
+  padding:.7rem 1rem;
+  border-bottom:1px solid var(--border);
+}
+.s-title {
+  font-size:.58rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--muted); margin-bottom:.55rem;
+}
+
+/* KPI grid */
+#kpi-grid { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
+.kpi {
+  background:rgba(255,255,255,.03); border:1px solid var(--border);
+  border-radius:6px; padding:.45rem .6rem;
+}
+.kpi-val { font-size:1.2rem; font-weight:700; color:#fff; font-variant-numeric:tabular-nums; }
+.kpi-lbl { font-size:.58rem; color:var(--muted); margin-top:.1rem; }
+
+/* Sparkline */
+#sp-wrap { height:52px; }
+#sp { width:100%; height:100%; display:block; }
+.sp-legend { display:flex; gap:.8rem; margin-top:.3rem; }
+.sp-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:3px; vertical-align:middle; }
+.sp-lbl { font-size:.6rem; color:var(--muted); }
+
+/* Calculus bars */
+#calc-bars { display:flex; flex-direction:column; gap:.35rem; }
+.calc-row { display:flex; align-items:center; gap:.5rem; }
+.calc-name { font-size:.62rem; color:var(--muted); width:32px; text-align:right; flex-shrink:0; }
+.calc-track { flex:1; height:6px; background:rgba(255,255,255,.06); border-radius:3px; overflow:hidden; }
+.calc-fill  { height:100%; border-radius:3px; transition:width .25s; }
+.calc-num   { font-size:.6rem; color:var(--text); width:36px; text-align:right; flex-shrink:0; font-variant-numeric:tabular-nums; }
+
+/* Limbs */
+#limb-list { display:flex; flex-direction:column; gap:.28rem; flex:1; overflow-y:auto; }
+.limb-row { display:flex; align-items:center; gap:.5rem; }
+.limb-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.limb-name { font-size:.63rem; color:var(--text); flex:1; text-transform:capitalize; }
+.limb-bar-wrap { width:55px; height:4px; background:rgba(255,255,255,.07); border-radius:2px; overflow:hidden; }
+.limb-bar { height:100%; border-radius:2px; }
+.limb-cnt { font-size:.58rem; color:var(--muted); width:18px; text-align:right; }
+
+/* Braid status */
+#braid-nodes { display:flex; justify-content:space-around; }
+.braid-node { text-align:center; }
+.braid-orb {
+  width:36px; height:36px; border-radius:50%; margin:0 auto .3rem;
+  display:flex; align-items:center; justify-content:center;
+  font-size:.58rem; font-weight:700; border:1.5px solid;
+}
+.braid-lbl { font-size:.6rem; color:var(--muted); }
+.braid-cnt { font-size:.7rem; font-weight:600; }
 </style>
 </head>
 <body>
-<canvas id="bg"></canvas>
-<canvas id="main"></canvas>
 
-<div id="hud">
+<!-- Header -->
+<div id="header">
   <div>
-    <h1>&#x1F9EC; OctoTetrahedral AGI</h1>
-    <p>Geometric Cohesion Sim &middot; <span id="pc">0</span>/80 passes &middot; 208.0M params</p>
+    <h1>&#x1F9EC; OctoTetrahedral AGI — Geometric Sim</h1>
+    <p>208.0M params &middot; 8&times;8 tet grid &middot; 210 edges &middot; 98 faces</p>
   </div>
-  <div id="kpis">
-    <div class="kpi"><div class="kpi-val" id="kv-c">--</div><div class="kpi-lbl">Cohesion</div></div>
-    <div class="kpi"><div class="kpi-val" id="kv-e">--</div><div class="kpi-lbl">EWMA</div></div>
-    <div class="kpi"><div class="kpi-val" id="kv-g">--</div><div class="kpi-lbl">&#x2207; Grad</div></div>
-    <div class="kpi"><div class="kpi-val" id="kv-k">--</div><div class="kpi-lbl">Curl &#x27F3;</div></div>
-    <div class="kpi"><div class="kpi-val" id="kv-v">--</div><div class="kpi-lbl">Events</div></div>
-  </div>
+  <div id="pass-badge">PASS <span id="pc">001</span> / 080</div>
 </div>
 
-<div id="btm">
-  <div id="sp-wrap"><canvas id="sp"></canvas></div>
-  <div id="lbar"></div>
-  <div id="stat">SIMULA&#x27BA;EUPHAN&#x27BA;HERMES closed loop &middot; 8&#xD7;8 tet grid &middot; 210 edges &middot; 98 faces</div>
-</div>
+<!-- Body -->
+<div id="body">
+
+  <!-- Canvas -->
+  <div id="canvas-wrap">
+    <canvas id="bg-c"></canvas>
+    <canvas id="main-c"></canvas>
+  </div>
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+
+    <!-- KPIs -->
+    <div class="s-section">
+      <div class="s-title">Cohesion Metrics</div>
+      <div id="kpi-grid">
+        <div class="kpi"><div class="kpi-val" id="kv-c">—</div><div class="kpi-lbl">Cohesion</div></div>
+        <div class="kpi"><div class="kpi-val" id="kv-e">—</div><div class="kpi-lbl">EWMA</div></div>
+        <div class="kpi"><div class="kpi-val" id="kv-lb">—</div><div class="kpi-lbl">Limb Bal</div></div>
+        <div class="kpi"><div class="kpi-val" id="kv-sk">—</div><div class="kpi-lbl">Skill Cov</div></div>
+      </div>
+    </div>
+
+    <!-- Sparkline -->
+    <div class="s-section">
+      <div class="s-title">Cohesion Timeline</div>
+      <div id="sp-wrap"><canvas id="sp"></canvas></div>
+      <div class="sp-legend">
+        <span><span class="sp-dot" style="background:#7ee8a2"></span><span class="sp-lbl">Cohesion</span></span>
+        <span><span class="sp-dot" style="background:#f6a05b"></span><span class="sp-lbl">EWMA</span></span>
+      </div>
+    </div>
+
+    <!-- Calculus fields -->
+    <div class="s-section">
+      <div class="s-title">Calculus Fields</div>
+      <div id="calc-bars">
+        <div class="calc-row"><span class="calc-name">&#x2207;</span><div class="calc-track"><div class="calc-fill" id="cb-g" style="background:#5b9cf6"></div></div><span class="calc-num" id="cn-g">—</span></div>
+        <div class="calc-row"><span class="calc-name">div</span><div class="calc-track"><div class="calc-fill" id="cb-d" style="background:#a78bfa"></div></div><span class="calc-num" id="cn-d">—</span></div>
+        <div class="calc-row"><span class="calc-name">&#x394;</span><div class="calc-track"><div class="calc-fill" id="cb-l" style="background:#34d399"></div></div><span class="calc-num" id="cn-l">—</span></div>
+        <div class="calc-row"><span class="calc-name">curl</span><div class="calc-track"><div class="calc-fill" id="cb-k" style="background:#f472b6"></div></div><span class="calc-num" id="cn-k">—</span></div>
+      </div>
+    </div>
+
+    <!-- Braid routing -->
+    <div class="s-section">
+      <div class="s-title">Braid Routing</div>
+      <div id="braid-nodes">
+        <div class="braid-node">
+          <div class="braid-orb" style="color:#f6a05b;border-color:rgba(246,160,91,.4);background:rgba(246,160,91,.08)">SIM</div>
+          <div class="braid-lbl">SIMULA</div>
+        </div>
+        <div class="braid-node">
+          <div class="braid-orb" style="color:#4ade80;border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.08)">EUP</div>
+          <div class="braid-lbl">EUPHAN</div>
+        </div>
+        <div class="braid-node">
+          <div class="braid-orb" style="color:#c084fc;border-color:rgba(192,132,252,.4);background:rgba(192,132,252,.08)">HER</div>
+          <div class="braid-cnt" id="braid-ev">—</div>
+          <div class="braid-lbl">HERMES</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Limb activations -->
+    <div class="s-section" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+      <div class="s-title">Limb Activations</div>
+      <div id="limb-list"></div>
+    </div>
+
+  </div><!-- /sidebar -->
+</div><!-- /body -->
 
 <script>
 
@@ -76,286 +204,239 @@ const PARAMS_M = 208.0;
 const N_EDGES  = 210;
 const N_FACES  = 98;
 
-// ── Globals ───────────────────────────────────────────────────────────────────
+
+// ── Setup ─────────────────────────────────────────────────────────────────────
 const MAX_LC = Math.max(...LCOUNTS, 1);
 let W, H, frame = 0, passIdx = 0, lastPassMs = 0;
-const PASS_INTERVAL = 180;
+const PASS_INTERVAL = 200;
 
-// ── Canvas setup ──────────────────────────────────────────────────────────────
-const bgC  = document.getElementById('bg');
-const bgX  = bgC.getContext('2d');
-const mc   = document.getElementById('main');
-const ctx  = mc.getContext('2d');
-const spC  = document.getElementById('sp');
-const spX  = spC.getContext('2d');
+const bgC = document.getElementById('bg-c');
+const bgX = bgC.getContext('2d');
+const mc  = document.getElementById('main-c');
+const ctx = mc.getContext('2d');
+const spC = document.getElementById('sp');
+const spX = spC.getContext('2d');
 
 function resize() {
-  W = window.innerWidth; H = window.innerHeight;
-  bgC.width = mc.width = W;
-  bgC.height = mc.height = H;
+  const wrap = document.getElementById('canvas-wrap');
+  W = bgC.width = mc.width = wrap.offsetWidth;
+  H = bgC.height = mc.height = wrap.offsetHeight;
   spC.width  = document.getElementById('sp-wrap').offsetWidth;
   spC.height = document.getElementById('sp-wrap').offsetHeight;
 }
 resize(); window.addEventListener('resize', resize);
 
-// ── Limb bar (static) ─────────────────────────────────────────────────────────
-const lbar = document.getElementById('lbar');
+// ── Build limb list ───────────────────────────────────────────────────────────
+const limbList = document.getElementById('limb-list');
 LIMBS.forEach((l, i) => {
-  const d = document.createElement('div');
-  d.className = 'lb';
   const hue = (i / LIMBS.length * 360) | 0;
-  d.style.background = `hsl(${hue},75%,55%)`;
-  d.style.opacity = 0.25 + 0.75 * (LCOUNTS[i] / MAX_LC);
-  d.title = l;
-  lbar.appendChild(d);
+  const row = document.createElement('div');
+  row.className = 'limb-row';
+  row.innerHTML = `
+    <div class="limb-dot" style="background:hsl(${hue},70%,55%)"></div>
+    <div class="limb-name">${l.replace(/_limb$/,'').replace(/_/g,' ')}</div>
+    <div class="limb-bar-wrap"><div class="limb-bar" id="lb-${i}" style="background:hsl(${hue},70%,55%);width:${(LCOUNTS[i]/MAX_LC*100).toFixed(0)}%"></div></div>
+    <div class="limb-cnt">${LCOUNTS[i]}</div>`;
+  limbList.appendChild(row);
 });
 
-// ── Mouse parallax ────────────────────────────────────────────────────────────
+// ── Mouse ─────────────────────────────────────────────────────────────────────
 let mx = 0, my = 0;
 window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
 
-// ── Animated gradient background (fast) ──────────────────────────────────────
-let bgHue = 0;
+// ── Background: slow dark aurora ──────────────────────────────────────────────
+let bgHue = 220;
 function drawBg(t) {
-  bgHue = (bgHue + 0.15) % 360;
+  bgHue = (bgHue + 0.08) % 360;
   bgX.clearRect(0, 0, W, H);
-  bgX.fillStyle = '#000';
+  bgX.fillStyle = '#07080f';
   bgX.fillRect(0, 0, W, H);
-
-  // Three slowly-drifting radial blobs
   const blobs = [
-    { x: W * (0.3 + 0.25 * Math.sin(t * 0.00028)),
-      y: H * (0.4 + 0.25 * Math.cos(t * 0.00021)),
-      r: W * 0.45, hue: (bgHue) % 360, a: 0.18 },
-    { x: W * (0.7 + 0.20 * Math.cos(t * 0.00019)),
-      y: H * (0.6 + 0.20 * Math.sin(t * 0.00031)),
-      r: W * 0.40, hue: (bgHue + 120) % 360, a: 0.16 },
-    { x: W * (0.5 + 0.18 * Math.sin(t * 0.00035 + 1)),
-      y: H * (0.5 + 0.18 * Math.cos(t * 0.00024 + 2)),
-      r: W * 0.35, hue: (bgHue + 240) % 360, a: 0.14 },
+    { x: W*(0.25+0.18*Math.sin(t*0.00022)), y: H*(0.35+0.18*Math.cos(t*0.00017)), r:W*0.38, h:(bgHue)%360,      a:0.10 },
+    { x: W*(0.75+0.15*Math.cos(t*0.00018)), y: H*(0.65+0.15*Math.sin(t*0.00024)), r:W*0.32, h:(bgHue+110)%360,  a:0.09 },
+    { x: W*(0.50+0.12*Math.sin(t*0.00029+1)),y:H*(0.50+0.12*Math.cos(t*0.00021+2)),r:W*0.28,h:(bgHue+230)%360,  a:0.08 },
   ];
   for (const b of blobs) {
     const g = bgX.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
-    g.addColorStop(0, `hsla(${b.hue},90%,35%,${b.a})`);
+    g.addColorStop(0, `hsla(${b.h},60%,28%,${b.a})`);
     g.addColorStop(1, 'transparent');
     bgX.fillStyle = g; bgX.fillRect(0, 0, W, H);
   }
-
-  // Scanline shimmer
-  const shimmer = bgX.createLinearGradient(0, 0, 0, H);
-  const phase = (t * 0.001) % 1;
-  shimmer.addColorStop(Math.max(0, phase - 0.05), 'transparent');
-  shimmer.addColorStop(phase,                     `rgba(180,220,255,0.04)`);
-  shimmer.addColorStop(Math.min(1, phase + 0.05), 'transparent');
-  bgX.fillStyle = shimmer; bgX.fillRect(0, 0, W, H);
 }
 
 // ── Tet grid ──────────────────────────────────────────────────────────────────
 function drawTetGrid(t, ci) {
-  const cx = W / 2, cy = H / 2;
-  const rot  = t * 0.00022;
-  const scl  = Math.min(W, H) * 0.27;
-  const wobble = Math.sin(t * 0.0009) * 0.05;
-  const parallax_x = (mx / W - 0.5) * 0.12;
-  const parallax_y = (my / H - 0.5) * 0.12;
-  const cosR = Math.cos(rot + wobble), sinR = Math.sin(rot + wobble);
+  const cx = W/2, cy = H/2;
+  const rot = t * 0.00018;
+  const scl = Math.min(W, H) * 0.32;
+  const wobble = Math.sin(t * 0.0008) * 0.04;
+  const px2 = (mx / (W + 260) - 0.5) * 0.10;  // account for sidebar
+  const py2 = (my / H - 0.5) * 0.10;
+  const cosR = Math.cos(rot+wobble), sinR = Math.sin(rot+wobble);
 
-  function nodeXY(i) {
-    const rx = PX[i] * cosR - PY[i] * sinR + parallax_x;
-    const ry = PX[i] * sinR + PY[i] * cosR + parallax_y;
-    return [cx + rx * scl, cy + ry * scl];
+  function nxy(i) {
+    const rx = PX[i]*cosR - PY[i]*sinR + px2;
+    const ry = PX[i]*sinR + PY[i]*cosR + py2;
+    return [cx+rx*scl, cy+ry*scl];
   }
 
-  // Faces
-  ctx.save();
-  ctx.globalAlpha = 0.05 + ci.curl * 0.12;
-  for (let f = 0; f < N_FACES; f++) {
-    const [ax, ay] = nodeXY(FI0[f]);
-    const [bx, by] = nodeXY(FI1[f]);
-    const [cx2, cy2] = nodeXY(FI2[f]);
-    const hue = (f / N_FACES * 360 + frame * 0.35) % 360;
-    ctx.fillStyle = `hsl(${hue},85%,62%)`;
-    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.lineTo(cx2, cy2);
+  // Faces — very subtle
+  ctx.save(); ctx.globalAlpha = 0.035 + ci.curl*0.07;
+  for (let f=0; f<N_FACES; f++) {
+    const [ax,ay]=nxy(FI0[f]), [bx,by]=nxy(FI1[f]), [cx2,cy2]=nxy(FI2[f]);
+    const hue=(f/N_FACES*360+frame*0.25)%360;
+    ctx.fillStyle=`hsl(${hue},75%,58%)`;
+    ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.lineTo(cx2,cy2);
     ctx.closePath(); ctx.fill();
   }
   ctx.restore();
 
   // Edges
   ctx.save();
-  for (let e = 0; e < N_EDGES; e++) {
-    const [ax, ay] = nodeXY(EI_SRC[e]);
-    const [bx, by] = nodeXY(EI_DST[e]);
-    const hue = (e / N_EDGES * 360 + frame * 0.45 + ci.cohesion * 120) % 360;
-    const pulse = 0.25 + 0.4 * Math.abs(Math.sin(t * 0.0018 + e * 0.08));
-    ctx.strokeStyle = `hsla(${hue},90%,65%,${pulse})`;
-    ctx.lineWidth = 0.5 + EW[e] * 1.4 * (0.5 + ci.grad);
-    ctx.shadowColor = `hsl(${hue},100%,70%)`; ctx.shadowBlur = 5;
-    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+  for (let e=0; e<N_EDGES; e++) {
+    const [ax,ay]=nxy(EI_SRC[e]), [bx,by]=nxy(EI_DST[e]);
+    const hue=(e/N_EDGES*360+frame*0.35+ci.cohesion*80)%360;
+    const pulse=0.18+0.28*Math.abs(Math.sin(t*0.0016+e*0.09));
+    ctx.strokeStyle=`hsla(${hue},85%,62%,${pulse})`;
+    ctx.lineWidth=0.6+EW[e]*1.2*(0.4+ci.grad*0.6);
+    ctx.shadowColor=`hsl(${hue},100%,65%)`; ctx.shadowBlur=4;
+    ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.stroke();
   }
   ctx.restore();
 
   // Nodes
-  ctx.save();
-  ctx.shadowBlur = 0;
-  for (let n = 0; n < 64; n++) {
-    const [nx, ny] = nodeXY(n);
-    const hue  = (n / 64 * 360 + frame * 0.5 + ci.curl * 180) % 360;
-    const pulse = 0.5 + 0.5 * Math.sin(t * 0.003 + n * 0.31);
-    const r = 2 + pulse * 4 * ci.cohesion;
-    const grd = ctx.createRadialGradient(nx, ny, 0, nx, ny, r * 4);
-    grd.addColorStop(0, `hsla(${hue},100%,80%,0.65)`);
-    grd.addColorStop(1, `hsla(${hue},100%,50%,0)`);
-    ctx.fillStyle = grd;
-    ctx.beginPath(); ctx.arc(nx, ny, r * 4, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = `hsl(${hue},100%,88%)`;
-    ctx.beginPath(); ctx.arc(nx, ny, r, 0, Math.PI * 2); ctx.fill();
+  ctx.save(); ctx.shadowBlur=0;
+  for (let n=0; n<64; n++) {
+    const [nx,ny]=nxy(n);
+    const hue=(n/64*360+frame*0.4+ci.curl*160)%360;
+    const pulse=0.5+0.5*Math.sin(t*0.003+n*0.32);
+    const r=1.8+pulse*3.5*ci.cohesion;
+    const grd=ctx.createRadialGradient(nx,ny,0,nx,ny,r*4);
+    grd.addColorStop(0,`hsla(${hue},100%,80%,0.55)`);
+    grd.addColorStop(1,`hsla(${hue},100%,50%,0)`);
+    ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(nx,ny,r*4,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=`hsl(${hue},100%,90%)`; ctx.beginPath(); ctx.arc(nx,ny,r,0,Math.PI*2); ctx.fill();
   }
   ctx.restore();
 }
 
-// ── Braid routing ─────────────────────────────────────────────────────────────
+// ── Braid routing (canvas only — no labels, sidebar has those) ────────────────
 const BNODES = [
-  { label:'SIMULA', rx:0.18, ry:0.30, hue:40  },
-  { label:'EUPHAN', rx:0.50, ry:0.16, hue:160 },
-  { label:'HERMES', rx:0.82, ry:0.30, hue:280 },
+  { rx:0.20, ry:0.28, hue:38  },
+  { rx:0.50, ry:0.14, hue:150 },
+  { rx:0.80, ry:0.28, hue:275 },
 ];
-const bParticles = [];
+const bParts = [];
 
 function updateBraid() {
-  if (frame % 15 === 0) {
-    const arc = frame % 3;
-    bParticles.push({ arc, prog:0, speed:0.012+Math.random()*0.01,
-      hue:BNODES[(arc+1)%3].hue, size:2.5+Math.random()*3 });
+  if (frame%16===0) {
+    const arc=frame%3;
+    bParts.push({ arc, prog:0, speed:0.011+Math.random()*0.009, hue:BNODES[(arc+1)%3].hue, size:2+Math.random()*2.5 });
   }
-  for (let i = bParticles.length - 1; i >= 0; i--) {
-    bParticles[i].prog += bParticles[i].speed;
-    if (bParticles[i].prog >= 1) bParticles.splice(i, 1);
+  for (let i=bParts.length-1;i>=0;i--) {
+    bParts[i].prog+=bParts[i].speed;
+    if(bParts[i].prog>=1) bParts.splice(i,1);
   }
 }
 
 function drawBraid(t) {
-  const bx = i => W * BNODES[i].rx;
-  const by = i => H * BNODES[i].ry;
-
-  // Arc lines
-  for (let i = 0; i < 3; i++) {
-    const j = (i+1)%3;
+  const bx=i=>W*BNODES[i].rx, by=i=>H*BNODES[i].ry;
+  for (let i=0;i<3;i++) {
+    const j=(i+1)%3;
     const ax=bx(i),ay=by(i),ex=bx(j),ey=by(j);
-    const cmx=(ax+ex)/2+(ay-ey)*0.28, cmy=(ay+ey)/2+(ex-ax)*0.28;
-    const hue = BNODES[i].hue;
-    const alpha = 0.12 + 0.1*Math.sin(t*0.002+i*2);
+    const cmx=(ax+ex)/2+(ay-ey)*0.3, cmy=(ay+ey)/2+(ex-ax)*0.3;
+    const hue=BNODES[i].hue, a=0.08+0.07*Math.sin(t*0.002+i*2);
     ctx.save();
-    ctx.strokeStyle=`hsla(${hue},80%,60%,${alpha})`;
-    ctx.lineWidth=1.5; ctx.setLineDash([5,9]);
-    ctx.shadowColor=`hsl(${hue},100%,65%)`; ctx.shadowBlur=8;
+    ctx.strokeStyle=`hsla(${hue},75%,58%,${a})`;
+    ctx.lineWidth=1.2; ctx.setLineDash([4,8]);
+    ctx.shadowColor=`hsl(${hue},90%,60%)`; ctx.shadowBlur=6;
     ctx.beginPath(); ctx.moveTo(ax,ay); ctx.quadraticCurveTo(cmx,cmy,ex,ey);
     ctx.stroke(); ctx.restore();
   }
-
-  // Particles along arcs
-  for (const p of bParticles) {
+  for (const p of bParts) {
     const i=p.arc, j=(i+1)%3;
     const ax=bx(i),ay=by(i),ex=bx(j),ey=by(j);
-    const cmx=(ax+ex)/2+(ay-ey)*0.28, cmy=(ay+ey)/2+(ex-ax)*0.28;
-    const u=p.prog, v=1-u;
-    const px2=v*v*ax+2*v*u*cmx+u*u*ex;
-    const py2=v*v*ay+2*v*u*cmy+u*u*ey;
+    const cmx=(ax+ex)/2+(ay-ey)*0.3, cmy=(ay+ey)/2+(ex-ax)*0.3;
+    const u=p.prog,v=1-u;
+    const ppx=v*v*ax+2*v*u*cmx+u*u*ex;
+    const ppy=v*v*ay+2*v*u*cmy+u*u*ey;
     ctx.save();
-    ctx.shadowColor=`hsl(${p.hue},100%,70%)`; ctx.shadowBlur=18;
-    ctx.fillStyle=`hsl(${p.hue},100%,82%)`;
-    ctx.beginPath(); ctx.arc(px2,py2,p.size,0,Math.PI*2); ctx.fill();
+    ctx.shadowColor=`hsl(${p.hue},100%,65%)`; ctx.shadowBlur=14;
+    ctx.fillStyle=`hsl(${p.hue},100%,80%)`;
+    ctx.beginPath(); ctx.arc(ppx,ppy,p.size,0,Math.PI*2); ctx.fill();
     ctx.restore();
   }
-
-  // Node orbs
-  BNODES.forEach((n,i) => {
-    const x=W*n.rx, y=H*n.ry;
-    const pulse=1+0.28*Math.sin(t*0.003+i*1.3);
-    const r=20*pulse;
-    const grd=ctx.createRadialGradient(x,y,r*0.15,x,y,r);
-    grd.addColorStop(0,`hsla(${n.hue},90%,65%,0.55)`);
-    grd.addColorStop(1,`hsla(${n.hue},90%,40%,0)`);
-    ctx.fillStyle=grd;
-    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  // Node dots (small — sidebar has labels)
+  BNODES.forEach((n,i)=>{
+    const x=W*n.rx,y=H*n.ry;
+    const pulse=1+0.22*Math.sin(t*0.003+i*1.4);
+    const r=14*pulse;
+    const grd=ctx.createRadialGradient(x,y,r*0.1,x,y,r);
+    grd.addColorStop(0,`hsla(${n.hue},85%,60%,0.40)`);
+    grd.addColorStop(1,'transparent');
+    ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
     ctx.save();
-    ctx.shadowColor=`hsl(${n.hue},100%,70%)`; ctx.shadowBlur=12;
-    ctx.fillStyle=`hsl(${n.hue},100%,92%)`;
-    ctx.font='bold 10px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(n.label, x, y);
-    ctx.restore();
-  });
-}
-
-// ── Limb constellation ────────────────────────────────────────────────────────
-function drawLimbs(t, ci) {
-  const cx=W/2, cy=H/2;
-  const R=Math.min(W,H)*0.47;
-  const active=LIMBS.slice(0,10);
-  active.forEach((l,i) => {
-    const angle=(i/active.length)*Math.PI*2 - Math.PI/2 + t*0.00028;
-    const r=R+Math.sin(t*0.0022+i*0.65)*9;
-    const nx=cx+r*Math.cos(angle), ny=cy+r*Math.sin(angle);
-    const hue=(i/active.length*360+frame*0.55)%360;
-    const pulse=0.5+0.5*Math.sin(t*0.004+i*0.85);
-    const sz=3+pulse*5*(0.4+0.6*LCOUNTS[i]/MAX_LC);
-    ctx.save();
-    ctx.shadowColor=`hsl(${hue},100%,65%)`; ctx.shadowBlur=15*pulse;
-    const grd=ctx.createRadialGradient(nx,ny,0,nx,ny,sz*3.5);
-    grd.addColorStop(0,`hsla(${hue},90%,70%,${0.55*pulse})`);
-    grd.addColorStop(1,`hsla(${hue},90%,50%,0)`);
-    ctx.fillStyle=grd;
-    ctx.beginPath(); ctx.arc(nx,ny,sz*3.5,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle=`hsl(${hue},100%,92%)`;
-    ctx.beginPath(); ctx.arc(nx,ny,sz,0,Math.PI*2); ctx.fill();
-    const lx=cx+(r+26)*Math.cos(angle), ly=cy+(r+26)*Math.sin(angle);
-    ctx.font=`${Math.max(7,8+pulse*2)|0}px monospace`;
-    ctx.fillStyle=`hsla(${hue},80%,80%,${0.35+pulse*0.45})`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(l.replace('_limb','').replace(/_/g,' '), lx, ly);
+    ctx.shadowColor=`hsl(${n.hue},100%,65%)`; ctx.shadowBlur=8;
+    ctx.fillStyle=`hsl(${n.hue},90%,82%)`;
+    ctx.font='bold 9px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const labels=['SIM','EUP','HER'];
+    ctx.fillText(labels[i],x,y);
     ctx.restore();
   });
 }
 
 // ── Sparkline ─────────────────────────────────────────────────────────────────
 function drawSparkline(upTo) {
-  const sw=spC.width, sh=spC.height;
+  const sw=spC.width,sh=spC.height;
   spX.clearRect(0,0,sw,sh);
   const slice=TL.slice(0,upTo+1);
   if(slice.length<2) return;
   const vals=slice.map(d=>d.cohesion);
-  const lo=Math.min(...vals), hi=Math.max(...vals);
-  const rng=hi-lo||0.01;
+  const lo=Math.min(...vals),hi=Math.max(...vals),rng=hi-lo||0.01;
   const sx=i=>(i/(TL.length-1))*sw;
-  const sy=v=>sh-(v-lo)/rng*sh*0.82-sh*0.05;
-  // Fill
-  const grd=spX.createLinearGradient(0,0,sw,0);
-  grd.addColorStop(0,'rgba(91,156,246,0.45)');
-  grd.addColorStop(0.5,'rgba(126,232,162,0.45)');
-  grd.addColorStop(1,'rgba(246,160,91,0.45)');
+  const sy=v=>sh-(v-lo)/rng*sh*0.80-sh*0.08;
+  // Fill under cohesion
   spX.beginPath(); spX.moveTo(sx(0),sh);
   vals.forEach((v,i)=>spX.lineTo(sx(i),sy(v)));
   spX.lineTo(sx(vals.length-1),sh); spX.closePath();
-  spX.fillStyle=grd; spX.fill();
+  spX.fillStyle='rgba(126,232,162,0.12)'; spX.fill();
+  // Cohesion line
   spX.beginPath(); spX.moveTo(sx(0),sy(vals[0]));
-  vals.forEach((v,i)=>{ if(i>0) spX.lineTo(sx(i),sy(v)); });
+  vals.forEach((v,i)=>{ if(i) spX.lineTo(sx(i),sy(v)); });
   spX.strokeStyle='#7ee8a2'; spX.lineWidth=1.5; spX.stroke();
-  // EWMA
+  // EWMA line
   const ewma=slice.map(d=>d.ewma);
   spX.beginPath(); spX.moveTo(sx(0),sy(ewma[0]));
-  ewma.forEach((v,i)=>{ if(i>0) spX.lineTo(sx(i),sy(v)); });
-  spX.strokeStyle='rgba(246,160,91,0.85)'; spX.lineWidth=1; spX.stroke();
+  ewma.forEach((v,i)=>{ if(i) spX.lineTo(sx(i),sy(v)); });
+  spX.strokeStyle='rgba(246,160,91,0.9)'; spX.lineWidth=1; spX.stroke();
+  // Current position dot
+  const last=vals.length-1;
+  spX.beginPath(); spX.arc(sx(last),sy(vals[last]),3,0,Math.PI*2);
+  spX.fillStyle='#7ee8a2'; spX.fill();
 }
 
-// ── HUD ───────────────────────────────────────────────────────────────────────
-function updateHUD(ci, idx) {
-  document.getElementById('pc').textContent = idx+1;
-  document.getElementById('kv-c').textContent = ci.cohesion.toFixed(3);
-  document.getElementById('kv-e').textContent = ci.ewma.toFixed(3);
-  document.getElementById('kv-g').textContent = ci.grad.toFixed(3);
-  document.getElementById('kv-k').textContent = ci.curl.toFixed(3);
-  document.getElementById('kv-v').textContent = ci.events;
+// ── Sidebar updates ───────────────────────────────────────────────────────────
+const MAX_CALC = 10;  // rough cap for bar width
+function updateSidebar(ci, idx) {
+  // Pass counter
+  document.getElementById('pc').textContent = String(idx+1).padStart(3,'0');
+  // KPIs
   const hue=(ci.cohesion*120)|0;
-  document.getElementById('kv-c').style.color=`hsl(${hue},80%,65%)`;
+  const kvc=document.getElementById('kv-c');
+  kvc.textContent=ci.cohesion.toFixed(3); kvc.style.color=`hsl(${hue},75%,60%)`;
+  document.getElementById('kv-e').textContent=ci.ewma.toFixed(3);
+  document.getElementById('kv-lb').textContent=ci.limb_bal.toFixed(3);
+  document.getElementById('kv-sk').textContent=ci.skill_cov.toFixed(3);
+  // Calculus bars
+  const fields=[['g',ci.grad],['d',ci.div],['l',ci.lap],['k',ci.curl]];
+  const maxF=Math.max(...fields.map(f=>f[1]),0.01);
+  for(const [k,v] of fields) {
+    const pct=Math.min(100,(v/maxF*100)).toFixed(0);
+    document.getElementById(`cb-${k}`).style.width=pct+'%';
+    document.getElementById(`cn-${k}`).textContent=v.toFixed(3);
+  }
+  // Braid events
+  document.getElementById('braid-ev').textContent=ci.events;
 }
 
 // ── Main loop ─────────────────────────────────────────────────────────────────
@@ -363,18 +444,15 @@ function loop(t) {
   try {
     requestAnimationFrame(loop);
     frame++;
-    if (t - lastPassMs > PASS_INTERVAL) { lastPassMs = t; passIdx = (passIdx+1) % TL.length; }
-    const ci = TL[passIdx];
+    if(t-lastPassMs>PASS_INTERVAL){ lastPassMs=t; passIdx=(passIdx+1)%TL.length; }
+    const ci=TL[passIdx];
     ctx.clearRect(0,0,W,H);
     drawBg(t);
-    drawLimbs(t, ci);
-    drawTetGrid(t, ci);
+    drawTetGrid(t,ci);
     updateBraid(); drawBraid(t);
     drawSparkline(passIdx);
-    updateHUD(ci, passIdx);
-  } catch(e) {
-    console.error('loop error:', e);
-  }
+    updateSidebar(ci,passIdx);
+  } catch(e){ console.error(e); }
 }
 requestAnimationFrame(loop);
 </script>
