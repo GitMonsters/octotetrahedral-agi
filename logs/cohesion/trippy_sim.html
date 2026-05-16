@@ -196,69 +196,82 @@ let mx = 0, my = 0;
 window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
 
 // ── Julia fractal ─────────────────────────────────────────────────────────────
-// Offscreen canvas at 1/5 resolution — rendered only when pass changes,
-// then blitted scaled. c parameter is driven by model cohesion + curl.
-const JW = 240, JH = 150, MAX_ITER = 52;
+// Offscreen 300×180 — rendered once per model pass, blitted scaled.
+// c is driven by cohesion + curl so the fractal morphs with the model.
+const JW = 300, JH = 180, MAX_ITER = 64;
 const juliaOff = document.createElement('canvas');
 juliaOff.width = JW; juliaOff.height = JH;
-const juliaCtx = juliaOff.getContext('2d');
-let juliaImageData = juliaCtx.createImageData(JW, JH);
+const jCtx = juliaOff.getContext('2d');
+const jImg = jCtx.createImageData(JW, JH);
 let lastJuliaPass = -1;
 
-// Smooth HSL palette baked into a Float32 lookup (360 hue bands)
-function juliaColor(iter, maxIter, zr, zi) {
-  if (iter === maxIter) return [0, 0, 0, 255];
-  // Smooth iteration count (continuous coloring)
-  const log2 = Math.log(Math.log(Math.sqrt(zr*zr+zi*zi))) / Math.LN2;
-  const smooth = iter + 1 - log2;
-  const t = smooth / maxIter;
-  // Trippy palette: cycle through hues
-  const hue = (t * 360 * 4 + 200) % 360;
-  const sat = 80, lit = 15 + t * 50;
-  // HSL→RGB inline
-  const h=hue/360, s=sat/100, l=lit/100;
-  const q=l<.5?l*(1+s):l+s-l*s, p=2*l-q;
-  const h2r=(pp,qq,tt)=>{if(tt<0)tt+=1;if(tt>1)tt-=1;if(tt<1/6)return pp+(qq-pp)*6*tt;if(tt<1/2)return qq;if(tt<2/3)return pp+(qq-pp)*(2/3-tt)*6;return pp;};
-  return [(h2r(p,q,h+1/3)*255)|0,(h2r(p,q,h)*255)|0,(h2r(p,q,h-1/3)*255)|0,210];
+// Pre-bake opaque colour palette (RGB6-wheel, bright, fully opaque)
+const JPAL = new Uint8Array(MAX_ITER * 3);
+for (let i = 0; i < MAX_ITER; i++) {
+  const t = i / MAX_ITER;
+  const hue = (t * 720 + 190) % 360;
+  const h6 = hue / 60;
+  const x  = 1 - Math.abs(h6 % 2 - 1);
+  const lum = 0.25 + t * 0.65;
+  let r, g, b;
+  if      (h6 < 1) { r=1;   g=x;   b=0;   }
+  else if (h6 < 2) { r=x;   g=1;   b=0;   }
+  else if (h6 < 3) { r=0;   g=1;   b=x;   }
+  else if (h6 < 4) { r=0;   g=x;   b=1;   }
+  else if (h6 < 5) { r=x;   g=0;   b=1;   }
+  else             { r=1;   g=0;   b=x;   }
+  JPAL[i*3]   = (r * lum * 255) | 0;
+  JPAL[i*3+1] = (g * lum * 255) | 0;
+  JPAL[i*3+2] = (b * lum * 255) | 0;
 }
 
 function renderJulia(ci) {
-  const cr = -0.52 + 0.28 * Math.cos(ci.cohesion * Math.PI * 3);
-  const cim =  0.52 - 0.28 * Math.sin(ci.curl    * Math.PI * 2 + ci.grad);
-  const d = juliaImageData.data;
-  const scale = 3.2;  // viewport ±1.6
+  const cr  = -0.52 + 0.28 * Math.cos(ci.cohesion * 9.42);
+  const cim =  0.52 - 0.28 * Math.sin(ci.curl * 6.28 + ci.grad);
+  const d = jImg.data;
   for (let py = 0; py < JH; py++) {
+    const zi0 = (py / JH - 0.5) * 2.0;
     for (let px = 0; px < JW; px++) {
-      let zr = (px / JW - 0.5) * scale;
-      let zi = (py / JH - 0.5) * scale * (JH / JW);
-      let iter = 0;
-      while (iter < MAX_ITER && zr*zr+zi*zi < 4) {
-        const tmp = zr*zr - zi*zi + cr;
+      let zr = (px / JW - 0.5) * 3.2;
+      let zi = zi0, iter = 0;
+      while (iter < MAX_ITER) {
+        const zr2 = zr*zr, zi2 = zi*zi;
+        if (zr2 + zi2 > 4.0) break;
         zi = 2*zr*zi + cim;
-        zr = tmp;
+        zr = zr2 - zi2 + cr;
         iter++;
       }
-      const [r,g,b,a] = juliaColor(iter, MAX_ITER, zr, zi);
       const idx = (py * JW + px) * 4;
-      d[idx]=r; d[idx+1]=g; d[idx+2]=b; d[idx+3]=a;
+      if (iter === MAX_ITER) {
+        d[idx]=0; d[idx+1]=0; d[idx+2]=12; d[idx+3]=255;   // interior: deep navy
+      } else {
+        d[idx]   = JPAL[iter*3];
+        d[idx+1] = JPAL[iter*3+1];
+        d[idx+2] = JPAL[iter*3+2];
+        d[idx+3] = 255;
+      }
     }
   }
-  juliaCtx.putImageData(juliaImageData, 0, 0);
+  jCtx.putImageData(jImg, 0, 0);
+}
+
+// Render immediately on first call (before first frame)
+function ensureJulia(ci) {
+  if (ci && passIdx !== lastJuliaPass) {
+    renderJulia(ci);
+    lastJuliaPass = passIdx;
+  }
 }
 
 let bgHue = 220;
 function drawBg(t, ci) {
   bgHue = (bgHue + 0.07) % 360;
-  bgX.fillStyle = '#07080f'; bgX.fillRect(0, 0, W, H);
+  bgX.clearRect(0, 0, W, H);
 
-  // Render Julia fractal only when pass advances
-  if (ci && passIdx !== lastJuliaPass) {
-    renderJulia(ci);
-    lastJuliaPass = passIdx;
-  }
-  // Blit Julia fractal scaled to fill canvas, darkened behind the overlay
+  // Julia fractal — full opacity blended via globalAlpha
+  ensureJulia(ci);
   bgX.save();
-  bgX.globalAlpha = 0.38;
+  bgX.globalAlpha = 0.62;
   bgX.imageSmoothingEnabled = true;
   bgX.imageSmoothingQuality = 'high';
   bgX.drawImage(juliaOff, 0, 0, W, H);
@@ -266,8 +279,8 @@ function drawBg(t, ci) {
 
   // Dark vignette so tet grid reads clearly in centre
   const vg = bgX.createRadialGradient(W/2, H/2, H*0.05, W/2, H/2, H*0.72);
-  vg.addColorStop(0, 'rgba(7,8,15,0.70)');
-  vg.addColorStop(1, 'rgba(7,8,15,0.10)');
+  vg.addColorStop(0, 'rgba(7,8,15,0.72)');
+  vg.addColorStop(1, 'rgba(7,8,15,0.08)');
   bgX.fillStyle = vg; bgX.fillRect(0, 0, W, H);
 
   // Subtle drifting colour blobs on top
