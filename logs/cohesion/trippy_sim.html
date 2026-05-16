@@ -195,18 +195,89 @@ LIMBS.forEach((l, i) => {
 let mx = 0, my = 0;
 window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
 
+// ── Julia fractal ─────────────────────────────────────────────────────────────
+// Offscreen canvas at 1/5 resolution — rendered only when pass changes,
+// then blitted scaled. c parameter is driven by model cohesion + curl.
+const JW = 240, JH = 150, MAX_ITER = 52;
+const juliaOff = document.createElement('canvas');
+juliaOff.width = JW; juliaOff.height = JH;
+const juliaCtx = juliaOff.getContext('2d');
+let juliaImageData = juliaCtx.createImageData(JW, JH);
+let lastJuliaPass = -1;
+
+// Smooth HSL palette baked into a Float32 lookup (360 hue bands)
+function juliaColor(iter, maxIter, zr, zi) {
+  if (iter === maxIter) return [0, 0, 0, 255];
+  // Smooth iteration count (continuous coloring)
+  const log2 = Math.log(Math.log(Math.sqrt(zr*zr+zi*zi))) / Math.LN2;
+  const smooth = iter + 1 - log2;
+  const t = smooth / maxIter;
+  // Trippy palette: cycle through hues
+  const hue = (t * 360 * 4 + 200) % 360;
+  const sat = 80, lit = 15 + t * 50;
+  // HSL→RGB inline
+  const h=hue/360, s=sat/100, l=lit/100;
+  const q=l<.5?l*(1+s):l+s-l*s, p=2*l-q;
+  const h2r=(pp,qq,tt)=>{if(tt<0)tt+=1;if(tt>1)tt-=1;if(tt<1/6)return pp+(qq-pp)*6*tt;if(tt<1/2)return qq;if(tt<2/3)return pp+(qq-pp)*(2/3-tt)*6;return pp;};
+  return [(h2r(p,q,h+1/3)*255)|0,(h2r(p,q,h)*255)|0,(h2r(p,q,h-1/3)*255)|0,210];
+}
+
+function renderJulia(ci) {
+  const cr = -0.52 + 0.28 * Math.cos(ci.cohesion * Math.PI * 3);
+  const cim =  0.52 - 0.28 * Math.sin(ci.curl    * Math.PI * 2 + ci.grad);
+  const d = juliaImageData.data;
+  const scale = 3.2;  // viewport ±1.6
+  for (let py = 0; py < JH; py++) {
+    for (let px = 0; px < JW; px++) {
+      let zr = (px / JW - 0.5) * scale;
+      let zi = (py / JH - 0.5) * scale * (JH / JW);
+      let iter = 0;
+      while (iter < MAX_ITER && zr*zr+zi*zi < 4) {
+        const tmp = zr*zr - zi*zi + cr;
+        zi = 2*zr*zi + cim;
+        zr = tmp;
+        iter++;
+      }
+      const [r,g,b,a] = juliaColor(iter, MAX_ITER, zr, zi);
+      const idx = (py * JW + px) * 4;
+      d[idx]=r; d[idx+1]=g; d[idx+2]=b; d[idx+3]=a;
+    }
+  }
+  juliaCtx.putImageData(juliaImageData, 0, 0);
+}
+
 let bgHue = 220;
-function drawBg(t) {
+function drawBg(t, ci) {
   bgHue = (bgHue + 0.07) % 360;
   bgX.fillStyle = '#07080f'; bgX.fillRect(0, 0, W, H);
+
+  // Render Julia fractal only when pass advances
+  if (ci && passIdx !== lastJuliaPass) {
+    renderJulia(ci);
+    lastJuliaPass = passIdx;
+  }
+  // Blit Julia fractal scaled to fill canvas, darkened behind the overlay
+  bgX.save();
+  bgX.globalAlpha = 0.38;
+  bgX.imageSmoothingEnabled = true;
+  bgX.imageSmoothingQuality = 'high';
+  bgX.drawImage(juliaOff, 0, 0, W, H);
+  bgX.restore();
+
+  // Dark vignette so tet grid reads clearly in centre
+  const vg = bgX.createRadialGradient(W/2, H/2, H*0.05, W/2, H/2, H*0.72);
+  vg.addColorStop(0, 'rgba(7,8,15,0.70)');
+  vg.addColorStop(1, 'rgba(7,8,15,0.10)');
+  bgX.fillStyle = vg; bgX.fillRect(0, 0, W, H);
+
+  // Subtle drifting colour blobs on top
   const blobs = [
-    { x:W*(0.25+0.18*Math.sin(t*0.00022)), y:H*(0.35+0.18*Math.cos(t*0.00017)), r:W*0.38, h:bgHue%360, a:0.10 },
-    { x:W*(0.75+0.15*Math.cos(t*0.00018)), y:H*(0.65+0.15*Math.sin(t*0.00024)), r:W*0.32, h:(bgHue+110)%360, a:0.09 },
-    { x:W*(0.50+0.12*Math.sin(t*0.00029+1)), y:H*(0.50+0.12*Math.cos(t*0.00021+2)), r:W*0.28, h:(bgHue+230)%360, a:0.08 },
+    { x:W*(0.25+0.18*Math.sin(t*0.00022)), y:H*(0.35+0.18*Math.cos(t*0.00017)), r:W*0.35, h:bgHue%360, a:0.07 },
+    { x:W*(0.75+0.15*Math.cos(t*0.00018)), y:H*(0.65+0.15*Math.sin(t*0.00024)), r:W*0.30, h:(bgHue+110)%360, a:0.06 },
   ];
   for (const b of blobs) {
     const g = bgX.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
-    g.addColorStop(0, `hsla(${b.h},55%,25%,${b.a})`);
+    g.addColorStop(0, `hsla(${b.h},55%,30%,${b.a})`);
     g.addColorStop(1, 'transparent');
     bgX.fillStyle = g; bgX.fillRect(0, 0, W, H);
   }
@@ -334,7 +405,7 @@ function loop(t) {
     if(t-lastPassMs>PASS_INTERVAL){lastPassMs=t;passIdx=(passIdx+1)%TL.length;}
     const ci=TL[passIdx];
     ctx.clearRect(0,0,W,H);
-    drawBg(t);
+    drawBg(t, ci);
     drawTetGrid(t,ci);
     updateBraid();drawBraid(t);
     drawSparkline(passIdx);
