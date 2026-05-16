@@ -1,0 +1,20 @@
+# Rust build artifacts
+target/
+ngvt_braid/target/
+
+# Compiled Python extensions
+*.so
+*.dylib
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Training outputs
+ngvt_weights.pt
+results.json
+
+# Jupyter
+.ipynb_checkpoints/
