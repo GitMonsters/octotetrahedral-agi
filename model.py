@@ -59,6 +59,7 @@ from core.compound_braid import CompoundBraid
 from core.compound_loop import CompoundLoopController, CompoundLoopConfig as _LoopCfg
 from core.cognitive_geometry import CognitiveGeometryEngine, CognitiveGeometryConfig
 from core.cross_domain_transfer import CrossDomainTransferLayer, CrossDomainConfig
+from core.cognitive_cohesion_braid import CognitiveCohesionBraid, CohesionConfig
 from cognition import AGICognition, CognitionConfig
 
 # Import new geometric physics modules
@@ -661,6 +662,13 @@ class OctoTetrahedralModel(nn.Module):
         
         # EUPHAN observability (optional logger passed from trainer)
         self.euphan_logger = None
+
+        # === Cognitive Cohesion Braid ===
+        # Parallel cognition prescriptive loop (Ye et al. 2022):
+        # SIMULA → EUPHAN → HERMES → SIMULA closed-loop feedback.
+        # Measures limb activation balance, skill coverage, and
+        # feedback latency as a single cohesion_score metric.
+        self.cohesion_braid = CognitiveCohesionBraid(enable_all=True)
     
     def _init_weights(self):
         """Initialize model weights"""
@@ -680,7 +688,7 @@ class OctoTetrahedralModel(nn.Module):
         self.working_memory.apply(_init_module)
     
     def _log_limb_event(self, limb_name: str, action: str, duration: float, confidence: float = 0.5, output_shape: Optional[Tuple] = None):
-        """Helper to log limb event to EUPHAN logger if available"""
+        """Helper to log limb event to EUPHAN logger and cohesion braid."""
         if self.euphan_logger is not None and hasattr(self.euphan_logger, 'log_limb_event'):
             self.euphan_logger.log_limb_event(
                 limb_name=limb_name,
@@ -689,6 +697,13 @@ class OctoTetrahedralModel(nn.Module):
                 confidence=confidence,
                 output_shape=output_shape
             )
+        # Emit EUPHAN event into the cohesion braid for parallel cognition tracking
+        self.cohesion_braid.on_euphan_event({
+            "action": action,
+            "limb": limb_name,
+            "confidence": float(confidence),
+            "success": float(confidence) > 0.3,
+        })
     
     def forward(
         self,
@@ -1122,6 +1137,16 @@ class OctoTetrahedralModel(nn.Module):
                 if braid_info.get('braid_signal') is not None:
                     self._cached_braid_signal = braid_info['braid_signal'].detach()
                 
+                # Emit compound braid result into cohesion braid (HERMES channel)
+                _bsig = braid_info.get('braid_signal')
+                _braid_conf = float(_bsig.mean().abs().clamp(0, 1).item()) if _bsig is not None else 0.5
+                self.cohesion_braid.on_hermes_result({
+                    "task_type": "compound_braid",
+                    "confidence": _braid_conf,
+                    "success": _braid_conf > 0.3,
+                    "skills_used": ["scale-ratio-routing", "compound-transform-order"],
+                })
+                
                 multi_limb_output = memory_enhanced + 0.3 * combined_limbs
                 
                 # Post-Braid Reasoning
@@ -1246,6 +1271,7 @@ class OctoTetrahedralModel(nn.Module):
             },
             'spiking_info': spiking_info,
             'multimodal_info': multimodal_info,
+            'cohesion_info': self.cohesion_braid.cohesion_score(),
         }
         
         if return_confidences:
@@ -1289,6 +1315,23 @@ class OctoTetrahedralModel(nn.Module):
         
         return output
     
+    def cohesion_score(self) -> Dict[str, Any]:
+        """Return the current parallel-cognition cohesion metrics.
+
+        Scores are derived from the CognitiveCohesionBraid (Ye et al. 2022):
+          - cohesion_score : 0–1 (higher = more balanced cross-limb activation)
+          - limb_balance   : Shannon-entropy of limb activation counts
+          - skill_coverage : fraction of registered skills fired this run
+          - latency_score  : inverse feedback latency (EUPHAN→HERMES loop)
+
+        Also exposes braid cross-routing counts and per-source skill stats.
+        """
+        return self.cohesion_braid.cohesion_score()
+
+    def export_cohesion_report(self, path: Optional[str] = None) -> str:
+        """Write an HTML cohesion dashboard to *path* (or logs/cohesion/)."""
+        return self.cohesion_braid.generate_html_report(path)
+
     def _compute_information_gain(
         self,
         logits: torch.Tensor,
@@ -1383,6 +1426,16 @@ class OctoTetrahedralModel(nn.Module):
         )
         if braid_info.get('braid_signal') is not None:
             self._cached_braid_signal = braid_info['braid_signal'].detach()
+
+        # Emit compound braid result into cohesion braid (loop path)
+        _bsig = braid_info.get('braid_signal')
+        _braid_conf = float(_bsig.mean().abs().clamp(0, 1).item()) if _bsig is not None else 0.5
+        self.cohesion_braid.on_hermes_result({
+            "task_type": "compound_braid_loop",
+            "confidence": _braid_conf,
+            "success": _braid_conf > 0.3,
+            "skills_used": ["scale-ratio-routing", "compound-transform-order"],
+        })
 
         # Blend + post-braid reasoning
         blended = x + 0.3 * combined_limbs
