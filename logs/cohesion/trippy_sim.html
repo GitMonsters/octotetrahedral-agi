@@ -4,50 +4,38 @@
 <meta charset="utf-8">
 <title>OctoTetrahedral AGI — Geometric Sim</title>
 <style>
-:root {
-  --bg:#07080f; --panel:#0d0f18; --border:rgba(80,120,200,0.15);
-  --text:#c8d8f0; --muted:#4d6080; --accent:#5b9cf6;
-}
+:root{--bg:#07080f;--panel:#0d0f18;--border:rgba(80,120,200,0.15);--text:#c8d8f0;--muted:#4d6080;--accent:#5b9cf6}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,'SF Mono',monospace;overflow:hidden;height:100vh;display:flex;flex-direction:column}
-canvas{display:block;position:absolute;top:0;left:0;width:100%;height:100%}
-#bg-c{z-index:0}#main-c{z-index:1}
-
+canvas{display:block}
 #header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:.5rem 1.1rem;background:var(--panel);border-bottom:1px solid var(--border);z-index:20}
 #header h1{font-size:.9rem;font-weight:600;color:var(--accent);letter-spacing:.09em}
 #header p{font-size:.62rem;color:var(--muted);margin-top:.1rem}
 #pass-badge{font-size:.7rem;background:rgba(91,156,246,.1);border:1px solid rgba(91,156,246,.25);border-radius:4px;padding:.18rem .55rem;color:var(--accent)}
-
 #body{flex:1;display:flex;min-height:0}
 #canvas-wrap{flex:1;position:relative;overflow:hidden}
-
+#mc{position:absolute;top:0;left:0;width:100%;height:100%}
 #sidebar{flex:0 0 270px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;z-index:20}
 .s-sec{padding:.62rem .9rem;border-bottom:1px solid var(--border)}
 .s-title{font-size:.55rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
-
 #kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem}
 .kpi{background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:5px;padding:.38rem .55rem}
 .kpi-val{font-size:1.15rem;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
 .kpi-lbl{font-size:.55rem;color:var(--muted);margin-top:.08rem}
-
 #sp-wrap{height:48px}.sp{width:100%;height:100%;display:block}
 .sp-leg{display:flex;gap:.7rem;margin-top:.25rem}
 .sp-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px;vertical-align:middle}
 .sp-lbl{font-size:.58rem;color:var(--muted)}
-
 #calc-bars{display:flex;flex-direction:column;gap:.3rem}
 .cr{display:flex;align-items:center;gap:.45rem}
 .cn{font-size:.6rem;color:var(--muted);width:30px;text-align:right;flex-shrink:0}
 .ct{flex:1;height:5px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden}
 .cf{height:100%;border-radius:3px;transition:width .22s}
 .cv{font-size:.58rem;color:var(--text);width:38px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
-
 #braid-nodes{display:flex;justify-content:space-around}
 .bn{text-align:center}
 .bo{width:34px;height:34px;border-radius:50%;margin:0 auto .25rem;display:flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:700;border:1.5px solid}
-.bl{font-size:.58rem;color:var(--muted)}
-.bv{font-size:.68rem;font-weight:600}
-
+.bl{font-size:.58rem;color:var(--muted)}.bv{font-size:.68rem;font-weight:600}
 #limb-list{display:flex;flex-direction:column;gap:.22rem;flex:1;overflow-y:auto;padding:.55rem .9rem}
 .lr{display:flex;align-items:center;gap:.45rem;padding:.18rem .3rem;border-radius:4px;transition:background .2s}
 .lr.hi{background:rgba(255,220,100,.06);border:1px solid rgba(255,200,60,.15)}
@@ -57,13 +45,7 @@ canvas{display:block;position:absolute;top:0;left:0;width:100%;height:100%}
 .lbw{width:50px;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
 .lb2{height:100%;border-radius:2px}
 .lc{font-size:.58rem;color:var(--muted);width:22px;text-align:right}
-
-#online-banner{
-  position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
-  background:rgba(16,28,16,.9);border:1px solid rgba(74,222,128,.3);
-  border-radius:6px;padding:.3rem .8rem;font-size:.65rem;color:#4ade80;
-  z-index:5;letter-spacing:.06em;pointer-events:none;
-}
+#online-banner{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(16,28,16,.9);border:1px solid rgba(74,222,128,.3);border-radius:6px;padding:.3rem .8rem;font-size:.65rem;color:#4ade80;z-index:5;letter-spacing:.06em;pointer-events:none}
 </style>
 </head>
 <body>
@@ -71,18 +53,16 @@ canvas{display:block;position:absolute;top:0;left:0;width:100%;height:100%}
 <div id="header">
   <div>
     <h1>&#x1F9EC; OctoTetrahedral AGI &mdash; Geometric Sim</h1>
-    <p>208.0M params &middot; 8&times;8 tet grid &middot; 210 edges &middot; 98 faces &middot; 13 limbs active</p>
+    <p>208.0M params &middot; tetrahedral grid &middot; Julia manifold &middot; 13 limbs active</p>
   </div>
   <div id="pass-badge">PASS <span id="pc">001</span> / 080</div>
 </div>
 
 <div id="body">
   <div id="canvas-wrap">
-    <canvas id="bg-c"></canvas>
-    <canvas id="main-c"></canvas>
+    <canvas id="mc"></canvas>
     <div id="online-banner">&#x25CF; PERCEPTION &nbsp; &#x25CF; PLANNING &nbsp; &#x25CF; ACTION &nbsp; now online</div>
   </div>
-
   <div id="sidebar">
     <div class="s-sec">
       <div class="s-title">Cohesion Metrics</div>
@@ -93,7 +73,6 @@ canvas{display:block;position:absolute;top:0;left:0;width:100%;height:100%}
         <div class="kpi"><div class="kpi-val" id="kv-sk">&mdash;</div><div class="kpi-lbl">Skill Cov</div></div>
       </div>
     </div>
-
     <div class="s-sec">
       <div class="s-title">Cohesion Timeline</div>
       <div id="sp-wrap"><canvas id="sp" class="sp"></canvas></div>
@@ -102,7 +81,6 @@ canvas{display:block;position:absolute;top:0;left:0;width:100%;height:100%}
         <span><span class="sp-dot" style="background:#f6a05b"></span><span class="sp-lbl">EWMA</span></span>
       </div>
     </div>
-
     <div class="s-sec">
       <div class="s-title">Calculus Fields</div>
       <div id="calc-bars">
@@ -112,7 +90,6 @@ canvas{display:block;position:absolute;top:0;left:0;width:100%;height:100%}
         <div class="cr"><span class="cn">curl</span><div class="ct"><div class="cf" id="cb-k" style="background:#f472b6"></div></div><span class="cv" id="cv-k">&mdash;</span></div>
       </div>
     </div>
-
     <div class="s-sec">
       <div class="s-title">Braid Routing</div>
       <div id="braid-nodes">
@@ -131,88 +108,55 @@ canvas{display:block;position:absolute;top:0;left:0;width:100%;height:100%}
         </div>
       </div>
     </div>
-
     <div class="s-title" style="padding:.55rem .9rem .2rem">Limb Activations</div>
     <div id="limb-list"></div>
   </div>
 </div>
 
 <script>
-
-const TL     = [{"cohesion": 0.7149, "ewma": 0.0357, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4302, "div": 2.1449, "lap": 2.1449, "curl": 0.1583, "events": 14, "h2s": 1}, {"cohesion": 0.7149, "ewma": 0.0697, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1456, "lap": 2.1456, "curl": 0.1583, "events": 28, "h2s": 2}, {"cohesion": 0.7149, "ewma": 0.102, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4267, "div": 2.1282, "lap": 2.1282, "curl": 0.1571, "events": 42, "h2s": 3}, {"cohesion": 0.7149, "ewma": 0.1326, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4296, "div": 2.1402, "lap": 2.1402, "curl": 0.1581, "events": 56, "h2s": 4}, {"cohesion": 0.7149, "ewma": 0.1617, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4298, "div": 2.1404, "lap": 2.1404, "curl": 0.1579, "events": 70, "h2s": 5}, {"cohesion": 0.7149, "ewma": 0.1894, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4318, "div": 2.1521, "lap": 2.1521, "curl": 0.1575, "events": 84, "h2s": 6}, {"cohesion": 0.7149, "ewma": 0.2156, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4312, "div": 2.1483, "lap": 2.1483, "curl": 0.1582, "events": 98, "h2s": 7}, {"cohesion": 0.7149, "ewma": 0.2406, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4271, "div": 2.1276, "lap": 2.1276, "curl": 0.157, "events": 112, "h2s": 8}, {"cohesion": 0.7149, "ewma": 0.2643, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4305, "div": 2.1524, "lap": 2.1524, "curl": 0.1585, "events": 126, "h2s": 9}, {"cohesion": 0.7149, "ewma": 0.2868, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4287, "div": 2.1321, "lap": 2.1321, "curl": 0.1573, "events": 140, "h2s": 10}, {"cohesion": 0.7149, "ewma": 0.3082, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4253, "div": 2.1181, "lap": 2.1181, "curl": 0.1563, "events": 154, "h2s": 11}, {"cohesion": 0.7149, "ewma": 0.3286, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.428, "div": 2.1336, "lap": 2.1336, "curl": 0.1572, "events": 168, "h2s": 12}, {"cohesion": 0.7149, "ewma": 0.3479, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4272, "div": 2.127, "lap": 2.127, "curl": 0.1565, "events": 182, "h2s": 13}, {"cohesion": 0.7149, "ewma": 0.3662, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4273, "div": 2.1315, "lap": 2.1315, "curl": 0.1565, "events": 196, "h2s": 14}, {"cohesion": 0.7149, "ewma": 0.3837, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4291, "div": 2.1386, "lap": 2.1386, "curl": 0.1575, "events": 210, "h2s": 15}, {"cohesion": 0.7149, "ewma": 0.4002, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4279, "div": 2.1338, "lap": 2.1338, "curl": 0.1574, "events": 224, "h2s": 16}, {"cohesion": 0.7149, "ewma": 0.416, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4287, "div": 2.1356, "lap": 2.1356, "curl": 0.1573, "events": 238, "h2s": 17}, {"cohesion": 0.7149, "ewma": 0.4309, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.427, "div": 2.1241, "lap": 2.1241, "curl": 0.158, "events": 252, "h2s": 18}, {"cohesion": 0.7149, "ewma": 0.4451, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1411, "lap": 2.1411, "curl": 0.1586, "events": 266, "h2s": 19}, {"cohesion": 0.7149, "ewma": 0.4586, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4322, "div": 2.1488, "lap": 2.1488, "curl": 0.1591, "events": 280, "h2s": 20}, {"cohesion": 0.7149, "ewma": 0.4714, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4285, "div": 2.1328, "lap": 2.1328, "curl": 0.1569, "events": 294, "h2s": 21}, {"cohesion": 0.7149, "ewma": 0.4836, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4297, "div": 2.138, "lap": 2.138, "curl": 0.1576, "events": 308, "h2s": 22}, {"cohesion": 0.7149, "ewma": 0.4951, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4336, "div": 2.1572, "lap": 2.1572, "curl": 0.1594, "events": 322, "h2s": 23}, {"cohesion": 0.7149, "ewma": 0.5061, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1461, "lap": 2.1461, "curl": 0.1587, "events": 336, "h2s": 24}, {"cohesion": 0.7149, "ewma": 0.5166, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4291, "div": 2.1371, "lap": 2.1371, "curl": 0.1577, "events": 350, "h2s": 25}, {"cohesion": 0.7149, "ewma": 0.5265, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4291, "div": 2.1316, "lap": 2.1316, "curl": 0.1566, "events": 364, "h2s": 26}, {"cohesion": 0.7149, "ewma": 0.5359, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4322, "div": 2.1538, "lap": 2.1538, "curl": 0.1585, "events": 378, "h2s": 27}, {"cohesion": 0.7149, "ewma": 0.5449, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4276, "div": 2.1253, "lap": 2.1253, "curl": 0.1571, "events": 392, "h2s": 28}, {"cohesion": 0.7149, "ewma": 0.5534, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4276, "div": 2.132, "lap": 2.132, "curl": 0.1572, "events": 406, "h2s": 29}, {"cohesion": 0.7149, "ewma": 0.5614, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4257, "div": 2.1194, "lap": 2.1194, "curl": 0.1569, "events": 420, "h2s": 30}, {"cohesion": 0.7149, "ewma": 0.5691, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4304, "div": 2.1408, "lap": 2.1408, "curl": 0.1578, "events": 434, "h2s": 31}, {"cohesion": 0.7149, "ewma": 0.5764, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4278, "div": 2.1294, "lap": 2.1294, "curl": 0.1572, "events": 448, "h2s": 32}, {"cohesion": 0.7149, "ewma": 0.5833, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4308, "div": 2.1483, "lap": 2.1483, "curl": 0.1583, "events": 462, "h2s": 33}, {"cohesion": 0.7149, "ewma": 0.5899, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4261, "div": 2.1208, "lap": 2.1208, "curl": 0.1563, "events": 476, "h2s": 34}, {"cohesion": 0.7149, "ewma": 0.5961, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4263, "div": 2.1166, "lap": 2.1166, "curl": 0.1568, "events": 490, "h2s": 35}, {"cohesion": 0.7149, "ewma": 0.6021, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4293, "div": 2.134, "lap": 2.134, "curl": 0.157, "events": 504, "h2s": 36}, {"cohesion": 0.7149, "ewma": 0.6077, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1428, "lap": 2.1428, "curl": 0.1578, "events": 518, "h2s": 37}, {"cohesion": 0.7149, "ewma": 0.6131, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4304, "div": 2.1367, "lap": 2.1367, "curl": 0.1579, "events": 532, "h2s": 38}, {"cohesion": 0.7149, "ewma": 0.6182, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4289, "div": 2.1366, "lap": 2.1366, "curl": 0.157, "events": 546, "h2s": 39}, {"cohesion": 0.7149, "ewma": 0.623, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4278, "div": 2.1258, "lap": 2.1258, "curl": 0.1577, "events": 560, "h2s": 40}, {"cohesion": 0.7149, "ewma": 0.6276, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4282, "div": 2.1295, "lap": 2.1295, "curl": 0.1565, "events": 574, "h2s": 41}, {"cohesion": 0.7149, "ewma": 0.632, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4267, "div": 2.1213, "lap": 2.1213, "curl": 0.1565, "events": 588, "h2s": 42}, {"cohesion": 0.7149, "ewma": 0.6361, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4296, "div": 2.1488, "lap": 2.1488, "curl": 0.1572, "events": 602, "h2s": 43}, {"cohesion": 0.7149, "ewma": 0.64, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4292, "div": 2.1382, "lap": 2.1382, "curl": 0.1579, "events": 616, "h2s": 44}, {"cohesion": 0.7149, "ewma": 0.6438, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4311, "div": 2.1388, "lap": 2.1388, "curl": 0.1578, "events": 630, "h2s": 45}, {"cohesion": 0.7149, "ewma": 0.6473, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.431, "div": 2.147, "lap": 2.147, "curl": 0.1583, "events": 644, "h2s": 46}, {"cohesion": 0.7149, "ewma": 0.6507, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4306, "div": 2.1421, "lap": 2.1421, "curl": 0.1584, "events": 658, "h2s": 47}, {"cohesion": 0.7149, "ewma": 0.6539, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4286, "div": 2.1359, "lap": 2.1359, "curl": 0.1569, "events": 672, "h2s": 48}, {"cohesion": 0.7149, "ewma": 0.657, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4294, "div": 2.1346, "lap": 2.1346, "curl": 0.1572, "events": 686, "h2s": 49}, {"cohesion": 0.7149, "ewma": 0.6599, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4292, "div": 2.1363, "lap": 2.1363, "curl": 0.1579, "events": 700, "h2s": 50}, {"cohesion": 0.7149, "ewma": 0.6626, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4286, "div": 2.136, "lap": 2.136, "curl": 0.1575, "events": 714, "h2s": 51}, {"cohesion": 0.7149, "ewma": 0.6652, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4329, "div": 2.1501, "lap": 2.1501, "curl": 0.158, "events": 728, "h2s": 52}, {"cohesion": 0.7149, "ewma": 0.6677, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.429, "div": 2.1348, "lap": 2.1348, "curl": 0.1577, "events": 742, "h2s": 53}, {"cohesion": 0.7149, "ewma": 0.6701, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4318, "div": 2.1481, "lap": 2.1481, "curl": 0.1584, "events": 756, "h2s": 54}, {"cohesion": 0.7149, "ewma": 0.6723, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4277, "div": 2.1277, "lap": 2.1277, "curl": 0.1577, "events": 770, "h2s": 55}, {"cohesion": 0.7149, "ewma": 0.6744, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.429, "div": 2.1307, "lap": 2.1307, "curl": 0.1585, "events": 784, "h2s": 56}, {"cohesion": 0.7149, "ewma": 0.6765, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4305, "div": 2.1454, "lap": 2.1454, "curl": 0.1578, "events": 798, "h2s": 57}, {"cohesion": 0.7149, "ewma": 0.6784, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4304, "div": 2.1409, "lap": 2.1409, "curl": 0.1576, "events": 812, "h2s": 58}, {"cohesion": 0.7149, "ewma": 0.6802, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4275, "div": 2.1311, "lap": 2.1311, "curl": 0.1568, "events": 826, "h2s": 59}, {"cohesion": 0.7149, "ewma": 0.6819, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4284, "div": 2.1285, "lap": 2.1285, "curl": 0.1572, "events": 840, "h2s": 60}, {"cohesion": 0.7149, "ewma": 0.6836, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4295, "div": 2.14, "lap": 2.14, "curl": 0.1572, "events": 854, "h2s": 61}, {"cohesion": 0.7149, "ewma": 0.6851, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4316, "div": 2.1488, "lap": 2.1488, "curl": 0.1588, "events": 868, "h2s": 62}, {"cohesion": 0.7149, "ewma": 0.6866, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4292, "div": 2.136, "lap": 2.136, "curl": 0.1572, "events": 882, "h2s": 63}, {"cohesion": 0.7149, "ewma": 0.688, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1453, "lap": 2.1453, "curl": 0.1575, "events": 896, "h2s": 64}, {"cohesion": 0.7149, "ewma": 0.6894, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4263, "div": 2.1295, "lap": 2.1295, "curl": 0.1566, "events": 910, "h2s": 65}, {"cohesion": 0.7149, "ewma": 0.6907, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4262, "div": 2.117, "lap": 2.117, "curl": 0.1565, "events": 924, "h2s": 66}, {"cohesion": 0.7149, "ewma": 0.6919, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4295, "div": 2.1321, "lap": 2.1321, "curl": 0.1579, "events": 938, "h2s": 67}, {"cohesion": 0.7149, "ewma": 0.693, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4292, "div": 2.1412, "lap": 2.1412, "curl": 0.1575, "events": 952, "h2s": 68}, {"cohesion": 0.7149, "ewma": 0.6941, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4266, "div": 2.1237, "lap": 2.1237, "curl": 0.1569, "events": 966, "h2s": 69}, {"cohesion": 0.7149, "ewma": 0.6951, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.427, "div": 2.1275, "lap": 2.1275, "curl": 0.1569, "events": 980, "h2s": 70}, {"cohesion": 0.7149, "ewma": 0.6961, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.426, "div": 2.1185, "lap": 2.1185, "curl": 0.1573, "events": 994, "h2s": 71}, {"cohesion": 0.7149, "ewma": 0.6971, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4306, "div": 2.143, "lap": 2.143, "curl": 0.158, "events": 1008, "h2s": 72}, {"cohesion": 0.7149, "ewma": 0.698, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.425, "div": 2.1129, "lap": 2.1129, "curl": 0.1558, "events": 1022, "h2s": 73}, {"cohesion": 0.7149, "ewma": 0.6988, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4291, "div": 2.1378, "lap": 2.1378, "curl": 0.1579, "events": 1036, "h2s": 74}, {"cohesion": 0.7149, "ewma": 0.6996, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4272, "div": 2.1306, "lap": 2.1306, "curl": 0.1562, "events": 1050, "h2s": 75}, {"cohesion": 0.7149, "ewma": 0.7004, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4281, "div": 2.132, "lap": 2.132, "curl": 0.1576, "events": 1064, "h2s": 76}, {"cohesion": 0.7149, "ewma": 0.7011, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4266, "div": 2.1213, "lap": 2.1213, "curl": 0.1568, "events": 1078, "h2s": 77}, {"cohesion": 0.7149, "ewma": 0.7018, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4311, "div": 2.1453, "lap": 2.1453, "curl": 0.1583, "events": 1092, "h2s": 78}, {"cohesion": 0.7149, "ewma": 0.7024, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4254, "div": 2.1139, "lap": 2.1139, "curl": 0.1565, "events": 1106, "h2s": 79}, {"cohesion": 0.7149, "ewma": 0.7031, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4299, "div": 2.14, "lap": 2.14, "curl": 0.1578, "events": 1120, "h2s": 80}];
-const PX     = [-1.0, -0.7142857142857143, -0.4285714285714286, -0.1428571428571429, 0.1428571428571428, 0.4285714285714286, 0.7142857142857142, 1.0, -1.0, -0.7142857142857143, -0.4285714285714286, -0.1428571428571429, 0.1428571428571428, 0.4285714285714286, 0.7142857142857142, 1.0, -1.0, -0.7142857142857143, -0.4285714285714286, -0.1428571428571429, 0.1428571428571428, 0.4285714285714286, 0.7142857142857142, 1.0, -1.0, -0.7142857142857143, -0.4285714285714286, -0.1428571428571429, 0.1428571428571428, 0.4285714285714286, 0.7142857142857142, 1.0, -1.0, -0.7142857142857143, -0.4285714285714286, -0.1428571428571429, 0.1428571428571428, 0.4285714285714286, 0.7142857142857142, 1.0, -1.0, -0.7142857142857143, -0.4285714285714286, -0.1428571428571429, 0.1428571428571428, 0.4285714285714286, 0.7142857142857142, 1.0, -1.0, -0.7142857142857143, -0.4285714285714286, -0.1428571428571429, 0.1428571428571428, 0.4285714285714286, 0.7142857142857142, 1.0, -1.0, -0.7142857142857143, -0.4285714285714286, -0.1428571428571429, 0.1428571428571428, 0.4285714285714286, 0.7142857142857142, 1.0];
-const PY     = [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -0.7142857142857143, -0.7142857142857143, -0.7142857142857143, -0.7142857142857143, -0.7142857142857143, -0.7142857142857143, -0.7142857142857143, -0.7142857142857143, -0.4285714285714286, -0.4285714285714286, -0.4285714285714286, -0.4285714285714286, -0.4285714285714286, -0.4285714285714286, -0.4285714285714286, -0.4285714285714286, -0.1428571428571429, -0.1428571428571429, -0.1428571428571429, -0.1428571428571429, -0.1428571428571429, -0.1428571428571429, -0.1428571428571429, -0.1428571428571429, 0.1428571428571428, 0.1428571428571428, 0.1428571428571428, 0.1428571428571428, 0.1428571428571428, 0.1428571428571428, 0.1428571428571428, 0.1428571428571428, 0.4285714285714286, 0.4285714285714286, 0.4285714285714286, 0.4285714285714286, 0.4285714285714286, 0.4285714285714286, 0.4285714285714286, 0.4285714285714286, 0.7142857142857142, 0.7142857142857142, 0.7142857142857142, 0.7142857142857142, 0.7142857142857142, 0.7142857142857142, 0.7142857142857142, 0.7142857142857142, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
-const EI_SRC = [0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 16, 16, 16, 17, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 19, 20, 20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 23, 23, 24, 24, 24, 25, 25, 25, 25, 26, 26, 26, 26, 27, 27, 27, 27, 28, 28, 28, 28, 29, 29, 29, 29, 30, 30, 30, 30, 31, 31, 32, 32, 32, 33, 33, 33, 33, 34, 34, 34, 34, 35, 35, 35, 35, 36, 36, 36, 36, 37, 37, 37, 37, 38, 38, 38, 38, 39, 39, 40, 40, 40, 41, 41, 41, 41, 42, 42, 42, 42, 43, 43, 43, 43, 44, 44, 44, 44, 45, 45, 45, 45, 46, 46, 46, 46, 47, 47, 48, 48, 48, 49, 49, 49, 49, 50, 50, 50, 50, 51, 51, 51, 51, 52, 52, 52, 52, 53, 53, 53, 53, 54, 54, 54, 54, 55, 55, 56, 57, 58, 59, 60, 61, 62];
-const EI_DST = [1, 8, 9, 2, 9, 10, 8, 3, 10, 11, 9, 4, 11, 12, 10, 5, 12, 13, 11, 6, 13, 14, 12, 7, 14, 15, 13, 15, 14, 9, 16, 17, 10, 17, 18, 16, 11, 18, 19, 17, 12, 19, 20, 18, 13, 20, 21, 19, 14, 21, 22, 20, 15, 22, 23, 21, 23, 22, 17, 24, 25, 18, 25, 26, 24, 19, 26, 27, 25, 20, 27, 28, 26, 21, 28, 29, 27, 22, 29, 30, 28, 23, 30, 31, 29, 31, 30, 25, 32, 33, 26, 33, 34, 32, 27, 34, 35, 33, 28, 35, 36, 34, 29, 36, 37, 35, 30, 37, 38, 36, 31, 38, 39, 37, 39, 38, 33, 40, 41, 34, 41, 42, 40, 35, 42, 43, 41, 36, 43, 44, 42, 37, 44, 45, 43, 38, 45, 46, 44, 39, 46, 47, 45, 47, 46, 41, 48, 49, 42, 49, 50, 48, 43, 50, 51, 49, 44, 51, 52, 50, 45, 52, 53, 51, 46, 53, 54, 52, 47, 54, 55, 53, 55, 54, 49, 56, 57, 50, 57, 58, 56, 51, 58, 59, 57, 52, 59, 60, 58, 53, 60, 61, 59, 54, 61, 62, 60, 55, 62, 63, 61, 63, 62, 57, 58, 59, 60, 61, 62, 63];
-const EW     = [1.0, 1.0, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 1.0, 0.7071067690849304, 0.7071067690849304, 1.0, 0.7071067690849304, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
-const FI0    = [0, 9, 1, 10, 2, 11, 3, 12, 4, 13, 5, 14, 6, 15, 8, 17, 9, 18, 10, 19, 11, 20, 12, 21, 13, 22, 14, 23, 16, 25, 17, 26, 18, 27, 19, 28, 20, 29, 21, 30, 22, 31, 24, 33, 25, 34, 26, 35, 27, 36, 28, 37, 29, 38, 30, 39, 32, 41, 33, 42, 34, 43, 35, 44, 36, 45, 37, 46, 38, 47, 40, 49, 41, 50, 42, 51, 43, 52, 44, 53, 45, 54, 46, 55, 48, 57, 49, 58, 50, 59, 51, 60, 52, 61, 53, 62, 54, 63];
-const FI1    = [8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54, 54, 56, 56, 57, 57, 58, 58, 59, 59, 60, 60, 61, 61, 62, 62];
-const FI2    = [1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39, 39, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54, 54, 55, 55];
-const LIMBS  = ["memory", "planning", "language", "spatial", "reasoning", "metacognition", "perception", "action", "emotion", "empathy", "ethics", "imagination", "visualization"];
-const LCOUNTS= [80, 80, 80, 160, 80, 80, 80, 80, 80, 80, 80, 80, 80];
-const PARAMS_M = 208.0;
-const N_EDGES  = 210;
-const N_FACES  = 98;
-
+const TL      = [{"cohesion": 0.7149, "ewma": 0.0357, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4302, "div": 2.1449, "lap": 2.1449, "curl": 0.1583, "events": 14, "h2s": 1}, {"cohesion": 0.7149, "ewma": 0.0697, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1456, "lap": 2.1456, "curl": 0.1583, "events": 28, "h2s": 2}, {"cohesion": 0.7149, "ewma": 0.102, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4267, "div": 2.1282, "lap": 2.1282, "curl": 0.1571, "events": 42, "h2s": 3}, {"cohesion": 0.7149, "ewma": 0.1326, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4296, "div": 2.1402, "lap": 2.1402, "curl": 0.1581, "events": 56, "h2s": 4}, {"cohesion": 0.7149, "ewma": 0.1617, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4298, "div": 2.1404, "lap": 2.1404, "curl": 0.1579, "events": 70, "h2s": 5}, {"cohesion": 0.7149, "ewma": 0.1894, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4318, "div": 2.1521, "lap": 2.1521, "curl": 0.1575, "events": 84, "h2s": 6}, {"cohesion": 0.7149, "ewma": 0.2156, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4312, "div": 2.1483, "lap": 2.1483, "curl": 0.1582, "events": 98, "h2s": 7}, {"cohesion": 0.7149, "ewma": 0.2406, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4271, "div": 2.1276, "lap": 2.1276, "curl": 0.157, "events": 112, "h2s": 8}, {"cohesion": 0.7149, "ewma": 0.2643, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4305, "div": 2.1524, "lap": 2.1524, "curl": 0.1585, "events": 126, "h2s": 9}, {"cohesion": 0.7149, "ewma": 0.2868, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4287, "div": 2.1321, "lap": 2.1321, "curl": 0.1573, "events": 140, "h2s": 10}, {"cohesion": 0.7149, "ewma": 0.3082, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4253, "div": 2.1181, "lap": 2.1181, "curl": 0.1563, "events": 154, "h2s": 11}, {"cohesion": 0.7149, "ewma": 0.3286, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.428, "div": 2.1336, "lap": 2.1336, "curl": 0.1572, "events": 168, "h2s": 12}, {"cohesion": 0.7149, "ewma": 0.3479, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4272, "div": 2.127, "lap": 2.127, "curl": 0.1565, "events": 182, "h2s": 13}, {"cohesion": 0.7149, "ewma": 0.3662, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4273, "div": 2.1315, "lap": 2.1315, "curl": 0.1565, "events": 196, "h2s": 14}, {"cohesion": 0.7149, "ewma": 0.3837, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4291, "div": 2.1386, "lap": 2.1386, "curl": 0.1575, "events": 210, "h2s": 15}, {"cohesion": 0.7149, "ewma": 0.4002, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4279, "div": 2.1338, "lap": 2.1338, "curl": 0.1574, "events": 224, "h2s": 16}, {"cohesion": 0.7149, "ewma": 0.416, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4287, "div": 2.1356, "lap": 2.1356, "curl": 0.1573, "events": 238, "h2s": 17}, {"cohesion": 0.7149, "ewma": 0.4309, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.427, "div": 2.1241, "lap": 2.1241, "curl": 0.158, "events": 252, "h2s": 18}, {"cohesion": 0.7149, "ewma": 0.4451, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1411, "lap": 2.1411, "curl": 0.1586, "events": 266, "h2s": 19}, {"cohesion": 0.7149, "ewma": 0.4586, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4322, "div": 2.1488, "lap": 2.1488, "curl": 0.1591, "events": 280, "h2s": 20}, {"cohesion": 0.7149, "ewma": 0.4714, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4285, "div": 2.1328, "lap": 2.1328, "curl": 0.1569, "events": 294, "h2s": 21}, {"cohesion": 0.7149, "ewma": 0.4836, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4297, "div": 2.138, "lap": 2.138, "curl": 0.1576, "events": 308, "h2s": 22}, {"cohesion": 0.7149, "ewma": 0.4951, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4336, "div": 2.1572, "lap": 2.1572, "curl": 0.1594, "events": 322, "h2s": 23}, {"cohesion": 0.7149, "ewma": 0.5061, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1461, "lap": 2.1461, "curl": 0.1587, "events": 336, "h2s": 24}, {"cohesion": 0.7149, "ewma": 0.5166, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4291, "div": 2.1371, "lap": 2.1371, "curl": 0.1577, "events": 350, "h2s": 25}, {"cohesion": 0.7149, "ewma": 0.5265, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4291, "div": 2.1316, "lap": 2.1316, "curl": 0.1566, "events": 364, "h2s": 26}, {"cohesion": 0.7149, "ewma": 0.5359, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4322, "div": 2.1538, "lap": 2.1538, "curl": 0.1585, "events": 378, "h2s": 27}, {"cohesion": 0.7149, "ewma": 0.5449, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4276, "div": 2.1253, "lap": 2.1253, "curl": 0.1571, "events": 392, "h2s": 28}, {"cohesion": 0.7149, "ewma": 0.5534, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4276, "div": 2.132, "lap": 2.132, "curl": 0.1572, "events": 406, "h2s": 29}, {"cohesion": 0.7149, "ewma": 0.5614, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4257, "div": 2.1194, "lap": 2.1194, "curl": 0.1569, "events": 420, "h2s": 30}, {"cohesion": 0.7149, "ewma": 0.5691, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4304, "div": 2.1408, "lap": 2.1408, "curl": 0.1578, "events": 434, "h2s": 31}, {"cohesion": 0.7149, "ewma": 0.5764, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4278, "div": 2.1294, "lap": 2.1294, "curl": 0.1572, "events": 448, "h2s": 32}, {"cohesion": 0.7149, "ewma": 0.5833, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4308, "div": 2.1483, "lap": 2.1483, "curl": 0.1583, "events": 462, "h2s": 33}, {"cohesion": 0.7149, "ewma": 0.5899, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4261, "div": 2.1208, "lap": 2.1208, "curl": 0.1563, "events": 476, "h2s": 34}, {"cohesion": 0.7149, "ewma": 0.5961, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4263, "div": 2.1166, "lap": 2.1166, "curl": 0.1568, "events": 490, "h2s": 35}, {"cohesion": 0.7149, "ewma": 0.6021, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4293, "div": 2.134, "lap": 2.134, "curl": 0.157, "events": 504, "h2s": 36}, {"cohesion": 0.7149, "ewma": 0.6077, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1428, "lap": 2.1428, "curl": 0.1578, "events": 518, "h2s": 37}, {"cohesion": 0.7149, "ewma": 0.6131, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4304, "div": 2.1367, "lap": 2.1367, "curl": 0.1579, "events": 532, "h2s": 38}, {"cohesion": 0.7149, "ewma": 0.6182, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4289, "div": 2.1366, "lap": 2.1366, "curl": 0.157, "events": 546, "h2s": 39}, {"cohesion": 0.7149, "ewma": 0.623, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4278, "div": 2.1258, "lap": 2.1258, "curl": 0.1577, "events": 560, "h2s": 40}, {"cohesion": 0.7149, "ewma": 0.6276, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4282, "div": 2.1295, "lap": 2.1295, "curl": 0.1565, "events": 574, "h2s": 41}, {"cohesion": 0.7149, "ewma": 0.632, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4267, "div": 2.1213, "lap": 2.1213, "curl": 0.1565, "events": 588, "h2s": 42}, {"cohesion": 0.7149, "ewma": 0.6361, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4296, "div": 2.1488, "lap": 2.1488, "curl": 0.1572, "events": 602, "h2s": 43}, {"cohesion": 0.7149, "ewma": 0.64, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4292, "div": 2.1382, "lap": 2.1382, "curl": 0.1579, "events": 616, "h2s": 44}, {"cohesion": 0.7149, "ewma": 0.6438, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4311, "div": 2.1388, "lap": 2.1388, "curl": 0.1578, "events": 630, "h2s": 45}, {"cohesion": 0.7149, "ewma": 0.6473, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.431, "div": 2.147, "lap": 2.147, "curl": 0.1583, "events": 644, "h2s": 46}, {"cohesion": 0.7149, "ewma": 0.6507, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4306, "div": 2.1421, "lap": 2.1421, "curl": 0.1584, "events": 658, "h2s": 47}, {"cohesion": 0.7149, "ewma": 0.6539, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4286, "div": 2.1359, "lap": 2.1359, "curl": 0.1569, "events": 672, "h2s": 48}, {"cohesion": 0.7149, "ewma": 0.657, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4294, "div": 2.1346, "lap": 2.1346, "curl": 0.1572, "events": 686, "h2s": 49}, {"cohesion": 0.7149, "ewma": 0.6599, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4292, "div": 2.1363, "lap": 2.1363, "curl": 0.1579, "events": 700, "h2s": 50}, {"cohesion": 0.7149, "ewma": 0.6626, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4286, "div": 2.136, "lap": 2.136, "curl": 0.1575, "events": 714, "h2s": 51}, {"cohesion": 0.7149, "ewma": 0.6652, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4329, "div": 2.1501, "lap": 2.1501, "curl": 0.158, "events": 728, "h2s": 52}, {"cohesion": 0.7149, "ewma": 0.6677, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.429, "div": 2.1348, "lap": 2.1348, "curl": 0.1577, "events": 742, "h2s": 53}, {"cohesion": 0.7149, "ewma": 0.6701, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4318, "div": 2.1481, "lap": 2.1481, "curl": 0.1584, "events": 756, "h2s": 54}, {"cohesion": 0.7149, "ewma": 0.6723, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4277, "div": 2.1277, "lap": 2.1277, "curl": 0.1577, "events": 770, "h2s": 55}, {"cohesion": 0.7149, "ewma": 0.6744, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.429, "div": 2.1307, "lap": 2.1307, "curl": 0.1585, "events": 784, "h2s": 56}, {"cohesion": 0.7149, "ewma": 0.6765, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4305, "div": 2.1454, "lap": 2.1454, "curl": 0.1578, "events": 798, "h2s": 57}, {"cohesion": 0.7149, "ewma": 0.6784, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4304, "div": 2.1409, "lap": 2.1409, "curl": 0.1576, "events": 812, "h2s": 58}, {"cohesion": 0.7149, "ewma": 0.6802, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4275, "div": 2.1311, "lap": 2.1311, "curl": 0.1568, "events": 826, "h2s": 59}, {"cohesion": 0.7149, "ewma": 0.6819, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4284, "div": 2.1285, "lap": 2.1285, "curl": 0.1572, "events": 840, "h2s": 60}, {"cohesion": 0.7149, "ewma": 0.6836, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4295, "div": 2.14, "lap": 2.14, "curl": 0.1572, "events": 854, "h2s": 61}, {"cohesion": 0.7149, "ewma": 0.6851, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4316, "div": 2.1488, "lap": 2.1488, "curl": 0.1588, "events": 868, "h2s": 62}, {"cohesion": 0.7149, "ewma": 0.6866, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4292, "div": 2.136, "lap": 2.136, "curl": 0.1572, "events": 882, "h2s": 63}, {"cohesion": 0.7149, "ewma": 0.688, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4307, "div": 2.1453, "lap": 2.1453, "curl": 0.1575, "events": 896, "h2s": 64}, {"cohesion": 0.7149, "ewma": 0.6894, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4263, "div": 2.1295, "lap": 2.1295, "curl": 0.1566, "events": 910, "h2s": 65}, {"cohesion": 0.7149, "ewma": 0.6907, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4262, "div": 2.117, "lap": 2.117, "curl": 0.1565, "events": 924, "h2s": 66}, {"cohesion": 0.7149, "ewma": 0.6919, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4295, "div": 2.1321, "lap": 2.1321, "curl": 0.1579, "events": 938, "h2s": 67}, {"cohesion": 0.7149, "ewma": 0.693, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4292, "div": 2.1412, "lap": 2.1412, "curl": 0.1575, "events": 952, "h2s": 68}, {"cohesion": 0.7149, "ewma": 0.6941, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4266, "div": 2.1237, "lap": 2.1237, "curl": 0.1569, "events": 966, "h2s": 69}, {"cohesion": 0.7149, "ewma": 0.6951, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.427, "div": 2.1275, "lap": 2.1275, "curl": 0.1569, "events": 980, "h2s": 70}, {"cohesion": 0.7149, "ewma": 0.6961, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.426, "div": 2.1185, "lap": 2.1185, "curl": 0.1573, "events": 994, "h2s": 71}, {"cohesion": 0.7149, "ewma": 0.6971, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4306, "div": 2.143, "lap": 2.143, "curl": 0.158, "events": 1008, "h2s": 72}, {"cohesion": 0.7149, "ewma": 0.698, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.425, "div": 2.1129, "lap": 2.1129, "curl": 0.1558, "events": 1022, "h2s": 73}, {"cohesion": 0.7149, "ewma": 0.6988, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4291, "div": 2.1378, "lap": 2.1378, "curl": 0.1579, "events": 1036, "h2s": 74}, {"cohesion": 0.7149, "ewma": 0.6996, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4272, "div": 2.1306, "lap": 2.1306, "curl": 0.1562, "events": 1050, "h2s": 75}, {"cohesion": 0.7149, "ewma": 0.7004, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4281, "div": 2.132, "lap": 2.132, "curl": 0.1576, "events": 1064, "h2s": 76}, {"cohesion": 0.7149, "ewma": 0.7011, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4266, "div": 2.1213, "lap": 2.1213, "curl": 0.1568, "events": 1078, "h2s": 77}, {"cohesion": 0.7149, "ewma": 0.7018, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4311, "div": 2.1453, "lap": 2.1453, "curl": 0.1583, "events": 1092, "h2s": 78}, {"cohesion": 0.7149, "ewma": 0.7024, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4254, "div": 2.1139, "lap": 2.1139, "curl": 0.1565, "events": 1106, "h2s": 79}, {"cohesion": 0.7149, "ewma": 0.7031, "limb_bal": 0.9903, "skill_cov": 0.0625, "grad": 0.4299, "div": 2.14, "lap": 2.14, "curl": 0.1578, "events": 1120, "h2s": 80}];
+const LIMBS   = ["memory", "planning", "language", "spatial", "reasoning", "metacognition", "perception", "action", "emotion", "empathy", "ethics", "imagination", "visualization"];
+const LCOUNTS = [80, 80, 80, 160, 80, 80, 80, 80, 80, 80, 80, 80, 80];
 const LIMB_HI = [false, true, false, false, false, false, true, true, false, false, false, false, false];
+const MAX_LC  = Math.max(...LCOUNTS, 1);
 
-const MAX_LC = Math.max(...LCOUNTS, 1);
-let W, H, frame = 0, passIdx = 0, lastPassMs = 0;
-const PASS_INTERVAL = 200;
-
-const bgC = document.getElementById('bg-c');
-const bgX = bgC.getContext('2d');
-const mc  = document.getElementById('main-c');
+// ── Canvas setup ─────────────────────────────────────────────────────────────
+const mc  = document.getElementById('mc');
 const ctx = mc.getContext('2d');
 const spC = document.getElementById('sp');
 const spX = spC.getContext('2d');
+let W = 0, H = 0;
 
 function resize() {
   const wrap = document.getElementById('canvas-wrap');
-  W = bgC.width = mc.width = wrap.offsetWidth;
-  H = bgC.height = mc.height = wrap.offsetHeight;
-  spC.width  = document.getElementById('sp-wrap').offsetWidth;
-  spC.height = document.getElementById('sp-wrap').offsetHeight;
+  W = mc.width  = wrap.clientWidth;
+  H = mc.height = wrap.clientHeight;
+  spC.width  = document.getElementById('sp-wrap').clientWidth;
+  spC.height = document.getElementById('sp-wrap').clientHeight;
 }
-resize(); window.addEventListener('resize', resize);
 
-// Build limb list
+// ── Limb list ─────────────────────────────────────────────────────────────────
 const limbListEl = document.getElementById('limb-list');
 LIMBS.forEach((l, i) => {
   const hue = (i / LIMBS.length * 360) | 0;
-  const name = l.replace(/_limb$/, '').replace(/_/g, ' ');
   const isHi = LIMB_HI[i];
   const row = document.createElement('div');
   row.className = 'lr' + (isHi ? ' hi' : '');
   row.innerHTML = `
     <div class="ld" style="background:hsl(${hue},70%,${isHi?65:50}%)${isHi?';box-shadow:0 0 6px hsl('+hue+',80%,60%)':''}"></div>
-    <div class="lname">${name}</div>
+    <div class="lname">${l.replace(/_limb$/,'').replace(/_/g,' ')}</div>
     <div class="lbw"><div class="lb2" style="background:hsl(${hue},70%,${isHi?60:45}%);width:${(LCOUNTS[i]/MAX_LC*100).toFixed(0)}%"></div></div>
     <div class="lc">${LCOUNTS[i]}</div>`;
   limbListEl.appendChild(row);
 });
 
-let mx = 0, my = 0;
-window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
-
 // ── Julia fractal ─────────────────────────────────────────────────────────────
-// Offscreen 300×180 — rendered once per model pass, blitted scaled.
-// c is driven by cohesion + curl so the fractal morphs with the model.
-const JW = 300, JH = 180, MAX_ITER = 64;
-const juliaOff = document.createElement('canvas');
-juliaOff.width = JW; juliaOff.height = JH;
-const jCtx = juliaOff.getContext('2d');
-const jImg = jCtx.createImageData(JW, JH);
-let lastJuliaPass = -1;
-
-// Pre-bake opaque colour palette (RGB6-wheel, bright, fully opaque)
+const MAX_ITER = 96;
 const JPAL = new Uint8Array(MAX_ITER * 3);
 for (let i = 0; i < MAX_ITER; i++) {
   const t = i / MAX_ITER;
-  const hue = (t * 720 + 190) % 360;
-  const h6 = hue / 60;
-  const x  = 1 - Math.abs(h6 % 2 - 1);
-  const lum = 0.25 + t * 0.65;
+  const hue = (t * 780 + 200) % 360;
+  const h6 = hue / 60, x = 1 - Math.abs(h6 % 2 - 1), lum = 0.3 + t * 0.65;
   let r, g, b;
   if      (h6 < 1) { r=1;   g=x;   b=0;   }
   else if (h6 < 2) { r=x;   g=1;   b=0;   }
@@ -225,172 +169,209 @@ for (let i = 0; i < MAX_ITER; i++) {
   JPAL[i*3+2] = (b * lum * 255) | 0;
 }
 
+let fracCanvas = null, fracCtx = null, lastJuliaPass = -1;
+
 function renderJulia(ci) {
-  const cr  = -0.52 + 0.28 * Math.cos(ci.cohesion * 9.42);
-  const cim =  0.52 - 0.28 * Math.sin(ci.curl * 6.28 + ci.grad);
-  const d = jImg.data;
-  for (let py = 0; py < JH; py++) {
-    const zi0 = (py / JH - 0.5) * 2.0;
-    for (let px = 0; px < JW; px++) {
-      let zr = (px / JW - 0.5) * 3.2;
-      let zi = zi0, iter = 0;
+  const FW = Math.max(4, (W / 2) | 0);
+  const FH = Math.max(4, (H / 2) | 0);
+  if (!fracCanvas || fracCanvas.width !== FW || fracCanvas.height !== FH) {
+    fracCanvas = document.createElement('canvas');
+    fracCanvas.width = FW; fracCanvas.height = FH;
+    fracCtx = fracCanvas.getContext('2d');
+  }
+  const img = fracCtx.createImageData(FW, FH);
+  const d   = img.data;
+  const cr  = -0.52 + 0.30 * Math.cos(ci.cohesion * 9.42);
+  const cim =  0.48 - 0.30 * Math.sin(ci.curl * 6.28 + ci.grad);
+  for (let py = 0; py < FH; py++) {
+    const zi0 = (py / FH - 0.5) * 2.2;
+    for (let px = 0; px < FW; px++) {
+      let zr = (px / FW - 0.5) * 3.4, zi = zi0, iter = 0;
       while (iter < MAX_ITER) {
         const zr2 = zr*zr, zi2 = zi*zi;
         if (zr2 + zi2 > 4.0) break;
-        zi = 2*zr*zi + cim;
-        zr = zr2 - zi2 + cr;
-        iter++;
+        zi = 2*zr*zi + cim; zr = zr2 - zi2 + cr; iter++;
       }
-      const idx = (py * JW + px) * 4;
+      const idx = (py * FW + px) * 4;
       if (iter === MAX_ITER) {
-        d[idx]=0; d[idx+1]=0; d[idx+2]=12; d[idx+3]=255;   // interior: deep navy
+        d[idx]=4; d[idx+1]=6; d[idx+2]=18; d[idx+3]=255;
       } else {
-        d[idx]   = JPAL[iter*3];
-        d[idx+1] = JPAL[iter*3+1];
-        d[idx+2] = JPAL[iter*3+2];
-        d[idx+3] = 255;
+        d[idx]=JPAL[iter*3]; d[idx+1]=JPAL[iter*3+1]; d[idx+2]=JPAL[iter*3+2]; d[idx+3]=255;
       }
     }
   }
-  jCtx.putImageData(jImg, 0, 0);
+  fracCtx.putImageData(img, 0, 0);
 }
 
-// Render immediately on first call (before first frame)
-function ensureJulia(ci) {
-  if (ci && passIdx !== lastJuliaPass) {
-    renderJulia(ci);
-    lastJuliaPass = passIdx;
-  }
-}
+// ── 3-D Tetrahedra ────────────────────────────────────────────────────────────
+// Regular tetrahedron: 4 vertices on unit sphere using cube alternating corners
+const SQ3 = Math.sqrt(3);
+const BASE_V = [
+  [ 1,  1,  1],
+  [ 1, -1, -1],
+  [-1,  1, -1],
+  [-1, -1,  1],
+].map(v => { const s = Math.sqrt(3); return [v[0]/s, v[1]/s, v[2]/s]; });
 
-let bgHue = 220;
-function drawBg(t, ci) {
-  bgHue = (bgHue + 0.07) % 360;
-  bgX.clearRect(0, 0, W, H);
+const TET_EDGES = [[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
+const TET_FACES = [[0,1,2],[0,1,3],[0,2,3],[1,2,3]];
 
-  // Julia fractal — full opacity blended via globalAlpha
-  ensureJulia(ci);
-  bgX.save();
-  bgX.globalAlpha = 0.62;
-  bgX.imageSmoothingEnabled = true;
-  bgX.imageSmoothingQuality = 'high';
-  bgX.drawImage(juliaOff, 0, 0, W, H);
-  bgX.restore();
-
-  // Dark vignette so tet grid reads clearly in centre
-  const vg = bgX.createRadialGradient(W/2, H/2, H*0.05, W/2, H/2, H*0.72);
-  vg.addColorStop(0, 'rgba(7,8,15,0.72)');
-  vg.addColorStop(1, 'rgba(7,8,15,0.08)');
-  bgX.fillStyle = vg; bgX.fillRect(0, 0, W, H);
-
-  // Subtle drifting colour blobs on top
-  const blobs = [
-    { x:W*(0.25+0.18*Math.sin(t*0.00022)), y:H*(0.35+0.18*Math.cos(t*0.00017)), r:W*0.35, h:bgHue%360, a:0.07 },
-    { x:W*(0.75+0.15*Math.cos(t*0.00018)), y:H*(0.65+0.15*Math.sin(t*0.00024)), r:W*0.30, h:(bgHue+110)%360, a:0.06 },
-  ];
-  for (const b of blobs) {
-    const g = bgX.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
-    g.addColorStop(0, `hsla(${b.h},55%,30%,${b.a})`);
-    g.addColorStop(1, 'transparent');
-    bgX.fillStyle = g; bgX.fillRect(0, 0, W, H);
+// 4×4×2 grid = 32 tetrahedra, alternating orientation
+const TETS = [];
+for (let ix = 0; ix < 4; ix++) {
+  for (let iy = 0; iy < 5; iy++) {
+    for (let iz = 0; iz < 2; iz++) {
+      TETS.push({
+        ox: (ix - 1.5) * 2.3,
+        oy: (iy - 2.0) * 1.9,
+        oz: (iz - 0.5) * 2.2,
+        flip: (ix + iy + iz) % 2 === 1,
+        hue:  ((ix * 88 + iy * 44 + iz * 176)) % 360,
+        phase: ix * 1.27 + iy * 0.73 + iz * 2.09,
+      });
+    }
   }
 }
 
-function drawTetGrid(t, ci) {
-  const cx=W/2, cy=H/2, rot=t*0.00018, scl=Math.min(W,H)*0.32;
-  const wobble=Math.sin(t*0.0008)*0.04;
-  const ppx=(mx/(W+270)-0.5)*0.10, ppy=(my/H-0.5)*0.10;
-  const cosR=Math.cos(rot+wobble), sinR=Math.sin(rot+wobble);
-  function nxy(i) {
-    return [cx+(PX[i]*cosR-PY[i]*sinR+ppx)*scl, cy+(PX[i]*sinR+PY[i]*cosR+ppy)*scl];
-  }
-  ctx.save(); ctx.globalAlpha=0.032+ci.curl*0.07;
-  for(let f=0;f<N_FACES;f++) {
-    const [ax,ay]=nxy(FI0[f]),[bx,by]=nxy(FI1[f]),[cx2,cy2]=nxy(FI2[f]);
-    ctx.fillStyle=`hsl(${(f/N_FACES*360+frame*0.25)%360},75%,58%)`;
-    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.lineTo(cx2,cy2);ctx.closePath();ctx.fill();
-  }
-  ctx.restore();
-  ctx.save();
-  for(let e=0;e<N_EDGES;e++) {
-    const [ax,ay]=nxy(EI_SRC[e]),[bx,by]=nxy(EI_DST[e]);
-    const hue=(e/N_EDGES*360+frame*0.38+ci.cohesion*80)%360;
-    const pulse=0.18+0.26*Math.abs(Math.sin(t*0.0016+e*0.09));
-    ctx.strokeStyle=`hsla(${hue},85%,62%,${pulse})`;
-    ctx.lineWidth=0.55+EW[e]*1.2*(0.4+ci.grad*0.6);
-    ctx.shadowColor=`hsl(${hue},100%,65%)`;ctx.shadowBlur=4;
-    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();
-  }
-  ctx.restore();
-  ctx.save();ctx.shadowBlur=0;
-  for(let n=0;n<64;n++) {
-    const [nx,ny]=nxy(n);
-    const hue=(n/64*360+frame*0.4+ci.curl*160)%360;
-    const pulse=0.5+0.5*Math.sin(t*0.003+n*0.32);
-    const r=1.8+pulse*3.5*ci.cohesion;
-    const grd=ctx.createRadialGradient(nx,ny,0,nx,ny,r*4);
-    grd.addColorStop(0,`hsla(${hue},100%,80%,0.5)`);grd.addColorStop(1,'transparent');
-    ctx.fillStyle=grd;ctx.beginPath();ctx.arc(nx,ny,r*4,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle=`hsl(${hue},100%,90%)`;ctx.beginPath();ctx.arc(nx,ny,r,0,Math.PI*2);ctx.fill();
-  }
-  ctx.restore();
+function rx3(v, a) {
+  const c=Math.cos(a),s=Math.sin(a);
+  return [v[0], v[1]*c-v[2]*s, v[1]*s+v[2]*c];
+}
+function ry3(v, a) {
+  const c=Math.cos(a),s=Math.sin(a);
+  return [v[0]*c+v[2]*s, v[1], -v[0]*s+v[2]*c];
+}
+function proj3(v) {
+  const FL=5.5, S=Math.min(W,H)*0.095;
+  const d = FL/(FL+v[2]);
+  return [W/2+v[0]*d*S, H/2+v[1]*d*S, v[2], d];
 }
 
-const BNODES=[{rx:0.20,ry:0.28,hue:38},{rx:0.50,ry:0.14,hue:150},{rx:0.80,ry:0.28,hue:275}];
-const bParts=[];
-function updateBraid() {
-  if(frame%16===0){ const arc=frame%3; bParts.push({arc,prog:0,speed:0.011+Math.random()*0.009,hue:BNODES[(arc+1)%3].hue,size:2+Math.random()*2.5}); }
-  for(let i=bParts.length-1;i>=0;i--){ bParts[i].prog+=bParts[i].speed; if(bParts[i].prog>=1) bParts.splice(i,1); }
+function drawTets(t, ci) {
+  const RY = t * 0.00013;
+  const RX = t * 0.000065 + ci.cohesion * 0.4;
+  const pulse = 1 + 0.06 * Math.sin(t * 0.0009);
+
+  // Collect all projected faces for painter sort
+  const allFaces = [];
+  const allTetProj = [];
+
+  for (const tet of TETS) {
+    const pRY = RY + tet.phase * 0.28;
+    const pRX = RX + tet.phase * 0.16;
+    const sc  = 0.58 * pulse;
+
+    const verts = BASE_V.map(v => {
+      let p = [...v];
+      if (tet.flip) p[1] = -p[1];
+      p = rx3(p, pRX);
+      p = ry3(p, pRY);
+      return [p[0]*sc + tet.ox, p[1]*sc + tet.oy, p[2]*sc + tet.oz];
+    });
+
+    const pp = verts.map(v => proj3(v));
+    allTetProj.push({ pp, tet });
+
+    for (const f of TET_FACES) {
+      const az = (verts[f[0]][2]+verts[f[1]][2]+verts[f[2]][2])/3;
+      allFaces.push({ pp, f, az, hue: tet.hue, phase: tet.phase });
+    }
+  }
+
+  // Painter's algorithm for faces
+  allFaces.sort((a, b) => b.az - a.az);
+  for (const { pp, f, hue, phase, az } of allFaces) {
+    const avgD = (pp[f[0]][3]+pp[f[1]][3]+pp[f[2]][3])/3;
+    const alpha = Math.max(0.02, Math.min(0.22, 0.15 * avgD));
+    ctx.beginPath();
+    ctx.moveTo(pp[f[0]][0], pp[f[0]][1]);
+    ctx.lineTo(pp[f[1]][0], pp[f[1]][1]);
+    ctx.lineTo(pp[f[2]][0], pp[f[2]][1]);
+    ctx.closePath();
+    const fhue = (hue + 20*Math.sin(t*0.0004+phase)) | 0;
+    ctx.fillStyle = `hsla(${fhue},75%,58%,${alpha})`;
+    ctx.fill();
+  }
+
+  // Edges + vertex glows
+  for (const { pp, tet } of allTetProj) {
+    for (const [a, b] of TET_EDGES) {
+      const avgD = (pp[a][3]+pp[b][3])/2;
+      ctx.beginPath();
+      ctx.moveTo(pp[a][0], pp[a][1]);
+      ctx.lineTo(pp[b][0], pp[b][1]);
+      ctx.strokeStyle = `hsla(${tet.hue},85%,68%,${Math.min(0.9,0.7*avgD)})`;
+      ctx.lineWidth   = Math.max(0.4, 1.8 * avgD);
+      ctx.stroke();
+    }
+    for (let vi = 0; vi < 4; vi++) {
+      const [px, py, , d] = pp[vi];
+      const r = Math.max(1.5, 5*d);
+      const g = ctx.createRadialGradient(px, py, 0, px, py, r*2.2);
+      g.addColorStop(0, `hsla(${tet.hue},100%,85%,${Math.min(0.8,0.65*d)})`);
+      g.addColorStop(1, 'transparent');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(px, py, r*2.2, 0, Math.PI*2); ctx.fill();
+    }
+  }
 }
+
+// ── Braid ─────────────────────────────────────────────────────────────────────
+const BNODES = [
+  {rx:0.15,ry:0.25,hue:38},{rx:0.85,ry:0.75,hue:145},{rx:0.20,ry:0.78,hue:280}
+];
+const particles = Array.from({length:32},()=>({
+  u:Math.random(), hue:Math.random()*360, size:1+Math.random()*2.5,
+  src:Math.floor(Math.random()*3), dst:Math.floor(Math.random()*3),
+  speed:0.003+Math.random()*0.009, phase:Math.random()*Math.PI*2
+}));
+particles.forEach(p=>{ if(p.src===p.dst) p.dst=(p.dst+1)%3; });
+
 function drawBraid(t) {
-  const bx=i=>W*BNODES[i].rx, by=i=>H*BNODES[i].ry;
-  for(let i=0;i<3;i++) {
-    const j=(i+1)%3,ax=bx(i),ay=by(i),ex=bx(j),ey=by(j);
-    const cmx=(ax+ex)/2+(ay-ey)*0.3,cmy=(ay+ey)/2+(ex-ax)*0.3;
-    const a=0.08+0.06*Math.sin(t*0.002+i*2);
-    ctx.save();ctx.strokeStyle=`hsla(${BNODES[i].hue},75%,58%,${a})`;
-    ctx.lineWidth=1.2;ctx.setLineDash([4,8]);
-    ctx.shadowColor=`hsl(${BNODES[i].hue},90%,60%)`;ctx.shadowBlur=6;
-    ctx.beginPath();ctx.moveTo(ax,ay);ctx.quadraticCurveTo(cmx,cmy,ex,ey);ctx.stroke();ctx.restore();
-  }
-  for(const p of bParts) {
-    const i=p.arc,j=(i+1)%3,ax=bx(i),ay=by(i),ex=bx(j),ey=by(j);
-    const cmx=(ax+ex)/2+(ay-ey)*0.3,cmy=(ay+ey)/2+(ex-ax)*0.3;
-    const u=p.prog,v=1-u;
-    const ppx2=v*v*ax+2*v*u*cmx+u*u*ex,ppy2=v*v*ay+2*v*u*cmy+u*u*ey;
+  for(const p of particles) {
+    p.u=(p.u+p.speed)%1;
+    const s=BNODES[p.src],e=BNODES[p.dst];
+    const ax=W*s.rx,ay=H*s.ry,ex=W*e.rx,ey=H*e.ry;
+    const cmx=W*(s.rx+e.rx)/2+55*Math.sin(t*0.0007+p.phase);
+    const cmy=H*(s.ry+e.ry)/2+55*Math.cos(t*0.0005+p.phase);
+    const v=p.u,u=1-v;
+    const px2=v*v*ax+2*v*u*cmx+u*u*ex,py2=v*v*ay+2*v*u*cmy+u*u*ey;
     ctx.save();ctx.shadowColor=`hsl(${p.hue},100%,65%)`;ctx.shadowBlur=14;
-    ctx.fillStyle=`hsl(${p.hue},100%,80%)`;ctx.beginPath();ctx.arc(ppx2,ppy2,p.size,0,Math.PI*2);ctx.fill();ctx.restore();
+    ctx.fillStyle=`hsl(${p.hue},100%,82%)`;
+    ctx.beginPath();ctx.arc(px2,py2,p.size,0,Math.PI*2);ctx.fill();ctx.restore();
   }
   const labels=['SIM','EUP','HER'];
   BNODES.forEach((n,i)=>{
     const x=W*n.rx,y=H*n.ry,pulse=1+0.22*Math.sin(t*0.003+i*1.4),r=14*pulse;
-    const grd=ctx.createRadialGradient(x,y,r*0.1,x,y,r);
-    grd.addColorStop(0,`hsla(${n.hue},85%,60%,0.38)`);grd.addColorStop(1,'transparent');
-    ctx.fillStyle=grd;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+    const g=ctx.createRadialGradient(x,y,r*.1,x,y,r);
+    g.addColorStop(0,`hsla(${n.hue},85%,60%,0.4)`);g.addColorStop(1,'transparent');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
     ctx.save();ctx.shadowColor=`hsl(${n.hue},100%,65%)`;ctx.shadowBlur=8;
-    ctx.fillStyle=`hsl(${n.hue},90%,82%)`;ctx.font='bold 9px monospace';
+    ctx.fillStyle=`hsl(${n.hue},90%,84%)`;ctx.font='bold 9px monospace';
     ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(labels[i],x,y);ctx.restore();
   });
 }
 
+// ── Sparkline ─────────────────────────────────────────────────────────────────
 function drawSparkline(upTo) {
   const sw=spC.width,sh=spC.height;
   spX.clearRect(0,0,sw,sh);
   const sl=TL.slice(0,upTo+1);
   if(sl.length<2) return;
   const v=sl.map(d=>d.cohesion),lo=Math.min(...v),hi=Math.max(...v),rng=hi-lo||0.01;
-  const sx=i=>i/(TL.length-1)*sw, sy=vv=>sh-(vv-lo)/rng*sh*0.80-sh*0.08;
+  const sx=i=>i/(TL.length-1)*sw, sy=vv=>sh-(vv-lo)/rng*sh*.8-sh*.08;
   spX.beginPath();spX.moveTo(sx(0),sh);v.forEach((vv,i)=>spX.lineTo(sx(i),sy(vv)));
-  spX.lineTo(sx(v.length-1),sh);spX.closePath();spX.fillStyle='rgba(126,232,162,0.10)';spX.fill();
+  spX.lineTo(sx(v.length-1),sh);spX.closePath();spX.fillStyle='rgba(126,232,162,.10)';spX.fill();
   spX.beginPath();spX.moveTo(sx(0),sy(v[0]));v.forEach((vv,i)=>{if(i)spX.lineTo(sx(i),sy(vv));});
   spX.strokeStyle='#7ee8a2';spX.lineWidth=1.5;spX.stroke();
-  const ew2=sl.map(d=>d.ewma);
-  spX.beginPath();spX.moveTo(sx(0),sy(ew2[0]));ew2.forEach((vv,i)=>{if(i)spX.lineTo(sx(i),sy(vv));});
-  spX.strokeStyle='rgba(246,160,91,0.85)';spX.lineWidth=1;spX.stroke();
+  const ew=sl.map(d=>d.ewma);
+  spX.beginPath();spX.moveTo(sx(0),sy(ew[0]));ew.forEach((vv,i)=>{if(i)spX.lineTo(sx(i),sy(vv));});
+  spX.strokeStyle='rgba(246,160,91,.85)';spX.lineWidth=1;spX.stroke();
   spX.beginPath();spX.arc(sx(v.length-1),sy(v[v.length-1]),3,0,Math.PI*2);
   spX.fillStyle='#7ee8a2';spX.fill();
 }
 
+// ── Sidebar ───────────────────────────────────────────────────────────────────
 function updateSidebar(ci, idx) {
   document.getElementById('pc').textContent=String(idx+1).padStart(3,'0');
   const hue=(ci.cohesion*120)|0;
@@ -401,30 +382,73 @@ function updateSidebar(ci, idx) {
   document.getElementById('kv-sk').textContent=ci.skill_cov.toFixed(3);
   const fields=[['g',ci.grad,'#5b9cf6'],['d',ci.div,'#a78bfa'],['l',ci.lap,'#34d399'],['k',ci.curl,'#f472b6']];
   const maxF=Math.max(...fields.map(f=>f[1]),0.001);
-  for(const [k,v,c] of fields) {
+  for(const [k,v] of fields){
     document.getElementById(`cb-${k}`).style.width=Math.min(100,v/maxF*100).toFixed(0)+'%';
     document.getElementById(`cv-${k}`).textContent=v.toFixed(3);
   }
   document.getElementById('braid-ev').textContent=ci.events;
 }
 
-// Fade banner after 6s
-setTimeout(()=>{ const b=document.getElementById('online-banner'); if(b) b.style.transition='opacity 1.5s'; b.style.opacity='0'; setTimeout(()=>b.remove(),1600); }, 6000);
+setTimeout(()=>{
+  const b=document.getElementById('online-banner');
+  if(b){b.style.transition='opacity 1.5s';b.style.opacity='0';setTimeout(()=>b.remove(),1600);}
+},6000);
+
+// ── Main loop ─────────────────────────────────────────────────────────────────
+let frame=0, passIdx=0, lastPassMs=0;
+const PASS_INTERVAL=200;
 
 function loop(t) {
   try {
     requestAnimationFrame(loop);
     frame++;
-    if(t-lastPassMs>PASS_INTERVAL){lastPassMs=t;passIdx=(passIdx+1)%TL.length;}
-    const ci=TL[passIdx];
-    ctx.clearRect(0,0,W,H);
-    drawBg(t, ci);
-    drawTetGrid(t,ci);
-    updateBraid();drawBraid(t);
+    // Guard: if layout hasn't resolved yet, resize and skip
+    if (W === 0 || H === 0) { resize(); return; }
+
+    if (t - lastPassMs > PASS_INTERVAL) {
+      lastPassMs = t;
+      passIdx = (passIdx + 1) % TL.length;
+    }
+    const ci = TL[passIdx];
+
+    // Render Julia once per model pass
+    if (passIdx !== lastJuliaPass) { renderJulia(ci); lastJuliaPass = passIdx; }
+
+    // -- 1. Dark background fill
+    ctx.fillStyle = '#07080f';
+    ctx.fillRect(0, 0, W, H);
+
+    // -- 2. Julia fractal scaled to canvas
+    if (fracCanvas) {
+      ctx.save();
+      ctx.globalAlpha = 0.88;
+      ctx.drawImage(fracCanvas, 0, 0, W, H);
+      ctx.restore();
+    }
+
+    // -- 3. Soft vignette (lighter center so fractal stays visible)
+    const vg = ctx.createRadialGradient(W/2, H/2, H*0.08, W/2, H/2, H*0.75);
+    vg.addColorStop(0, 'rgba(7,8,15,0.38)');
+    vg.addColorStop(1, 'rgba(7,8,15,0.04)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+
+    // -- 4. Tetrahedra
+    drawTets(t, ci);
+
+    // -- 5. Braid
+    drawBraid(t);
+
+    // -- 6. Sidebar
     drawSparkline(passIdx);
-    updateSidebar(ci,passIdx);
-  }catch(e){console.error(e);}
+    updateSidebar(ci, passIdx);
+  } catch(e) { console.error(e); }
 }
-requestAnimationFrame(loop);
+
+// Start AFTER full layout paint so clientWidth/Height are real
+window.addEventListener('load', () => {
+  resize();
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(loop);
+});
 </script>
 </body></html>
