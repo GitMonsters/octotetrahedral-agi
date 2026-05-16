@@ -60,6 +60,7 @@ from core.compound_loop import CompoundLoopController, CompoundLoopConfig as _Lo
 from core.cognitive_geometry import CognitiveGeometryEngine, CognitiveGeometryConfig
 from core.cross_domain_transfer import CrossDomainTransferLayer, CrossDomainConfig
 from core.cognitive_cohesion_braid import CognitiveCohesionBraid, CohesionConfig
+from core.s2_to_s1_cache import S2ToS1Cache
 from cognition import AGICognition, CognitionConfig
 
 # Import new geometric physics modules
@@ -669,6 +670,11 @@ class OctoTetrahedralModel(nn.Module):
         # Measures limb activation balance, skill coverage, and
         # feedback latency as a single cohesion_score metric.
         self.cohesion_braid = CognitiveCohesionBraid(enable_all=True)
+
+        # System 2→1 knowledge transfer cache (Ye et al. 2022 §3.1)
+        # Stores high-confidence slow-path outputs so the fast path can retrieve
+        # them on similar future inputs, reducing deliberation energy over time.
+        self.s2_s1_cache = S2ToS1Cache(capacity=512, confidence_threshold=0.75)
     
     def _init_weights(self):
         """Initialize model weights"""
@@ -929,6 +935,22 @@ class OctoTetrahedralModel(nn.Module):
                 rdt_uncertainties=rdt_uncertainties_for_budget,  # NEW: for ACT budget
             )
             multi_limb_output = loop_result['output']
+
+            # System 2→1 transfer: compound loop is deliberative (System 2 equivalent)
+            # Store output if the loop ran with high confidence, retrieve prior knowledge
+            _loop_conf = float(loop_result.get('exit_distribution', torch.zeros(1)).max().item()) if loop_result.get('exit_distribution') is not None else 0.5
+            self.s2_s1_cache.store(input_ids, multi_limb_output, _loop_conf, 'slow')
+
+            # Blend any cached S2 knowledge back into the output (S2→S1 transfer)
+            _cached_s2_cl = self.s2_s1_cache.retrieve(input_ids)
+            _s2_blend_cl = False
+            if _cached_s2_cl is not None:
+                _cached_s2_cl = _cached_s2_cl.to(multi_limb_output.device)
+                if _cached_s2_cl.dim() == 2:
+                    _cached_s2_cl = _cached_s2_cl.unsqueeze(1).expand_as(multi_limb_output)
+                multi_limb_output = multi_limb_output + 0.15 * _cached_s2_cl
+                _s2_blend_cl = True
+            two_speed_info = {'path': 'slow', 'confidence': _loop_conf, 's2_knowledge_blend': _s2_blend_cl}
             compound_loop_info = {
                 'loop_count': loop_result['loop_count'],
                 'exit_distribution': loop_result['exit_distribution'],
@@ -971,6 +993,17 @@ class OctoTetrahedralModel(nn.Module):
                 )  # [batch, seq_len, hidden]
                 spatial_out = spatial_out + 0.1 * voxel_context
                 fast_output = memory_enhanced + 0.3 * spatial_out
+                # System 1: attempt to blend cached System-2 knowledge (S2→S1 transfer)
+                _cached_s2 = self.s2_s1_cache.retrieve(input_ids)
+                if _cached_s2 is not None:
+                    _cached_s2 = _cached_s2.to(fast_output.device)
+                    # Expand to match sequence dimension if needed
+                    if _cached_s2.dim() == 2:
+                        _cached_s2 = _cached_s2.unsqueeze(1).expand_as(fast_output)
+                    fast_output = fast_output + 0.15 * _cached_s2
+                    two_speed_info['s2_knowledge_blend'] = True
+                else:
+                    two_speed_info['s2_knowledge_blend'] = False
                 _t_reas = time.time()
                 reasoned, _, _ = self.reasoning(
                     fast_output, attention_mask=attention_mask,
@@ -1148,6 +1181,10 @@ class OctoTetrahedralModel(nn.Module):
                 })
                 
                 multi_limb_output = memory_enhanced + 0.3 * combined_limbs
+
+                # System 2→1 transfer: cache this slow-path result if high confidence
+                _slow_conf = float(braid_info.get('braid_signal', torch.zeros(1)).mean().abs().clamp(0, 1).item()) if braid_info.get('braid_signal') is not None else 0.5
+                self.s2_s1_cache.store(input_ids, multi_limb_output, _slow_conf, 'slow')
                 
                 # Post-Braid Reasoning
                 reasoned, _, _ = self.reasoning(
@@ -1272,6 +1309,8 @@ class OctoTetrahedralModel(nn.Module):
             'spiking_info': spiking_info,
             'multimodal_info': multimodal_info,
             'cohesion_info': self.cohesion_braid.cohesion_score(),
+            's2_s1_cache_stats': self.s2_s1_cache.stats(),
+            'two_speed_info': two_speed_info if 'two_speed_info' in dir() else {},
         }
         
         if return_confidences:
@@ -1331,6 +1370,10 @@ class OctoTetrahedralModel(nn.Module):
     def export_cohesion_report(self, path: Optional[str] = None) -> str:
         """Write an HTML cohesion dashboard to *path* (or logs/cohesion/)."""
         return self.cohesion_braid.generate_html_report(path)
+
+    def s2_s1_stats(self) -> Dict[str, Any]:
+        """Return System 2→1 knowledge transfer cache statistics."""
+        return self.s2_s1_cache.stats()
 
     def _compute_information_gain(
         self,
