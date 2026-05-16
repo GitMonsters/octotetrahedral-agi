@@ -58,6 +58,7 @@ from sync.hub_sync import HubSync
 from core.compound_braid import CompoundBraid
 from core.compound_loop import CompoundLoopController, CompoundLoopConfig as _LoopCfg
 from core.cognitive_geometry import CognitiveGeometryEngine, CognitiveGeometryConfig
+from core.cross_domain_transfer import CrossDomainTransferLayer, CrossDomainConfig
 from cognition import AGICognition, CognitionConfig
 
 # Import new geometric physics modules
@@ -631,6 +632,25 @@ class OctoTetrahedralModel(nn.Module):
             num_limbs=11,
             config=cg_config,
         )
+
+        # === Cross-Domain Transfer Layer ===
+        # Sits between KimiCognitiveBraid and CompoundBraid.
+        # Maps limb outputs into a shared manifold so any limb can draw
+        # on knowledge from other domains (ARC grids, language, planning, …).
+        self.cross_domain_transfer = CrossDomainTransferLayer(
+            hidden_dim=self.hidden_dim,
+            cfg=CrossDomainConfig(
+                shared_dim=self.hidden_dim // 2,
+                bank_size_per_domain=256,
+                top_k=4,
+                num_heads=max(1, self.num_heads // 4),
+                dropout=self.config.model.dropout,
+                domains=[
+                    "arc_grid", "language", "sensorimotor",
+                    "planning", "abstract", "memory", "social",
+                ],
+            ),
+        )
         
         # === Initialization ===
         self._init_weights()
@@ -1055,6 +1075,33 @@ class OctoTetrahedralModel(nn.Module):
                     except Exception:
                         pass  # non-fatal: retain original limb outputs
                 
+                # === Cross-Domain Transfer ===
+                # Enrich each limb stream with knowledge from other domains.
+                # Runs after Kimi (which sharpens intra-stream coherence) and
+                # before CompoundBraid (which merges all streams).
+                _transfer_input = {
+                    "memory":       memory_out,
+                    "arc_grid":     spatial_out,
+                    "language":     language_out,
+                    "social":       meta_out,
+                    "abstract":     reasoning_out,
+                    "sensorimotor": perception_echo,
+                }
+                try:
+                    _transfer_out, _transfer_losses = self.cross_domain_transfer(_transfer_input)
+                    memory_out       = _transfer_out.get("memory",       memory_out)
+                    spatial_out      = _transfer_out.get("arc_grid",     spatial_out)
+                    language_out     = _transfer_out.get("language",     language_out)
+                    meta_out         = _transfer_out.get("social",       meta_out)
+                    reasoning_out    = _transfer_out.get("abstract",     reasoning_out)
+                    perception_echo  = _transfer_out.get("sensorimotor", perception_echo)
+                    # Accumulate transfer losses into the forward info dict
+                    if not hasattr(self, '_transfer_aux_losses'):
+                        self._transfer_aux_losses: Dict[str, torch.Tensor] = {}
+                    self._transfer_aux_losses.update(_transfer_losses)
+                except Exception:
+                    pass  # non-fatal: retain original limb outputs
+
                 # Compound Braid (11 cognitive + 3 modalities = 14 streams)
                 # Use zero tensors for absent modalities to keep braid size consistent
                 _vis_stream = vision_emb if vision_emb is not None else torch.zeros_like(memory_out)
