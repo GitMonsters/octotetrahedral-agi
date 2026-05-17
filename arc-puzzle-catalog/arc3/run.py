@@ -51,10 +51,15 @@ def run_game(arc: arc_agi.Arcade, game_id: str, agent,
         return {'game_id': game_id, 'error': 'Failed to create environment'}
 
     agent.reset()
-    if hasattr(agent, 'play_game'):
-        result = agent.play_game(env, GameAction)
-    else:
-        result = agent.play(env, GameAction)
+    try:
+        if hasattr(agent, 'play_game'):
+            result = agent.play_game(env, GameAction)
+        else:
+            result = agent.play(env, GameAction)
+    except Exception as exc:
+        logger.error(f"Solver crashed on {game_id}: {exc}")
+        return {'game_id': game_id, 'error': str(exc), 'levels_completed': 0,
+                'win_levels': 0, 'total_actions': 0, 'won': False, 'elapsed_seconds': 0}
     result['game_id'] = game_id
 
     logger.info(f"Result: {result['levels_completed']}/{result['win_levels']} levels, "
@@ -99,9 +104,24 @@ def main():
     else:
         arc = arc_agi.Arcade()
 
-    # Get available games
-    games = arc.get_environments()
-    logger.info(f"Available games: {len(games)}")
+    # Get available games, filtering to canonical versions only when local_dir is present.
+    # When local_dir is None (API-only environments), include all returned games.
+    all_envs = arc.get_environments()
+    seen_types: dict[str, object] = {}
+    games = []
+    for e in all_envs:
+        gtype = e.game_id.split("-")[0] if "-" in e.game_id else e.game_id
+        if e.local_dir:
+            # Local env: only include if hash matches directory name
+            if e.game_id.split("-", 1)[1] in e.local_dir:
+                seen_types[gtype] = e
+                games.append(e)
+        else:
+            # API-only env: keep first seen per game type to avoid stale duplicates
+            if gtype not in seen_types:
+                seen_types[gtype] = e
+                games.append(e)
+    logger.info(f"Available games: {len(games)} (skipped {len(all_envs) - len(games)} duplicates)")
 
     if args.game:
         # Filter to specific game
