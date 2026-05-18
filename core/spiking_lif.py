@@ -23,6 +23,8 @@ import torch.nn.functional as F
 from typing import Optional, Dict, Tuple
 import math
 
+from core.reservoir_dynamics import EchoStateConstraint
+
 
 class LIFNeuron(nn.Module):
     """
@@ -135,6 +137,11 @@ class SpikingTetrahedralLayer(nn.Module):
             leak_rate=leak_rate,
             threshold=threshold,
         )
+
+        # Echo-state constraint: rescales synapse_weights before each forward
+        # so the spectral radius stays < 1, ensuring decaying temporal traces
+        # (echo-state property) rather than chaotic or dead dynamics.
+        self.echo_state = EchoStateConstraint(target_rho=0.9)
         
         # Layer norm for output
         self.norm = nn.LayerNorm(hidden_dim)
@@ -217,11 +224,13 @@ class SpikingTetrahedralLayer(nn.Module):
         
         for t in range(self.num_timesteps):
             # Synaptic current: weighted sum of previous spikes
+            # Apply echo-state constraint to ensure spectral radius < 1
+            W_safe = self.echo_state(self.synapse_weights)
             if t == 0:
                 synaptic_input = neuron_input
             else:
                 prev_spikes = all_spikes[-1]
-                synaptic_input = neuron_input + torch.matmul(prev_spikes, self.synapse_weights)
+                synaptic_input = neuron_input + torch.matmul(prev_spikes, W_safe)
             
             spikes, membrane = self.lif(synaptic_input, membrane, ei_neuron)
             all_spikes.append(spikes)

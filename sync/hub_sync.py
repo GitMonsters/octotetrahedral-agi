@@ -22,6 +22,8 @@ from collections import deque
 from copy import deepcopy
 import logging
 
+from core.reservoir_dynamics import ReservoirReadout, LIMB_LEAK_TARGETS
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -87,29 +89,58 @@ class HubSync:
         max_drift: float = 0.1,
         rollback_buffer_size: int = 10,
         use_performance_weighting: bool = True,
-        clip_grad_norm: Optional[float] = 1.0
+        clip_grad_norm: Optional[float] = 1.0,
+        hidden_dim: int = 256,
+        n_limbs: int = 8,
     ):
         self.sync_frequency = sync_frequency
         self.max_drift = max_drift
         self.use_performance_weighting = use_performance_weighting
         self.clip_grad_norm = clip_grad_norm
-        
+
         # Tracking
         self._step_count = 0
         self._last_sync_step = 0
         self._sync_history: List[Dict[str, Any]] = []
-        
+
         # Rollback buffer
         self.rollback_buffer = RollbackBuffer(max_size=rollback_buffer_size)
-        
+
         # Limb performance tracking (for weighted averaging)
         self._limb_performances: Dict[str, float] = {}
-        
+
         # Statistics
         self._total_syncs = 0
         self._rollbacks = 0
         self._drift_violations = 0
+
+        # Reservoir readout: linear synthesis over all limb reservoir states.
+        # Replaces/augments FedAvg for inference-time signal synthesis — only
+        # this layer needs to be learned while the limbs act as a fixed basis.
+        self.reservoir_readout = ReservoirReadout(
+            n_limbs=n_limbs,
+            hidden_dim=hidden_dim,
+            output_dim=hidden_dim,
+        )
     
+    def synthesise_limbs(
+        self, limb_states: List[torch.Tensor]
+    ) -> torch.Tensor:
+        """
+        Synthesise a unified signal from all limb reservoir states via the
+        linear readout.  This is the reservoir computing alternative to FedAvg:
+        instead of averaging weight deltas, we compute a weighted linear
+        combination of the limbs' current activations — mapping the diverse
+        temporal basis to the target output space in one shot.
+
+        Args:
+            limb_states: list of [batch, hidden_dim] tensors, one per active limb
+
+        Returns:
+            [batch, hidden_dim] synthesised representation
+        """
+        return self.reservoir_readout(limb_states)
+
     def should_sync(self) -> bool:
         """Check if it's time to sync"""
         return (self._step_count - self._last_sync_step) >= self.sync_frequency

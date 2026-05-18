@@ -21,6 +21,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Optional, Dict, Tuple
 
+from core.reservoir_dynamics import NeuralPacemaker
+
 
 class ExcitatoryInhibitoryClassifier(nn.Module):
     """
@@ -173,6 +175,12 @@ class RNAEditingLayer(nn.Module):
             hidden_dim=hidden_dim,
             num_connections=hidden_dim
         )
+
+        # Reservoir pacemaker: multi-frequency oscillatory driving signal Z(t).
+        # Implements μᵢ·Z(t) from reservoir computing — keeps the reservoir
+        # energised so dynamic traces don't die between inputs.
+        self.pacemaker = NeuralPacemaker(hidden_dim=hidden_dim, learnable_mix=True)
+        self.register_buffer("_pacemaker_t", torch.tensor(0.0))
         
     def compute_temperature(
         self, 
@@ -355,7 +363,15 @@ class RNAEditingLayer(nn.Module):
         # Excitatory (+1) amplifies, Inhibitory (-1) suppresses
         editing_strength = temperature / self.temperature_max  # [batch, 1]
         ei_modulation = ei_signs * editing_mask  # E/I-weighted editing mask
-        modulated = x * (1.0 + editing_strength.unsqueeze(1) * ei_modulation.unsqueeze(1) * 0.1)
+
+        # Reservoir pacemaker: μᵢ·Z(t) — scale each neuron's modulation by
+        # its unique oscillatory drive, preventing dynamic traces from dying.
+        # z_t is in [-1, 1]; 0.5+0.5*z_t maps it to [0, 1] (always positive).
+        z_t = self.pacemaker(self._pacemaker_t, batch_size=batch_size)  # [batch, hidden_dim]
+        pacemaker_scale = 0.5 + 0.5 * z_t  # [batch, hidden_dim]
+        self._pacemaker_t.add_(1.0)
+
+        modulated = x * (1.0 + editing_strength.unsqueeze(1) * (ei_modulation * pacemaker_scale).unsqueeze(1) * 0.1)
         
         if squeeze_output:
             modulated = modulated.squeeze(1)
