@@ -676,6 +676,88 @@ class Vc33Solver:
         return None
 
 
+class GenericBfsSolver:
+    """BFS solver using deepcopy for movement/selection games (no click).
+
+    Works for any game using action IDs 1-5 (directional movement,
+    selection cycling, etc.) where the win condition is advancing the
+    level index.  Uses deepcopy so the live env budget is untouched
+    during search, then replays the found solution via env.step.
+    """
+
+    def __init__(self, env, available_actions: list[int], verbose: bool = False):
+        self.env = env
+        self.available_actions = available_actions
+        self.verbose = verbose
+
+    @staticmethod
+    def _apply_direct(g, action_id: int) -> None:
+        """Apply one action on a deepcopy game (no rendering, no env.step)."""
+        if g._state in (GameState.GAME_OVER, GameState.WIN):
+            return
+        g._set_action(ActionInput(id=action_id))
+        limit = 3000
+        while not g.is_action_complete() and limit > 0:
+            limit -= 1
+            if g._next_level:
+                g._really_set_next_level()
+            else:
+                g.step()
+
+    @staticmethod
+    def _state_key(g) -> tuple:
+        """Compact state key for BFS visited set."""
+        level = g.current_level
+        return tuple(sorted((s.name, s.x, s.y) for s in level.get_sprites()))
+
+    def solve_level(self, max_nodes: int = 200000, timeout: float = 90.0,
+                    max_depth: int = 300) -> Optional[list[int]]:
+        """BFS to find action sequence that advances the current level.
+
+        Returns list of action IDs (integers), or None if no solution found.
+        """
+        g0 = self.env._game
+        initial_level = g0.level_index
+        sk0 = self._state_key(g0)
+
+        visited = {sk0}
+        queue: deque[tuple] = deque([(copy.deepcopy(g0), [])])
+        t0 = time.time()
+        nodes = 0
+
+        while queue and time.time() - t0 < timeout:
+            g, seq = queue.popleft()
+            nodes += 1
+            if nodes > max_nodes or len(seq) >= max_depth:
+                if len(seq) >= max_depth:
+                    continue
+                break
+
+            for act_id in self.available_actions:
+                g_child = copy.deepcopy(g)
+                self._apply_direct(g_child, act_id)
+
+                if g_child._state == GameState.GAME_OVER:
+                    continue
+
+                if g_child.level_index > initial_level or g_child._state == GameState.WIN:
+                    result = seq + [act_id]
+                    if self.verbose:
+                        logger.info(f"  GenericBFS solved: {len(result)} steps "
+                                    f"({nodes} nodes, {time.time()-t0:.1f}s)")
+                    return result
+
+                sk = self._state_key(g_child)
+                if sk not in visited:
+                    visited.add(sk)
+                    queue.append((g_child, seq + [act_id]))
+
+        if self.verbose:
+            logger.info(f"  GenericBFS: no solution ({nodes} nodes, "
+                        f"{len(visited)} states, {time.time()-t0:.1f}s)")
+        return None
+
+
 class Tn36Solver:
     """Solves TN36 levels - program-based position/rotation/scale puzzle.
 
@@ -3185,6 +3267,11 @@ class GameAwareSolver:
         is_wa30 = "wa30" in game_id.lower()
         is_cd82 = "cd82" in game_id.lower()
 
+        # Games handled by GenericBfsSolver (movement/selection only, no click)
+        avail = sorted(obs.available_actions)
+        has_click = 6 in avail
+        non_click_only = not has_click and any(a in avail for a in [1, 2, 3, 4, 5])
+
         if is_ls20:
             return self._play_ls20(env, obs, budget, t0)
         elif is_vc33:
@@ -3198,6 +3285,9 @@ class GameAwareSolver:
         elif is_ft09:
             # FT09 already solved by BFS agent, delegate
             return self._play_bfs_fallback(env, obs, budget, t0)
+        elif non_click_only:
+            # Generic deepcopy BFS for movement/selection games
+            return self._play_generic(env, obs, budget, t0)
         else:
             return self._play_bfs_fallback(env, obs, budget, t0)
 
@@ -3510,6 +3600,70 @@ class GameAwareSolver:
             else:
                 if self.verbose:
                     logger.info(f"CD82 L{level_num}: {steps} steps but level didn't advance")
+                break
+
+        return self._result(total, lc, wl, lc >= wl, t0)
+
+    def _play_generic(self, env, obs, budget, t0) -> dict:
+        """Solve movement/selection games using GenericBfsSolver (deepcopy BFS).
+
+        Used for games with action IDs 1-5 only (no click), such as tr87,
+        re86, g50t, tu93, and similar puzzles with internal action budgets.
+        Exploration never touches env.step — budget is preserved for replay.
+        """
+        total = 1
+        wl = obs.win_levels
+        lc = obs.levels_completed
+        game_id = obs.game_id
+        avail = [a for a in sorted(obs.available_actions) if a not in (0, 6)]
+        solver = GenericBfsSolver(env, avail, verbose=self.verbose)
+
+        for level_num in range(wl):
+            if total > budget:
+                break
+
+            g = env._game
+            if g.level_index != level_num:
+                if self.verbose:
+                    logger.info(f"Generic {game_id} L{level_num}: "
+                                f"expected L{level_num}, at L{g.level_index}")
+                break
+
+            if self.verbose:
+                logger.info(f"Generic {game_id} L{level_num}: BFS (avail={avail})")
+
+            sol = solver.solve_level(max_nodes=300000, timeout=120.0)
+
+            if sol is None:
+                if self.verbose:
+                    logger.info(f"Generic {game_id} L{level_num}: no solution found")
+                break
+
+            # Replay solution via env.step
+            for act_id in sol:
+                obs = env.step(AMAP[act_id])
+                total += 1
+                if obs.state == GameState.WIN:
+                    lc = wl
+                    if self.verbose:
+                        logger.info(f"Generic {game_id} L{level_num}: "
+                                    f"{len(sol)} steps -> WIN")
+                    return self._result(total, lc, wl, True, t0)
+                if obs.state == GameState.GAME_OVER:
+                    if self.verbose:
+                        logger.info(f"Generic {game_id} L{level_num}: GAME_OVER "
+                                    f"during replay (bad solution)")
+                    return self._result(total, lc, wl, False, t0)
+
+            if obs.levels_completed > level_num:
+                lc = obs.levels_completed
+                if self.verbose:
+                    logger.info(f"Generic {game_id} L{level_num}: "
+                                f"{len(sol)} steps -> L{lc}")
+            else:
+                if self.verbose:
+                    logger.info(f"Generic {game_id} L{level_num}: "
+                                f"solution didn't advance level")
                 break
 
         return self._result(total, lc, wl, lc >= wl, t0)
