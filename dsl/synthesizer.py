@@ -1344,6 +1344,446 @@ def try_gravity_toward_object(pairs):
     return None
 
 
+def try_block_tile_down(pairs):
+    """
+    Detect a top-aligned header column and tile the rows above its height downward,
+    excluding the header column itself. Covers 12422b43-style tasks.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    def _detect_header(g: Grid) -> Tuple[int, int]:
+        h, w = grid_size(g)
+        bg = background(g)
+        best: Optional[Tuple[int, int]] = None
+        for c in range(w):
+            if h < 2 or g[0][c] == bg:
+                continue
+            header_color = g[0][c]
+            run_len = 1
+            while run_len < h and g[run_len][c] == header_color:
+                run_len += 1
+            if run_len < 1:
+                continue
+            if any(g[r][c] != bg for r in range(run_len, h)):
+                continue
+            if best is None or run_len > best[1]:
+                best = (c, run_len)
+        if best is None:
+            raise ValueError("No header column")
+        return best
+
+    def _apply(g: Grid) -> Grid:
+        h, w = grid_size(g)
+        bg = background(g)
+        header_col, tile_height = _detect_header(g)
+        last_content_row = -1
+        for r in range(h):
+            if any(g[r][c] != bg for c in range(w) if c != header_col):
+                last_content_row = r
+        if last_content_row < 0:
+            raise ValueError("No content outside header column")
+        tile_start = last_content_row + 1
+        if tile_start >= h:
+            raise ValueError("No space to tile downward")
+
+        out = copy_grid(g)
+        for r in range(tile_start, h):
+            src_r = (r - tile_start) % tile_height
+            for c in range(w):
+                if c == header_col:
+                    continue
+                out[r][c] = g[src_r][c]
+        return out
+
+    return _apply if _fits_all(_apply, pairs) else None
+
+
+def try_small_component_recolor(pairs):
+    """
+    Replace every same-color 4-connected component of size <= threshold with
+    a fixed replacement color.  Covers 12eac192-style tasks where isolated /
+    small-group pixels become color 3.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    def _components(g, bg):
+        h, w = grid_size(g)
+        visited = [[False] * w for _ in range(h)]
+        comps = []
+        for sr in range(h):
+            for sc in range(w):
+                if g[sr][sc] == bg or visited[sr][sc]:
+                    continue
+                col = g[sr][sc]
+                stack = [(sr, sc)]
+                cells = []
+                while stack:
+                    r, c = stack.pop()
+                    if r < 0 or r >= h or c < 0 or c >= w:
+                        continue
+                    if visited[r][c] or g[r][c] != col:
+                        continue
+                    visited[r][c] = True
+                    cells.append((r, c))
+                    for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                        stack.append((r + dr, c + dc))
+                comps.append((col, cells))
+        return comps
+
+    def _make_prog(threshold, replace_color):
+        def _apply(g):
+            bg = background(g)
+            comps = _components(g, bg)
+            out = copy_grid(g)
+            for col, cells in comps:
+                if len(cells) <= threshold:
+                    for r, c in cells:
+                        out[r][c] = replace_color
+            return out
+        return _apply
+
+    # Try threshold 1 and 2 with replacement colors found in training outputs
+    out_colors = set()
+    for _, y in pairs:
+        for row in y:
+            for v in row:
+                out_colors.add(v)
+    in_colors = set()
+    for x, _ in pairs:
+        for row in x:
+            for v in row:
+                in_colors.add(v)
+    new_colors = out_colors - in_colors
+    # candidate replace colors: colors that appear in output but not input, or just try 3
+    candidates = list(new_colors) if new_colors else []
+    # also try colors that increase most in output
+    for rc in [3, 2, 1, 4, 6, 7, 8, 9]:
+        if rc not in candidates:
+            candidates.append(rc)
+
+    for threshold in (1, 2):
+        for rc in candidates:
+            prog = _make_prog(threshold, rc)
+            if _fits_all(prog, pairs):
+                return prog
+    return None
+
+
+def try_connect_diagonal(pairs):
+    """
+    For each pair of same-colored non-background pixels, draw a diagonal line
+    (|dr| == |dc|) between them.  Covers 1f876c06-style tasks.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    def _apply(g):
+        bg = background(g)
+        h, w = grid_size(g)
+        # Collect all non-bg pixels grouped by color
+        from collections import defaultdict
+        color_cells = defaultdict(list)
+        for r in range(h):
+            for c in range(w):
+                if g[r][c] != bg:
+                    color_cells[g[r][c]].append((r, c))
+        out = copy_grid(g)
+        for col, cells in color_cells.items():
+            if len(cells) != 2:
+                continue
+            (r1, c1), (r2, c2) = cells
+            dr = r2 - r1
+            dc = c2 - c1
+            if abs(dr) != abs(dc):
+                raise ValueError(f"Not diagonal: {cells}")
+            steps = abs(dr)
+            sr = 1 if dr > 0 else -1
+            sc = 1 if dc > 0 else -1
+            for i in range(steps + 1):
+                out[r1 + i * sr][c1 + i * sc] = col
+        return out
+
+    if _fits_all(_apply, pairs):
+        return _apply
+
+    # Also try with >2 cells per color: connect nearest pair
+    def _apply_nearest(g):
+        bg = background(g)
+        h, w = grid_size(g)
+        from collections import defaultdict
+        color_cells = defaultdict(list)
+        for r in range(h):
+            for c in range(w):
+                if g[r][c] != bg:
+                    color_cells[g[r][c]].append((r, c))
+        out = copy_grid(g)
+        for col, cells in color_cells.items():
+            for i in range(len(cells)):
+                for j in range(i + 1, len(cells)):
+                    r1, c1 = cells[i]
+                    r2, c2 = cells[j]
+                    dr = r2 - r1
+                    dc = c2 - c1
+                    if abs(dr) != abs(dc):
+                        continue
+                    steps = abs(dr)
+                    sr = 1 if dr > 0 else -1
+                    sc = 1 if dc > 0 else -1
+                    for k in range(steps + 1):
+                        out[r1 + k * sr][c1 + k * sc] = col
+        return out
+
+    if _fits_all(_apply_nearest, pairs):
+        return _apply_nearest
+    return None
+
+
+def try_rectangle_corner_mark(pairs):
+    """
+    Per connected-component of each non-bg color: if the component's bounding
+    box is a square (side >= 2) AND all perimeter cells of that bbox are the
+    component's color, mark 8 orthogonal exterior corner positions with marker
+    color.  Uses per-component detection to avoid spurious sub-square detection
+    inside filled rectangular blocks.  Covers 14b8e18c-style tasks.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    def _connected_components(g, color):
+        h, w = grid_size(g)
+        visited = [[False] * w for _ in range(h)]
+        comps = []
+        for sr in range(h):
+            for sc in range(w):
+                if g[sr][sc] == color and not visited[sr][sc]:
+                    comp = []
+                    stack = [(sr, sc)]
+                    visited[sr][sc] = True
+                    while stack:
+                        r, c = stack.pop()
+                        comp.append((r, c))
+                        for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+                            nr, nc = r+dr, c+dc
+                            if 0<=nr<h and 0<=nc<w and not visited[nr][nc] and g[nr][nc]==color:
+                                visited[nr][nc] = True
+                                stack.append((nr, nc))
+                    comps.append(comp)
+        return comps
+
+    def _square_rects_from_components(g, bg):
+        h, w = grid_size(g)
+        seen_colors = set(g[r][c] for r in range(h) for c in range(w) if g[r][c] != bg)
+        rects = []
+        for color in seen_colors:
+            for comp in _connected_components(g, color):
+                r1 = min(r for r, c in comp)
+                r2 = max(r for r, c in comp)
+                c1 = min(c for r, c in comp)
+                c2 = max(c for r, c in comp)
+                if r2 - r1 < 1:          # single row — skip
+                    continue
+                if r2 - r1 != c2 - c1:   # must be square
+                    continue
+                comp_set = set(comp)
+                # All perimeter cells of bbox must be this color
+                top = all((r1, c) in comp_set for c in range(c1, c2+1))
+                bot = all((r2, c) in comp_set for c in range(c1, c2+1))
+                lft = all((r, c1) in comp_set for r in range(r1, r2+1))
+                rgt = all((r, c2) in comp_set for r in range(r1, r2+1))
+                if top and bot and lft and rgt:
+                    rects.append((r1, r2, c1, c2))
+        return rects
+
+    def _make_prog(marker_color):
+        def _apply(g):
+            bg = background(g)
+            h, w = grid_size(g)
+            out = copy_grid(g)
+            for r1, r2, c1, c2 in _square_rects_from_components(g, bg):
+                for er, ec in [(r1-1,c1),(r1-1,c2),(r2+1,c1),(r2+1,c2),
+                               (r1,c1-1),(r1,c2+1),(r2,c1-1),(r2,c2+1)]:
+                    if 0 <= er < h and 0 <= ec < w:
+                        out[er][ec] = marker_color
+            return out
+        return _apply
+
+    in_all = set(v for x, _ in pairs for row in x for v in row)
+    out_all = set(v for _, y in pairs for row in y for v in row)
+    new_colors = list(out_all - in_all)
+    marker_candidates = new_colors if new_colors else [2, 3, 4]
+
+    for mc in marker_candidates + [2, 3, 4]:
+        prog = _make_prog(mc)
+        if _fits_all(prog, pairs):
+            return prog
+    return None
+
+
+def try_color_decoration(pairs):
+    """
+    Each non-background source color gets a fixed decoration: stamp a set of
+    neighbor offsets with a specific decoration color.
+    E.g. color 1 → add color 7 at orthogonal neighbors; color 2 → add color 4
+    at diagonal neighbors.  Covers 0ca9ddb6-style tasks.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    ORTHO = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    DIAG = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+    ALL8 = ORTHO + DIAG
+
+    def _make_prog(decorations):
+        # decorations: list of (src_color, offsets, deco_color)
+        def _apply(g):
+            bg = background(g)
+            h, w = grid_size(g)
+            out = copy_grid(g)
+            for r in range(h):
+                for c in range(w):
+                    col = g[r][c]
+                    if col == bg:
+                        continue
+                    for src_col, offsets, deco_col in decorations:
+                        if col != src_col:
+                            continue
+                        for dr, dc in offsets:
+                            nr, nc = r + dr, c + dc
+                            if 0 <= nr < h and 0 <= nc < w and g[nr][nc] == bg:
+                                out[nr][nc] = deco_col
+            return out
+        return _apply
+
+    bg0 = background(pairs[0][0])
+    src_colors = sorted(set(
+        v for x, _ in pairs for row in x for v in row if v != bg0
+    ))
+
+    # For each src color figure out which offsets and deco color from train data
+    offset_sets = [ORTHO, DIAG, ALL8]
+    # Try enumerating decorations per src color
+    # Build candidate (offsets, deco_color) for each src color by looking at diffs
+    deco_candidates_per_src = {}
+    for sc in src_colors:
+        cands = []
+        # Find where sc appears in inputs, what's added in outputs
+        for x, y in pairs:
+            h, w = grid_size(x)
+            for r in range(h):
+                for c in range(w):
+                    if x[r][c] == sc:
+                        for dr, dc in ALL8:
+                            nr, nc = r + dr, c + dc
+                            if 0 <= nr < h and 0 <= nc < w:
+                                if x[nr][nc] == bg0 and y[nr][nc] != bg0:
+                                    cands.append((dr, dc, y[nr][nc]))
+        if not cands:
+            continue
+        # Find most common (offset, deco_color) pattern
+        from collections import Counter
+        counts = Counter(cands)
+        # Group by deco_color
+        by_deco = {}
+        for (dr, dc, deco_col), cnt in counts.items():
+            by_deco.setdefault(deco_col, []).append((dr, dc))
+        deco_candidates_per_src[sc] = by_deco
+
+    if not deco_candidates_per_src:
+        return None
+
+    # Build all combinations
+    def _build_combos(src_list):
+        if not src_list:
+            yield []
+            return
+        sc = src_list[0]
+        rest = src_list[1:]
+        if sc not in deco_candidates_per_src:
+            for combo in _build_combos(rest):
+                yield combo
+            return
+        for deco_col, offsets in deco_candidates_per_src[sc].items():
+            for combo in _build_combos(rest):
+                yield [(sc, offsets, deco_col)] + combo
+
+    for decorations in _build_combos(src_colors):
+        if not decorations:
+            continue
+        prog = _make_prog(decorations)
+        if _fits_all(prog, pairs):
+            return prog
+    return None
+
+
+def try_plus_expand(pairs):
+    """
+    Find a plus/cross shape (center + 4 identical orthogonal arms of length 1,
+    no other non-bg neighbors); output doubles arm length to 2 and fills the
+    4 diagonal cells at dist 1 AND dist 2 with the center color.
+    Covers 0962bcdd-style tasks.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    def _find_plus(g, bg):
+        h, w = grid_size(g)
+        results = []
+        for r in range(2, h - 2):
+            for c in range(2, w - 2):
+                center_col = g[r][c]
+                if center_col == bg:
+                    continue
+                arm_positions = [(r-1,c),(r+1,c),(r,c-1),(r,c+1)]
+                arm_colors = [g[ar][ac] for ar,ac in arm_positions]
+                # All 4 arms must be same non-bg color
+                if any(a == bg for a in arm_colors):
+                    continue
+                if len(set(arm_colors)) > 1:
+                    continue
+                arm_col = arm_colors[0]
+                # No existing content at dist-2 arms or dist-1 diagonals
+                clear = True
+                for dr, dc in [(-2,0),(2,0),(0,-2),(0,2),
+                                (-1,-1),(-1,1),(1,-1),(1,1)]:
+                    nr, nc = r+dr, c+dc
+                    if 0 <= nr < h and 0 <= nc < w and g[nr][nc] != bg:
+                        clear = False
+                        break
+                if not clear:
+                    continue
+                results.append((r, c, center_col, arm_col))
+        return results
+
+    def _apply(g):
+        bg = background(g)
+        h, w = grid_size(g)
+        out = [list(row) for row in g]
+        pluses = _find_plus(g, bg)
+        for cr, cc, center_col, arm_col in pluses:
+            # Erase original length-1 arms
+            for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+                out[cr+dr][cc+dc] = bg
+            # Draw extended arms (length 1 and 2)
+            for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+                for dist in (1, 2):
+                    nr, nc = cr + dr*dist, cc + dc*dist
+                    if 0 <= nr < h and 0 <= nc < w:
+                        out[nr][nc] = arm_col
+            # Fill diagonal cells at dist 1 AND dist 2 with center color
+            for dr, dc in [(-1,-1),(-1,1),(1,-1),(1,1)]:
+                for dist in (1, 2):
+                    nr, nc = cr + dr*dist, cc + dc*dist
+                    if 0 <= nr < h and 0 <= nc < w:
+                        out[nr][nc] = center_col
+        return out
+
+    if _fits_all(_apply, pairs):
+        return _apply
+    return None
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Synthesizer entry point
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1364,7 +1804,13 @@ _STRATEGIES = [
     ("row_height_rank",        try_row_height_rank,        0.1),
     ("diagonal_tile",          try_diagonal_tile,          0.05),
     ("stripe_tiling",          try_stripe_tiling,          0.1),
+    ("block_tile_down",        try_block_tile_down,        0.3),
     ("gravity_toward_object",  try_gravity_toward_object,  0.1),
+    ("small_component_recolor",try_small_component_recolor,0.3),
+    ("connect_diagonal",       try_connect_diagonal,       0.2),
+    ("rectangle_corner_mark",  try_rectangle_corner_mark,  0.5),
+    ("color_decoration",       try_color_decoration,       0.5),
+    ("plus_expand",            try_plus_expand,            0.3),
     ("gravity_down",           try_gravity_down,           0.05),
     ("gravity_up",             try_gravity_up,             0.05),
     ("gravity_left",           try_gravity_left,           0.05),
