@@ -11728,17 +11728,40 @@ class HybridARCSolver:
         self.llm = None
         if llm_config:
             self.llm = LLMFallbackSolver(**llm_config)
+        # Stage 0: DSL MetaSolver (fast, exact pattern matching)
+        try:
+            import sys, os
+            sys.path.insert(0, os.path.expanduser('~'))
+            from openclaw import OpenClawSynth
+            self.dsl = OpenClawSynth()
+        except Exception:
+            self.dsl = None
 
     def solve(self, task: Dict, max_time: float = 10.0) -> List[List[List[int]]]:
-        """Solve with symbolic first, LLM fallback if needed."""
+        """Solve with DSL first, symbolic second, LLM fallback if needed."""
         import time
         start = time.time()
 
-        # 1. Try symbolic solver
-        preds = self.symbolic.solve(task, max_time=max_time)
+        # Stage 0: DSL MetaSolver (OpenClaw parallel arms)
+        dsl_preds = []
+        if self.dsl is not None:
+            try:
+                dsl_out = self.dsl.solve_task(task)
+                if dsl_out is not None:
+                    dsl_preds = [dsl_out]
+            except Exception:
+                dsl_preds = []
+
+        test_input = task['test'][0]['input']
+        dsl_confident = bool(dsl_preds) and any(p != test_input for p in dsl_preds)
+
+        if dsl_confident:
+            return dsl_preds[:2]
+
+        # Stage 1: Symbolic ARCSolver
+        preds = self.symbolic.solve(task, max_time=max_time - (time.time() - start))
 
         # Check if symbolic solver found a real answer (not just input echo)
-        test_input = task['test'][0]['input']
         symbolic_confident = any(p != test_input for p in preds)
 
         # 2. If not confident and LLM available, try LLM fallback
