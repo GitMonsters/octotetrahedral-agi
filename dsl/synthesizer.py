@@ -1163,6 +1163,187 @@ def _enumerate_depth1(pairs: List[Tuple[Grid, Grid]], time_limit: float = 1.5) -
     return None
 
 
+def try_diagonal_tile(pairs):
+    """
+    Output is a full-grid diagonal tiling: output[r][c] = diagonal_map[(r+c) % period].
+    Period and map are extracted from the non-bg diagonal stripe in the input.
+    Covers 05269061.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    def _derive_and_apply(g: Grid) -> Grid:
+        h, w = grid_size(g)
+        bg = background(g)
+        diag_map: dict = {}
+        for r in range(h):
+            for c in range(w):
+                v = g[r][c]
+                if v != bg:
+                    d = r + c
+                    if d in diag_map and diag_map[d] != v:
+                        raise ValueError("Inconsistent diagonal")
+                    diag_map[d] = v
+        if not diag_map:
+            raise ValueError("No markers")
+        period = len(set(diag_map.values()))
+        if period < 2:
+            raise ValueError("Need at least 2 colors for tiling")
+        mod_map: dict = {}
+        for d, v in diag_map.items():
+            key = d % period
+            if key in mod_map and mod_map[key] != v:
+                raise ValueError("Inconsistent mod mapping")
+            mod_map[key] = v
+        if len(mod_map) != period:
+            raise ValueError("Not all residues covered")
+        return [[mod_map[(r + c) % period] for c in range(w)] for r in range(h)]
+
+    return _derive_and_apply if _fits_all(_derive_and_apply, pairs) else None
+
+
+def try_stripe_tiling(pairs):
+    """
+    Single-pixel colored markers define repeating stripes that tile the grid.
+    Orientation is auto-detected per input: tall grid (h>w) → fill rows,
+    wide grid (w>h) → fill cols. Markers must be equally spaced.
+    Covers 0a938d79.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    def _apply(g: Grid) -> Grid:
+        h, w = grid_size(g)
+        bg = background(g)
+        orient = "rows" if h > w else "cols"
+
+        pos_color: dict = {}
+        for r in range(h):
+            for c in range(w):
+                v = g[r][c]
+                if v != bg:
+                    pos = r if orient == "rows" else c
+                    if pos in pos_color and pos_color[pos] != v:
+                        raise ValueError("Multi-color position")
+                    pos_color[pos] = v
+
+        positions = sorted(pos_color.keys())
+        if len(positions) < 2:
+            raise ValueError("Need at least 2 markers")
+
+        step = positions[1] - positions[0]
+        if step <= 0:
+            raise ValueError("Non-positive step")
+        for k in range(1, len(positions)):
+            if positions[k] - positions[k - 1] != step:
+                raise ValueError("Irregular spacing")
+
+        colors = [pos_color[p] for p in positions]
+        n = len(positions)
+        first_pos = positions[0]
+        max_pos = h if orient == "rows" else w
+
+        out = [[bg] * w for _ in range(h)]
+        k = 0
+        while True:
+            pos_k = first_pos + k * step
+            if pos_k >= max_pos:
+                break
+            color = colors[k % n]
+            if orient == "rows":
+                for c in range(w):
+                    out[pos_k][c] = color
+            else:
+                for r in range(h):
+                    out[r][pos_k] = color
+            k += 1
+        return out
+
+    return _apply if _fits_all(_apply, pairs) else None
+
+
+def try_gravity_toward_object(pairs):
+    """
+    Two objects in the grid: one slides toward the other along their shared axis
+    until they are adjacent.  The axis is determined by bounding-box overlap:
+      - col overlap → vertical movement
+      - row overlap → horizontal movement
+    Both orderings (which object is the mover) are tried.
+    Covers 05f2a901.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    def make_prog(mover_is_smaller: bool):
+        def _apply(g: Grid) -> Grid:
+            from collections import defaultdict
+            h, w = grid_size(g)
+            bg = background(g)
+            color_cells: dict = defaultdict(list)
+            for r in range(h):
+                for c in range(w):
+                    v = g[r][c]
+                    if v != bg:
+                        color_cells[v].append((r, c))
+            if len(color_cells) != 2:
+                raise ValueError("Need exactly 2 non-bg colors")
+
+            colors = sorted(color_cells.keys(), key=lambda c: len(color_cells[c]))
+            if mover_is_smaller:
+                mover_color, anchor_color = colors[0], colors[1]
+            else:
+                mover_color, anchor_color = colors[1], colors[0]
+
+            mcells = color_cells[mover_color]
+            acells = color_cells[anchor_color]
+
+            mr1 = min(r for r, c in mcells)
+            mr2 = max(r for r, c in mcells)
+            mc1 = min(c for r, c in mcells)
+            mc2 = max(c for r, c in mcells)
+            ar1 = min(r for r, c in acells)
+            ar2 = max(r for r, c in acells)
+            ac1 = min(c for r, c in acells)
+            ac2 = max(c for r, c in acells)
+
+            col_overlap = max(mc1, ac1) <= min(mc2, ac2)
+            row_overlap = max(mr1, ar1) <= min(mr2, ar2)
+
+            dr = dc = 0
+            if col_overlap and not row_overlap:
+                if ar1 > mr2:
+                    dr = ar1 - 1 - mr2
+                elif ar2 < mr1:
+                    dr = ar2 + 1 - mr1
+                else:
+                    raise ValueError("Objects already overlap vertically")
+            elif row_overlap and not col_overlap:
+                if ac1 > mc2:
+                    dc = ac1 - 1 - mc2
+                elif ac2 < mc1:
+                    dc = ac2 + 1 - mc1
+                else:
+                    raise ValueError("Objects already overlap horizontally")
+            else:
+                raise ValueError("Cannot determine movement axis")
+
+            out = [list(row) for row in g]
+            for r, c in mcells:
+                out[r][c] = bg
+            for r, c in mcells:
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < h and 0 <= nc < w:
+                    out[nr][nc] = mover_color
+            return out
+        return _apply
+
+    for flag in (True, False):
+        prog = make_prog(flag)
+        if _fits_all(prog, pairs):
+            return prog
+    return None
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Synthesizer entry point
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1181,6 +1362,9 @@ _STRATEGIES = [
     ("histogram_barchart",     try_histogram_barchart,     0.1),
     ("column_height_rank",     try_column_height_rank,     0.1),
     ("row_height_rank",        try_row_height_rank,        0.1),
+    ("diagonal_tile",          try_diagonal_tile,          0.05),
+    ("stripe_tiling",          try_stripe_tiling,          0.1),
+    ("gravity_toward_object",  try_gravity_toward_object,  0.1),
     ("gravity_down",           try_gravity_down,           0.05),
     ("gravity_up",             try_gravity_up,             0.05),
     ("gravity_left",           try_gravity_left,           0.05),
