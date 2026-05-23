@@ -1784,6 +1784,1368 @@ def try_plus_expand(pairs):
     return None
 
 
+def try_scale_up(pairs):
+    """
+    Scale each cell into an NxN block (zoom/upscale).
+    Covers tasks like 60c09cac (scale x2) and 9172f3a0 (scale x3).
+    """
+    x0, y0 = pairs[0]
+    h, w = grid_size(x0)
+    oh, ow = grid_size(y0)
+    if oh % h != 0 or ow % w != 0:
+        return None
+    sh, sw = oh // h, ow // w
+    if sh != sw or sh < 2:
+        return None
+
+    def _scale(g: Grid, n: int = sh) -> Grid:
+        gh, gw = grid_size(g)
+        out = empty_grid(gh * n, gw * n)
+        for r in range(gh):
+            for c in range(gw):
+                for dr in range(n):
+                    for dc in range(n):
+                        out[r * n + dr][c * n + dc] = g[r][c]
+        return out
+
+    fn = lambda g, n=sh: _scale(g, n)
+    return fn if _fits_all(fn, pairs) else None
+
+
+def try_slide_to_border(pairs):
+    """
+    Slide the entire non-bg content bounding box to touch one of the 4 borders,
+    preserving the perpendicular coordinate.
+    Covers f3e62deb, 25ff71a9 and similar tasks.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    def _slide(g: Grid, direction: str) -> Grid:
+        h, w = grid_size(g)
+        bg = background(g)
+        rows = [r for r in range(h) if any(g[r][c] != bg for c in range(w))]
+        cols = [c for c in range(w) if any(g[r][c] != bg for r in range(h))]
+        if not rows or not cols:
+            return g
+        r0, r1 = min(rows), max(rows)
+        c0, c1 = min(cols), max(cols)
+        hs, ws = r1 - r0 + 1, c1 - c0 + 1
+        shape = [[g[r][c] for c in range(c0, c1 + 1)] for r in range(r0, r1 + 1)]
+        out = [[bg] * w for _ in range(h)]
+        if direction == "top":
+            nr, nc = 0, c0
+        elif direction == "bottom":
+            nr, nc = h - hs, c0
+        elif direction == "left":
+            nr, nc = r0, 0
+        else:  # right
+            nr, nc = r0, w - ws
+        for i in range(hs):
+            for j in range(ws):
+                if 0 <= nr + i < h and 0 <= nc + j < w:
+                    out[nr + i][nc + j] = shape[i][j]
+        return out
+
+    for direction in ("top", "bottom", "left", "right"):
+        fn = lambda g, d=direction: _slide(g, d)
+        if _fits_all(fn, pairs):
+            return fn
+    return None
+
+
+def try_dot_row_zones(pairs):
+    """
+    Sparse colored dots on background define row-based Voronoi zones.
+    Dot rows + border rows fill entirely; other rows fill only the two edge cells.
+    Covers 0f63c0b9 and 1bfc4729.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    def _dot_row_zones(g: Grid) -> Grid:
+        h, w = grid_size(g)
+        bg = background(g)
+        # Find all dot positions (non-bg)
+        dots = [(r, g[r][c]) for r in range(h) for c in range(w) if g[r][c] != bg]
+        if not dots:
+            return g
+        dot_rows = sorted(set(r for r, _ in dots))
+        dot_color = {r: next(col for row, col in dots if row == r) for r in dot_rows}
+
+        def nearest_color(row):
+            return min(dot_rows, key=lambda dr: abs(dr - row))
+
+        out = [[bg] * w for _ in range(h)]
+        for r in range(h):
+            nc_row = dot_color[nearest_color(r)]
+            if r in dot_rows or r == 0 or r == h - 1:
+                # Fill entire row
+                for c in range(w):
+                    out[r][c] = nc_row
+            else:
+                # Fill only border columns
+                out[r][0] = nc_row
+                out[r][w - 1] = nc_row
+        return out
+
+    return _dot_row_zones if _fits_all(_dot_row_zones, pairs) else None
+
+
+def try_connect_same_color_pairs(pairs):
+    """
+    Each non-bg color has exactly 2 cells; connect them with a horizontal or
+    vertical line. Horizontal lines drawn first, vertical last (vertical overwrites).
+    Covers 070dd51e.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    def _connect(g: Grid) -> Grid:
+        h, w = grid_size(g)
+        bg = background(g)
+        from collections import defaultdict
+        color_cells = defaultdict(list)
+        for r in range(h):
+            for c in range(w):
+                if g[r][c] != bg:
+                    color_cells[g[r][c]].append((r, c))
+        out = [list(row) for row in g]
+        # Sort: horizontal lines first, vertical lines last (vertical overwrites at intersections)
+        items = list(color_cells.items())
+        items.sort(key=lambda kv: kv[1][0][1] == kv[1][1][1])  # vertical (same col) last
+        for color, cells in items:
+            if len(cells) != 2:
+                continue
+            (r1, c1), (r2, c2) = cells
+            if r1 == r2:
+                # Horizontal line
+                for c in range(min(c1, c2), max(c1, c2) + 1):
+                    out[r1][c] = color
+            elif c1 == c2:
+                # Vertical line
+                for r in range(min(r1, r2), max(r1, r2) + 1):
+                    out[r][c1] = color
+        return out
+
+    return _connect if _fits_all(_connect, pairs) else None
+
+
+def try_shift_content(pairs):
+    """
+    Shift the entire non-bg content bounding box by (dr, dc) steps.
+    Tries dr/dc in {-3..3} × {-3..3}. Covers 25ff71a9 (shift down 1).
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    for dr in range(-3, 4):
+        for dc in range(-3, 4):
+            if dr == 0 and dc == 0:
+                continue
+
+            def _shift(g: Grid, dr=dr, dc=dc) -> Grid:
+                h, w = grid_size(g)
+                bg_val = background(g)
+                rows = [r for r in range(h) if any(g[r][c] != bg_val for c in range(w))]
+                cols = [c for c in range(w) if any(g[r][c] != bg_val for r in range(h))]
+                if not rows or not cols:
+                    return g
+                r0, r1 = min(rows), max(rows)
+                c0, c1 = min(cols), max(cols)
+                out = [[bg_val] * w for _ in range(h)]
+                for r in range(r0, r1 + 1):
+                    for c in range(c0, c1 + 1):
+                        nr, nc = r + dr, c + dc
+                        if 0 <= nr < h and 0 <= nc < w:
+                            out[nr][nc] = g[r][c]
+                return out
+
+            if _fits_all(_shift, pairs):
+                return _shift
+    return None
+
+
+def try_color_slide_direction(pairs):
+    """
+    Learn a color → slide_direction mapping from train pairs.
+    Then apply: slide content bbox to that border.
+    Covers f3e62deb where color encodes which border to slide toward.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    color_dir: dict = {}
+    for x, y in pairs:
+        h, w = grid_size(x)
+        bg_val = background(x)
+        colors = list({g for row in x for g in row} - {bg_val})
+        if len(colors) != 1:
+            return None
+        color = colors[0]
+        # Determine slide direction from output
+        y_rows = [r for r in range(h) if any(y[r][c] != bg_val for c in range(w))]
+        y_cols = [c for c in range(w) if any(y[r][c] != bg_val for r in range(h))]
+        if not y_rows or not y_cols:
+            return None
+        yr0, yr1 = min(y_rows), max(y_rows)
+        yc0, yc1 = min(y_cols), max(y_cols)
+        if yr0 == 0:
+            direction = "top"
+        elif yr1 == h - 1:
+            direction = "bottom"
+        elif yc0 == 0:
+            direction = "left"
+        elif yc1 == w - 1:
+            direction = "right"
+        else:
+            return None
+        if color in color_dir and color_dir[color] != direction:
+            return None
+        color_dir[color] = direction
+
+    if not color_dir:
+        return None
+
+    def _slide_by_color(g: Grid) -> Grid:
+        h, w = grid_size(g)
+        bg_val = background(g)
+        colors = list({v for row in g for v in row} - {bg_val})
+        if len(colors) != 1:
+            return g
+        color = colors[0]
+        direction = color_dir.get(color)
+        if direction is None:
+            # Infer unseen color as the missing direction
+            used = set(color_dir.values())
+            remaining = [d for d in ("top", "bottom", "left", "right") if d not in used]
+            if len(remaining) != 1:
+                return g
+            direction = remaining[0]
+        rows = [r for r in range(h) if any(g[r][c] != bg_val for c in range(w))]
+        cols = [c for c in range(w) if any(g[r][c] != bg_val for r in range(h))]
+        if not rows or not cols:
+            return g
+        r0, r1 = min(rows), max(rows)
+        c0, c1 = min(cols), max(cols)
+        hs, ws = r1 - r0 + 1, c1 - c0 + 1
+        shape = [[g[r][c] for c in range(c0, c1 + 1)] for r in range(r0, r1 + 1)]
+        out = [[bg_val] * w for _ in range(h)]
+        if direction == "top":
+            nr, nc = 0, c0
+        elif direction == "bottom":
+            nr, nc = h - hs, c0
+        elif direction == "left":
+            nr, nc = r0, 0
+        else:
+            nr, nc = r0, w - ws
+        for i in range(hs):
+            for j in range(ws):
+                if 0 <= nr + i < h and 0 <= nc + j < w:
+                    out[nr + i][nc + j] = shape[i][j]
+        return out
+
+    return _slide_by_color if _fits_all(_slide_by_color, pairs) else None
+
+
+def try_rotation_4fold(pairs: List[Tuple[Grid, Grid]]) -> Optional[Program]:
+    """Tile 4 rotations of the input (0°,90°,180°,270°) into a 2H×2W grid."""
+    from itertools import permutations as _perms
+
+    def _rot90(g: Grid) -> Grid:
+        H, W = len(g), len(g[0])
+        return [[g[H - 1 - c][r] for c in range(H)] for r in range(W)]
+
+    def _make(x: Grid, a: int, b: int, c: int, d: int) -> Grid:
+        rots = [x, _rot90(x), _rot90(_rot90(x)), _rot90(_rot90(_rot90(x)))]
+        H, W = len(x), len(x[0])
+        out = [[0] * (2 * W) for _ in range(2 * H)]
+        for i in range(H):
+            for j in range(W):
+                out[i][j] = rots[a][i][j]
+                out[i][j + W] = rots[b][i][j]
+                out[i + H][j] = rots[c][i][j]
+                out[i + H][j + W] = rots[d][i][j]
+        return out
+
+    chosen = None
+    for perm in _perms(range(4)):
+        a, b, c, d = perm
+        ok = True
+        for x, y in pairs:
+            H, W = len(x), len(x[0])
+            if len(y) != 2 * H or len(y[0]) != 2 * W:
+                return None
+            if _make(x, a, b, c, d) != y:
+                ok = False
+                break
+        if ok:
+            chosen = (a, b, c, d)
+            break
+
+    if chosen is None:
+        return None
+
+    a, b, c, d = chosen
+
+    def _prog(x: Grid) -> Grid:
+        return _make(x, a, b, c, d)
+
+    return _prog if _fits_all(_prog, pairs) else None
+
+
+def try_mirror_4fold(pairs: List[Tuple[Grid, Grid]]) -> Optional[Program]:
+    """Tile 4 reflections (identity, flip_h, flip_v, flip_hv) into a 2H×2W grid."""
+    from itertools import permutations as _perms
+
+    def _fh(g: Grid) -> Grid:
+        return [row[::-1] for row in g]
+
+    def _fv(g: Grid) -> Grid:
+        return list(reversed(g))
+
+    def _make(x: Grid, a: int, b: int, c: int, d: int) -> Grid:
+        flips = [x, _fh(x), _fv(x), _fh(_fv(x))]
+        H, W = len(x), len(x[0])
+        out = [[0] * (2 * W) for _ in range(2 * H)]
+        for i in range(H):
+            for j in range(W):
+                out[i][j] = flips[a][i][j]
+                out[i][j + W] = flips[b][i][j]
+                out[i + H][j] = flips[c][i][j]
+                out[i + H][j + W] = flips[d][i][j]
+        return out
+
+    chosen = None
+    for perm in _perms(range(4)):
+        a, b, c, d = perm
+        ok = True
+        for x, y in pairs:
+            H, W = len(x), len(x[0])
+            if len(y) != 2 * H or len(y[0]) != 2 * W:
+                return None
+            if _make(x, a, b, c, d) != y:
+                ok = False
+                break
+        if ok:
+            chosen = (a, b, c, d)
+            break
+
+    if chosen is None:
+        return None
+
+    a, b, c, d = chosen
+
+    def _prog(x: Grid) -> Grid:
+        return _make(x, a, b, c, d)
+
+    return _prog if _fits_all(_prog, pairs) else None
+
+
+def try_extend_lines(pairs: List[Tuple[Grid, Grid]]) -> Optional[Program]:
+    """
+    Input has one partial vertical line (color A) and one partial horizontal line
+    (color B). Output extends both to full grid; intersection gets a learned color C.
+    """
+    from collections import Counter as _Ctr
+
+    def _detect(x: Grid):
+        H, W = len(x), len(x[0])
+        bg = _Ctr(v for row in x for v in row).most_common(1)[0][0]
+        # Find non-bg cells
+        nz = [(r, c, x[r][c]) for r in range(H) for c in range(W) if x[r][c] != bg]
+        if not nz:
+            return None
+        colors = list(set(v for _, _, v in nz))
+        if len(colors) != 2:
+            return None
+        # Identify which color is vertical-leaning and which horizontal-leaning
+        for ca, cb in [(colors[0], colors[1]), (colors[1], colors[0])]:
+            a_cells = [(r, c) for r, c, v in nz if v == ca]
+            b_cells = [(r, c) for r, c, v in nz if v == cb]
+            # ca is vertical: all same column
+            cols_a = set(c for r, c in a_cells)
+            rows_b = set(r for r, c in b_cells)
+            if len(cols_a) == 1 and len(rows_b) == 1:
+                col_a = next(iter(cols_a))
+                row_b = next(iter(rows_b))
+                return bg, ca, col_a, cb, row_b
+        return None
+
+    # Learn intersection color from training pairs
+    intersect_color = None
+    for x, y in pairs:
+        info = _detect(x)
+        if info is None:
+            return None
+        bg, ca, col_a, cb, row_b = info
+        H, W = len(x), len(x[0])
+        # Read intersection color from output
+        ic = y[row_b][col_a]
+        if intersect_color is None:
+            intersect_color = ic
+        elif intersect_color != ic:
+            return None  # disagreement
+
+    if intersect_color is None:
+        return None
+
+    def _prog(x: Grid) -> Grid:
+        info = _detect(x)
+        if info is None:
+            raise ValueError("pattern mismatch")
+        bg, ca, col_a, cb, row_b = info
+        H, W = len(x), len(x[0])
+        out = [[bg] * W for _ in range(H)]
+        for r in range(H):
+            out[r][col_a] = ca
+        for c in range(W):
+            out[row_b][c] = cb
+        out[row_b][col_a] = intersect_color
+        return out
+
+    return _prog if _fits_all(_prog, pairs) else None
+
+
+def try_checkerboard_extend(pairs: List[Tuple[Grid, Grid]]) -> Optional[Program]:
+    """
+    Input: periodic diagonal tiling region (N colors) + solid-block border.
+    Output: extend tiling to full grid with phase shifted +1.
+    Works for N=2 (classic checkerboard) and higher periods.
+    """
+    from collections import Counter as _Ctr
+
+    def _detect_tiling(x: Grid):
+        """Find border color and diagonal tiling sequence from input."""
+        H, W = len(x), len(x[0])
+        freq = _Ctr(v for row in x for v in row)
+        n_colors = len(freq)
+        if n_colors < 3:
+            return None
+        # Try each color as the border color
+        for bc, _ in freq.most_common():
+            non_bc = [(r, c, x[r][c]) for r in range(H) for c in range(W) if x[r][c] != bc]
+            if not non_bc:
+                continue
+            # Determine period N from the number of remaining colors
+            tile_colors = set(v for _, _, v in non_bc)
+            N = len(tile_colors)
+            if N < 2:
+                continue
+            # Determine sequence: infer seq from first non-bc cell
+            r0, c0, v0 = non_bc[0]
+            # Assume seq[(r+c+phase) % N] for some phase and ordering of colors
+            # Try to infer seq and phase by scanning
+            # Build mapping: (r+c) % N → color
+            diag_map = {}
+            ok = True
+            phase_offset = 0
+            for r, c, v in non_bc:
+                key = (c + (r % 2)) % N
+                if key not in diag_map:
+                    diag_map[key] = v
+                elif diag_map[key] != v:
+                    ok = False
+                    break
+            if not ok or len(diag_map) != N:
+                continue
+            # Build ordered sequence
+            seq = [diag_map[k] for k in range(N)]
+            return bc, seq, N
+        return None
+
+    def _verify_output(y: Grid, seq, N, phase):
+        H, W = len(y), len(y[0])
+        for r in range(H):
+            for c in range(W):
+                if y[r][c] != seq[(c + (r % 2) + phase) % N]:
+                    return False
+        return True
+
+    # Validate all training pairs
+    for x, y in pairs:
+        if len(y) != len(x) or len(y[0]) != len(x[0]):
+            return None
+        info = _detect_tiling(x)
+        if info is None:
+            return None
+        bc, seq, N = info
+        # The output should be a perfect tiling (no border)
+        out_freq = _Ctr(v for row in y for v in row)
+        if set(out_freq.keys()) != set(seq):
+            return None
+        # Determine output phase by checking (0,0)
+        if y[0][0] not in seq:
+            return None
+        # Verify any valid phase works
+        found = False
+        for ph in range(N):
+            if _verify_output(y, seq, N, ph):
+                found = True
+                break
+        if not found:
+            return None
+
+    def _prog(x: Grid) -> Grid:
+        info = _detect_tiling(x)
+        if info is None:
+            raise ValueError("no tiling found")
+        bc, seq, N = info
+        H, W = len(x), len(x[0])
+        # Determine current phase from non-bc cells
+        non_bc = [(r, c, x[r][c]) for r in range(H) for c in range(W) if x[r][c] != bc]
+        if not non_bc:
+            raise ValueError
+        r0, c0, v0 = non_bc[0]
+        base_phase = (seq.index(v0) - (c0 + (r0 % 2))) % N
+        # Output phase = base_phase + 1
+        out_phase = (base_phase + 1) % N
+        out = [[0] * W for _ in range(H)]
+        for r in range(H):
+            for c in range(W):
+                out[r][c] = seq[(c + (r % 2) + out_phase) % N]
+        return out
+
+    return _prog if _fits_all(_prog, pairs) else None
+
+
+def try_variable_pixel_scale(pairs):
+    """
+    Scale each pixel into an NxN block where N = number of unique non-bg colors
+    in the input (or N = that count + 1).
+    Covers b91ae062, ac0a08a4 (scale = n_nonbg_colors) and d4b1c2b1 (scale = n+1).
+    """
+    x0, y0 = pairs[0]
+    h, w = grid_size(x0)
+    oh, ow = grid_size(y0)
+    if oh % h != 0 or ow % w != 0:
+        return None
+    sh, sw = oh // h, ow // w
+    if sh != sw or sh < 2:
+        return None
+
+    def _variable_scale(g: Grid) -> Grid:
+        bg_col = background(g)
+        n = len(colors_in(g) - {bg_col})
+        gh, gw = grid_size(g)
+        out = empty_grid(gh * n, gw * n)
+        for r in range(gh):
+            for c in range(gw):
+                for dr in range(n):
+                    for dc in range(n):
+                        out[r * n + dr][c * n + dc] = g[r][c]
+        return out
+
+    def _variable_scale_plus1(g: Grid) -> Grid:
+        bg_col = background(g)
+        n = len(colors_in(g) - {bg_col}) + 1
+        gh, gw = grid_size(g)
+        out = empty_grid(gh * n, gw * n)
+        for r in range(gh):
+            for c in range(gw):
+                for dr in range(n):
+                    for dc in range(n):
+                        out[r * n + dr][c * n + dc] = g[r][c]
+        return out
+
+    # Determine which variant matches pair 0
+    bg0 = background(x0)
+    n0 = len(colors_in(x0) - {bg0})
+    if sh == n0 and _fits_all(_variable_scale, pairs):
+        return _variable_scale
+    if sh == n0 + 1 and _fits_all(_variable_scale_plus1, pairs):
+        return _variable_scale_plus1
+    return None
+
+
+def try_block_reduce(pairs):
+    """
+    Divide the input into an NxM grid of equal-sized blocks and reduce each block
+    to its single non-bg color (or bg if the block is all-bg).
+    Output size = (num_block_rows, num_block_cols).
+    Covers 5783df64, 68b67ca3, e57337a4, d631b094.
+    """
+    x0, y0 = pairs[0]
+    h, w = grid_size(x0)
+    oh, ow = grid_size(y0)
+    if oh <= 0 or ow <= 0 or h <= 0 or w <= 0:
+        return None
+    if h % oh != 0 or w % ow != 0:
+        return None
+    bh, bw = h // oh, w // ow
+    if bh < 2 or bw < 2:
+        return None
+
+    def _reduce(g: Grid) -> Grid:
+        gh, gw = grid_size(g)
+        bg_col = background(g)
+        if gh % oh != 0 or gw % ow != 0:
+            return empty_grid(oh, ow)
+        tbh, tbw = gh // oh, gw // ow
+        out = empty_grid(oh, ow)
+        for br in range(oh):
+            for bc in range(ow):
+                block_colors = set(
+                    g[br * tbh + dr][bc * tbw + dc]
+                    for dr in range(tbh) for dc in range(tbw)
+                ) - {bg_col}
+                out[br][bc] = next(iter(block_colors)) if len(block_colors) == 1 else bg_col
+        return out
+
+    return _reduce if _fits_all(_reduce, pairs) else None
+
+
+def try_neighbor_count_recolor(pairs):
+    """
+    Recolor each non-bg cell based on a (original_color, n_same_color_neighbors) → output_color
+    lookup table learned from training pairs.
+    Covers bb43febb, e0fb7511.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    x0, y0 = pairs[0]
+    bg_col = background(x0)
+    h, w = grid_size(x0)
+
+    # Build lookup table from all pairs
+    table = {}
+    for x, y in pairs:
+        gh, gw = grid_size(x)
+        if grid_size(y) != (gh, gw):
+            return None
+        bg2 = background(x)
+        for r in range(gh):
+            for c in range(gw):
+                if x[r][c] == bg2:
+                    if y[r][c] != bg2:
+                        return None
+                    continue
+                n = sum(
+                    1 for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]
+                    if 0 <= r + dr < gh and 0 <= c + dc < gw and x[r + dr][c + dc] == x[r][c]
+                )
+                key = (x[r][c], n)
+                out_val = y[r][c]
+                if key in table:
+                    if table[key] != out_val:
+                        return None
+                else:
+                    table[key] = out_val
+
+    if not table:
+        return None
+    # Check table is non-trivial (at least one recolor)
+    if all(k[0] == v for k, v in table.items()):
+        return None
+
+    def _recolor(g: Grid) -> Grid:
+        gh, gw = grid_size(g)
+        bg2 = background(g)
+        out = copy_grid(g)
+        for r in range(gh):
+            for c in range(gw):
+                if g[r][c] == bg2:
+                    continue
+                n = sum(
+                    1 for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]
+                    if 0 <= r + dr < gh and 0 <= c + dc < gw and g[r + dr][c + dc] == g[r][c]
+                )
+                key = (g[r][c], n)
+                out[r][c] = table.get(key, g[r][c])
+        return out
+
+    return _recolor if _fits_all(_recolor, pairs) else None
+
+
+def try_separator_subgrid_reduce(pairs):
+    """
+    When the input has separator rows/cols (rows or cols all one non-bg color),
+    divide into sub-grids and reduce each sub-grid to its single non-bg color.
+    Output size = (num_subgrid_rows, num_subgrid_cols).
+    Covers 1190e5a7, 7039b2d7.
+    """
+    x0, y0 = pairs[0]
+
+    def _find_separators(g):
+        gh, gw = grid_size(g)
+        bg_col = background(g)
+        sep_rows = [r for r in range(gh) if all(g[r][c] != bg_col for c in range(gw))]
+        sep_cols = [c for c in range(gw) if all(g[r][c] != bg_col for r in range(gh))]
+        return sep_rows, sep_cols
+
+    def _extract_subgrids(g, sep_rows, sep_cols):
+        gh, gw = grid_size(g)
+        row_divs = [-1] + sep_rows + [gh]
+        col_divs = [-1] + sep_cols + [gw]
+        subgrids = []
+        for i in range(len(row_divs) - 1):
+            row_grids = []
+            for j in range(len(col_divs) - 1):
+                r0 = row_divs[i] + 1
+                r1 = row_divs[i + 1]
+                c0 = col_divs[j] + 1
+                c1 = col_divs[j + 1]
+                if r0 >= r1 or c0 >= c1:
+                    continue
+                row_grids.append([g[r][c0:c1] for r in range(r0, r1)])
+            if row_grids:
+                subgrids.append(row_grids)
+        return subgrids
+
+    sep_r0, sep_c0 = _find_separators(x0)
+    if not sep_r0 and not sep_c0:
+        return None
+
+    sgs0 = _extract_subgrids(x0, sep_r0, sep_c0)
+    oh = len(sgs0)
+    ow = max(len(row) for row in sgs0) if sgs0 else 0
+    if grid_size(y0) != (oh, ow):
+        return None
+
+    def _reduce(g: Grid) -> Grid:
+        sr, sc = _find_separators(g)
+        sgs = _extract_subgrids(g, sr, sc)
+        if not sgs:
+            return empty_grid(oh, ow)
+        bg_col = background(g)
+        out = empty_grid(len(sgs), max(len(row) for row in sgs))
+        for i, row in enumerate(sgs):
+            for j, sg in enumerate(row):
+                non_bg = set(v for r in sg for v in r) - {bg_col}
+                out[i][j] = next(iter(non_bg)) if len(non_bg) == 1 else bg_col
+        return out
+
+    return _reduce if _fits_all(_reduce, pairs) else None
+
+
+def try_connect_same_color_lines(pairs):
+    """Connect same-color cells in same row/col with the same color."""
+    def _connect(x):
+        b = background(x)
+        H, W = len(x), len(x[0])
+        g = [row[:] for row in x]
+        for r in range(H):
+            cols_by_color = {}
+            for c in range(W):
+                if x[r][c] != b:
+                    cols_by_color.setdefault(x[r][c], []).append(c)
+            for color, cols in cols_by_color.items():
+                for c in range(min(cols), max(cols) + 1):
+                    if x[r][c] == b:
+                        g[r][c] = color
+        for c in range(W):
+            rows_by_color = {}
+            for r in range(H):
+                if x[r][c] != b:
+                    rows_by_color.setdefault(x[r][c], []).append(r)
+            for color, rows in rows_by_color.items():
+                for r in range(min(rows), max(rows) + 1):
+                    if x[r][c] == b:
+                        g[r][c] = color
+        return g
+
+    return _connect if _fits_all(_connect, pairs) else None
+
+
+def try_diagonal_extend(pairs):
+    """Extend each non-bg cell diagonally in all 4 diagonal directions until border."""
+    def _diag(x):
+        b = background(x)
+        H, W = len(x), len(x[0])
+        g = [row[:] for row in x]
+        for r in range(H):
+            for c in range(W):
+                if x[r][c] != b:
+                    color = x[r][c]
+                    for dr, dc in [(1, 1), (1, -1), (-1, 1), (-1, -1)]:
+                        nr, nc = r + dr, c + dc
+                        while 0 <= nr < H and 0 <= nc < W:
+                            if x[nr][nc] == b:
+                                g[nr][nc] = color
+                            nr += dr
+                            nc += dc
+        return g
+
+    return _diag if _fits_all(_diag, pairs) else None
+
+
+def try_complete_rect_outline(pairs):
+    """Complete a partial rectangle outline to a full rectangle border."""
+    def _complete(x):
+        b = background(x)
+        H, W = len(x), len(x[0])
+        g = [row[:] for row in x]
+        in_colors = set(v for row in x for v in row) - {b}
+        for color in in_colors:
+            cells = [(r, c) for r in range(H) for c in range(W) if x[r][c] == color]
+            if not cells:
+                continue
+            r1 = min(r for r, c in cells)
+            r2 = max(r for r, c in cells)
+            c1 = min(c for r, c in cells)
+            c2 = max(c for r, c in cells)
+            for r in range(r1, r2 + 1):
+                for c in range(c1, c2 + 1):
+                    if r == r1 or r == r2 or c == c1 or c == c2:
+                        if g[r][c] == b:
+                            g[r][c] = color
+        return g
+
+    def _check(x):
+        result = _complete(x)
+        b = background(x)
+        # Verify no interior cells were touched (changed cells must all be on border of bboxes)
+        H, W = len(x), len(x[0])
+        for r in range(H):
+            for c in range(W):
+                if x[r][c] != b and result[r][c] != x[r][c]:
+                    return None
+        return result
+
+    return _complete if _fits_all(_complete, pairs) else None
+
+
+def try_uniform_output(pairs):
+    """Output = grid filled with a single color derived from input statistics.
+    Output size is taken from each pair's own output dimensions.
+    """
+    # Try most common non-bg, then least common
+    for selector in ['most', 'least']:
+        def _fill(x, sel=selector, _pairs=pairs):
+            b = background(x)
+            cnt = Counter(v for row in x for v in row)
+            cnt.pop(b, None)
+            if not cnt:
+                return None
+            ordered = cnt.most_common()
+            pick = ordered[0][0] if sel == 'most' else ordered[-1][0]
+            # Output size must match the known output for this input; infer from pairs
+            for px, py in _pairs:
+                if px == x:
+                    Ho, Wo = len(py), len(py[0])
+                    return [[pick] * Wo for _ in range(Ho)]
+            # Fallback: same size as input
+            Ho, Wo = len(x), len(x[0])
+            return [[pick] * Wo for _ in range(Ho)]
+
+        if _fits_all(_fill, pairs):
+            return _fill
+
+    return None
+
+
+def try_fill_bbox_objects(pairs):
+    """Fill the bounding box of each non-bg object with that object's color."""
+    def _fill(x):
+        b = background(x)
+        H, W = len(x), len(x[0])
+        g = [row[:] for row in x]
+        colors = set(v for row in x for v in row) - {b}
+        for color in colors:
+            cells = [(r, c) for r in range(H) for c in range(W) if x[r][c] == color]
+            if not cells:
+                continue
+            r1 = min(r for r, c in cells)
+            r2 = max(r for r, c in cells)
+            c1 = min(c for r, c in cells)
+            c2 = max(c for r, c in cells)
+            for r in range(r1, r2 + 1):
+                for c in range(c1, c2 + 1):
+                    g[r][c] = color
+        return g
+
+    return _fill if _fits_all(_fill, pairs) else None
+
+
+def try_sym_complete_rot180(pairs):
+    """Fill bg cells using rot180 symmetry: empty cell gets the rotated counterpart's color."""
+    def _sym(x):
+        b = background(x)
+        H, W = len(x), len(x[0])
+        g = [row[:] for row in x]
+        for r in range(H):
+            for c in range(W):
+                if x[r][c] == b:
+                    mr, mc = H - 1 - r, W - 1 - c
+                    if 0 <= mr < H and 0 <= mc < W and x[mr][mc] != b:
+                        g[r][c] = x[mr][mc]
+        return g
+
+    return _sym if _fits_all(_sym, pairs) else None
+
+
+def try_row_col_intersect_mark(pairs):
+    """Mark bg cell (r,c) with color X if row r and col c both uniquely contain X."""
+    def _mark(x):
+        b = background(x)
+        H, W = len(x), len(x[0])
+        g = [row[:] for row in x]
+        row_colors = [set(v for v in x[r] if v != b) for r in range(H)]
+        col_colors = [set(x[r][c] for r in range(H) if x[r][c] != b) for c in range(W)]
+        for r in range(H):
+            for c in range(W):
+                if x[r][c] == b:
+                    intersect = row_colors[r] & col_colors[c]
+                    if len(intersect) == 1:
+                        g[r][c] = next(iter(intersect))
+        return g
+
+    return _mark if _fits_all(_mark, pairs) else None
+
+
+def try_reverse_concentric(pairs):
+    """Reverse the color sequence of concentric rings (distance from border).
+
+    Example: rings [8,0,5,8] → reversed [8,5,0,8].
+    Confirmed: 85c4e7cd.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    def _rev_conc(x):
+        H, W = len(x), len(x[0])
+        dist_col = {}
+        for r in range(H):
+            for c in range(W):
+                d = min(r, H - 1 - r, c, W - 1 - c)
+                if d not in dist_col:
+                    dist_col[d] = x[r][c]
+        max_d = max(dist_col)
+        seq = [dist_col[d] for d in range(max_d + 1)]
+        rev = list(reversed(seq))
+        g = [row[:] for row in x]
+        for r in range(H):
+            for c in range(W):
+                d = min(r, H - 1 - r, c, W - 1 - c)
+                g[r][c] = rev[d]
+        return g
+
+    return _rev_conc if _fits_all(_rev_conc, pairs) else None
+
+
+def try_ring_color_rotate(pairs):
+    """Rotate unique concentric ring colors (right or left by 1 step).
+
+    Extracts unique ring colors (outermost→innermost), tries right and left
+    rotation, applies as a color remapping to every cell.
+    Confirmed (right): bda2d7a6.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    def _make_fn(direction):
+        def _rotate(x):
+            H, W = len(x), len(x[0])
+            dist_col = {}
+            for r in range(H):
+                for c in range(W):
+                    d = min(r, H - 1 - r, c, W - 1 - c)
+                    if d not in dist_col:
+                        dist_col[d] = x[r][c]
+            max_d = max(dist_col)
+            seq = [dist_col[d] for d in range(max_d + 1)]
+            seen: list = []
+            unique: list = []
+            for v in seq:
+                if v not in seen:
+                    seen.append(v)
+                    unique.append(v)
+            N = len(unique)
+            if N < 2:
+                return x
+            rotated = [unique[(i + direction) % N] for i in range(N)]
+            mapping = {unique[i]: rotated[i] for i in range(N)}
+            g = [row[:] for row in x]
+            for r in range(H):
+                for c in range(W):
+                    g[r][c] = mapping.get(x[r][c], x[r][c])
+            return g
+        return _rotate
+
+    for d in (1, -1):
+        fn = _make_fn(d)
+        if _fits_all(fn, pairs):
+            return fn
+    return None
+
+
+def try_fill_border_with_nonbg(pairs):
+    """Fill all border cells with the single non-bg color; interior becomes bg.
+
+    The input must have exactly one non-bg color.
+    Confirmed: fc754716.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    def _fill_border(x):
+        b = background(x)
+        nc_set = set(v for row in x for v in row) - {b}
+        if len(nc_set) != 1:
+            return x
+        nc = next(iter(nc_set))
+        H, W = len(x), len(x[0])
+        g = [[b] * W for _ in range(H)]
+        for r in range(H):
+            for c in range(W):
+                if r == 0 or r == H - 1 or c == 0 or c == W - 1:
+                    g[r][c] = nc
+        return g
+
+    return _fill_border if _fits_all(_fill_border, pairs) else None
+
+
+def try_sorted_color_cycle(pairs):
+    """Rotate the sorted union of per-pair input+output colors by 1 step as a mapping.
+
+    For each pair the union of input+output colors forms the cycle independently.
+    Tries both left (direction=+1) and right (direction=-1) rotation.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    def _check_per_pair(direction):
+        """Return True if per-pair cycle with given direction fits all pairs."""
+        for x, y in pairs:
+            c_set = set(v for row in x for v in row) | set(v for row in y for v in row)
+            sc = sorted(c_set)
+            N = len(sc)
+            mp = {sc[i]: sc[(i + direction) % N] for i in range(N)}
+            H, W = len(x), len(x[0])
+            pred = [[mp.get(x[r][c], x[r][c]) for c in range(W)] for r in range(H)]
+            if pred != y:
+                return False
+        return True
+
+    def _make_fn(direction):
+        def _cycle(x):
+            # At inference time use only input colors (output unknown)
+            sc = sorted(set(v for row in x for v in row))
+            N = len(sc)
+            mp = {sc[i]: sc[(i + direction) % N] for i in range(N)}
+            H, W = len(x), len(x[0])
+            return [[mp.get(x[r][c], x[r][c]) for c in range(W)] for r in range(H)]
+        return _cycle
+
+    for d in (1, -1):
+        if _check_per_pair(d):
+            fn = _make_fn(d)
+            if _fits_all(fn, pairs):
+                return fn
+    return None
+
+
+def try_complement_and_recolor(pairs):
+    """Complement non-bg positions and substitute a new color from training pairs.
+
+    Pattern: input has exactly 2 distinct colors (0 and C_in); output has exactly
+    2 distinct colors (0 and C_out, where C_out != C_in); and the positions are
+    complemented (where C_in was, now 0; where 0 was, now C_out).
+    The mapping C_in -> C_out is consistent across all pairs sharing the same C_in.
+    Confirmed: 6ea4a07e.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    # Build mapping: C_in -> C_out from training pairs
+    color_map: dict = {}
+    for x, y in pairs:
+        x_colors = set(v for row in x for v in row)
+        y_colors = set(v for row in y for v in row)
+        if len(x_colors) != 2 or len(y_colors) != 2:
+            return None
+        if 0 not in x_colors or 0 not in y_colors:
+            return None
+        c_in = next(iter(x_colors - {0}))
+        c_out = next(iter(y_colors - {0}))
+        H, W = len(x), len(x[0])
+        ok = all(
+            (x[r][c] == c_in and y[r][c] == 0) or (x[r][c] == 0 and y[r][c] == c_out)
+            for r in range(H) for c in range(W)
+        )
+        if not ok:
+            return None
+        if c_in in color_map and color_map[c_in] != c_out:
+            return None
+        color_map[c_in] = c_out
+
+    if not color_map:
+        return None
+
+    def _complement(x, _map=color_map):
+        x_colors = set(v for row in x for v in row)
+        if 0 not in x_colors:
+            return x
+        nc_set = x_colors - {0}
+        if len(nc_set) != 1:
+            return x
+        c_in = next(iter(nc_set))
+        c_out = _map.get(c_in)
+        if c_out is None:
+            return x
+        H, W = len(x), len(x[0])
+        return [[c_out if x[r][c] == 0 else 0 for c in range(W)] for r in range(H)]
+
+    return _complement if _fits_all(_complement, pairs) else None
+
+
+def try_extend_line_to_border(pairs):
+    """Extend each line of non-bg cells to the full row or full column.
+
+    For each row that has some non-bg content in a contiguous segment, extend
+    that segment (or the color) to fill the entire row.  Similarly for columns.
+    Tries: (a) fill entire row with majority non-bg color if row has ≥2 same
+    non-bg cells, (b) same for columns.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    # Strategy A: each non-bg row gets its most common non-bg color extended to full row
+    def _extend_rows(x):
+        b = background(x)
+        H, W = len(x), len(x[0])
+        g = [row[:] for row in x]
+        for r in range(H):
+            nc = [v for v in x[r] if v != b]
+            if nc:
+                mc = Counter(nc).most_common(1)[0][0]
+                for c in range(W):
+                    g[r][c] = mc
+        return g
+
+    # Strategy B: each non-bg column gets its most common non-bg color extended to full col
+    def _extend_cols(x):
+        b = background(x)
+        H, W = len(x), len(x[0])
+        g = [row[:] for row in x]
+        for c in range(W):
+            col_nc = [x[r][c] for r in range(H) if x[r][c] != b]
+            if col_nc:
+                mc = Counter(col_nc).most_common(1)[0][0]
+                for r in range(H):
+                    g[r][c] = mc
+        return g
+
+    for fn in (_extend_rows, _extend_cols):
+        if _fits_all(fn, pairs):
+            return fn
+    return None
+
+
+def try_recolor_by_object_size(pairs):
+    """
+    Recolor each connected component based on a learned
+    (original_color, component_size) → output_color table.
+
+    Covers d2abd087, 7d1f7ee8, 810b9b61, 8dae5dfc, 6e82a1ae,
+    ae58858e, 009d5c81, a61f2674, e8593010, b230c067, ad173014,
+    0a2355a6, 63613498, 6df30ad6 and more.
+    """
+    if not _output_same_size_as_input(pairs):
+        return None
+
+    def _ccs_all_colors(g):
+        """Return list of (cells_list, color) for every non-bg component."""
+        b = background(g)
+        h, w = grid_size(g)
+        visited = [[False] * w for _ in range(h)]
+        comps = []
+        for sr in range(h):
+            for sc in range(w):
+                if not visited[sr][sc] and g[sr][sc] != b:
+                    v = g[sr][sc]
+                    cells = []
+                    stack = [(sr, sc)]
+                    visited[sr][sc] = True
+                    while stack:
+                        r, c = stack.pop()
+                        cells.append((r, c))
+                        for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                            nr, nc = r + dr, c + dc
+                            if (0 <= nr < h and 0 <= nc < w
+                                    and not visited[nr][nc]
+                                    and g[nr][nc] == v):
+                                visited[nr][nc] = True
+                                stack.append((nr, nc))
+                    comps.append((cells, v))
+        return comps
+
+    # Build (original_color, size) → output_color mapping
+    table: dict = {}
+    for x, y in pairs:
+        h, w = grid_size(x)
+        if grid_size(y) != (h, w):
+            return None
+        for cells, v in _ccs_all_colors(x):
+            sz = len(cells)
+            r0, c0 = cells[0]
+            out_v = y[r0][c0]
+            key = (v, sz)
+            if key in table:
+                if table[key] != out_v:
+                    return None
+            else:
+                table[key] = out_v
+
+    if not table:
+        return None
+    # Must actually change at least one object's color
+    if all(k[0] == v for k, v in table.items()):
+        return None
+
+    def _apply(g: Grid, _t=table) -> Grid:
+        result = copy_grid(g)
+        for cells, v in _ccs_all_colors(g):
+            sz = len(cells)
+            new_v = _t.get((v, sz), v)
+            for r, c in cells:
+                result[r][c] = new_v
+        return result
+
+    return _apply if _fits_all(_apply, pairs) else None
+
+
+def try_largest_object_extract(pairs):
+    """
+    Output = the bounding-box crop of the largest connected component
+    in the input (by number of cells).
+    Covers be94b721, 1f85a75f.
+    """
+    def _apply(g: Grid) -> Grid:
+        b = background(g)
+        h, w = grid_size(g)
+        visited = [[False] * w for _ in range(h)]
+        best_cells: list = []
+        best_v = b
+        for sr in range(h):
+            for sc in range(w):
+                if not visited[sr][sc] and g[sr][sc] != b:
+                    v = g[sr][sc]
+                    cells: list = []
+                    stack = [(sr, sc)]
+                    visited[sr][sc] = True
+                    while stack:
+                        r, c = stack.pop()
+                        cells.append((r, c))
+                        for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                            nr, nc = r + dr, c + dc
+                            if (0 <= nr < h and 0 <= nc < w
+                                    and not visited[nr][nc]
+                                    and g[nr][nc] == v):
+                                visited[nr][nc] = True
+                                stack.append((nr, nc))
+                    if len(cells) > len(best_cells):
+                        best_cells = cells
+                        best_v = v
+        if not best_cells:
+            return g
+        rows = [r for r, c in best_cells]
+        cols = [c for r, c in best_cells]
+        r0, r1 = min(rows), max(rows) + 1
+        c0, c1 = min(cols), max(cols) + 1
+        out = [[b] * (c1 - c0) for _ in range(r1 - r0)]
+        for r, c in best_cells:
+            out[r - r0][c - c0] = best_v
+        return out
+
+    return _apply if _fits_all(_apply, pairs) else None
+
+
+def try_connect_pair_dots(pairs):
+    """
+    For each row or column containing exactly 2 non-bg cells with nothing
+    between them, draw a bridge of a fixed learned color between the pair
+    (exclusive of the anchor cells).  Anchors with no matching partner in the
+    same axis are left untouched.
+
+    Covers dbc1a6ce (anchor=1, bridge=8), 253bf280 (anchor=8, bridge=3),
+    2bee17df (bridge=3).
+    """
+    from collections import Counter as _Counter
+
+    def _background(g):
+        return _Counter(v for row in g for v in row).most_common(1)[0][0]
+
+    # Infer bridge color from training data
+    bridge: Optional[int] = None
+
+    for x, y in pairs:
+        if len(x) != len(y) or len(x[0]) != len(y[0]):
+            return None
+        b = _background(x)
+        H, W = len(x), len(x[0])
+
+        # Collect anchor positions
+        nc_by_row: dict = {}
+        nc_by_col: dict = {}
+        for r in range(H):
+            for c in range(W):
+                if x[r][c] != b:
+                    nc_by_row.setdefault(r, []).append(c)
+                    nc_by_col.setdefault(c, []).append(r)
+
+        # Learn bridge color from expected output
+        for r, cols in nc_by_row.items():
+            if len(cols) == 2:
+                c1, c2 = sorted(cols)
+                for c in range(c1 + 1, c2):
+                    if x[r][c] != b:
+                        return None  # obstacle in gap
+                    if y[r][c] != b:
+                        if bridge is None:
+                            bridge = y[r][c]
+                        elif y[r][c] != bridge:
+                            return None
+        for c, rows in nc_by_col.items():
+            if len(rows) == 2:
+                r1, r2 = sorted(rows)
+                for r in range(r1 + 1, r2):
+                    if x[r][c] != b:
+                        return None  # obstacle
+                    if y[r][c] != b:
+                        if bridge is None:
+                            bridge = y[r][c]
+                        elif y[r][c] != bridge:
+                            return None
+
+        # Verify no unexpected changes beyond anchor+bridge cells
+        for r in range(H):
+            for c in range(W):
+                if y[r][c] != x[r][c] and y[r][c] != bridge:
+                    return None
+
+    if bridge is None:
+        return None
+
+    def _apply(g, _br=bridge):
+        b = _background(g)
+        H, W = len(g), len(g[0])
+        result = [row[:] for row in g]
+        nc_by_row: dict = {}
+        nc_by_col: dict = {}
+        for r in range(H):
+            for c in range(W):
+                if g[r][c] != b:
+                    nc_by_row.setdefault(r, []).append(c)
+                    nc_by_col.setdefault(c, []).append(r)
+        for r, cols in nc_by_row.items():
+            if len(cols) == 2:
+                c1, c2 = sorted(cols)
+                if all(g[r][c] == b for c in range(c1 + 1, c2)):
+                    for c in range(c1 + 1, c2):
+                        result[r][c] = _br
+        for c, rows in nc_by_col.items():
+            if len(rows) == 2:
+                r1, r2 = sorted(rows)
+                if all(g[r][c] == b for r in range(r1 + 1, r2)):
+                    for r in range(r1 + 1, r2):
+                        result[r][c] = _br
+        return result
+
+    return _apply if _fits_all(_apply, pairs) else None
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Synthesizer entry point
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1826,6 +3188,36 @@ _STRATEGIES = [
     ("stamp_by_mapping",       try_stamp_by_mapping,       1.0),
     ("run_length_group",       try_run_length_group,       0.3),
     ("frame_fill",             try_frame_fill,             0.5),
+    ("scale_up",               try_scale_up,               0.1),
+    ("slide_to_border",        try_slide_to_border,        0.1),
+    ("dot_row_zones",          try_dot_row_zones,          0.1),
+    ("connect_same_color_pairs", try_connect_same_color_pairs, 0.2),
+    ("shift_content",          try_shift_content,          0.3),
+    ("color_slide_direction",  try_color_slide_direction,  0.3),
+    ("rotation_4fold",         try_rotation_4fold,         0.2),
+    ("mirror_4fold",           try_mirror_4fold,           0.2),
+    ("extend_lines",           try_extend_lines,           0.2),
+    ("checkerboard_extend",    try_checkerboard_extend,    0.1),
+    ("variable_pixel_scale",   try_variable_pixel_scale,   0.1),
+    ("block_reduce",           try_block_reduce,           0.1),
+    ("neighbor_count_recolor", try_neighbor_count_recolor, 0.2),
+    ("separator_subgrid_reduce", try_separator_subgrid_reduce, 0.1),
+    ("connect_same_color_lines", try_connect_same_color_lines, 0.1),
+    ("diagonal_extend",        try_diagonal_extend,        0.1),
+    ("complete_rect_outline",  try_complete_rect_outline,  0.1),
+    ("uniform_output",         try_uniform_output,         0.05),
+    ("fill_bbox_objects",      try_fill_bbox_objects,      0.1),
+    ("sym_complete_rot180",    try_sym_complete_rot180,    0.05),
+    ("row_col_intersect_mark", try_row_col_intersect_mark, 0.1),
+    ("reverse_concentric",     try_reverse_concentric,     0.1),
+    ("ring_color_rotate",      try_ring_color_rotate,      0.1),
+    ("fill_border_nonbg",      try_fill_border_with_nonbg, 0.05),
+    ("sorted_color_cycle",     try_sorted_color_cycle,      0.1),
+    ("complement_recolor",     try_complement_and_recolor,  0.05),
+    ("extend_line_to_border",  try_extend_line_to_border,   0.1),
+    ("recolor_by_object_size", try_recolor_by_object_size,  0.3),
+    ("largest_object_extract", try_largest_object_extract,  0.1),
+    ("connect_pair_dots",      try_connect_pair_dots,        0.2),
     ("enumerate_depth1",       _enumerate_depth1,          2.0),
 ]
 
