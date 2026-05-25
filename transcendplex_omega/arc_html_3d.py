@@ -371,12 +371,17 @@ def generate_html_3d(task_id: str, task_data: dict, rule: str,
     # ── Test block ────────────────────────────────
     pred_block = ""
     if predicted_test:
-        same_size = (test_out and len(predicted_test) == len(test_out) and
-                     (not predicted_test or len(predicted_test[0]) == len(test_out[0])))
-        match_diff = [[test_inp[r][c] if not test_out or test_out[r][c] == predicted_test[r][c]
+        # All three grids must have matching dimensions for diff computation
+        same_size = (test_out and predicted_test and
+                     len(predicted_test) == len(test_out) ==
+                     len(test_inp) and
+                     len(predicted_test[0]) == len(test_out[0]) ==
+                     len(test_inp[0]))
+        match_diff = [[test_inp[r][c] if test_out[r][c] == predicted_test[r][c]
                        else predicted_test[r][c]
-                       for c in range(len(test_inp[0]))] for r in range(len(test_inp))] \
-                     if (test_out and same_size) else None
+                       for c in range(len(predicted_test[0]))]
+                      for r in range(len(predicted_test))] \
+                     if same_size else None
         pred_block = f"""
     <div class="grid-wrap">
       <div class="grid-title" style="color:{badge_col}">Predicted {badge_text}</div>
