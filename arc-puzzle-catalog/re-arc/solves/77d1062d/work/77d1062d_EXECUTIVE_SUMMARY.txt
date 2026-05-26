@@ -1,0 +1,155 @@
+================================================================================
+PUZZLE 77d1062d - EXECUTIVE SUMMARY
+================================================================================
+
+OBJECTIVE:
+Analyze ARC puzzle 77d1062d to discover the transformation rule by testing
+five different hypotheses against three training pairs.
+
+================================================================================
+FINDINGS
+================================================================================
+
+HYPOTHESIS RANKING (by overall performance):
+1. HYPOTHESIS C - Kronecker with Bbox Scaling (BEST)
+   - Wins on 2 of 3 training pairs
+   - Uses bbox-scaled offsets to generate output
+   - Formula: r = rmin + a*Hbox + a2, c = cmin + b*Wbox + b2
+
+2. HYPOTHESIS A - Self-stamp with Additive Offsets
+   - Wins on 1 of 3 training pairs (Pair 0)
+   - Uses simple offset addition
+   - Less successful on larger/more complex patterns
+
+3. HYPOTHESIS D - Each Pixel Stamps Pattern
+   - Moderate performance, significant pixel diffs
+   - Conceptually reasonable but incorrect implementation
+
+4. HYPOTHESIS E - Component-aware Stamping
+   - Uses largest component as template, others as seeds
+   - Fails significantly (57-222 pixel diffs)
+   - Suggests directional correctness but incomplete rule
+
+5. HYPOTHESIS B - Self-stamp with col1 (WORST)
+   - Consistently poor across all pairs
+   - Variant of A with opposite color selection
+
+KEY OBSERVATIONS:
+✓ Output size equals input size (no grid expansion)
+✓ Non-background pixel counts vary significantly (7→140, 13→45, 72→140)
+✓ Different colors expand at different rates (Color 6: ×9, Color 1: ×1)
+✓ Hypothesis C achieves 0 correct pixels on Pairs 1 & 2 (total mismatch)
+✓ None of the 5 hypotheses perfectly match actual outputs
+
+CRITICAL INSIGHT:
+The transformation is NOT a simple stamping rule. Instead, it appears to:
+- Selectively amplify certain color patterns
+- Preserve other colors or patterns
+- Apply color-dependent expansion rates
+- Maintain spatial locality (no global rearrangement)
+
+================================================================================
+TECHNICAL DETAILS
+================================================================================
+
+TRAINING PAIR 0:
+  Input: 19×26, bg=1, 7 pixels (all color 6)
+  Output: 19×26, bg=1, 140 pixels (all color 6)
+  Expansion: ×20.0
+  Best hypothesis: A (149 diffs)
+  Pattern: Single small blob expands massively
+
+TRAINING PAIR 1:
+  Input: 23×15, bg=8, 13 pixels (4×color 6, 9×color 1)
+  Output: 23×15, bg=8, 45 pixels (36×color 6, 9×color 1)
+  Color 6 expansion: ×9.0 | Color 1 expansion: ×1.0
+  Best hypothesis: C (45 diffs, 0 correct pixels)
+  Pattern: Selective expansion by color
+
+TRAINING PAIR 2:
+  Input: 21×14, bg=8, 72 pixels (35×color 4, 37×color 1)
+  Output: 21×14, bg=8, 140 pixels (35×color 4, 105×color 1)
+  Color 1 expansion: ×2.8 | Color 4 expansion: ×1.0
+  Best hypothesis: C (140 diffs, 0 correct pixels)
+  Pattern: Selective expansion, different color than Pair 1
+
+================================================================================
+ALTERNATIVE HYPOTHESES (Not Tested But Promising)
+================================================================================
+
+HYPOTHESIS F: COLOR-DEPENDENT REPLICATION
+- Each color has a predefined expansion factor
+- Colors matching certain conditions (isolated, specific value) expand
+- Other colors remain static (anchors)
+- Would explain selective expansion observed
+
+HYPOTHESIS G: FRACTAL/RECURSIVE EXPANSION
+- Small/isolated patterns trigger replication of larger templates
+- Template location/shape varies by context
+- Recursive application of rules based on pattern hierarchy
+
+HYPOTHESIS H: NEIGHBORHOOD-AWARE STAMPING
+- Patterns expand based on surrounding context
+- Colors near each other behave differently
+- Expansion follows proximity/adjacency rules
+
+================================================================================
+RECOMMENDED NEXT STEPS
+================================================================================
+
+1. IMPLEMENT HYPOTHESIS F
+   - Identify color-to-expansion-ratio mapping
+   - Test if expansion is uniform across all instances of a color
+   - Verify on test pairs
+
+2. ANALYZE COMPONENT INTERACTIONS
+   - Examine spatial relationships between components
+   - Check if one component "triggers" expansion of another
+   - Map component IDs to output expansions
+
+3. EXAMINE SYMMETRY/PATTERNS
+   - Check for rotational, reflective symmetries in expansions
+   - Analyze if expansion direction (up/down/left/right) matters
+   - Verify if bbox size affects expansion type
+
+4. TEST ON VALIDATION SET
+   - Use discovered rule on 2 test pairs (unlabeled inputs)
+   - Cross-validate against training pairs
+   - Measure accuracy
+
+================================================================================
+FILES CREATED
+================================================================================
+
+/Users/evanpieser/
+├── analyze_77d1062d.py            (Original analysis)
+├── analyze_77d1062d_v2.py         (With scipy ndimage)
+├── analyze_77d1062d_simple.py     (No scipy, simplified)
+├── analyze_77d1062d_deep.py       (Component & visualization)
+├── analyze_77d1062d_alt.py        (Alternative hypotheses)
+└── ANALYSIS_SUMMARY_77d1062d.txt  (This document)
+
+All scripts load from: /tmp/rearc_agent_solves/77d1062d.json
+
+================================================================================
+CONCLUSION
+================================================================================
+
+Hypothesis C (Kronecker with Bbox Scaling) performs best overall but still
+achieves 0 correct pixels on 2 of 3 pairs. This suggests the true rule involves
+a different mechanism, likely:
+
+• Color-dependent expansion factors (MOST LIKELY)
+• Component interaction rules
+• Spatial/contextual transformation logic
+
+The pattern is complex enough that it cannot be explained by simple stamping
+or stamping-with-offset rules. Further investigation into color-aware and
+component-aware transformations is recommended.
+
+CONFIDENCE LEVEL: Medium
+The selective color expansion observed across pairs is a strong signal, but
+the exact rule remains elusive without deeper analysis of the component
+structure and color relationships.
+
+================================================================================
