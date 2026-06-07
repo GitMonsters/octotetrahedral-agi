@@ -32,6 +32,7 @@ Architecture:
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math
 import time
 from typing import Optional, Tuple, Dict, Any, List
 
@@ -816,8 +817,15 @@ class OctoTetrahedralModel(nn.Module):
             if not torch.isnan(gp_output).any():
                 core_output = gp_output
             physics_loss = gp_result['physics_loss']
-            if torch.isnan(physics_loss):
-                physics_loss = torch.tensor(0.0, device=core_output.device)
+            # Handle both tensor and float physics_loss
+            if isinstance(physics_loss, torch.Tensor):
+                if torch.isnan(physics_loss):
+                    physics_loss = torch.tensor(0.0, device=core_output.device)
+            elif isinstance(physics_loss, (int, float)):
+                if math.isnan(physics_loss):
+                    physics_loss = torch.tensor(0.0, device=core_output.device)
+                else:
+                    physics_loss = torch.tensor(physics_loss, device=core_output.device)
             geometric_physics_info = {
                 'physics_loss': physics_loss,
                 'physics_losses': gp_result.get('physics_losses', {}),

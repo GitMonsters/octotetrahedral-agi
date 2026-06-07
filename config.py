@@ -38,7 +38,9 @@ def _select_device() -> str:
             pass
 
     if torch.backends.mps.is_available():
-        return "mps"
+        # TEMPORARILY DISABLED: MPS hangs on first forward pass with large complex models
+        # return "mps"
+        pass  # Fall through to CPU
 
     return "cpu"
 
@@ -76,7 +78,7 @@ class ModelConfig:
     head_dim: int = 32  # hidden_dim // num_heads
     
     # Sequence
-    max_seq_len: int = 4096
+    max_seq_len: int = 512  # Reduced from 4096 to fit in 16GB RAM during training
     
     # Regularization
     dropout: float = 0.1
@@ -154,13 +156,14 @@ class SyncConfig:
 @dataclass
 class GeometricPhysicsConfig:
     """Configuration for the unified Geometric Physics Layer"""
-    # Module enables
+    # Module enables - RE-ENABLED FOR CPU TRAINING
     enable_fuller: bool = True  # Fuller Synergetics (tensegrity, VE, geodesics)
     enable_lloyd: bool = True  # Lloyd Computational Universe (limits, Landauer)
     enable_morphogenesis: bool = True  # Turing patterns, Ricci flow, catastrophe
     enable_tpms: bool = True  # TPMS-guided attention (gyroid, Schwarz)
     enable_qbit_nexus: bool = True  # Icosahedral quantum network (D-Wave inspired)
     enable_parallel_universe: bool = True  # Multiverse parallel computation
+    enable_fibonacci_icosagrid: bool = True  # Fibonacci icosagrid quasicrystal layer ✨ NEW!
     
     # Combination mode:
     # - 'learnable': Parallel ensemble with learned gating (default)
@@ -198,6 +201,11 @@ class GeometricPhysicsConfig:
     # ParallelUniverse parameters (multiverse computation)
     parallel_num_universes: int = 4  # Number of parallel computational universes
     parallel_num_dimensions: int = 8  # Dimensions per universe
+    
+    # Fibonacci Icosagrid parameters (quasicrystalline geometry)
+    fibonacci_num_tetragrids: int = 5  # Number of tetrahedral grids (golden composition)
+    fibonacci_learnable_golden_angle: bool = False  # Make golden angle learnable
+    fibonacci_quasiperiodic_attention: bool = False  # Enable quasiperiodic attention patterns
     parallel_overlap_dims: int = 4  # Overlap dimensions for interference
     parallel_collapse_mode: str = 'soft'  # 'soft', 'hard', 'superposition'
     
@@ -436,8 +444,8 @@ class KimiConfig:
 class CognitiveGeometryConfigDC:
     """Cognitive Geometry Engine — compound integration of ML vocabulary concepts."""
     enabled: bool = True
-    # SVD Activation Decomposer
-    svd_enabled: bool = True
+    # SVD Activation Decomposer - TEMPORARILY DISABLED FOR METAL/MPS
+    svd_enabled: bool = False  # SVD not supported on MPS backend
     svd_top_k: int = 8
     svd_loss_weight: float = 0.01
     # Concept Alignment Matrix

@@ -20,7 +20,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Union
 
 
 class BraidCrossAttention(nn.Module):
@@ -44,14 +44,17 @@ class BraidCrossAttention(nn.Module):
         query: torch.Tensor,
         context: torch.Tensor,
         mask: Optional[torch.Tensor] = None,
-    ) -> torch.Tensor:
+        return_attention: bool = False,
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         """
         Args:
             query: [batch, seq, hidden] — the limb being updated
             context: [batch, seq, hidden] — concatenated other limbs' outputs
-            mask: optional attention mask
+            mask: optional attention mask over context tokens
+            return_attention: whether to also return normalized attention weights
         Returns:
-            [batch, seq, hidden] — braided output for this limb
+            [batch, seq, hidden] braided output for this limb, and optionally
+            [batch, heads, query_seq, context_seq] attention weights
         """
         B, S, H = query.shape
 
@@ -59,15 +62,19 @@ class BraidCrossAttention(nn.Module):
         k = self.k_proj(context).view(B, -1, self.num_heads, self.head_dim).transpose(1, 2)
         v = self.v_proj(context).view(B, -1, self.num_heads, self.head_dim).transpose(1, 2)
 
-        attn = torch.matmul(q, k.transpose(-2, -1)) * self.scale
+        attn_scores = torch.matmul(q, k.transpose(-2, -1)) * self.scale
         if mask is not None:
-            attn = attn.masked_fill(~mask.unsqueeze(1).unsqueeze(2), float('-inf'))
-        attn = F.softmax(attn, dim=-1)
-        attn = self.dropout(attn)
+            mask = mask.to(dtype=torch.bool)
+            attn_scores = attn_scores.masked_fill(~mask.unsqueeze(1).unsqueeze(2), float('-inf'))
+        attn_weights = F.softmax(attn_scores, dim=-1)
+        attn = self.dropout(attn_weights)
 
         out = torch.matmul(attn, v)
         out = out.transpose(1, 2).contiguous().view(B, S, H)
-        return self.out_proj(out)
+        out = self.out_proj(out)
+        if return_attention:
+            return out, attn_weights
+        return out
 
 
 class CompoundBraid(nn.Module):
@@ -77,11 +84,19 @@ class CompoundBraid(nn.Module):
 
     Replaces naive averaging of parallel limb outputs with learned
     cross-pollination between complementary processing streams.
+
+    CodeGen-specific braid patterns:
+    - CodeGen → Spatial: torus position shapes geometric code structure.
+    - Memory → CodeGen: past successful code patterns steer generation.
+    - Reasoning → CodeGen: logical constraints validate generated code.
+    - MetaCognition → CodeGen: self-critique refactors and tightens output.
     """
 
-    LIMB_NAMES = ['memory', 'spatial', 'language', 'metacognition',
-                  'reasoning', 'perception', 'visualization', 'imagination',
-                  'empathy', 'emotion', 'ethics']
+    LIMB_NAMES = [
+        'memory', 'spatial', 'language', 'metacognition',
+        'reasoning', 'perception', 'visualization', 'imagination',
+        'codegen', 'empathy', 'emotion', 'ethics',
+    ]
 
     def __init__(
         self,
@@ -93,10 +108,17 @@ class CompoundBraid(nn.Module):
         moe_signal_dim: int = 0,
     ):
         super().__init__()
+        if num_limbs < 2:
+            raise ValueError("CompoundBraid requires at least two limbs to braid")
+        if hidden_dim % 2 != 0:
+            raise ValueError("hidden_dim must be even for phase rotation")
+
         self.hidden_dim = hidden_dim
         self.num_limbs = num_limbs
         self.braid_strength = braid_strength
         self.moe_signal_dim = moe_signal_dim
+        self.limb_names = self._resolve_limb_names(num_limbs)
+        self.codegen_index = self.limb_names.index('codegen') if 'codegen' in self.limb_names else None
 
         # Each limb gets its own cross-attention to attend to others
         self.cross_attns = nn.ModuleList([
@@ -130,6 +152,31 @@ class CompoundBraid(nn.Module):
             self.braid_to_moe = nn.Linear(num_limbs, moe_signal_dim, bias=False)
         else:
             self.braid_to_moe = None
+
+    @classmethod
+    def _resolve_limb_names(cls, num_limbs: int) -> List[str]:
+        if num_limbs <= len(cls.LIMB_NAMES):
+            return cls.LIMB_NAMES[:num_limbs]
+        extra_names = [f'stream_{i}' for i in range(num_limbs - len(cls.LIMB_NAMES))]
+        return cls.LIMB_NAMES + extra_names
+
+    @staticmethod
+    def _summarize_attention(
+        attention_weights: torch.Tensor,
+        source_names: List[str],
+        source_lengths: List[int],
+    ) -> Dict[str, float]:
+        token_weights = attention_weights.mean(dim=(0, 1, 2))
+        summary: Dict[str, float] = {}
+        start = 0
+        for name, length in zip(source_names, source_lengths):
+            end = start + length
+            summary[name] = token_weights[start:end].sum().item()
+            start = end
+        total = sum(summary.values())
+        if total > 0:
+            summary = {name: value / total for name, value in summary.items()}
+        return summary
 
     def _apply_phase_rotation(self, x: torch.Tensor, angle: torch.Tensor) -> torch.Tensor:
         """Apply phase rotation by treating pairs of hidden dims as complex numbers.
@@ -172,16 +219,31 @@ class CompoundBraid(nn.Module):
 
         braided = []
         gate_values = []
+        attention_stats = {}
 
         for i in range(self.num_limbs):
             query = limb_outputs[i]
+            other_indices = [j for j in range(self.num_limbs) if j != i]
 
             # Context = all OTHER limbs concatenated along seq dim
-            others = [limb_outputs[j] for j in range(self.num_limbs) if j != i]
+            others = [limb_outputs[j] for j in other_indices]
             context = torch.cat(others, dim=1)  # [batch, seq*(N-1), hidden]
+            context_mask = None
+            if attention_mask is not None:
+                context_mask = torch.cat([attention_mask for _ in other_indices], dim=1)
 
             # Cross-attend: this limb reads from all others
-            braided_out = self.cross_attns[i](query, context, mask=None)
+            braided_out, attn_weights = self.cross_attns[i](
+                query,
+                context,
+                mask=context_mask,
+                return_attention=True,
+            )
+            attention_stats[self.limb_names[i]] = self._summarize_attention(
+                attn_weights.detach(),
+                [self.limb_names[j] for j in other_indices],
+                [limb_outputs[j].shape[1] for j in other_indices],
+            )
 
             # Gate: how much braided info to mix in
             gate_input = torch.cat([query, braided_out], dim=-1)
@@ -226,17 +288,15 @@ class CompoundBraid(nn.Module):
 
         braid_info = {
             'gate_values': {
-                name: gv.item() for name, gv in
-                zip(self.LIMB_NAMES[:self.num_limbs], gate_values)
+                name: gv.item() for name, gv in zip(self.limb_names, gate_values)
             },
             'combine_weights': {
-                name: w.item() for name, w in
-                zip(self.LIMB_NAMES[:self.num_limbs], effective_weights)
+                name: w.item() for name, w in zip(self.limb_names, effective_weights)
             },
             'phase_angles': {
-                name: self.phase_angles[i].item() for i, name in
-                enumerate(self.LIMB_NAMES[:self.num_limbs])
+                name: self.phase_angles[i].item() for i, name in enumerate(self.limb_names)
             },
+            'attention_weights': attention_stats,
             'braid_signal': braid_signal,
         }
 

@@ -37,8 +37,8 @@ class CognitiveGeometryConfig:
     """Configuration for all cognitive geometry subsystems."""
     enabled: bool = True
 
-    # SVD Activation Decomposer
-    svd_enabled: bool = True
+    # SVD Activation Decomposer - TEMPORARILY DISABLED FOR METAL/MPS
+    svd_enabled: bool = False  # SVD not supported on MPS backend
     svd_top_k: int = 8               # Number of dominant axes to track
     svd_loss_weight: float = 0.01    # Encourage spread across axes
 

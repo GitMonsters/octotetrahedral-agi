@@ -49,11 +49,17 @@ class TetrahedralGeometry(nn.Module):
     
     Generates points distributed across a regular tetrahedron and computes
     geometric relationships (distances, adjacencies) for use in attention mechanisms.
+    
+    Optional FIG Integration:
+    Can initialize from Fibonacci Icosagrid coordinates when use_fig_init=True.
+    This seeds the tetrahedral attention with quasicrystalline structure from
+    the QGR paper (Fang & Irwin, 2024).
     """
     
-    def __init__(self, device: str = 'cpu'):
+    def __init__(self, device: str = 'cpu', use_fig_init: bool = False):
         super().__init__()
         self.device = device
+        self.use_fig_init = use_fig_init
         
         # Generate all 64 points
         points = self._generate_all_points()
@@ -95,7 +101,17 @@ class TetrahedralGeometry(nn.Module):
         return [[0, 1, 2], [0, 1, 3], [0, 2, 3], [1, 2, 3]]
     
     def _generate_all_points(self) -> np.ndarray:
-        """Generate all 64 points — prefer Sloane's optimal packing."""
+        """
+        Generate all 64 points — prefer Sloane's optimal packing.
+        
+        If use_fig_init=True, seeds from Fibonacci Icosagrid coordinates.
+        """
+        if self.use_fig_init:
+            # Try FIG-based initialization first
+            fig_pts = self._generate_fig_coordinates()
+            if fig_pts is not None:
+                return fig_pts
+        
         # Try optimal spherical code first (26.235° min separation)
         sloane_pts = _load_sloane_packing(dim=3, n_points=64)
         if sloane_pts is not None:
@@ -103,6 +119,98 @@ class TetrahedralGeometry(nn.Module):
 
         # Fallback: constructive tetrahedral distribution
         return self._generate_tetrahedral_points()
+    
+    def _generate_fig_coordinates(self) -> Optional[np.ndarray]:
+        """
+        Generate 64 points from Fibonacci Icosagrid quasicrystal.
+        
+        Strategy:
+        1. Generate icosahedron (12 vertices)
+        2. Create 5 tetragrids with golden angle rotation
+        3. Apply Fibonacci spacing
+        4. Sample 64 points from the resulting quasicrystal
+        
+        Returns:
+            64×3 array or None if FIG generation fails
+        """
+        try:
+            # Import FIG module (avoid circular dependency)
+            import sys
+            import os
+            sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from core.fibonacci_icosagrid import (
+                generate_icosahedron_vertices,
+                golden_angle_tetragrid,
+                fibonacci_spacing,
+                PHI
+            )
+            
+            # Generate icosahedron vertices (12 points)
+            icosa_verts = generate_icosahedron_vertices().numpy()  # [12, 3]
+            
+            # Generate 5 tetragrids with golden rotation
+            golden_angle = golden_angle_tetragrid()
+            tetragrids = []
+            
+            for t in range(5):
+                # Rotation angle for this tetragrid
+                angle = t * golden_angle / 5
+                
+                # Simple rotation around z-axis (full 3D rotation would be better)
+                cos_a = math.cos(angle)
+                sin_a = math.sin(angle)
+                rotation = np.array([
+                    [cos_a, -sin_a, 0],
+                    [sin_a, cos_a, 0],
+                    [0, 0, 1]
+                ], dtype=np.float32)
+                
+                # Rotate icosahedron
+                rotated = icosa_verts @ rotation.T
+                tetragrids.append(rotated)
+            
+            # Combine all tetragrids
+            all_points = np.vstack(tetragrids)  # [60, 3]
+            
+            # Apply Fibonacci spacing to scale factors
+            fib_scales = fibonacci_spacing(7, scale=1.5).numpy()  # Generate 7 scales
+            
+            # Sample 64 points from the quasicrystal
+            # Strategy: Use icosahedron vertices + scaled copies
+            fig_points = []
+            
+            # Add original icosahedron (12 points)
+            fig_points.append(icosa_verts)
+            
+            # Add Fibonacci-scaled copies (need 52 more points = 4.33 × 12)
+            # Use 5 scales to get 60 total, then trim to 64
+            for i, scale in enumerate(fib_scales[:5]):  # 5 scales × 12 vertices = 60 more points
+                scaled = icosa_verts * scale
+                fig_points.append(scaled)
+                if len(fig_points) * 12 >= 64:
+                    break
+            
+            # Flatten and ensure exactly 64 points
+            fig_points = np.vstack(fig_points)
+            if len(fig_points) > 64:
+                # Truncate to 64
+                fig_points = fig_points[:64]
+            elif len(fig_points) < 64:
+                # Pad with additional scaled copies
+                remaining = 64 - len(fig_points)
+                extra_scale = fib_scales[5] if len(fib_scales) > 5 else 1.8
+                extra_points = icosa_verts[:remaining] * extra_scale
+                fig_points = np.vstack([fig_points, extra_points])
+            
+            # Normalize to unit sphere
+            norms = np.linalg.norm(fig_points, axis=1, keepdims=True)
+            fig_points = fig_points / (norms + 1e-8)
+            
+            return fig_points
+            
+        except Exception as e:
+            print(f"Warning: FIG coordinate generation failed: {e}")
+            return None
 
     def _generate_tetrahedral_points(self) -> np.ndarray:
         """Fallback: distribute 64 points across a regular tetrahedron."""
