@@ -35,15 +35,26 @@ def solve(grid: list[list[int]]) -> list[list[int]]:
     new_min_col = old_min_col
     new_max_col = old_max_col
     
-    for mr, mc in markers:
-        # If marker row is within rect rows, extend horizontally to include it
-        if old_min_row <= mr <= old_max_row:
-            new_min_col = min(new_min_col, mc + 1)
-            new_max_col = max(new_max_col, mc - 1)
-        # If marker col is within rect cols, extend vertically to include it
-        if old_min_col <= mc <= old_max_col:
-            new_min_row = min(new_min_row, mr + 1)
-            new_max_row = max(new_max_row, mr - 1)
+    changed = True
+    while changed:
+        changed = False
+        for mr, mc in markers:
+            # If marker row is within CURRENT rect rows, extend horizontally
+            if new_min_row <= mr <= new_max_row:
+                if mc < new_min_col - 1:
+                    new_min_col = mc + 1
+                    changed = True
+                elif mc > new_max_col + 1:
+                    new_max_col = mc - 1
+                    changed = True
+            # If marker col is within CURRENT rect cols, extend vertically
+            if new_min_col <= mc <= new_max_col:
+                if mr < new_min_row - 1:
+                    new_min_row = mr + 1
+                    changed = True
+                elif mr > new_max_row + 1:
+                    new_max_row = mr - 1
+                    changed = True
     
     # Find columns that are completely filled in original rect (dividers)
     filled_cols = set()

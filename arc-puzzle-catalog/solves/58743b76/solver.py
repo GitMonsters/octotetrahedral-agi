@@ -27,8 +27,8 @@ def solve(grid: list[list[int]]) -> list[list[int]]:
             [grid[row_range[0]][col_range[0]], grid[row_range[0]][col_range[1]-1]],
             [grid[row_range[1]-1][col_range[0]], grid[row_range[1]-1][col_range[1]-1]]
         ]
-        # Check if this looks like metadata (non-8 values)
-        if all(candidate[i][j] != 8 for i in range(2) for j in range(2)):
+        # Check if this looks like metadata (all values non-0 and non-8)
+        if all(candidate[i][j] != 0 and candidate[i][j] != 8 for i in range(2) for j in range(2)):
             metadata = candidate
             metadata_pos = corner_name
             break

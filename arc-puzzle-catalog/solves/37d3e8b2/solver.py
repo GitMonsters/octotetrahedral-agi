@@ -2,118 +2,80 @@
 """
 ARC-AGI task 37d3e8b2 solver.
 
-Pattern: 
-1. Find all connected regions of 8s
-2. Identify horizontal sections separated by completely empty rows
-3. Within each section, sort regions by minimum column
-4. Assign colors based on region count and spatial patterns
+Pattern: Each connected blob of color 8 has N enclosed holes (connected
+components of 0 inside its bounding box that don't touch the bounding box
+border). Map N → output color: {1→1, 2→2, 3→3, 4→7}.
 """
 
 import sys
 import json
 
 
-def solve(grid: list[list[int]]) -> list[list[int]]:
+HOLES_TO_COLOR = {1: 1, 2: 2, 3: 3, 4: 7}
+
+
+def _find_blobs(grid: list[list[int]]) -> list[list[tuple[int, int]]]:
     h, w = len(grid), len(grid[0])
-    result = [row[:] for row in grid]  # Copy input
-    
-    # Find all connected regions of 8s
-    visited = [[False] * w for _ in range(h)]
-    regions = []
-    
-    def dfs(r, c, region):
-        if r < 0 or r >= h or c < 0 or c >= w:
-            return
-        if visited[r][c] or grid[r][c] != 8:
-            return
-        visited[r][c] = True
-        region.append((r, c))
-        for dr, dc in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-            dfs(r + dr, c + dc, region)
-    
+    visited: set[tuple[int, int]] = set()
+    blobs = []
     for r in range(h):
         for c in range(w):
-            if grid[r][c] == 8 and not visited[r][c]:
-                region = []
-                dfs(r, c, region)
-                if region:
-                    regions.append(region)
-    
-    if not regions:
-        return result
-    
-    # Find empty rows that separate sections
-    has_8 = [any(grid[r][c] == 8 for c in range(w)) for r in range(h)]
-    empty_rows = [i for i in range(h) if not has_8[i]]
-    
-    # Build sections
-    sections = []
-    section_start = 0
-    for e_row in empty_rows:
-        if section_start < e_row:
-            sections.append((section_start, e_row - 1))
-        section_start = e_row + 1
-    if section_start < h:
-        sections.append((section_start, h - 1))
-    
-    # Assign colors
-    color_assignment = {}
-    
-    for sec_idx, (sec_start, sec_end) in enumerate(sections):
-        # Find regions in this section and their info
-        sec_regions_info = []
-        for region_idx, region in enumerate(regions):
-            min_r = min(rr for rr, cc in region)
-            if sec_start <= min_r <= sec_end:
-                min_c = min(cc for rr, cc in region)
-                sec_regions_info.append((region_idx, min_c, region))
-        
-        # Sort by column
-        sec_regions_info.sort(key=lambda x: x[1])
-        
-        if not sec_regions_info:
-            continue
-        
-        num_regions_in_section = len(sec_regions_info)
-        
-        # Determine a color palette
-        if num_regions_in_section == 1:
-            palette = [1]
-        elif num_regions_in_section == 2:
-            if sec_idx == 0:
-                palette = [1, 3]
-            else:
-                palette = [2, 7]
-        elif num_regions_in_section == 3:
-            palette = [1, 2, 2]
-        elif num_regions_in_section == 4:
-            # Differentiate based on column configuration
-            # If last two regions have same column, use [2,2,3,1]
-            # Otherwise, use [3,7,3,7]
-            cols = [c for _, c, _ in sec_regions_info]
-            if cols[-1] == cols[-2]:
-                # Same last column: Example 1 pattern
-                palette = [2, 2, 3, 1]
-            else:
-                # Different last columns: Example 2 pattern
-                palette = [3, 7, 3, 7]
-        else:
-            palette = list(range(1, min(4, num_regions_in_section + 1)))
-        
-        # Assign colors from palette
-        for pos, (region_idx, _, _) in enumerate(sec_regions_info):
-            if pos < len(palette):
-                color = palette[pos]
-            else:
-                color = palette[pos % len(palette)]
-            color_assignment[region_idx] = color
-    
-    # Apply coloring
-    for region_idx, region in enumerate(regions):
-        color = color_assignment.get(region_idx, 1)
-        for r, c in region:
+            if grid[r][c] == 8 and (r, c) not in visited:
+                blob: list[tuple[int, int]] = []
+                stack = [(r, c)]
+                while stack:
+                    rr, cc = stack.pop()
+                    if (rr, cc) in visited:
+                        continue
+                    if not (0 <= rr < h and 0 <= cc < w):
+                        continue
+                    if grid[rr][cc] != 8:
+                        continue
+                    visited.add((rr, cc))
+                    blob.append((rr, cc))
+                    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                        stack.append((rr + dr, cc + dc))
+                blobs.append(blob)
+    return blobs
+
+
+def _count_holes(grid: list[list[int]], blob: list[tuple[int, int]]) -> int:
+    rs = [r for r, c in blob]
+    cs = [c for r, c in blob]
+    minr, maxr, minc, maxc = min(rs), max(rs), min(cs), max(cs)
+    blob_set = set(blob)
+    vis: dict[tuple[int, int], bool] = {}
+    holes = 0
+    for r in range(minr, maxr + 1):
+        for c in range(minc, maxc + 1):
+            if (r, c) not in blob_set and (r, c) not in vis and grid[r][c] == 0:
+                stack = [(r, c)]
+                escapes = False
+                while stack:
+                    rr, cc = stack.pop()
+                    if (rr, cc) in vis:
+                        continue
+                    if not (minr <= rr <= maxr and minc <= cc <= maxc):
+                        escapes = True
+                        continue
+                    if (rr, cc) in blob_set:
+                        continue
+                    vis[(rr, cc)] = True
+                    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                        stack.append((rr + dr, cc + dc))
+                if not escapes:
+                    holes += 1
+    return holes
+
+
+def solve(grid: list[list[int]]) -> list[list[int]]:
+    result = [row[:] for row in grid]
+    blobs = _find_blobs(grid)
+    for blob in blobs:
+        n = _count_holes(grid, blob)
+        color = HOLES_TO_COLOR.get(n, 1)
+        for r, c in blob:
             result[r][c] = color
-    
     return result
 
 

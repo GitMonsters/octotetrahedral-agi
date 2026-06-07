@@ -91,35 +91,20 @@ def solve(grid: List[List[int]]) -> List[List[int]]:
     middle_color = color_positions[1][1]  # This is always skipped
     right_color = color_positions[2][1]
     
-    # Determine output order based on bottom shape's position
-    dist_to_left = abs(bottom_col_center - color_positions[0][0])
-    dist_to_right = abs(bottom_col_center - color_positions[2][0])
-    
-    if dist_to_left < dist_to_right:
-        # Bottom is closer to left → output order is [right, left]
-        output_colors = [right_color, left_color]
-    else:
-        # Bottom is closer to right or equal → output order is [left, right]
-        output_colors = [left_color, right_color]
-    
-    # Collect shapes in output order
-    # If a shape color matches the bottom color, use the bottom's pattern instead
-    shapes_to_stack = []
-    for color in output_colors:
-        if color == bottom_color:
-            # Use bottom pattern
-            bottom_pattern_data = extract_pattern(bottom_shapes[bottom_color])
-            bottom_pattern, _ = bottom_pattern_data
-            shapes_to_stack.append((color, bottom_pattern))
-        else:
-            # Use top pattern
-            pattern_data = extract_pattern(top_shapes[color])
-            if pattern_data:
-                pattern, _ = pattern_data
-                shapes_to_stack.append((color, pattern))
-    
+    # Determine output order based on bottom shape's position relative to the 3 top shapes.
+    # Rule: if the bottom is strictly closest to the MIDDLE shape → prefer X above 1.
+    #       Otherwise → prefer 1 above X (X below).
+    #       If preferred direction goes out of the 9-row output grid, flip to the other.
+    dist_to_left_shape = abs(bottom_col_center - color_positions[0][0])
+    dist_to_middle_shape = abs(bottom_col_center - color_positions[1][0])
+    dist_to_right_shape = abs(bottom_col_center - color_positions[2][0])
+
+    prefer_x_above = (
+        dist_to_middle_shape < dist_to_left_shape
+        and dist_to_middle_shape < dist_to_right_shape
+    )
+
     # Determine starting row in output based on bottom shape's position
-    # Find first row of bottom shape (after separator)
     bot_first_row = -1
     for r in range(sep_row + 1, len(grid)):
         for c in range(len(grid[r])):
@@ -127,16 +112,40 @@ def solve(grid: List[List[int]]) -> List[List[int]]:
                 if bot_first_row == -1:
                     bot_first_row = r
                 break
-    
-    bot_first_offset = bot_first_row - (sep_row + 1)  # Offset from row (sep_row + 1)
-    
-    # Calculate output starting row based on output order and bottom offset
-    if output_colors[0] == left_color:
-        # Left color first: output_start = bot_first_offset
-        output_start_row = bot_first_offset
+
+    bot_first_offset = bot_first_row - (sep_row + 1)
+
+    # Shape height (always 3 in this task, but compute dynamically)
+    shape_height = 3
+
+    # Check feasibility: can the preferred direction fit in 9 rows?
+    if prefer_x_above:
+        feasible = bot_first_offset >= shape_height
     else:
-        # Right color first: output_start = max(0, bot_first_offset - 3)
-        output_start_row = max(0, bot_first_offset - 3)
+        feasible = (bot_first_offset + shape_height) <= (9 - shape_height)
+
+    if not feasible:
+        prefer_x_above = not prefer_x_above
+
+    if prefer_x_above:
+        output_colors = [right_color, left_color]
+        output_start_row = bot_first_offset - shape_height
+    else:
+        output_colors = [left_color, right_color]
+        output_start_row = bot_first_offset
+
+    # Collect shapes in output order
+    shapes_to_stack = []
+    for color in output_colors:
+        if color == bottom_color:
+            bottom_pattern_data = extract_pattern(bottom_shapes[bottom_color])
+            bottom_pattern, _ = bottom_pattern_data
+            shapes_to_stack.append((color, bottom_pattern))
+        else:
+            pattern_data = extract_pattern(top_shapes[color])
+            if pattern_data:
+                pattern, _ = pattern_data
+                shapes_to_stack.append((color, pattern))
     
     # Build output with the correct size
     # All outputs are 9 rows

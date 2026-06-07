@@ -37,12 +37,13 @@ from collections import Counter
 
 # Import DSL components
 from arc_solver import (
-    ARCSolver, 
-    HintGenerator, 
+    ARCSolver,
+    HintGenerator,
     ProgramSynthesizer,
     OPERATIONS,
-    find_connected_components
+    find_connected_components,
 )
+from arc_codegen_dsl import ARCCodeGenDSLGenerator
 
 # Import hypothesis engine
 from core.hypothesis import HypothesisEngine
@@ -140,7 +141,21 @@ class NeuralARCSolver:
         resolved = checkpoint_path or self._DEFAULT_CHECKPOINT
         if Path(resolved).exists():
             checkpoint = torch.load(resolved, map_location=self.device)
-            result = self.model.load_state_dict(checkpoint['model_state_dict'], strict=False)
+            state = checkpoint['model_state_dict']
+            # Fix positional-encoding shape mismatch: interpolate pe to current model size
+            for key in list(state.keys()):
+                if key.endswith('.pe') and key in dict(self.model.named_buffers()):
+                    ckpt_pe = state[key]          # [1, T_ckpt, D]
+                    model_pe = dict(self.model.named_buffers())[key]  # [1, T_model, D]
+                    if ckpt_pe.shape != model_pe.shape:
+                        T_model = model_pe.shape[1]
+                        # Interpolate along sequence dimension
+                        ckpt_pe_t = ckpt_pe.permute(0, 2, 1)   # [1, D, T_ckpt]
+                        resized = torch.nn.functional.interpolate(
+                            ckpt_pe_t.float(), size=T_model, mode='linear', align_corners=False
+                        )
+                        state[key] = resized.permute(0, 2, 1).to(ckpt_pe.dtype)
+            result = self.model.load_state_dict(state, strict=False)
             matched = len(self.model.state_dict()) - len(result.missing_keys)
             print(f"Loaded checkpoint from {resolved} ({matched}/{len(self.model.state_dict())} layers matched)")
         else:
@@ -249,7 +264,8 @@ class HybridARCSolver:
         neural_checkpoint: str = None,
         use_neural_fallback: bool = True,
         use_ttt: bool = True,
-        device: str = None
+        device: str = None,
+        use_codegen_dsl: bool = True,
     ):
         # TTCCVTLR: compound engine (HypothesisEngine + TTT + visual reasoning)
         self.use_ttccvtlr = HAS_TTCCVTLR
@@ -272,6 +288,12 @@ class HybridARCSolver:
         # DSL solver (fast, parallel path)
         self.dsl_solver = ARCSolver()
         self.hint_gen = HintGenerator()
+        self.codegen_dsl = None
+        if use_codegen_dsl:
+            try:
+                self.codegen_dsl = ARCCodeGenDSLGenerator()
+            except Exception:
+                self.codegen_dsl = None
 
         # TTT solver (standalone, for when TTCCVTLR isn't available)
         self.use_ttt = use_ttt and HAS_TTT
@@ -308,9 +330,15 @@ class HybridARCSolver:
                 return False
         return True
 
-    def solve(self, task: Dict) -> List[List[List[int]]]:
+    def solve(self, task: Dict, time_budget: float = None) -> List[List[List[int]]]:
         """Solve task using compound-integrated pipeline, return up to 2 predictions.
         
+        Args:
+            task: ARC task dict with 'train' and 'test' keys
+            time_budget: optional wall-clock seconds; overrides TTCCVTLR's
+                         internal timeout when provided (e.g. 6.0 to fit an 8s
+                         eval budget with 2s headroom for DSL + neural stages)
+
         Pipeline:
           1. TTCCVTLR cognitive loop (V→T→L→R→C→CC) — subsumes HE + TTT
           2. DSL solver (parallel fast path, may catch what TTCCVTLR missed)
@@ -320,6 +348,20 @@ class HybridARCSolver:
         test_input = task['test'][0]['input']
         predictions = []
         ttccvtlr_result = None
+
+        # Apply per-task time budget to TTCCVTLR before stage 1
+        _prev_ttccvtlr_timeout = None
+        _prev_he_timeout = None
+        if time_budget is not None and self.use_ttccvtlr and self.ttccvtlr is not None:
+            _prev_ttccvtlr_timeout = self.ttccvtlr.timeout
+            # Reserve 2 s for DSL + neural stages after TTCCVTLR
+            ttccvtlr_budget = max(0.5, time_budget - 2.0)
+            self.ttccvtlr.timeout = ttccvtlr_budget
+            # Also cap the internal HypothesisEngine timeout so it can't
+            # exceed the overall TTCCVTLR budget (fixes 92% timeout rate)
+            if hasattr(self.ttccvtlr, 'hypothesis_engine'):
+                _prev_he_timeout = self.ttccvtlr.hypothesis_engine.timeout
+                self.ttccvtlr.hypothesis_engine.timeout = max(0.3, ttccvtlr_budget * 0.5)
 
         # ── Stage 1: TTCCVTLR Compound Engine ───────────────────────────
         if self.use_ttccvtlr:
@@ -335,6 +377,12 @@ class HybridARCSolver:
                         predictions.append(pred)
             except Exception:
                 pass
+
+        # Restore original TTCCVTLR timeout after stage 1
+        if _prev_ttccvtlr_timeout is not None:
+            self.ttccvtlr.timeout = _prev_ttccvtlr_timeout
+        if _prev_he_timeout is not None:
+            self.ttccvtlr.hypothesis_engine.timeout = _prev_he_timeout
 
         # Fallback: standalone HypothesisEngine if TTCCVTLR not available
         if not predictions and not self.use_ttccvtlr:
@@ -353,6 +401,20 @@ class HybridARCSolver:
                     predictions.append(pred)
         except Exception:
             pass
+
+        # ── Stage 2b: CodeGen DSL refinement (compound braid aware) ─────
+        has_confident = len(predictions) > 0 and predictions[0] != test_input
+        if not has_confident and self.codegen_dsl is not None:
+            try:
+                codegen_result = self.codegen_dsl.generate_transformation(task)
+                if (
+                    codegen_result.prediction is not None
+                    and codegen_result.prediction != test_input
+                    and codegen_result.prediction not in predictions
+                ):
+                    predictions.append(codegen_result.prediction)
+            except Exception:
+                pass
 
         # ── Stage 3: Neural fallback with feedback loop ─────────────────
         has_confident = len(predictions) > 0 and predictions[0] != test_input
@@ -524,6 +586,7 @@ def main():
     parser.add_argument('--split', default='training')
     parser.add_argument('--neural-checkpoint', default=None)
     parser.add_argument('--no-neural', action='store_true', help='Disable neural fallback')
+    parser.add_argument('--no-codegen-dsl', action='store_true', help='Disable VortexDisCode-backed DSL generation')
     args = parser.parse_args()
     
     print("=" * 70)
@@ -534,7 +597,8 @@ def main():
     
     solver = HybridARCSolver(
         neural_checkpoint=args.neural_checkpoint,
-        use_neural_fallback=not args.no_neural
+        use_neural_fallback=not args.no_neural,
+        use_codegen_dsl=not args.no_codegen_dsl,
     )
     
     results = solver.evaluate(args.data_dir, args.max_tasks, args.split)

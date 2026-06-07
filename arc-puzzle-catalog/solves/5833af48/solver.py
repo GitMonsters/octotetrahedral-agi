@@ -2,185 +2,158 @@
 """
 Solver for ARC-AGI task 5833af48.
 
-The task takes two patterns (pattern1 and pattern2) separated by zero columns/rows:
-- Pattern1: A small template with color 2 and 8s
-- Pattern2: A larger pattern with another color (X) and 8s
-- Background: Filled with color X
+Rule:
+- Pattern1: small template using color 2 as background and 8 as the shape.
+- Pattern2: tile-map template using the canvas color as background and 8 as
+  filled-tile markers.
+- Canvas: large rectangle filled uniformly with the canvas color.
 
-The output is constructed as:
-- Top half: Pattern1's 8 positions shifted to center, rest filled with background color
-- Bottom half: Pattern1 repeated at left and right edges, middle filled with background
-- Output dimensions: (pattern1_height * 2) x (pattern2_width * 2)
+The output equals the canvas dimensions, filled with the canvas color.
+The canvas is divided into (canvas_h/p1_h) × (canvas_w/p1_w) tiles.
+Pattern2 is likewise divided into the same grid of macro-blocks.
+Wherever a macro-block in pattern2 contains an 8, stamp pattern1's 8-pixels
+into the corresponding tile of the output.
 """
 
 import json
-import numpy as np
 
 
-def solve(grid):
-    """
-    Solve the ARC puzzle for input grid.
-    
-    Args:
-        grid: List of lists representing the input grid
-        
-    Returns:
-        List of lists representing the output grid, or None if parsing fails
-    """
-    inp = np.array(grid)
-    
-    # Find row separator (first all-zero row after row 0)
+def solve(grid: list[list[int]]) -> list[list[int]]:
+    rows = len(grid)
+    cols = len(grid[0])
+
+    # ── 1. Find the separator row (first all-zero row after some non-zero rows) ──
+    in_pattern = False
     sep_row = None
-    for r in range(inp.shape[0]):
-        if r > 0 and np.all(inp[r] == 0):
+    for r in range(rows):
+        if any(grid[r][c] != 0 for c in range(cols)):
+            in_pattern = True
+        elif in_pattern:
             sep_row = r
             break
-    
+
     if sep_row is None:
-        return None
-    
-    # Extract top part (between row 0 and sep_row)
-    top_part = inp[1:sep_row]
-    
-    # Find non-zero columns
-    nonzero_cols = [c for c in range(top_part.shape[1]) if np.any(top_part[:, c] != 0)]
-    
-    if not nonzero_cols:
-        return None
-    
-    # Find column gap (separator between pattern1 and pattern2)
-    col_gap = None
-    for i in range(len(nonzero_cols) - 1):
-        if nonzero_cols[i + 1] - nonzero_cols[i] > 1:
-            col_gap = (nonzero_cols[i], nonzero_cols[i + 1])
+        return grid
+
+    # ── 2. Locate the canvas (large uniform rectangle below the separator) ──
+    canvas_start_row = canvas_end_row = None
+    canvas_color = None
+    for r in range(sep_row + 1, rows):
+        nz = [grid[r][c] for c in range(cols) if grid[r][c] != 0]
+        if not nz:
+            if canvas_start_row is not None:
+                canvas_end_row = r - 1
             break
-    
-    if col_gap is None:
-        return None
-    
-    # Extract pattern regions
-    p1_cols = [c for c in nonzero_cols if c <= col_gap[0]]
-    p2_cols = [c for c in nonzero_cols if c >= col_gap[1]]
-    
-    if not p1_cols or not p2_cols:
-        return None
-    
-    p1_start, p1_end = min(p1_cols), max(p1_cols)
-    p2_start, p2_end = min(p2_cols), max(p2_cols)
-    
-    p1 = inp[1:sep_row, p1_start:p1_end + 1]
-    p2 = inp[1:sep_row, p2_start:p2_end + 1]
-    
-    # Get background color from bottom section
-    bottom = inp[sep_row + 1:, p2_start:p2_end + 1]
-    bg_color = None
-    for val in np.unique(bottom):
-        if val > 0:
-            bg_color = int(val)
+        unique = set(nz)
+        if len(unique) == 1:
+            if canvas_start_row is None:
+                canvas_start_row = r
+                canvas_color = nz[0]
+    if canvas_start_row is not None and canvas_end_row is None:
+        canvas_end_row = rows - 1
+
+    if canvas_start_row is None or canvas_color is None:
+        return grid
+
+    canvas_cols = [c for c in range(cols) if grid[canvas_start_row][c] == canvas_color]
+    canvas_start_col = min(canvas_cols)
+    canvas_end_col = max(canvas_cols)
+    canvas_h = canvas_end_row - canvas_start_row + 1
+    canvas_w = canvas_end_col - canvas_start_col + 1
+
+    # ── 3. Extract pattern rows (non-zero rows above the separator) ──
+    pat_rows = [r for r in range(sep_row) if any(grid[r][c] != 0 for c in range(cols))]
+    if not pat_rows:
+        return grid
+    pat_r0, pat_r1 = min(pat_rows), max(pat_rows)
+
+    # Find the column gap separating pattern1 from pattern2
+    data_cols = [c for c in range(cols)
+                 if any(grid[r][c] != 0 for r in range(pat_r0, pat_r1 + 1))]
+    gap_col = None
+    for i in range(len(data_cols) - 1):
+        if data_cols[i + 1] - data_cols[i] > 1:
+            gap_col = (data_cols[i], data_cols[i + 1])
             break
-    
-    if bg_color is None:
-        return None
-    
-    # Calculate bottom region height
-    bottom_rows = [r for r in range(sep_row + 1, inp.shape[0]) if np.any(inp[r] != 0)]
-    bottom_height = max(bottom_rows) - min(bottom_rows) + 1 if bottom_rows else 0
-    
-    if bottom_height == 0:
-        return None
-    
-    # Count actual content rows in p1 (exclude all-zero rows)
-    p1_h_full, p1_w = p1.shape
-    p1_h = 0
-    for r in range(p1_h_full):
-        if np.any(p1[r] != 0):
-            p1_h += 1
-        else:
-            break  # Stop at first all-zero row
-    p2_h, p2_w = p2.shape
-    
-    # Output dimensions: height = bottom_height
-    # Scale is based on the content height of p1
-    scale = bottom_height // p1_h if p1_h > 0 else 1
-    if bottom_height % p1_h != 0:
-        scale += 1
-    
-    out_h = bottom_height
-    
-    # Width calculation based on scale and p1 structure
-    # If p1 has all rows with content (p1_h_full == p1_h), use p2_w * scale
-    # Otherwise (p1 has empty rows), use p1_w + p2_w
-    if p1_h_full == p1_h:
-        # All rows have content
-        if scale == 1:
-            out_w = p1_w + p2_w
-        else:
-            out_w = p2_w * scale
-    else:
-        # Some rows are empty, use combined width
-        out_w = p1_w + p2_w
-    
-    result = np.full((out_h, out_w), bg_color, dtype=inp.dtype)
-    
-    # The pattern repeats scale times vertically
-    # On even repeats (0, 2, 4, ...), place pattern1's 8s at a center offset
-    # On odd repeats (1, 3, 5, ...), place pattern1 on left and right edges
-    
-    # Center offset determination:
-    # The condition checks if we're in a "scaled width" scenario (p2_w * scale)
-    # versus a "combined width" scenario (p1_w + p2_w)
-    if out_w == p2_w * scale:
-        # Scaled width scenario
-        if scale > 1 and p2_w > 0 and p1_w == p2_w // 2:
-            center_offset = (out_w - p2_w) // 2
-        else:
-            center_offset = (out_w - p1_w) // 2
-    else:
-        # Combined width scenario (p1_w + p2_w)
-        center_offset = (out_w - p1_w) // 2
-    
-    for tile_idx in range(scale):
-        row_base = tile_idx * p1_h
-        
-        if tile_idx % 2 == 0:  # Even repeats: center pattern
-            for r in range(min(p1_h, out_h - row_base)):
-                for c in range(p1_w):
-                    if p1[r, c] == 8:
-                        out_col = c + center_offset
-                        if 0 <= out_col < out_w:
-                            result[row_base + r, out_col] = 8
-        else:  # Odd repeats: left and right edges
-            for r in range(min(p1_h, out_h - row_base)):
-                for c in range(p1_w):
-                    if p1[r, c] == 8:
-                        # Left edge
-                        result[row_base + r, c] = 8
-                        # Right edge
-                        result[row_base + r, out_w - p1_w + c] = 8
-    
-    return result.tolist()
+
+    if gap_col is None:
+        return grid
+
+    p1_c0 = min(c for c in data_cols if c <= gap_col[0])
+    p1_c1 = max(c for c in data_cols if c <= gap_col[0])
+    p2_c0 = min(c for c in data_cols if c >= gap_col[1])
+    p2_c1 = max(c for c in data_cols if c >= gap_col[1])
+
+    # Build pattern sub-grids, keeping only non-zero rows
+    p1_raw = [grid[r][p1_c0:p1_c1 + 1] for r in range(pat_r0, pat_r1 + 1)]
+    p1 = [row for row in p1_raw if any(v != 0 for v in row)]
+
+    p2_raw = [grid[r][p2_c0:p2_c1 + 1] for r in range(pat_r0, pat_r1 + 1)]
+    p2 = [row for row in p2_raw if any(v != 0 for v in row)]
+
+    if not p1 or not p2:
+        return grid
+
+    p1_h, p1_w = len(p1), len(p1[0])
+    p2_h, p2_w = len(p2), len(p2[0])
+
+    # ── 4. Compute tile grid and macro-block size ──
+    tiles_v = canvas_h // p1_h   # number of tile rows
+    tiles_h_n = canvas_w // p1_w  # number of tile cols
+
+    if tiles_v == 0 or tiles_h_n == 0:
+        return grid
+
+    block_h = p2_h // tiles_v    # macro-block height in pattern2
+    block_w = p2_w // tiles_h_n  # macro-block width in pattern2
+
+    # ── 5. Build output: canvas-sized, canvas-color fill ──
+    out = [[canvas_color] * canvas_w for _ in range(canvas_h)]
+
+    for ti in range(tiles_v):
+        for tj in range(tiles_h_n):
+            # Check if the macro-block at (ti, tj) in pattern2 has any 8
+            has_8 = False
+            for bi in range(block_h if block_h > 0 else 1):
+                for bj in range(block_w if block_w > 0 else 1):
+                    ri = ti * block_h + bi
+                    cj = tj * block_w + bj
+                    if ri < p2_h and cj < p2_w and p2[ri][cj] == 8:
+                        has_8 = True
+                        break
+                if has_8:
+                    break
+
+            if has_8:
+                out_r0 = ti * p1_h
+                out_c0 = tj * p1_w
+                for pi in range(p1_h):
+                    for pj in range(p1_w):
+                        if p1[pi][pj] == 8:
+                            out[out_r0 + pi][out_c0 + pj] = 8
+
+    return out
 
 
 if __name__ == "__main__":
-    # Load task JSON
-    with open('~/ARC_AMD_TRANSFER/data/ARC-AGI/data/evaluation/5833af48.json'.replace('~', '/Users/evanpieser'), 'r') as f:
+    with open('/Users/evanpieser/arc-puzzle-catalog/dataset/tasks/5833af48.json') as f:
         task = json.load(f)
-    
-    # Test on all training examples
+
     all_pass = True
     for i, example in enumerate(task['train']):
-        computed = solve(example['input'])
+        result = solve(example['input'])
         expected = example['output']
-        
-        if computed is None:
-            print(f"Training example {i + 1}: FAIL (returned None)")
+        passed = result == expected
+        print(f"Train {i + 1}: {'PASS' if passed else 'FAIL'}")
+        if not passed:
             all_pass = False
-        else:
-            match = np.array_equal(np.array(computed), np.array(expected))
-            status = "PASS" if match else "FAIL"
-            print(f"Training example {i + 1}: {status}")
-            if not match:
-                all_pass = False
-    
-    # Summary
-    print(f"\n{'All training examples PASSED!' if all_pass else 'Some training examples FAILED!'}")
+            print(f"  expected {len(expected)}x{len(expected[0])}, got {len(result)}x{len(result[0])}")
+
+    print()
+    test = task['test'][0]
+    result = solve(test['input'])
+    expected = test['output']
+    passed = result == expected
+    print(f"Test: {'PASS' if passed else 'FAIL'}")
+    if not passed:
+        print(f"  expected {len(expected)}x{len(expected[0])}, got {len(result)}x{len(result[0])}")

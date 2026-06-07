@@ -708,7 +708,7 @@ class GenericBfsSolver:
     def _state_key(g) -> tuple:
         """Compact state key for BFS visited set."""
         level = g.current_level
-        return tuple(sorted((s.name, s.x, s.y) for s in level.get_sprites()))
+        return tuple(sorted((s.name, s.x, s.y, s.rotation) for s in level.get_sprites()))
 
     def solve_level(self, max_nodes: int = 200000, timeout: float = 90.0,
                     max_depth: int = 300) -> Optional[list[int]]:

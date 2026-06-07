@@ -79,6 +79,9 @@ def solve(grid: list[list[int]]) -> list[list[int]]:
     elif br > 0 and (tr > 0 or bl > 0) and tl == 0:
         # BR with TR or BL
         rotated = rotate_90(pattern)
+    elif tr > 0 and bl > 0 and tl == 0 and br == 0:
+        # TR-BL opposite diagonal
+        rotated = rotate_180(pattern)
     elif bl > 0:
         # BL dominant
         rotated = rotate_270(pattern)

@@ -3,7 +3,7 @@ def solve(grid: list[list[int]]) -> list[list[int]]:
     cols = len(grid[0])
     result = [row[:] for row in grid]
     
-    MIN_DIM = 5
+    MIN_DIM = 4
     colors = set(grid[r][c] for r in range(rows) for c in range(cols))
     
     for color in colors:
