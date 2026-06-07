@@ -15,3 +15,13 @@ venv/
 checkpoints/
 *.pt
 abc82100_analysis.html
+
+# Rust build artifacts
+octo-parallel-rs/target/
+**/target/debug/
+**/target/release/
+**/.rustc_info.json
+**/CACHEDIR.TAG
+
+# macOS
+.DS_Store
