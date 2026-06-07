@@ -47,10 +47,33 @@ class TorusParticle:
 class TorusLattice:
     """Discrete lattice on torus surface for code embeddings."""
     
-    def __init__(self, n_major: int = 16, n_minor: int = 8):
-        """Create lattice with n_major × n_minor points."""
-        self.n_major = n_major
-        self.n_minor = n_minor
+    def __init__(self, R: float = 3.0, r: float = 1.0, 
+                 levels: int = 4, n_major: int = None, n_minor: int = None):
+        """
+        Create lattice on torus surface.
+        
+        Args:
+            R: Major radius of torus
+            r: Minor radius of torus  
+            levels: Number of hierarchical levels (controls lattice density)
+            n_major: Number of points around major circle (overrides levels if set)
+            n_minor: Number of points around minor circle (overrides levels if set)
+        """
+        self.R = R
+        self.r = r
+        self.levels = levels
+        
+        # Calculate lattice size from levels if not explicitly set
+        if n_major is None:
+            self.n_major = 4 * (2 ** levels)  # 16, 32, 64, etc.
+        else:
+            self.n_major = n_major
+            
+        if n_minor is None:
+            self.n_minor = 2 * (2 ** levels)  # 8, 16, 32, etc.
+        else:
+            self.n_minor = n_minor
+            
         self.lattice_points = self._generate_lattice()
     
     def _generate_lattice(self) -> List[TorusPosition]:
@@ -65,12 +88,13 @@ class TorusLattice:
     
     def nearest_point(self, position: TorusPosition) -> TorusPosition:
         """Find nearest lattice point to given position."""
-        distances = [position.distance(p) for p in self.lattice_points]
+        distances = [position.distance(p, R=self.R, r=self.r) for p in self.lattice_points]
         return self.lattice_points[np.argmin(distances)]
     
     def neighbors(self, position: TorusPosition, k: int = 4) -> List[TorusPosition]:
         """Get k nearest lattice neighbors."""
-        distances = [(i, position.distance(p)) for i, p in enumerate(self.lattice_points)]
+        distances = [(i, position.distance(p, R=self.R, r=self.r)) 
+                    for i, p in enumerate(self.lattice_points)]
         distances.sort(key=lambda x: x[1])
         return [self.lattice_points[i] for i, _ in distances[:k]]
 
@@ -78,12 +102,24 @@ class TorusLattice:
 class TorusEmbedding:
     """Embed high-dimensional vectors onto torus surface."""
     
-    def __init__(self, dim: int = 768, R: float = 1.0, r: float = 0.3):
-        """Initialize embedding with dimension and torus radii."""
-        self.dim = dim
+    def __init__(self, vocab_size: int = 50000, embed_dim: int = 768, 
+                 R: float = 1.0, r: float = 0.3, dim: int = None):
+        """
+        Initialize embedding with dimension and torus radii.
+        
+        Args:
+            vocab_size: Size of vocabulary (for compatibility, not currently used)
+            embed_dim: Dimension of embedding vectors
+            R: Major radius of torus
+            r: Minor radius of torus
+            dim: Alias for embed_dim (for backward compatibility)
+        """
+        self.vocab_size = vocab_size
+        self.embed_dim = embed_dim if dim is None else dim
+        self.dim = self.embed_dim  # Backward compatibility
         self.R = R
         self.r = r
-        self.lattice = TorusLattice()
+        self.lattice = TorusLattice(R=R, r=r)
         
     def embed(self, vector: np.ndarray) -> TorusPosition:
         """
