@@ -341,6 +341,22 @@ def run_combined_evaluation():
         json.dump(output, f, indent=2)
     logger.info(f"\n  Results saved to {outfile}")
 
+    # ── Consequential-reasoning trace HTML ──────────────────────────────────
+    try:
+        import sys as _sys
+        _sys.path.insert(0, '/Users/evanpieser')
+        from reasoning_tracer import trace_challenges, generate_reasoning_html
+        html_path = 'arc_combined_reasoning.html'
+        logger.info("Building reasoning trace HTML…")
+        traces = trace_challenges(tasks, time_budget=5.0, verbose=False)
+        generate_reasoning_html(tasks, traces, html_path,
+                                title=f"ARC-AGI Combined Reasoning — {len(tasks)} tasks")
+        import subprocess
+        subprocess.Popen(["open", html_path])
+    except Exception as _e:
+        logger.warning(f"[reasoning_tracer] skipped: {_e}")
+    # ────────────────────────────────────────────────────────────────────────
+
     return output
 
 

@@ -3146,6 +3146,86 @@ def try_connect_pair_dots(pairs):
     return _apply if _fits_all(_apply, pairs) else None
 
 
+def try_stamp_shape_at_marker(
+    pairs: List[Tuple[Grid, Grid]],
+) -> Optional[Program]:
+    """Stamp a reflected copy of a large shape at single-cell marker positions.
+
+    For each single-cell marker color, the shape (largest cluster) is flipped
+    toward the marker along the dominant axis, with the shape cell on the same
+    row (flip_h) or column (flip_v) as the marker used as the alignment anchor,
+    and placed so that anchor lands on the marker.
+    """
+    def _apply_once(g: Grid) -> Optional[Grid]:
+        b = background(g)
+        H, W = len(g), len(g[0])
+        colors = list({g[r][c] for r in range(H) for c in range(W) if g[r][c] != b})
+        if not colors:
+            return None
+
+        # Shape = color with most cells
+        best_c = max(colors, key=lambda col: sum(g[r][c] == col for r in range(H) for c in range(W)))
+        shape = [(r, c) for r in range(H) for c in range(W) if g[r][c] == best_c]
+        if len(shape) < 3:
+            return None
+
+        cr = sum(r for r, c in shape) / len(shape)
+        cc_c = sum(c for r, c in shape) / len(shape)
+
+        result = [row[:] for row in g]
+        placed_any = False
+
+        for marker_c in colors:
+            if marker_c == best_c:
+                continue
+            mcs = [(r, c) for r in range(H) for c in range(W) if g[r][c] == marker_c]
+            if len(mcs) != 1:
+                continue
+            mr, mc = mcs[0]
+
+            dr = mr - cr
+            dc = mc - cc_c
+
+            if abs(dr) >= abs(dc):
+                # Vertical direction → flip rows (flip_v: r → -r)
+                anchor_cell = min(shape, key=lambda sc: abs(sc[1] - mc))
+                t_cells = [(-r, c) for r, c in shape]
+            else:
+                # Horizontal direction → flip cols (flip_h: c → -c)
+                anchor_cell = min(shape, key=lambda sc: abs(sc[0] - mr))
+                t_cells = [(r, -c) for r, c in shape]
+
+            anchor_idx = shape.index(anchor_cell)
+            t_anchor = t_cells[anchor_idx]
+
+            off_r = mr - t_anchor[0]
+            off_c = mc - t_anchor[1]
+            placed = [(r + off_r, c + off_c) for r, c in t_cells]
+
+            if not all(0 <= r < H and 0 <= c < W for r, c in placed):
+                continue
+            if not all(g[r][c] == b or g[r][c] == marker_c for r, c in placed):
+                continue
+
+            for r, c in placed:
+                result[r][c] = marker_c
+            placed_any = True
+
+        return result if placed_any else None
+
+    # Validate on all pairs
+    for x, y in pairs:
+        pred = _apply_once(x)
+        if pred != y:
+            return None
+
+    def _apply(g: Grid) -> Grid:
+        r = _apply_once(g)
+        return r if r is not None else [row[:] for row in g]
+
+    return _apply
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Synthesizer entry point
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -3218,6 +3298,7 @@ _STRATEGIES = [
     ("recolor_by_object_size", try_recolor_by_object_size,  0.3),
     ("largest_object_extract", try_largest_object_extract,  0.1),
     ("connect_pair_dots",      try_connect_pair_dots,        0.2),
+    ("stamp_shape_at_marker",  try_stamp_shape_at_marker,    0.5),
     ("enumerate_depth1",       _enumerate_depth1,          2.0),
 ]
 
