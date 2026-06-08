@@ -154,24 +154,38 @@ class SyntheticDataAugmentation:
         
         # Convert synthetic examples to ARCTask format
         for syn_ex in synthetic_examples:
-            # SIMULA generates input_data/output_data, but ARCTask expects train/test
-            # Each should be a list of {' input': grid, 'output': grid} dicts
-            train_examples = syn_ex.get('train_data', [])
-            test_examples = syn_ex.get('test_data', [])
+            # SIMULA generates input_data/output_data as raw grids or grid lists
+            # ARCTask expects train/test to be lists of {'input': grid, 'output': grid}
+            train_data = syn_ex.get('train_data', [])
+            test_data = syn_ex.get('test_data', [])
             
-            # If data is in wrong format, try to convert
-            if train_examples and not isinstance(train_examples[0], dict):
-                train_examples = [{'input': train_examples, 'output': test_examples}]
-                test_examples = [{'input': test_examples, 'output': test_examples}]
+            # Convert to ARC format
+            train_examples = []
+            test_examples = []
+            
+            # Handle different SIMULA data formats
+            if isinstance(train_data, list) and train_data:
+                # If it's a list of grids (not dicts), wrap them
+                if isinstance(train_data[0], list):
+                    # train_data is a single grid or list of grids
+                    if isinstance(test_data, list) and test_data and isinstance(test_data[0], list):
+                        train_examples = [{'input': train_data, 'output': test_data}]
+                        test_examples = [{'input': test_data, 'output': test_data}]
+                elif isinstance(train_data[0], dict):
+                    train_examples = train_data
+                    test_examples = test_data if test_data else []
             
             task_data = {
-                'train': train_examples if train_examples else [],
-                'test': test_examples if test_examples else []
+                'train': train_examples if train_examples else [{'input': [[0]], 'output': [[0]]}],
+                'test': test_examples if test_examples else [{'input': [[0]], 'output': [[0]]}]
             }
             
             # Create ARCTask
-            task = ARCTask(syn_ex['task_id'], task_data)
-            augmented_tasks.append(task)
+            try:
+                task = ARCTask(syn_ex['task_id'], task_data)
+                augmented_tasks.append(task)
+            except Exception as e:
+                logger.warning(f"Failed to create ARCTask from synthetic example: {e}")
             
             self.stats['synthetic_examples_used'] += 1
         
