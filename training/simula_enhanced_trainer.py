@@ -154,9 +154,19 @@ class SyntheticDataAugmentation:
         
         # Convert synthetic examples to ARCTask format
         for syn_ex in synthetic_examples:
+            # SIMULA generates input_data/output_data, but ARCTask expects train/test
+            # Each should be a list of {' input': grid, 'output': grid} dicts
+            train_examples = syn_ex.get('train_data', [])
+            test_examples = syn_ex.get('test_data', [])
+            
+            # If data is in wrong format, try to convert
+            if train_examples and not isinstance(train_examples[0], dict):
+                train_examples = [{'input': train_examples, 'output': test_examples}]
+                test_examples = [{'input': test_examples, 'output': test_examples}]
+            
             task_data = {
-                'train': syn_ex['train_data'],
-                'test': syn_ex['test_data']
+                'train': train_examples if train_examples else [],
+                'test': test_examples if test_examples else []
             }
             
             # Create ARCTask
