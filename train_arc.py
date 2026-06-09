@@ -471,11 +471,13 @@ class ARCTrainer:
                 
                 # Replace dataloader with augmented dataset
                 from torch.utils.data import DataLoader
+                from data.arc_dataset import arc_collate_fn
                 self.train_dataloader = DataLoader(
                     augmented_dataset,
                     batch_size=self.train_dataloader.batch_size,
                     shuffle=True,
-                    num_workers=0  # ARC dataset doesn't support multiprocessing
+                    num_workers=0,  # ARC dataset doesn't support multiprocessing
+                    collate_fn=lambda b: arc_collate_fn(b, pad_token_id=0)
                 )
                 
                 logger.info(f"Training dataloader augmented with synthetic data")
