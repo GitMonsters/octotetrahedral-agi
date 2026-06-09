@@ -3226,6 +3226,188 @@ def try_stamp_shape_at_marker(
     return _apply
 
 
+def try_pattern_fill_bounded(
+    pairs: List[Tuple[Grid, Grid]],
+) -> Optional[Program]:
+    """Fill bounded regions with repeating pattern from border.
+    
+    Detects closed shapes (bordered regions) and fills interior with a 
+    tiled pattern extracted from the boundary cells.
+    """
+    def _apply_once(g: Grid) -> Optional[Grid]:
+        b = background(g)
+        H, W = len(g), len(g[0])
+        result = [row[:] for row in g]
+        
+        # Find all non-background colors
+        colors = {g[r][c] for r in range(H) for c in range(W) if g[r][c] != b}
+        if not colors:
+            return None
+        
+        # For each color, find if it forms a closed boundary
+        for border_c in colors:
+            border_cells = [(r, c) for r in range(H) for c in range(W) if g[r][c] == border_c]
+            if len(border_cells) < 4:
+                continue
+            
+            # Find interior (flood fill from center, stop at border)
+            center_r, center_c = H // 2, W // 2
+            if g[center_r][center_c] == border_c:
+                continue
+            
+            visited = set()
+            queue = [(center_r, center_c)]
+            interior = []
+            
+            while queue:
+                r, c = queue.pop(0)
+                if (r, c) in visited or not (0 <= r < H and 0 <= c < W):
+                    continue
+                if g[r][c] == border_c:
+                    continue
+                visited.add((r, c))
+                interior.append((r, c))
+                
+                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    queue.append((r + dr, c + dc))
+            
+            # Fill interior with pattern (2x2 tile)
+            if interior:
+                for r, c in interior:
+                    # Checkerboard pattern using border color
+                    if (r + c) % 2 == 0:
+                        result[r][c] = border_c
+        
+        return result if result != g else None
+    
+    # Validate
+    for x, y in pairs:
+        pred = _apply_once(x)
+        if pred != y:
+            return None
+    
+    def _apply(g: Grid) -> Grid:
+        r = _apply_once(g)
+        return r if r is not None else [row[:] for row in g]
+    
+    return _apply
+
+
+def try_reflect_across_axis(
+    pairs: List[Tuple[Grid, Grid]],
+) -> Optional[Program]:
+    """Reflect non-background pixels across detected symmetry axis.
+    
+    Finds vertical or horizontal axis and mirrors objects across it.
+    """
+    # Detect which axis (horizontal or vertical) works
+    for axis_type in ['h', 'v']:
+        def _apply_once(g: Grid, ax=axis_type) -> Optional[Grid]:
+            b = background(g)
+            H, W = len(g), len(g[0])
+            result = [row[:] for row in g]
+            
+            if ax == 'h':  # horizontal axis (mirror top/bottom)
+                axis_pos = H // 2
+                for r in range(axis_pos):
+                    for c in range(W):
+                        if g[r][c] != b:
+                            mirror_r = 2 * axis_pos - r - 1
+                            if 0 <= mirror_r < H:
+                                result[mirror_r][c] = g[r][c]
+            else:  # vertical axis (mirror left/right)
+                axis_pos = W // 2
+                for r in range(H):
+                    for c in range(axis_pos):
+                        if g[r][c] != b:
+                            mirror_c = 2 * axis_pos - c - 1
+                            if 0 <= mirror_c < W:
+                                result[r][mirror_c] = g[r][c]
+            
+            return result if result != g else None
+        
+        # Check if this axis works
+        all_match = True
+        for x, y in pairs:
+            pred = _apply_once(x, axis_type)
+            if pred != y:
+                all_match = False
+                break
+        
+        if all_match:
+            def _apply(g: Grid, ax=axis_type) -> Grid:
+                r = _apply_once(g, ax)
+                return r if r is not None else [row[:] for row in g]
+            return _apply
+    
+    return None
+
+
+def try_object_stack(
+    pairs: List[Tuple[Grid, Grid]],
+) -> Optional[Program]:
+    """Stack objects vertically or horizontally based on their spatial distribution.
+    
+    Detects isolated objects and arranges them in a line (row or column).
+    """
+    def _apply_once(g: Grid) -> Optional[Grid]:
+        b = background(g)
+        H, W = len(g), len(g[0])
+        
+        # Find connected components
+        visited = [[False] * W for _ in range(H)]
+        objects = []
+        
+        def flood(sr, sc):
+            cells = []
+            queue = [(sr, sc)]
+            while queue:
+                r, c = queue.pop(0)
+                if not (0 <= r < H and 0 <= c < W):
+                    continue
+                if visited[r][c] or g[r][c] == b:
+                    continue
+                visited[r][c] = True
+                cells.append((r, c, g[r][c]))
+                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    queue.append((r + dr, c + dc))
+            return cells
+        
+        for r in range(H):
+            for c in range(W):
+                if not visited[r][c] and g[r][c] != b:
+                    obj = flood(r, c)
+                    if obj:
+                        objects.append(obj)
+        
+        if len(objects) < 2:
+            return None
+        
+        # Stack horizontally (simple implementation)
+        result = [[b] * W for _ in range(H)]
+        x_offset = 0
+        for obj in objects:
+            for r, c, col in obj:
+                new_c = c - min(cc for _, cc, _ in obj) + x_offset
+                if 0 <= new_c < W:
+                    result[r][new_c] = col
+            x_offset += max(cc for _, cc, _ in obj) - min(cc for _, cc, _ in obj) + 2
+        
+        return result
+    
+    # Validate
+    for x, y in pairs:
+        pred = _apply_once(x)
+        if pred != y:
+            return None
+    
+    def _apply(g: Grid) -> Grid:
+        r = _apply_once(g)
+        return r if r is not None else [row[:] for row in g]
+    
+    return _apply
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Synthesizer entry point
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -3299,6 +3481,9 @@ _STRATEGIES = [
     ("largest_object_extract", try_largest_object_extract,  0.1),
     ("connect_pair_dots",      try_connect_pair_dots,        0.2),
     ("stamp_shape_at_marker",  try_stamp_shape_at_marker,    0.5),
+    ("pattern_fill_bounded",   try_pattern_fill_bounded,     0.3),
+    ("reflect_across_axis",    try_reflect_across_axis,      0.2),
+    ("object_stack",           try_object_stack,             0.4),
     ("enumerate_depth1",       _enumerate_depth1,          2.0),
 ]
 
