@@ -1,0 +1,59 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║  NGC CLOUD QUICK START - V75 Training                               ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+1️⃣  LOGIN TO NGC
+   https://cloud.nvidia.com → Sign in
+
+2️⃣  LAUNCH INSTANCE
+   • Framework: PyTorch 2.x
+   • GPU: A100 (40GB) or H100
+   • Storage: 100 GB
+
+3️⃣  SETUP (via SSH or JupyterLab terminal)
+   git clone https://github.com/GitMonsters/octotetrahedral-agi.git
+   cd octotetrahedral-agi
+   pip install -r requirements.txt
+
+4️⃣  UPLOAD DATA (if not in repo)
+   # From your local machine:
+   scp -r ARC_AMD_TRANSFER/ ngc-instance:~/octotetrahedral-agi/
+
+5️⃣  LAUNCH TRAINING
+   bash ngc_launch.sh
+
+6️⃣  MONITOR
+   tail -f train_v75_ngc_*.log
+   # OR
+   watch -n 1 nvidia-smi
+
+7️⃣  DOWNLOAD RESULTS (after completion)
+   # On NGC:
+   tar -czf v75_results.tar.gz arc_step_*.pt arc_neural_model_v75.pt *.log
+   
+   # On local:
+   scp ngc-instance:~/octotetrahedral-agi/v75_results.tar.gz .
+
+═══════════════════════════════════════════════════════════════════════
+
+⏱️  EXPECTED TIMELINE:
+   • Setup: 5-10 minutes
+   • Training: 6-12 hours (A100) or 12-24 hours (RTX 4090)
+   • Total: ~1 day
+
+💰 COST ESTIMATE:
+   • A100 (40GB): ~$1-2/hour × 12 hours = $12-24
+   • Much cheaper than 97 days of local compute!
+
+📊 SUCCESS CRITERIA:
+   • GPU utilization: 90-100%
+   • Memory usage: 18-20 GB / 40 GB
+   • Steps/second: 1-3
+   • Loss: decreasing from ~11 → ~4
+
+═══════════════════════════════════════════════════════════════════════
+
+📖 FULL GUIDE: NGC_DEPLOYMENT_GUIDE.md
+🚀 AUTO SCRIPT: ngc_launch.sh
+
+🏆 OctoTetrahedral AGI - Mirzakhani's Magic Wand ✨
