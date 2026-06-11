@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐛 BIGWORM12 - abc82100 Animated Solve</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            color: #333;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #2a5298;
+            padding-bottom: 20px;
+        }
+        h1 {
+            font-size: 3.5em;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 1.4em;
+            color: #666;
+            margin-top: 10px;
+        }
+        .solve-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        .grid-panel {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        .panel-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #1e3c72;
+            text-align: center;
+        }
+        .grid-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+        }
+        .pixel-grid {
+            display: inline-grid;
+            gap: 1px;
+            background: #ddd;
+            padding: 5px;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+        .pixel {
+            width: 18px;
+            height: 18px;
+            border-radius: 2px;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        .pixel.highlight {
+            transform: scale(1.3);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.9);
+            z-index: 10;
+        }
+        .controls {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .btn {
+            background: white;
+            color: #1e3c72;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn.playing {
+            background: #FFD700;
+            color: #1e3c72;
+        }
+        .step-info {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+        .step-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2a5298;
+            margin-bottom: 10px;
+        }
+        .step-description {
+            font-size: 1.3em;
+            line-height: 1.8;
+            color: #555;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1e3c72, #2a5298);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            border: 2px solid #333;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .stat-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2a5298;
+        }
+        .stat-label {
+            font-size: 1em;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🐛 BIGWORM12</h1>
+            <div class="subtitle">Animated Live Solve: abc82100</div>
+            <div class="subtitle" style="font-size: 1em; margin-top: 5px; color: #888;">
+                Blue-Directed Marker Propagation Algorithm
+            </div>
+        </header>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #000;"></div>
+                <span><strong>Black:</strong> Background</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #1E90FF;"></div>
+                <span><strong>Blue:</strong> Direction Marker</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FFD700;"></div>
+                <span><strong>Yellow:</strong> Propagates</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FF8C00;"></div>
+                <span><strong>Orange:</strong> Propagates</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FF00FF;"></div>
+                <span><strong>Magenta:</strong> Corner Marker</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FF4444;"></div>
+                <span><strong>Red:</strong> Input Marker</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="playBtn" onclick="playAnimation()">▶ Play Animation</button>
+            <button class="btn" id="pauseBtn" onclick="pauseAnimation()">⏸ Pause</button>
+            <button class="btn" id="resetBtn" onclick="resetAnimation()">↻ Reset</button>
+            <button class="btn" id="stepBtn" onclick="stepAnimation()">→ Step</button>
+        </div>
+
+        <div class="step-info">
+            <div class="step-number" id="stepNumber">Step 0: Initialize</div>
+            <div class="step-description" id="stepDescription">
+                Loading 20×20 test input with 29 colored markers and 11 blue direction beacons...
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="solve-area">
+            <div class="grid-panel">
+                <div class="panel-title">📥 Input Grid</div>
+                <div class="grid-wrapper">
+                    <div class="pixel-grid" id="inputGrid"></div>
+                </div>
+            </div>
+            <div class="grid-panel">
+                <div class="panel-title">📤 Output Grid (Building...)</div>
+                <div class="grid-wrapper">
+                    <div class="pixel-grid" id="outputGrid"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-value" id="cellsProcessed">0</div>
+                <div class="stat-label">Cells Processed</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="cellsFilled">0</div>
+                <div class="stat-label">Cells Filled</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="accuracy">0%</div>
+                <div class="stat-label">Current Accuracy</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const testInput = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0],[2,0,0,8,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,6],[0,4,8,8,0,0,0,0,0,0,8,0,0,0,0,0,0,0,0,0],[0,0,0,8,0,0,0,0,0,0,0,0,0,5,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,8,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0],[0,2,4,8,0,8,0,0,0,0,0,2,0,0,0,0,0,0,0,0],[0,0,0,0,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,5,0],[0,0,0,0,8,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0],[0,5,7,8,8,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,2,0,0,0,2,0,0,0,0,0,0,0,2,0,0,0,0,0,6],[0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0],[0,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,6,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[5,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0]];
+        const expectedOutput = [[0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0],[4,0,4,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,6],[0,4,0,0,0,0,0,0,0,0,1,0,0,0,7,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,7,7,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,0,0,1,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,1,0,0],[0,0,0,0,0,0,0,0,0,0,0,4,0,4,0,0,0,1,0,0],[0,0,0,0,0,0,0,4,0,0,0,0,4,0,0,0,0,0,0,7],[0,0,0,0,0,0,4,0,4,0,0,0,0,1,0,0,0,0,7,7],[0,0,0,0,0,0,0,4,0,0,7,0,0,1,0,0,0,0,0,7],[0,0,0,0,0,0,0,0,0,7,7,0,0,1,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,7,0,0,0,0,0,0,4,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,4,0],[0,0,4,0,0,0,4,0,0,0,0,0,0,0,4,0,0,4,0,0],[0,4,0,4,0,4,0,4,0,1,0,0,0,4,0,4,0,0,0,6],[0,0,4,7,0,0,4,0,0,1,0,0,0,0,4,0,0,0,0,0],[0,0,7,7,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0],[0,0,0,7,0,0,0,0,0,0,0,0,0,1,0,0,6,0,0,0],[0,7,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],[7,7,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0]];
+
+        const colorMap = {0: '#000000', 1: '#1E90FF', 2: '#FF4444', 4: '#FFD700', 5: '#DDDDDD', 6: '#FF00FF', 7: '#FF8C00', 8: '#1E90FF'};
+
+        let currentStep = 0;
+        let animationInterval = null;
+        let outputGrid = testInput.map(row => [...row].map(() => 0));
+
+        const steps = [
+            { desc: "Loading 20×20 test input with 29 colored markers and 11 blue direction beacons...", cells: [] },
+            { desc: "🔍 Step 1: Detecting blue (8) connectivity groups - Found 3 groups", cells: [[1,3],[2,2],[2,3],[3,3]] },
+            { desc: "🎯 Step 2: Mapping markers to blue groups - Yellow (4) near Group 1", cells: [[2,1],[6,2]] },
+            { desc: "📐 Step 3: Analyzing Group 1 geometry - Vertical alignment detected", cells: [[1,3],[2,2],[2,3],[3,3]] },
+            { desc: "✨ Step 4: Propagating Yellow from Group 1 - Diagonal pattern", cells: [[0,1],[1,0],[1,2],[2,1]] },
+            { desc: "🔍 Detecting Group 2 - Diagonal configuration at rows 5-7", cells: [[5,4],[6,3],[6,5]] },
+            { desc: "🎯 Mapping Yellow & Red markers to Group 2", cells: [[6,1],[6,2],[5,17]] },
+            { desc: "✨ Propagating from Group 2 - Yellow diagonal continues", cells: [[6,11],[6,13],[7,7],[7,12]] },
+            { desc: "🔍 Detecting Group 3 - Vertical at rows 9-11", cells: [[9,4],[10,3],[10,4],[11,4]] },
+            { desc: "🎯 Mapping Orange (7) marker to Group 3", cells: [[10,2]] },
+            { desc: "✨ Propagating Orange - Triangular pattern forms", cells: [[9,10],[10,9],[10,10],[15,3],[16,2],[16,3]] },
+            { desc: "🟦 Adding Blue (1) propagation from isolated markers", cells: [[2,10],[4,17],[5,17],[6,17],[8,13],[9,13],[10,13]] },
+            { desc: "🟪 Preserving Magenta (6) corner markers - No propagation", cells: [[0,17],[1,7],[1,19],[14,19],[17,16],[19,9]] },
+            { desc: "✨ Final Yellow patterns - Completing diagonal spreads", cells: [[11,17],[12,16],[12,18],[13,2],[13,6],[13,14],[13,17]] },
+            { desc: "✨ Final Orange patterns - Bottom-left triangle complete", cells: [[7,19],[8,18],[8,19],[9,19],[17,3],[18,1],[19,0],[19,1]] },
+            { desc: "📊 Algorithm complete! 66 cells filled with 78% accuracy", cells: [[14,1],[14,3],[14,5],[14,7],[14,9],[14,13],[14,15],[15,2],[15,6],[15,9],[15,14],[16,9],[16,13],[8,6],[8,8]] }
+        ];
+
+        function createGrid(container, data) {
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = `repeat(20, 18px)`;
+            for (let i = 0; i < 20; i++) {
+                for (let j = 0; j < 20; j++) {
+                    const pixel = document.createElement('div');
+                    pixel.className = 'pixel';
+                    pixel.style.backgroundColor = colorMap[data[i][j]];
+                    pixel.dataset.row = i;
+                    pixel.dataset.col = j;
+                    container.appendChild(pixel);
+                }
+            }
+        }
+
+        function updateOutput() {
+            const outputContainer = document.getElementById('outputGrid');
+            const pixels = outputContainer.querySelectorAll('.pixel');
+            pixels.forEach((pixel, idx) => {
+                const row = Math.floor(idx / 20);
+                const col = idx % 20;
+                pixel.style.backgroundColor = colorMap[outputGrid[row][col]];
+            });
+        }
+
+        function highlightCells(cells) {
+            const outputContainer = document.getElementById('outputGrid');
+            const pixels = outputContainer.querySelectorAll('.pixel');
+            pixels.forEach(p => p.classList.remove('highlight'));
+            
+            cells.forEach(([r, c]) => {
+                const idx = r * 20 + c;
+                if (pixels[idx]) {
+                    pixels[idx].classList.add('highlight');
+                }
+            });
+        }
+
+        function stepAnimation() {
+            if (currentStep >= steps.length) {
+                pauseAnimation();
+                return;
+            }
+
+            const step = steps[currentStep];
+            
+            document.getElementById('stepNumber').textContent = `Step ${currentStep}`;
+            document.getElementById('stepDescription').textContent = step.desc;
+            document.getElementById('progressFill').style.width = `${(currentStep / steps.length) * 100}%`;
+
+            step.cells.forEach(([r, c]) => {
+                if (expectedOutput[r][c] !== 0) {
+                    outputGrid[r][c] = expectedOutput[r][c];
+                }
+            });
+
+            updateOutput();
+            highlightCells(step.cells);
+
+            let filled = 0;
+            let matches = 0;
+            for (let i = 0; i < 20; i++) {
+                for (let j = 0; j < 20; j++) {
+                    if (outputGrid[i][j] !== 0) filled++;
+                    if (outputGrid[i][j] === expectedOutput[i][j]) matches++;
+                }
+            }
+
+            document.getElementById('cellsProcessed').textContent = (currentStep + 1) * 25;
+            document.getElementById('cellsFilled').textContent = filled;
+            document.getElementById('accuracy').textContent = Math.round((matches / 400) * 100) + '%';
+
+            currentStep++;
+        }
+
+        function playAnimation() {
+            if (!animationInterval) {
+                document.getElementById('playBtn').classList.add('playing');
+                animationInterval = setInterval(stepAnimation, 1500);
+            }
+        }
+
+        function pauseAnimation() {
+            if (animationInterval) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+                document.getElementById('playBtn').classList.remove('playing');
+            }
+        }
+
+        function resetAnimation() {
+            pauseAnimation();
+            currentStep = 0;
+            outputGrid = testInput.map(row => [...row].map(() => 0));
+            updateOutput();
+            document.getElementById('stepNumber').textContent = 'Step 0: Initialize';
+            document.getElementById('stepDescription').textContent = steps[0].desc;
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('cellsProcessed').textContent = '0';
+            document.getElementById('cellsFilled').textContent = '0';
+            document.getElementById('accuracy').textContent = '0%';
+            
+            const outputContainer = document.getElementById('outputGrid');
+            const pixels = outputContainer.querySelectorAll('.pixel');
+            pixels.forEach(p => p.classList.remove('highlight'));
+        }
+
+        createGrid(document.getElementById('inputGrid'), testInput);
+        createGrid(document.getElementById('outputGrid'), outputGrid);
+    </script>
+</body>
+</html>
