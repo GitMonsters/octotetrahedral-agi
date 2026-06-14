@@ -15,6 +15,8 @@ import OctoTetrahedral.E8Lattice
 import OctoTetrahedral.FibonacciCohesion
 import OctoTetrahedral.PisanoLaderman
 import OctoTetrahedral.SynthesisPipeline
+import OctoTetrahedral.OctoLimbArchitecture
+import OctoTetrahedral.AGICapabilityCriteria
 
 namespace OctoTetrahedral
 
