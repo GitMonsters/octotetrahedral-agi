@@ -2,12 +2,12 @@
 """
 TranscendPlexity Synthesis Pipeline
 ====================================
-LLM-guided program synthesis for ARC-AGI tasks.
+LLM-guided program synthesis for ARC-AGI tasks using Claude (Anthropic).
 
 For each task the pipeline:
   1. Builds a structured prompt from the training examples
-  2. Calls an LLM (Claude by default, OpenAI-compatible API supported)
-  3. Extracts a Python  solve(grid) -> grid  function
+  2. Calls Claude to generate a Python  solve(grid) -> grid  function
+  3. Extracts the function from the response
   4. Validates the function against ALL training pairs
   5. Runs an anti-hardcoding probe (perturbed inputs must produce different outputs)
   6. On failure: retries with detailed error feedback (up to --retries times)
@@ -29,15 +29,13 @@ All options
     --task-ids    Comma-separated list of task IDs to (re-)run (default: all)
     --workers     Parallel synthesis workers              (default: 4)
     --retries     LLM retry attempts per task             (default: 6)
-    --model       Model name                              (default: claude-opus-4-5)
-    --backend     "anthropic" or "openai"                 (default: anthropic)
+    --model       Claude model name                       (default: claude-opus-4-5)
     --verify-only Re-validate existing solvers, no new generation
     --verbose     Print per-attempt detail
 
 Dependencies
 ------------
-    pip install anthropic           # for Anthropic/Claude
-    pip install openai              # for OpenAI-compatible APIs
+    pip install anthropic
 """
 
 from __future__ import annotations
@@ -125,9 +123,9 @@ def build_prompt(task: dict, task_id: str, error_feedback: Optional[str] = None)
     return "\n".join(lines)
 
 
-# ─── LLM backends ─────────────────────────────────────────────────────────────
+# ─── Claude API ───────────────────────────────────────────────────────────────
 
-def call_anthropic(prompt: str, model: str, temperature: float) -> Optional[str]:
+def call_claude(prompt: str, model: str, temperature: float) -> Optional[str]:
     try:
         import anthropic  # type: ignore
     except ImportError:
@@ -145,37 +143,6 @@ def call_anthropic(prompt: str, model: str, temperature: float) -> Optional[str]
         return msg.content[0].text
     except Exception as exc:
         return f"__ERROR__: {exc}"
-
-
-def call_openai(prompt: str, model: str, temperature: float, base_url: Optional[str] = None) -> Optional[str]:
-    try:
-        import openai  # type: ignore
-    except ImportError:
-        sys.exit("Install openai:  pip install openai")
-
-    kwargs: dict = {}
-    if base_url:
-        kwargs["base_url"] = base_url
-    client = openai.OpenAI(**kwargs)
-    try:
-        resp = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": _SYSTEM},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=temperature,
-            max_tokens=2048,
-        )
-        return resp.choices[0].message.content
-    except Exception as exc:
-        return f"__ERROR__: {exc}"
-
-
-def call_llm(prompt: str, model: str, temperature: float, backend: str, base_url: Optional[str] = None) -> Optional[str]:
-    if backend == "anthropic":
-        return call_anthropic(prompt, model, temperature)
-    return call_openai(prompt, model, temperature, base_url)
 
 
 # ─── Code extraction ──────────────────────────────────────────────────────────
@@ -336,9 +303,7 @@ def synthesize_task(
     task_id: str,
     task: dict,
     model: str,
-    backend: str,
     max_retries: int,
-    base_url: Optional[str],
     verbose: bool,
 ) -> tuple[str, Optional[str], str]:
     """
@@ -352,7 +317,7 @@ def synthesize_task(
         temp = TEMPERATURES[attempt % len(TEMPERATURES)]
         prompt = build_prompt(task, task_id, error_feedback)
 
-        response = call_llm(prompt, model, temp, backend, base_url)
+        response = call_claude(prompt, model, temp)
         if response is None or response.startswith("__ERROR__"):
             error_feedback = response or "LLM returned no response"
             if verbose:
@@ -471,7 +436,7 @@ def verify_existing_solvers(tasks: dict, out_dir: Path) -> dict:
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="TranscendPlexity Synthesis Pipeline — LLM-guided ARC-AGI solver generation",
+        description="TranscendPlexity Synthesis Pipeline — Claude-powered ARC-AGI solver generation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
@@ -479,15 +444,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--out", default="solves", help="Output directory (default: solves/)")
     p.add_argument("--task-ids", help="Comma-separated task IDs to run (default: all)")
     p.add_argument("--workers", type=int, default=4, help="Parallel synthesis workers (default: 4)")
-    p.add_argument("--retries", type=int, default=6, help="LLM retries per task (default: 6)")
-    p.add_argument("--model", default="claude-opus-4-5", help="Model name (default: claude-opus-4-5)")
-    p.add_argument(
-        "--backend",
-        default="anthropic",
-        choices=["anthropic", "openai"],
-        help="LLM backend (default: anthropic)",
-    )
-    p.add_argument("--base-url", help="Custom base URL for OpenAI-compatible APIs")
+    p.add_argument("--retries", type=int, default=6, help="Claude retries per task (default: 6)")
+    p.add_argument("--model", default="claude-opus-4-5", help="Claude model name (default: claude-opus-4-5)")
     p.add_argument("--verify-only", action="store_true", help="Verify existing solvers without generating new ones")
     p.add_argument("--verbose", action="store_true", help="Print per-attempt detail")
     p.add_argument("--skip-existing", action="store_true", default=True, help="Skip tasks that already have a solver (default: true)")
@@ -502,7 +460,6 @@ def main() -> None:
 
     print(f"TranscendPlexity Synthesis Pipeline")
     print(f"  model   : {args.model}")
-    print(f"  backend : {args.backend}")
     print(f"  retries : {args.retries}")
     print(f"  workers : {args.workers}")
     print(f"  output  : {out_dir}/")
@@ -558,9 +515,7 @@ def main() -> None:
 
     def worker(item: tuple[str, dict]) -> tuple[str, Optional[str], str]:
         tid, task = item
-        return synthesize_task(
-            tid, task, args.model, args.backend, args.retries, args.base_url, args.verbose
-        )
+        return synthesize_task(tid, task, args.model, args.retries, args.verbose)
 
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
         futures = {pool.submit(worker, item): item[0] for item in todo.items()}
@@ -606,7 +561,6 @@ def main() -> None:
         json.dump(
             {
                 "model": args.model,
-                "backend": args.backend,
                 "total": len(todo),
                 "solved": solved_count,
                 "failed": len(failed_ids),
