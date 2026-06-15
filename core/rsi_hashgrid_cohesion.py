@@ -63,11 +63,14 @@ import torch.nn.functional as F
 class LimbHashGrid(nn.Module):
     """Multi-resolution hash grid encoding for limb hidden states.
 
-    Each limb's hidden state h ∈ R^D is projected down to a low-dim coordinate
-    via `coord_proj` (D → coord_dim), then looked up in L hash tables at
-    geometrically-spaced resolutions.
-
-    Output per limb: L × F features → projected to out_dim.
+    Implements the Instant-NGP (Müller et al. 2022) approach adapted for the
+    8-limb cognitive braid space.  Each limb's hidden state h ∈ R^D is
+    projected to a low-dim coordinate via `coord_proj` (D → coord_dim), then
+    looked up across L geometrically-spaced resolution levels via *multilinear
+    interpolation* between 2^coord_dim grid corners — giving smooth, differentiable
+    features that look like a "blurry image coming into focus" as training
+    progresses.  This is the same hash-grid approach that Claude (Fractal Search
+    experiment) discovered to beat Fourier networks on function approximation.
 
     Parameters
     ----------
@@ -76,7 +79,8 @@ class LimbHashGrid(nn.Module):
     levels      : number of resolution levels (L)
     features    : features per level (F)
     table_size  : hash table entries per level (T)
-    coord_dim   : intermediate coordinate dimension before hashing
+    coord_dim   : intermediate coordinate dimension before hashing (keep ≤ 4
+                  to avoid 2^coord_dim corner explosion; default 2)
     out_dim     : output feature dimension per limb
     base_res    : coarsest resolution (grid cells along one axis)
     finest_res  : finest resolution
@@ -89,7 +93,7 @@ class LimbHashGrid(nn.Module):
         levels:      int = 8,
         features:    int = 4,
         table_size:  int = 2**14,
-        coord_dim:   int = 4,
+        coord_dim:   int = 2,   # keep small: 2^coord_dim corners per level
         out_dim:     int = 64,
         base_res:    int = 4,
         finest_res:  int = 512,
@@ -126,56 +130,98 @@ class LimbHashGrid(nn.Module):
             nn.Linear(out_dim, out_dim),
         )
 
-    def _hash(self, coords: torch.Tensor, level: int) -> torch.Tensor:
-        """Map integer grid coords → table indices via prime hashing.
+    def _hash(self, coords: torch.Tensor) -> torch.Tensor:
+        """Map integer grid coords → table indices via Instant-NGP prime hashing.
 
         Args:
-            coords : [B, num_limbs, coord_dim]  integer grid coords
-            level  : which level (for table_size lookup)
+            coords : [..., coord_dim]  integer grid coords (long)
 
         Returns:
-            indices : [B, num_limbs]  long tensor of table indices
+            indices : [...]  long tensor of table indices in [0, table_size)
         """
-        # FNV-inspired multi-dim hash
-        primes = [1, 2654435761, 805459861, 3674653429]
+        # Instant-NGP prime set — distinct large primes per dimension
+        primes = [1, 2654435761, 805459861, 3674653429,
+                  2097192037, 1227099449, 3999999979, 2999999951]
         h = torch.zeros(coords.shape[:-1], dtype=torch.long, device=coords.device)
         for d in range(min(self.coord_dim, len(primes))):
             h = h ^ (coords[..., d].long() * primes[d])
         return h % self.table_size
+
+    def _interp_level(
+        self,
+        coords_norm: torch.Tensor,   # [B, N, coord_dim]  in [0, 1]
+        level: int,
+        level_weight: float = 1.0,
+    ) -> torch.Tensor:
+        """Multilinear interpolation across 2^coord_dim grid corners (Instant-NGP).
+
+        Produces smooth, differentiable features — the "blurry image coming
+        into focus" effect described in the hash-grid paper.
+
+        Returns:
+            feat : [B, N, features]
+        """
+        B, N, C = coords_norm.shape
+        res = float(self.resolutions[level].item())
+        table = self.hash_tables[level]          # [table_size, F]
+
+        # Scale coordinates to this level's grid  →  continuous positions
+        scaled = coords_norm * (res - 1)         # [B, N, C]
+
+        # Floor / ceil per dimension
+        lo = scaled.floor().long().clamp(0, int(res) - 1)  # [B, N, C]
+        hi = (lo + 1).clamp(0, int(res) - 1)               # [B, N, C]
+
+        # Fractional weights for linear interpolation
+        t = (scaled - lo.float()).clamp(0.0, 1.0)           # [B, N, C]
+
+        # Enumerate all 2^C corners
+        n_corners = 2 ** C
+        feat_acc = torch.zeros(B, N, self.features,
+                               dtype=coords_norm.dtype,
+                               device=coords_norm.device)
+
+        for corner_idx in range(n_corners):
+            # Build corner coords and interpolation weight
+            corner_coords = torch.zeros_like(lo)            # [B, N, C]
+            w = torch.ones(B, N, dtype=coords_norm.dtype,
+                           device=coords_norm.device)
+            for d in range(C):
+                bit = (corner_idx >> d) & 1
+                if bit:
+                    corner_coords[..., d] = hi[..., d]
+                    w = w * t[..., d]
+                else:
+                    corner_coords[..., d] = lo[..., d]
+                    w = w * (1.0 - t[..., d])
+
+            # Hash → gather
+            idx = self._hash(corner_coords)                 # [B, N]
+            corner_feat = table[idx]                        # [B, N, F]
+            feat_acc = feat_acc + w.unsqueeze(-1) * corner_feat
+
+        return feat_acc * level_weight
 
     def forward(
         self,
         limb_states: torch.Tensor,   # [B, num_limbs, hidden_dim]
         level_weights: Optional[torch.Tensor] = None,  # [levels] soft weights
     ) -> torch.Tensor:
-        """
+        """Multilinear-interpolated multi-resolution hash encoding.
+
         Returns:
             features : [B, num_limbs, out_dim]
         """
         B, N, D = limb_states.shape
         assert N == self.num_limbs, f"Expected {self.num_limbs} limbs, got {N}"
 
-        # Project to coordinate space and normalize to [0, 1]
+        # Project to coordinate space, normalize to [0, 1]
         coords_norm = torch.sigmoid(self.coord_proj(limb_states))  # [B, N, coord_dim]
 
         all_feats: List[torch.Tensor] = []
-
         for l in range(self.levels):
-            res = self.resolutions[l]  # scalar
-            # Map [0,1] coords → integer grid
-            grid_coords = (coords_norm * (res - 1)).long()   # [B, N, coord_dim]
-            # Clamp to valid range
-            grid_coords = grid_coords.clamp(0, int(res.item()) - 1)
-
-            # Hash lookup
-            idx = self._hash(grid_coords, l)                 # [B, N]
-            # Gather features from hash table
-            table = self.hash_tables[l]                      # [table_size, F]
-            feat = table[idx]                                # [B, N, F]
-
-            if level_weights is not None:
-                feat = feat * level_weights[l]
-
+            lw = float(level_weights[l].item()) if level_weights is not None else 1.0
+            feat = self._interp_level(coords_norm, l, level_weight=lw)  # [B, N, F]
             all_feats.append(feat)
 
         # Concatenate all levels: [B, N, levels * F]
