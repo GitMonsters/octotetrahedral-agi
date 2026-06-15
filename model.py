@@ -60,6 +60,7 @@ from core.compound_loop import CompoundLoopController, CompoundLoopConfig as _Lo
 from core.cognitive_geometry import CognitiveGeometryEngine, CognitiveGeometryConfig
 from core.cross_domain_transfer import CrossDomainTransferLayer, CrossDomainConfig
 from core.cognitive_cohesion_braid import CognitiveCohesionBraid, CohesionConfig
+from core.rsi_hashgrid_cohesion import CompoundingCohesionRSIHashgrid
 from core.tetrahedral_vision_calculus import TetrahedralVisionCalculus
 from core.s2_to_s1_cache import S2ToS1Cache
 from cognition import AGICognition, CognitionConfig
@@ -681,6 +682,19 @@ class OctoTetrahedralModel(nn.Module):
         # feedback latency as a single cohesion_score metric.
         self.cohesion_braid = CognitiveCohesionBraid(enable_all=True)
 
+        # RSI HashGrid: tracks cohesion momentum + encodes limb spatial states
+        # Uses 8 of the 14 compound-braid limbs (cognitive core) as coordinates
+        _hg = CompoundingCohesionRSIHashgrid(
+            hidden_dim=self.hidden_dim,
+            num_limbs=8,          # 8 cognitive-core limbs
+            rsi_period=14,
+            hg_levels=8,
+            hg_features=4,
+            hg_out_dim=64,
+        )
+        self.rsi_hashgrid = _hg
+        self.cohesion_braid.attach_rsi_hashgrid(_hg)
+
         # System 2→1 knowledge transfer cache (Ye et al. 2022 §3.1)
         # Stores high-confidence slow-path outputs so the fast path can retrieve
         # them on similar future inputs, reducing deliberation energy over time.
@@ -1194,6 +1208,20 @@ class OctoTetrahedralModel(nn.Module):
                     "success": _braid_conf > 0.3,
                     "skills_used": ["scale-ratio-routing", "compound-transform-order"],
                 })
+
+                # RSI HashGrid gamma cycle: encode the 8 cognitive-core limb states
+                # and apply compounding cohesion pressure to braid combine weights.
+                try:
+                    _core_limbs = torch.stack([
+                        memory_out.mean(1), spatial_out.mean(1), language_out.mean(1),
+                        meta_out.mean(1), reasoning_out.mean(1), perception_echo.mean(1),
+                        dream_out.mean(1), empathy_out.mean(1),
+                    ], dim=1)  # [B, 8, hidden_dim]
+                    _rsi_deltas, _rsi_val = self.cohesion_braid.gamma_cycle_step(
+                        _core_limbs, cohesion_override=_braid_conf
+                    )
+                except Exception:
+                    pass  # non-fatal
                 
                 multi_limb_output = memory_enhanced + 0.3 * combined_limbs
 

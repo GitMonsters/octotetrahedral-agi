@@ -270,6 +270,52 @@ def t12_openclaw_synthesis():
 
 run("T12 OpenClaw 8-arm synthesis", t12_openclaw_synthesis)
 
+# ── T13: Compounding Cohesion RSI HashGrid ────────────────────────────────────
+def t13_rsi_hashgrid_cohesion():
+    import torch
+    from core.rsi_hashgrid_cohesion import (
+        LimbHashGrid, CohesionRSI, CompoundingCohesionRSIHashgrid
+    )
+
+    # --- LimbHashGrid: encode 8 limbs ---
+    hg = LimbHashGrid(hidden_dim=64, num_limbs=8, levels=4, features=4, out_dim=32)
+    limbs = torch.randn(2, 8, 64)
+    feats = hg(limbs)
+    assert feats.shape == (2, 8, 32), f"Bad hashgrid shape: {feats.shape}"
+
+    # --- CohesionRSI: check oscillator bounds ---
+    rsi = CohesionRSI(period=5)
+    scores = [0.3, 0.4, 0.35, 0.5, 0.55, 0.6, 0.45, 0.7, 0.65, 0.8, 0.75]
+    for s in scores:
+        rsi.update(s)
+    assert 0.0 <= rsi.value <= 1.0, f"RSI out of bounds: {rsi.value}"
+    assert rsi.zone in ("strong", "neutral", "weak")
+
+    # --- Level weights shaped correctly ---
+    lw = rsi.level_weights(4)
+    assert lw.shape == (4,)
+    assert (lw > 0).all(), f"Level weights have non-positive entries: {lw}"
+    assert float(lw.max()) <= 2.0, f"Level weights unreasonably large: {lw}"
+
+    # --- Full integration step ---
+    compound = CompoundingCohesionRSIHashgrid(hidden_dim=64, num_limbs=8)
+    deltas, rsi_val = compound.step(limbs, cohesion_score=0.6)
+    assert deltas.shape == (8,), f"Bad deltas shape: {deltas.shape}"
+    assert 0.0 <= rsi_val <= 1.0, f"RSI val out of bounds: {rsi_val}"
+
+    # --- Attach to CognitiveCohesionBraid ---
+    from core.cognitive_cohesion_braid import CognitiveCohesionBraid
+    braid = CognitiveCohesionBraid(enable_all=True)
+    braid.attach_rsi_hashgrid(compound)
+    diag = braid.cohesion_score()
+    assert "rsi_hashgrid" in diag, "rsi_hashgrid missing from cohesion_score()"
+    assert "rsi_value" in diag["rsi_hashgrid"]
+
+    return (f"hashgrid_feats={feats.shape}, rsi={rsi_val:.3f} zone={compound.rsi.zone}, "
+            f"deltas_norm={float(deltas.norm()):.4f}")
+
+run("T13 Compounding Cohesion RSI HashGrid", t13_rsi_hashgrid_cohesion)
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 passed = sum(1 for r in results if r[0] == PASS)
 total  = len(results)
