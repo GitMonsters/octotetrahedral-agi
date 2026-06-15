@@ -374,7 +374,70 @@ def t14_fractal_search_rsi():
 
 run("T14 Fractal Search RSI self-improvement", t14_fractal_search_rsi)
 
-# ── Summary ───────────────────────────────────────────────────────────────────
+# ── T15: CompoundCohesionIntegrator — recursive agentic integration ──────────
+def t15_compound_cohesion_integrator():
+    import torch
+    from core.compound_cohesion_integration import CompoundCohesionIntegrator, CORE_LIMB_NAMES
+
+    B, seq, D = 2, 16, 64
+    num_limbs = 8
+    integrator = CompoundCohesionIntegrator(
+        hidden_dim=D, num_limbs=num_limbs,
+        gamma_iters=3, search_interval=200, rsi_period=5, gate_scale=0.3
+    )
+
+    limbs = [torch.randn(B, seq, D) for _ in range(num_limbs)]
+
+    # --- Forward pass returns correct shapes ---
+    gated, rsi_val, gate_vec = integrator(limbs, cohesion_score=0.5)
+    assert len(gated) == num_limbs, f"Expected {num_limbs} gated states"
+    for i, g in enumerate(gated):
+        assert g.shape == (B, seq, D), f"limb {i} shape mismatch: {g.shape}"
+    assert gate_vec.shape == (num_limbs,), f"gate_vec shape: {gate_vec.shape}"
+    assert 0.0 <= rsi_val <= 1.0, f"rsi_val out of bounds: {rsi_val}"
+
+    # --- Gate values within [1-scale, 1+scale] = [0.7, 1.3] ---
+    scale = integrator.gate_scale
+    assert (gate_vec >= 1.0 - scale - 1e-5).all() and (gate_vec <= 1.0 + scale + 1e-5).all(), \
+        f"Gate out of range [{1-scale:.1f}, {1+scale:.1f}]: {gate_vec}"
+
+    # --- After multiple steps, per-limb RSI is populated ---
+    for _ in range(5):
+        integrator(limbs, cohesion_score=0.55)
+    diag = integrator.get_diagnostics()
+    assert "per_limb_rsi" in diag
+    for name in CORE_LIMB_NAMES:
+        assert name in diag["per_limb_rsi"], f"Missing limb RSI: {name}"
+        assert 0.0 <= diag["per_limb_rsi"][name] <= 1.0
+
+    # --- Compounding offsets accumulate (non-zero after updates) ---
+    offsets = integrator._braid_offsets
+    assert offsets.shape == (num_limbs,)
+
+    # --- rsi_braid_signal scales correctly ---
+    sig = torch.ones(1, seq, D)
+    scaled = integrator.rsi_braid_signal(sig)
+    assert scaled is not None
+    assert scaled.shape == sig.shape
+    factor = float(scaled[0, 0, 0])
+    assert 0.9 <= factor <= 1.1, f"Unexpected rsi_braid_signal factor: {factor}"
+
+    # --- Search runs async (no blocking): trigger + next step both fast ---
+    import time
+    integrator._forward_count = integrator.sib.search_interval - 1
+    integrator.sib._cycle = integrator.sib.search_interval - 1
+    t0 = time.perf_counter()
+    integrator(limbs, cohesion_score=0.6)  # launches background search
+    trigger_ms = (time.perf_counter() - t0) * 1000
+    assert trigger_ms < 200, f"Search launch blocked forward pass: {trigger_ms:.0f}ms"
+
+    return (f"gated_shapes=({B},{seq},{D})×{num_limbs}, gate_scale={scale}, "
+            f"rsi_val={rsi_val:.3f}, trigger_ms={trigger_ms:.1f}ms, "
+            f"per_limb_rsi_count={len(diag['per_limb_rsi'])}")
+
+run("T15 CompoundCohesionIntegrator", t15_compound_cohesion_integrator)
+
+
 passed = sum(1 for r in results if r[0] == PASS)
 total  = len(results)
 

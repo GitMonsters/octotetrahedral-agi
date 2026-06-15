@@ -1,0 +1,255 @@
+"""
+Compound Cohesion Integration — Recursive Agentic Braid Layer
+==============================================================
+
+This is the master integration point that makes the OctoTetrahedral model
+*fully* a compounding cohesion recursive agentic system.
+
+Architecture
+------------
+                        ┌──────────────────────────────────┐
+  8 limb states ──────► │  CompoundCohesionIntegrator      │
+                        │                                  │
+                        │  1. Per-limb RSI gating          │
+                        │     each limb's contribution     │
+                        │     scaled by its own momentum   │
+                        │                                  │
+                        │  2. N recursive gamma iterations │
+                        │     SelfImprovingCohesionBraid   │
+                        │     ├─ LimbHashGrid (Instant-NGP)│
+                        │     ├─ CohesionRSI               │
+                        │     └─ FractalSearchRSI (meta)   │
+                        │                                  │
+                        │  3. Compounding offset buffer    │
+                        │     EWMA across forward passes   │
+                        │     δ_t = 0.95*δ_{t-1} + 0.05*Δ │
+                        │                                  │
+                        │  4. Agentic feedback signal      │
+                        │     RSI value → braid routing    │
+                        └──────────────────────────────────┘
+                              │           │         │
+                         gated limbs   rsi_val   gate_vec
+
+Every component is *compounding*: RSI offsets accumulate across steps,
+per-limb trackers compound their own history, and FractalSearchRSI
+recursively improves the hashgrid configuration over the model's lifetime.
+
+Usage (in model.py)
+-------------------
+    from core.compound_cohesion_integration import CompoundCohesionIntegrator
+
+    # __init__:
+    self.cohesion_integrator = CompoundCohesionIntegrator(
+        hidden_dim=self.hidden_dim, num_limbs=8
+    )
+
+    # forward (after limbs run, before / alongside compound braid):
+    gated, rsi_val, gate_vec = self.cohesion_integrator(
+        limb_states=[memory_out, spatial_out, language_out, meta_out,
+                     reasoning_out, perception_echo, dream_out, empathy_out],
+        cohesion_score=_braid_conf,
+    )
+    # use gated[i] instead of original limb_out[i] for compound braid
+"""
+
+from __future__ import annotations
+
+from typing import Dict, List, Optional, Tuple
+
+import torch
+import torch.nn as nn
+
+from .fractal_search_rsi import SelfImprovingCohesionBraid
+from .rsi_hashgrid_cohesion import CohesionRSI
+
+
+# Canonical names for the 8 cognitive-core limbs
+CORE_LIMB_NAMES = [
+    "memory", "spatial", "language", "meta",
+    "reasoning", "perception", "dream", "empathy",
+]
+
+
+class CompoundCohesionIntegrator(nn.Module):
+    """Recursive agentic integration of all cohesion/RSI subsystems.
+
+    Replaces the standalone ``CompoundingCohesionRSIHashgrid`` in model.py
+    with a fully integrated loop:
+
+    * **Per-limb RSI trackers** — each of the 8 cognitive-core limbs has its
+      own ``CohesionRSI`` instance, tracking the momentum of that limb's
+      activation norm.  The RSI value for each limb becomes its gate factor.
+
+    * **N recursive gamma iterations** — rather than a single hashgrid step,
+      the integrator runs ``gamma_iters`` cycles of
+      ``SelfImprovingCohesionBraid.step()``, accumulating delta updates.
+      Each iteration conditions on the *previous* RSI reading, creating a
+      closed feedback loop within a single forward pass.
+
+    * **Compounding offset buffer** — ``_braid_offsets`` is an EMA-smoothed
+      accumulation of RSI deltas across forward passes.  Old influences decay
+      (α = 0.95) while new deltas compound (β = 0.05).  This makes the
+      model's gating *history-aware* — not just reactive to the current step.
+
+    * **Agentic feedback** — the final RSI value and gate vector are returned
+      for downstream use: gating the CompoundBraid signal, MoE routing, and
+      any other attention mechanisms that benefit from cohesion pressure.
+
+    Parameters
+    ----------
+    hidden_dim      : limb hidden state dimension
+    num_limbs       : number of cognitive-core limbs (default 8)
+    gamma_iters     : recursive iteration count per forward pass (default 3)
+    search_interval : how often FractalSearchRSI runs meta-search
+    rsi_period      : rolling window for CohesionRSI oscillator
+    gate_scale      : amplitude of RSI gating (output in [1-s, 1+s])
+    """
+
+    def __init__(
+        self,
+        hidden_dim:      int = 256,
+        num_limbs:       int = 8,
+        gamma_iters:     int = 3,
+        search_interval: int = 200,
+        rsi_period:      int = 14,
+        gate_scale:      float = 0.3,
+    ):
+        super().__init__()
+        assert num_limbs == len(CORE_LIMB_NAMES), (
+            f"num_limbs must be {len(CORE_LIMB_NAMES)}"
+        )
+        self.hidden_dim      = hidden_dim
+        self.num_limbs       = num_limbs
+        self.gamma_iters     = gamma_iters
+        self.gate_scale      = gate_scale
+
+        # SelfImproving braid: RSI + hashgrid + FractalSearch meta-optimizer
+        self.sib = SelfImprovingCohesionBraid(
+            hidden_dim=hidden_dim,
+            num_limbs=num_limbs,
+            rsi_period=rsi_period,
+            search_interval=search_interval,
+            eval_steps=5,
+        )
+
+        # Per-limb RSI trackers (pure Python, no grad)
+        self._limb_rsi: Dict[str, CohesionRSI] = {
+            name: CohesionRSI(period=rsi_period)
+            for name in CORE_LIMB_NAMES
+        }
+
+        # Compounding offset buffer: EMA-smoothed RSI deltas [num_limbs]
+        self.register_buffer("_braid_offsets", torch.zeros(num_limbs))
+
+        self._forward_count = 0
+
+    # ── Forward ─────────────────────────────────────────────────────────────
+
+    def forward(
+        self,
+        limb_states: List[torch.Tensor],      # list of [B, seq, D] per limb
+        cohesion_score: float = 0.5,
+    ) -> Tuple[List[torch.Tensor], float, torch.Tensor]:
+        """Recursive agentic integration step.
+
+        Parameters
+        ----------
+        limb_states    : list of 8 tensors [B, seq, D], one per core limb
+        cohesion_score : scalar cohesion from braid (0..1); updated each iter
+
+        Returns
+        -------
+        gated_states   : list of 8 tensors [B, seq, D] — RSI-gated limb outs
+        rsi_val        : final RSI reading after gamma_iters (0..1)
+        gate_vec       : [num_limbs] gate factors used (for braid signal)
+        """
+        assert len(limb_states) == self.num_limbs
+        self._forward_count += 1
+        device = limb_states[0].device
+
+        # ── Step 1: update per-limb RSI trackers ──────────────────────────
+        for i, name in enumerate(CORE_LIMB_NAMES):
+            limb_conf = float(
+                limb_states[i].detach().norm(dim=-1).mean().item()
+            )
+            self._limb_rsi[name].update(limb_conf)
+
+        # Per-limb RSI values → [num_limbs]
+        limb_rsi_vals = torch.tensor(
+            [self._limb_rsi[n].value for n in CORE_LIMB_NAMES],
+            dtype=torch.float32, device=device,
+        )
+
+        # ── Step 2: N recursive gamma iterations ──────────────────────────
+        # Build mean-pooled limb state tensor [B, num_limbs, D]
+        _core = torch.stack(
+            [ls.mean(dim=1) for ls in limb_states], dim=1
+        )  # [B, 8, D]
+
+        rsi_val = cohesion_score
+        accumulated_deltas = torch.zeros(self.num_limbs, device=device)
+
+        for _iter in range(self.gamma_iters):
+            try:
+                _deltas, rsi_val = self.sib.step(_core, cohesion_score=rsi_val)
+                accumulated_deltas = accumulated_deltas + _deltas.detach()
+                # Feed RSI output back as next iteration's cohesion score
+                # (the recursive loop: output becomes input)
+            except Exception:
+                break
+
+        # Average deltas over iterations
+        accumulated_deltas = accumulated_deltas / max(self.gamma_iters, 1)
+
+        # ── Step 3: Compound offset buffer (EMA across forward passes) ────
+        with torch.no_grad():
+            self._braid_offsets = (
+                0.95 * self._braid_offsets
+                + 0.05 * accumulated_deltas
+            )
+
+        # ── Step 4: Gate vector — blend limb_rsi + compounding offsets ────
+        # gate = sigmoid(offset) ∈ (0, 1) → scale to [1-s, 1+s]
+        raw_gate = torch.sigmoid(self._braid_offsets)          # [8] ∈ (0,1)
+        # Blend: high RSI → trust compounding gate; low RSI → stay near 1.0
+        blended_gate = (
+            limb_rsi_vals * raw_gate
+            + (1.0 - limb_rsi_vals) * torch.ones_like(raw_gate) * 0.5
+        )
+        gate_vec = 1.0 - self.gate_scale + 2.0 * self.gate_scale * blended_gate
+        # gate_vec[i] ∈ [1-scale, 1+scale] ≈ [0.7, 1.3]
+
+        # ── Step 5: Apply gates to limb state tensors ─────────────────────
+        gated_states = [
+            limb_states[i] * gate_vec[i]
+            for i in range(self.num_limbs)
+        ]
+
+        return gated_states, rsi_val, gate_vec
+
+    def get_diagnostics(self) -> Dict:
+        """Full diagnostic dict for logging / cohesion_score() output."""
+        return {
+            "forward_count":  self._forward_count,
+            "gamma_iters":    self.gamma_iters,
+            "rsi_val":        round(self.sib.compound.rsi.value, 4),
+            "rsi_zone":       self.sib.compound.rsi.zone,
+            "improvements":   self.sib._improvement_count,
+            "braid_offsets":  [round(float(x), 4) for x in self._braid_offsets],
+            "per_limb_rsi": {
+                name: round(self._limb_rsi[name].value, 4)
+                for name in CORE_LIMB_NAMES
+            },
+            "fractal_search": self.sib.searcher.get_diagnostics(),
+        }
+
+    def rsi_braid_signal(self, braid_signal: Optional[torch.Tensor]) -> Optional[torch.Tensor]:
+        """Enrich a braid_signal tensor with RSI cohesion pressure.
+
+        Scales the braid signal by (1 + 0.1 * rsi_val) — when cohesion is
+        strong, braid signal amplified; when weak, attenuated.
+        """
+        if braid_signal is None:
+            return None
+        rsi = self.sib.compound.rsi.value
+        return braid_signal * (1.0 + 0.1 * (rsi - 0.5))

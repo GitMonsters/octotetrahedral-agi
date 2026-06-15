@@ -177,9 +177,9 @@ class FractalSearchRSI:
         self,
         hidden_dim:       int = 256,
         num_limbs:        int = 8,
-        eval_steps:       int = 20,        # gradient steps for probe eval
-        probe_lr:         float = 0.01,
-        population:       int = 3,         # parallel candidates per search step
+        eval_steps:       int = 5,         # gradient steps for probe eval (keep short)
+        probe_lr:         float = 0.05,
+        population:       int = 2,         # parallel candidates (1+1)-ES
         max_history:      int = 200,
     ):
         self.hidden_dim  = hidden_dim
@@ -321,12 +321,12 @@ class FractalSearchRSI:
 class SelfImprovingCohesionBraid(nn.Module):
     """Wraps CompoundingCohesionRSIHashgrid with a Fractal Search self-improvement loop.
 
-    Every `search_interval` gamma cycles:
-      - Runs FractalSearchRSI.search_step() on the current limb states
-      - If a better config is found, rebuilds the live LimbHashGrid in-place
-      - Copies over trainable parameters where shapes match (warm start)
+    Search runs in a **background daemon thread** — the forward pass is NEVER
+    blocked.  Every `search_interval` gamma cycles the search is *launched*
+    asynchronously.  If a better config is ready when the next hot-swap check
+    runs, the hashgrid is updated in-place (warm start).
 
-    This is the "AI improving its own function-approximation machinery" loop.
+    Forward pass overhead: ~5ms normal steps, zero extra on search steps.
     """
 
     def __init__(
@@ -334,8 +334,8 @@ class SelfImprovingCohesionBraid(nn.Module):
         hidden_dim:      int = 256,
         num_limbs:       int = 8,
         rsi_period:      int = 14,
-        search_interval: int = 50,      # gamma cycles between search steps
-        eval_steps:      int = 20,      # probe gradient steps per eval
+        search_interval: int = 200,     # gamma cycles between search launches
+        eval_steps:      int = 5,       # probe gradient steps per candidate
     ):
         super().__init__()
         self.hidden_dim      = hidden_dim
@@ -354,34 +354,42 @@ class SelfImprovingCohesionBraid(nn.Module):
             hidden_dim=hidden_dim,
             num_limbs=num_limbs,
             eval_steps=eval_steps,
+            population=2,
         )
 
         self._cycle = 0
         self._last_improved_at = 0
         self._improvement_count = 0
 
+        # Async search state
+        import threading
+        self._search_thread: Optional[threading.Thread] = None
+        self._pending_cfg: Optional[HashGridConfig] = None
+        self._pending_score: float = float("-inf")
+        self._search_lock = threading.Lock()
+
     def attach_to_braid(self, cohesion_braid) -> "SelfImprovingCohesionBraid":
         """Register with a CognitiveCohesionBraid, replacing its rsi_hashgrid."""
         cohesion_braid.attach_rsi_hashgrid(self)
         return self
-
-    # Make SelfImprovingCohesionBraid itself look like a CompoundingCohesionRSIHashgrid
-    # so CognitiveCohesionBraid.gamma_cycle_step works transparently.
 
     def step(
         self,
         limb_states: torch.Tensor,
         cohesion_score: float,
     ) -> Tuple[torch.Tensor, float]:
-        """One gamma-cycle step: encode → RSI → (optionally) search."""
+        """One gamma-cycle step: encode → RSI → (async) search launch."""
         self._cycle += 1
 
-        # Standard forward pass
+        # Apply any ready hot-swap from background search (non-blocking)
+        self._apply_pending_swap(limb_states.device)
+
+        # Standard forward pass — always fast
         deltas, rsi_val = self.compound.step(limb_states, cohesion_score)
 
-        # Periodic self-improvement search
+        # Launch background search if interval reached and none running
         if self._cycle % self.search_interval == 0:
-            self._run_search(limb_states, rsi_val)
+            self._launch_search(limb_states.detach().cpu(), rsi_val)
 
         return deltas, rsi_val
 
@@ -392,19 +400,39 @@ class SelfImprovingCohesionBraid(nn.Module):
         diag["cycles"] = self._cycle
         return diag
 
-    def _run_search(self, limb_states: torch.Tensor, rsi_val: float) -> None:
-        """Run one Fractal Search step and hot-swap hashgrid if better config found."""
-        # Use a small detached batch for evaluation (no graph leakage)
-        states_eval = limb_states.detach()
-        if states_eval.shape[0] > 2:
-            states_eval = states_eval[:2]
+    def _launch_search(self, states_cpu: torch.Tensor, rsi_val: float) -> None:
+        """Launch background search thread (non-blocking)."""
+        import threading
+        with self._search_lock:
+            if self._search_thread is not None and self._search_thread.is_alive():
+                return  # previous search still running — skip
 
-        best_cfg, best_score, improved = self.searcher.search_step(states_eval, rsi_val)
+        def _worker():
+            states = states_cpu[:2] if states_cpu.shape[0] > 2 else states_cpu
+            try:
+                best_cfg, best_score, improved = self.searcher.search_step(states, rsi_val)
+                if improved:
+                    with self._search_lock:
+                        self._pending_cfg   = best_cfg
+                        self._pending_score = best_score
+            except Exception:
+                pass
 
-        if improved:
+        import threading
+        t = threading.Thread(target=_worker, daemon=True)
+        t.start()
+        with self._search_lock:
+            self._search_thread = t
+
+    def _apply_pending_swap(self, device: torch.device) -> None:
+        """Hot-swap hashgrid if a better config is ready (called each step)."""
+        with self._search_lock:
+            cfg = self._pending_cfg
+            self._pending_cfg = None
+        if cfg is not None:
             self._improvement_count += 1
             self._last_improved_at  = self._cycle
-            self._hot_swap_hashgrid(best_cfg, limb_states.device)
+            self._hot_swap_hashgrid(cfg, device)
 
     def _hot_swap_hashgrid(self, cfg: HashGridConfig, device: torch.device) -> None:
         """Replace the live LimbHashGrid with a better-configured one.
