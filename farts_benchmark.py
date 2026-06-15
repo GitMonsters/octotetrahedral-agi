@@ -316,6 +316,64 @@ def t13_rsi_hashgrid_cohesion():
 
 run("T13 Compounding Cohesion RSI HashGrid", t13_rsi_hashgrid_cohesion)
 
+# ── T14: Fractal Search RSI self-improvement loop ─────────────────────────────
+def t14_fractal_search_rsi():
+    import torch
+    from core.fractal_search_rsi import (
+        HashGridConfig, ConfigMutator, FractalSearchRSI, SelfImprovingCohesionBraid
+    )
+
+    # --- ConfigMutator: mutations stay in valid ranges ---
+    mut = ConfigMutator(seed=7)
+    base = HashGridConfig(levels=8, features=4, coord_dim=2)
+    for _ in range(20):
+        m = mut.mutate(base)
+        assert 4 <= m.levels <= 16
+        assert 2 <= m.features <= 8
+        assert 1 <= m.coord_dim <= 4
+
+    # --- FractalSearchRSI: one search step improves score ---
+    searcher = FractalSearchRSI(hidden_dim=32, num_limbs=4, eval_steps=5, population=2)
+    limbs = torch.randn(2, 4, 32)
+    cfg, score, _ = searcher.search_step(limbs, rsi_val=0.5)
+    assert isinstance(score, float)
+    assert isinstance(cfg, HashGridConfig)
+
+    # --- Run 3 search steps; check score trend length ---
+    for _ in range(2):
+        searcher.search_step(limbs, rsi_val=0.6)
+    diag = searcher.get_diagnostics()
+    assert diag["search_steps"] == 3
+    assert len(diag["trend_last5"]) == 3
+
+    # --- SelfImprovingCohesionBraid: full integration ---
+    sib = SelfImprovingCohesionBraid(
+        hidden_dim=32, num_limbs=4, rsi_period=5,
+        search_interval=3, eval_steps=5
+    )
+    full_limbs = torch.randn(2, 4, 32)
+    for i in range(6):  # will trigger search at cycle 3 and 6
+        deltas, rsi_val = sib.step(full_limbs, cohesion_score=0.5 + i * 0.05)
+    assert deltas.shape == (4,)
+    assert 0.0 <= rsi_val <= 1.0
+    sib_diag = sib.get_diagnostics()
+    assert "fractal_search" in sib_diag
+    assert sib_diag["cycles"] == 6
+
+    # --- attach_to_braid ---
+    from core.cognitive_cohesion_braid import CognitiveCohesionBraid
+    braid = CognitiveCohesionBraid(enable_all=True)
+    sib2 = SelfImprovingCohesionBraid(hidden_dim=32, num_limbs=4, search_interval=100)
+    sib2.attach_to_braid(braid)
+    score_out = braid.cohesion_score()
+    assert "rsi_hashgrid" in score_out
+
+    return (f"mutator_ok, searcher_steps=3, sib_cycles=6, "
+            f"improvements={sib_diag['improvements']}, "
+            f"best_score={sib_diag['fractal_search']['best_score']:.5f}")
+
+run("T14 Fractal Search RSI self-improvement", t14_fractal_search_rsi)
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 passed = sum(1 for r in results if r[0] == PASS)
 total  = len(results)
