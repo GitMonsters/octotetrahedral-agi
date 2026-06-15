@@ -1,0 +1,15 @@
+{
+  "id": "evanpieser/octotetrahedral-agi-arc-agi-3-agent",
+  "title": "OctoTetrahedral AGI ARC AGI 3 Agent",
+  "code_file": "notebook.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": false,
+  "dataset_sources": [],
+  "competition_sources": [
+    "arc-prize-2026-arc-agi-3"
+  ],
+  "kernel_sources": []
+}

@@ -1,0 +1,14 @@
+{
+  "id": "evanpieser/octotetrahedral-agi-arc-agi-2",
+  "title": "OctoTetrahedral AGI — ARC-AGI-2 Solver",
+  "code_file": "notebook.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "dataset_sources": [],
+  "competition_sources": ["arc-prize-2026-arc-agi-2"],
+  "kernel_sources": []
+}
