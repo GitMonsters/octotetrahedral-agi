@@ -61,6 +61,7 @@ from core.cognitive_geometry import CognitiveGeometryEngine, CognitiveGeometryCo
 from core.cross_domain_transfer import CrossDomainTransferLayer, CrossDomainConfig
 from core.cognitive_cohesion_braid import CognitiveCohesionBraid, CohesionConfig
 from core.rsi_hashgrid_cohesion import CompoundingCohesionRSIHashgrid
+from core.compound_cohesion_integration import CompoundCohesionIntegrator
 from core.tetrahedral_vision_calculus import TetrahedralVisionCalculus
 from core.s2_to_s1_cache import S2ToS1Cache
 from cognition import AGICognition, CognitionConfig
@@ -80,6 +81,9 @@ from core.spiking_lif import SpikingTetrahedralLayer
 from core.vision_encoder import VisionEncoder
 from core.audio_encoder import AudioEncoder
 from core.embodiment import EmbodimentInterface, EmbodimentConfig
+
+# Knowledge Graph limb
+from core.knowledge_graph import KnowledgeGraphModule, KGConfig as _KGModCfg
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -483,13 +487,34 @@ class OctoTetrahedralModel(nn.Module):
         
         # === Dream Mode (Visualization + Imagination orchestrator) ===
         self.dream_mode = DreamMode(hidden_dim=self.hidden_dim)
+
+        # === Knowledge Graph Limb ===
+        # Differentiable entity bank + multi-relational message passing.
+        # Queried by the reasoning stream; its output is added as the 15th
+        # stream to CompoundBraid so the braid can attend structured entity
+        # knowledge alongside perceptual, spatial and linguistic streams.
+        _kg_cfg = self.config.kg
+        self.kg = KnowledgeGraphModule(
+            config=_KGModCfg(
+                enabled=_kg_cfg.enabled,
+                num_entities=_kg_cfg.num_entities,
+                num_relations=_kg_cfg.num_relations,
+                num_hops=_kg_cfg.num_hops,
+                top_k_retrieval=_kg_cfg.top_k_retrieval,
+                ema_write_alpha=_kg_cfg.ema_write_alpha,
+                dropout=_kg_cfg.dropout,
+            ),
+            hidden_dim=self.hidden_dim,
+        ) if _kg_cfg.enabled else None
         
         # === Compound Braid (Cross-Limb Information Exchange) ===
-        # 11 original limbs + 3 modalities (vision, audio, embodiment) = 14 streams
+        # 11 original limbs + 3 modalities (vision, audio, embodiment)
+        # + 1 knowledge graph = 15 streams total
+        _kg_streams = 1 if self.kg is not None else 0
         moe_signal_dim = self.config.moe.num_experts if self.config.moe.enabled and self.config.moe.compound_enabled else 0
         self.compound_braid = CompoundBraid(
             hidden_dim=self.hidden_dim,
-            num_limbs=14,  # 11 cognitive + vision + audio + embodiment
+            num_limbs=14 + _kg_streams,  # 11 cognitive + vision + audio + embodiment [+ KG]
             num_heads=self.num_heads // 4,
             dropout=self.config.model.dropout,
             braid_strength=0.3,
@@ -682,18 +707,20 @@ class OctoTetrahedralModel(nn.Module):
         # feedback latency as a single cohesion_score metric.
         self.cohesion_braid = CognitiveCohesionBraid(enable_all=True)
 
-        # RSI HashGrid: tracks cohesion momentum + encodes limb spatial states
-        # Uses 8 of the 14 compound-braid limbs (cognitive core) as coordinates
-        _hg = CompoundingCohesionRSIHashgrid(
+        # Compound Cohesion Integrator — full recursive agentic integration:
+        # SelfImprovingCohesionBraid (FractalSearchRSI + Instant-NGP hashgrid)
+        # + per-limb RSI trackers + compounding offset buffer + agentic gates.
+        # Replaces the standalone CompoundingCohesionRSIHashgrid.
+        self.cohesion_integrator = CompoundCohesionIntegrator(
             hidden_dim=self.hidden_dim,
-            num_limbs=8,          # 8 cognitive-core limbs
+            num_limbs=8,
+            gamma_iters=3,         # 3 recursive iterations per forward pass
+            search_interval=50,    # FractalSearch meta-search every 50 steps
             rsi_period=14,
-            hg_levels=8,
-            hg_features=4,
-            hg_out_dim=64,
+            gate_scale=0.3,        # limb gates in [0.7, 1.3]
         )
-        self.rsi_hashgrid = _hg
-        self.cohesion_braid.attach_rsi_hashgrid(_hg)
+        # Also attach to cohesion_braid so cohesion_score() includes RSI data
+        self.cohesion_braid.attach_rsi_hashgrid(self.cohesion_integrator.sib)
 
         # System 2→1 knowledge transfer cache (Ye et al. 2022 §3.1)
         # Stores high-confidence slow-path outputs so the fast path can retrieve
@@ -1082,6 +1109,23 @@ class OctoTetrahedralModel(nn.Module):
                     return_confidence=return_confidences
                 )
                 self._log_limb_event('reasoning', 'forward', time.time() - _t_reas, reasoning_conf.mean().item() if torch.is_tensor(reasoning_conf) else 0.5, reasoning_out.shape)
+
+                # Knowledge Graph Limb — query entity bank using reasoning output
+                _t_kg = time.time()
+                _kg_info: Dict = {}
+                if self.kg is not None:
+                    kg_out, kg_conf, _kg_info = self.kg(
+                        reasoning_out,
+                        update_entities=self.training,
+                    )
+                    self._log_limb_event(
+                        'knowledge_graph', 'forward',
+                        time.time() - _t_kg,
+                        float(kg_conf.mean().item()),
+                        kg_out.shape,
+                    )
+                else:
+                    kg_out = torch.zeros_like(reasoning_out)
                 
                 # Perception echo
                 perception_echo = encoded
@@ -1188,11 +1232,15 @@ class OctoTetrahedralModel(nn.Module):
                 moe_expert_loads = None
                 if self.config.moe.enabled and self.config.moe.compound_enabled:
                     moe_expert_loads = self._get_first_compound_moe_loads()
+                # Build braid stream list (11 cognitive + 3 modalities + optional KG = 14 or 15)
+                _braid_streams = [memory_out, spatial_out, language_out, meta_out,
+                                  reasoning_out, perception_echo, dream_out,
+                                  empathy_out, emotion_out, ethics_out, vis_out,
+                                  _vis_stream, _aud_stream, _emb_stream]
+                if self.kg is not None:
+                    _braid_streams.append(kg_out)
                 combined_limbs, braid_info = self.compound_braid(
-                    [memory_out, spatial_out, language_out, meta_out,
-                     reasoning_out, perception_echo, dream_out,
-                     empathy_out, emotion_out, ethics_out, vis_out,
-                     _vis_stream, _aud_stream, _emb_stream],
+                    _braid_streams,
                     attention_mask=attention_mask,
                     moe_expert_loads=moe_expert_loads,
                 )
@@ -1209,19 +1257,34 @@ class OctoTetrahedralModel(nn.Module):
                     "skills_used": ["scale-ratio-routing", "compound-transform-order"],
                 })
 
-                # RSI HashGrid gamma cycle: encode the 8 cognitive-core limb states
-                # and apply compounding cohesion pressure to braid combine weights.
+                # ── Compound Cohesion Recursive Agentic Integration ───────────
+                # Runs 3 recursive gamma iterations (compounding):
+                #   hashgrid → RSI → delta → offset EMA → gate → repeat
+                # Gates are applied to each limb's output, making cohesion
+                # pressure a real computational force on the forward pass.
                 try:
-                    _core_limbs = torch.stack([
-                        memory_out.mean(1), spatial_out.mean(1), language_out.mean(1),
-                        meta_out.mean(1), reasoning_out.mean(1), perception_echo.mean(1),
-                        dream_out.mean(1), empathy_out.mean(1),
-                    ], dim=1)  # [B, 8, hidden_dim]
-                    _rsi_deltas, _rsi_val = self.cohesion_braid.gamma_cycle_step(
-                        _core_limbs, cohesion_override=_braid_conf
+                    _core_limb_list = [
+                        memory_out, spatial_out, language_out, meta_out,
+                        reasoning_out, perception_echo, dream_out, empathy_out,
+                    ]
+                    _gated_limbs, _rsi_val, _gate_vec = self.cohesion_integrator(
+                        limb_states=_core_limb_list,
+                        cohesion_score=_braid_conf,
                     )
+                    # Apply RSI gates back to limb tensors — cohesion now shapes
+                    # what the model attends to in Post-Braid Reasoning
+                    (memory_out, spatial_out, language_out, meta_out,
+                     reasoning_out, perception_echo, dream_out, empathy_out
+                    ) = _gated_limbs
+
+                    # Enrich braid signal with RSI cohesion pressure
+                    if braid_info.get('braid_signal') is not None:
+                        braid_info['braid_signal'] = self.cohesion_integrator.rsi_braid_signal(
+                            braid_info['braid_signal']
+                        )
+                        self._cached_braid_signal = braid_info['braid_signal'].detach()
                 except Exception:
-                    pass  # non-fatal
+                    _rsi_val = 0.5   # non-fatal fallback
                 
                 multi_limb_output = memory_enhanced + 0.3 * combined_limbs
 
@@ -1363,6 +1426,7 @@ class OctoTetrahedralModel(nn.Module):
             'tet_calc_info': tet_calc_info,
             's2_s1_cache_stats': self.s2_s1_cache.stats(),
             'two_speed_info': two_speed_info if 'two_speed_info' in dir() else {},
+            'kg_info': _kg_info if not self.use_compound_loop else {},
         }
         
         if return_confidences:
@@ -1417,7 +1481,13 @@ class OctoTetrahedralModel(nn.Module):
 
         Also exposes braid cross-routing counts and per-source skill stats.
         """
-        return self.cohesion_braid.cohesion_score()
+        score = self.cohesion_braid.cohesion_score()
+        # Merge CompoundCohesionIntegrator diagnostics
+        try:
+            score["compound_cohesion"] = self.cohesion_integrator.get_diagnostics()
+        except Exception:
+            pass
+        return score
 
     def export_cohesion_report(self, path: Optional[str] = None) -> str:
         """Write an HTML cohesion dashboard to *path* (or logs/cohesion/)."""
@@ -1492,6 +1562,12 @@ class OctoTetrahedralModel(nn.Module):
         )
         perception_echo = encoded if encoded is not None else x
 
+        # Knowledge Graph — query entity bank with reasoning output
+        if self.kg is not None:
+            kg_out_loop, _, _ = self.kg(reasoning_out, update_entities=False)
+        else:
+            kg_out_loop = torch.zeros_like(reasoning_out)
+
         # New cognitive petals
         vis_out, _, _ = self.visualization(x)
         imag_out, _, _ = self.imagination(x)
@@ -1500,7 +1576,7 @@ class OctoTetrahedralModel(nn.Module):
         ethics_out, _, _ = self.ethics(x)
         dream_out, _ = self.dream_mode(vis_out, imag_out, ethics_out)
 
-        # Compound Braid (11 cognitive + 3 modalities = 14 streams)
+        # Compound Braid (11 cognitive + 3 modalities + optional KG = 14 or 15 streams)
         _vis_stream = getattr(self, '_current_vision_emb', None)
         _aud_stream = getattr(self, '_current_audio_emb', None)
         _emb_stream = getattr(self, '_current_embodiment_emb', None)
@@ -1509,13 +1585,18 @@ class OctoTetrahedralModel(nn.Module):
         moe_expert_loads = None
         if self.config.moe.enabled and self.config.moe.compound_enabled:
             moe_expert_loads = self._get_first_compound_moe_loads()
+        _loop_braid_streams = [
+            memory_out, spatial_out, language_out, meta_out,
+            reasoning_out, perception_echo, dream_out,
+            empathy_out, emotion_out, ethics_out, vis_out,
+            _vis_stream if _vis_stream is not None else _zero,
+            _aud_stream if _aud_stream is not None else _zero,
+            _emb_stream if _emb_stream is not None else _zero,
+        ]
+        if self.kg is not None:
+            _loop_braid_streams.append(kg_out_loop)
         combined_limbs, braid_info = self.compound_braid(
-            [memory_out, spatial_out, language_out, meta_out,
-             reasoning_out, perception_echo, dream_out,
-             empathy_out, emotion_out, ethics_out, vis_out,
-             _vis_stream if _vis_stream is not None else _zero,
-             _aud_stream if _aud_stream is not None else _zero,
-             _emb_stream if _emb_stream is not None else _zero],
+            _loop_braid_streams,
             attention_mask=attention_mask,
             moe_expert_loads=moe_expert_loads,
         )

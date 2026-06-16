@@ -476,6 +476,18 @@ class CognitiveGeometryConfigDC:
     vector_field_enabled: bool = True
 
 
+@dataclass
+class KGConfig:
+    """Knowledge Graph configuration."""
+    enabled: bool = True
+    num_entities: int = 256      # learnable entity slots in the KG bank
+    num_relations: int = 8       # relation types (= msg-passing attention heads)
+    num_hops: int = 2            # message-passing hops per forward pass
+    top_k_retrieval: int = 8     # top-K slots for EMA write
+    ema_write_alpha: float = 0.02  # EMA strength for context-grounded entity update
+    dropout: float = 0.1
+
+
 @dataclass 
 class Config:
     """Master configuration combining all sub-configs"""
@@ -495,6 +507,7 @@ class Config:
     vision: VisionConfig = field(default_factory=VisionConfig)
     audio: AudioConfig = field(default_factory=AudioConfig)
     scale: ScaleConfig = field(default_factory=ScaleConfig)
+    kg: KGConfig = field(default_factory=KGConfig)
     
     # Device
     device: str = field(default_factory=_select_device)
@@ -531,6 +544,7 @@ class Config:
             'quantum_coupling': self.quantum_coupling.__dict__,
             'training': {**self.training.__dict__, 'betas': self.training.betas},
             'cognitive_geometry': self.cognitive_geometry.__dict__,
+            'kg': self.kg.__dict__,
             'device': self.device,
             'seed': self.seed
         }
