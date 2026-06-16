@@ -1,0 +1,613 @@
+{
+  "version": 1,
+  "schema_version": 2,
+  "skills": [
+    {
+      "name": "how_to_create_implementation_plan",
+      "source": "local",
+      "version": "1.0.0",
+      "install_ref": ".",
+      "trust_score": 100,
+      "category": "core",
+      "tags": [],
+      "installed_at": "2026-06-16T04:18:26.098345Z",
+      "verification_timestamp": "2026-06-16T04:18:26Z",
+      "path": ".agent/skills/how_to_create_implementation_plan",
+      "checksum": "492125941706f7da20671e7f62d4151212e4ea2319b2b9700d5034f60ba6ade4",
+      "metadata": {},
+      "provenance": {
+        "install_kind": "local-template",
+        "source": "local",
+        "install_ref": ".",
+        "selected_by": "manual"
+      },
+      "recommendation": {
+        "reasons": [
+          "manual install"
+        ],
+        "score": 100,
+        "reason_hash": "73540eed0d918bcab1513aea7d217839742423f3ed5b270956e1934f27993558",
+        "selected_by": "skillsmith",
+        "selection_mode": "manual"
+      },
+      "metrics": {
+        "applied_count": 0,
+        "success_rate": 0.0,
+        "avg_token_cost": 0.0,
+        "last_used_at": null,
+        "failure_count": 0
+      }
+    },
+    {
+      "name": "planner",
+      "source": "local",
+      "version": "1.0.0",
+      "install_ref": ".",
+      "trust_score": 100,
+      "category": "core",
+      "tags": [
+        "planning",
+        "architecture",
+        "product"
+      ],
+      "installed_at": "2026-06-16T04:18:26.100011Z",
+      "verification_timestamp": "2026-06-16T04:18:26Z",
+      "path": ".agent/skills/planner",
+      "checksum": "5e7a29733ac1309926f5b23280e37255db3a766ef8415eef1095ff9b94267d32",
+      "metadata": {},
+      "provenance": {
+        "install_kind": "local-template",
+        "source": "local",
+        "install_ref": ".",
+        "selected_by": "manual"
+      },
+      "recommendation": {
+        "reasons": [
+          "manual install"
+        ],
+        "score": 100,
+        "reason_hash": "73540eed0d918bcab1513aea7d217839742423f3ed5b270956e1934f27993558",
+        "selected_by": "skillsmith",
+        "selection_mode": "manual"
+      },
+      "metrics": {
+        "applied_count": 0,
+        "success_rate": 0.0,
+        "avg_token_cost": 0.0,
+        "last_used_at": null,
+        "failure_count": 0
+      }
+    },
+    {
+      "name": "doc_updater",
+      "source": "local",
+      "version": "1.0.0",
+      "install_ref": ".",
+      "trust_score": 100,
+      "category": "core",
+      "tags": [
+        "documentation",
+        "sync",
+        "maintenance"
+      ],
+      "installed_at": "2026-06-16T04:18:26.101619Z",
+      "verification_timestamp": "2026-06-16T04:18:26Z",
+      "path": ".agent/skills/doc_updater",
+      "checksum": "6ea7f26bdb188cb0252c6d392e0104623d57b1abc381ae66adf2f6526c72e691",
+      "metadata": {},
+      "provenance": {
+        "install_kind": "local-template",
+        "source": "local",
+        "install_ref": ".",
+        "selected_by": "manual"
+      },
+      "recommendation": {
+        "reasons": [
+          "manual install"
+        ],
+        "score": 100,
+        "reason_hash": "73540eed0d918bcab1513aea7d217839742423f3ed5b270956e1934f27993558",
+        "selected_by": "skillsmith",
+        "selection_mode": "manual"
+      },
+      "metrics": {
+        "applied_count": 0,
+        "success_rate": 0.0,
+        "avg_token_cost": 0.0,
+        "last_used_at": null,
+        "failure_count": 0
+      }
+    },
+    {
+      "name": "debugging",
+      "source": "local",
+      "version": "0.1.0",
+      "install_ref": ".",
+      "trust_score": 100,
+      "category": "core",
+      "tags": [],
+      "installed_at": "2026-06-16T04:18:26.102912Z",
+      "verification_timestamp": "2026-06-16T04:18:26Z",
+      "path": ".agent/skills/debugging",
+      "checksum": "4fc49546b2f8ec737ffec0e4450c8b928857ba5448ab276fe2656fb53678b910",
+      "metadata": {},
+      "provenance": {
+        "install_kind": "local-template",
+        "source": "local",
+        "install_ref": ".",
+        "selected_by": "manual"
+      },
+      "recommendation": {
+        "reasons": [
+          "manual install"
+        ],
+        "score": 100,
+        "reason_hash": "73540eed0d918bcab1513aea7d217839742423f3ed5b270956e1934f27993558",
+        "selected_by": "skillsmith",
+        "selection_mode": "manual"
+      },
+      "metrics": {
+        "applied_count": 0,
+        "success_rate": 0.0,
+        "avg_token_cost": 0.0,
+        "last_used_at": null,
+        "failure_count": 0
+      }
+    },
+    {
+      "name": "software_architecture",
+      "source": "local",
+      "version": "0.1.0",
+      "install_ref": ".",
+      "trust_score": 100,
+      "category": "core",
+      "tags": [],
+      "installed_at": "2026-06-16T04:18:26.104380Z",
+      "verification_timestamp": "2026-06-16T04:18:26Z",
+      "path": ".agent/skills/software_architecture",
+      "checksum": "e46dcb51f2dbf35adafa6a28ef3cf98db04144cc63dacd507f41ae8dc7d7b7aa",
+      "metadata": {},
+      "provenance": {
+        "install_kind": "local-template",
+        "source": "local",
+        "install_ref": ".",
+        "selected_by": "manual"
+      },
+      "recommendation": {
+        "reasons": [
+          "manual install"
+        ],
+        "score": 100,
+        "reason_hash": "73540eed0d918bcab1513aea7d217839742423f3ed5b270956e1934f27993558",
+        "selected_by": "skillsmith",
+        "selection_mode": "manual"
+      },
+      "metrics": {
+        "applied_count": 0,
+        "success_rate": 0.0,
+        "avg_token_cost": 0.0,
+        "last_used_at": null,
+        "failure_count": 0
+      }
+    },
+    {
+      "name": "loop_operator",
+      "source": "local",
+      "version": "1.0.0",
+      "install_ref": ".",
+      "trust_score": 100,
+      "category": "core",
+      "tags": [
+        "agentic",
+        "autonomy",
+        "workflow"
+      ],
+      "installed_at": "2026-06-16T04:18:26.106176Z",
+      "verification_timestamp": "2026-06-16T04:18:26Z",
+      "path": ".agent/skills/loop_operator",
+      "checksum": "0b1242e72a7bf0a4b6db1e4a53d4ee0ca9ae96bb8ee84aa53c6a14b3bcbf4cc4",
+      "metadata": {},
+      "provenance": {
+        "install_kind": "local-template",
+        "source": "local",
+        "install_ref": ".",
+        "selected_by": "manual"
+      },
+      "recommendation": {
+        "reasons": [
+          "manual install"
+        ],
+        "score": 100,
+        "reason_hash": "73540eed0d918bcab1513aea7d217839742423f3ed5b270956e1934f27993558",
+        "selected_by": "skillsmith",
+        "selection_mode": "manual"
+      },
+      "metrics": {
+        "applied_count": 0,
+        "success_rate": 0.0,
+        "avg_token_cost": 0.0,
+        "last_used_at": null,
+        "failure_count": 0
+      }
+    },
+    {
+      "name": "architect",
+      "source": "local",
+      "version": "1.0.0",
+      "install_ref": ".",
+      "trust_score": 100,
+      "category": "core",
+      "tags": [
+        "architecture",
+        "design",
+        "system"
+      ],
+      "installed_at": "2026-06-16T04:18:26.108121Z",
+      "verification_timestamp": "2026-06-16T04:18:26Z",
+      "path": ".agent/skills/architect",
+      "checksum": "1d26b19cb42a81b1e63b6334aab4cb37fc8324be8a27b6585db4b0661486bffc",
+      "metadata": {},
+      "provenance": {
+        "install_kind": "local-template",
+        "source": "local",
+        "install_ref": ".",
+        "selected_by": "manual"
+      },
+      "recommendation": {
+        "reasons": [
+          "manual install"
+        ],
+        "score": 100,
+        "reason_hash": "73540eed0d918bcab1513aea7d217839742423f3ed5b270956e1934f27993558",
+        "selected_by": "skillsmith",
+        "selection_mode": "manual"
+      },
+      "metrics": {
+        "applied_count": 0,
+        "success_rate": 0.0,
+        "avg_token_cost": 0.0,
+        "last_used_at": null,
+        "failure_count": 0
+      }
+    },
+    {
+      "name": "prompt_engineering",
+      "source": "local",
+      "version": "1.0.0",
+      "install_ref": ".",
+      "trust_score": 100,
+      "category": "core",
+      "tags": [
+        "prompting",
+        "reasoning",
+        "llm",
+        "optimization",
+        "structured-output"
+      ],
+      "installed_at": "2026-06-16T04:18:26.109772Z",
+      "verification_timestamp": "2026-06-16T04:18:26Z",
+      "path": ".agent/skills/prompt_engineering",
+      "checksum": "078abc2c0aa9bd16c4c1746ce1412b7ba2651dea8e0cf0d5211e5d8d3703cc5b",
+      "metadata": {},
+      "provenance": {
+        "install_kind": "local-template",
+        "source": "local",
+        "install_ref": ".",
+        "selected_by": "manual"
+      },
+      "recommendation": {
+        "reasons": [
+          "manual install"
+        ],
+        "score": 100,
+        "reason_hash": "73540eed0d918bcab1513aea7d217839742423f3ed5b270956e1934f27993558",
+        "selected_by": "skillsmith",
+        "selection_mode": "manual"
+      },
+      "metrics": {
+        "applied_count": 0,
+        "success_rate": 0.0,
+        "avg_token_cost": 0.0,
+        "last_used_at": null,
+        "failure_count": 0
+      }
+    },
+    {
+      "name": "harness_optimizer",
+      "source": "local",
+      "version": "1.0.0",
+      "install_ref": ".",
+      "trust_score": 100,
+      "category": "core",
+      "tags": [
+        "optimization",
+        "agentic",
+        "cost"
+      ],
+      "installed_at": "2026-06-16T04:18:26.111316Z",
+      "verification_timestamp": "2026-06-16T04:18:26Z",
+      "path": ".agent/skills/harness_optimizer",
+      "checksum": "1c770aba49fd117b8014fe7f96979274ee8c08fece37e6763b723214f1c3b77a",
+      "metadata": {},
+      "provenance": {
+        "install_kind": "local-template",
+        "source": "local",
+        "install_ref": ".",
+        "selected_by": "manual"
+      },
+      "recommendation": {
+        "reasons": [
+          "manual install"
+        ],
+        "score": 100,
+        "reason_hash": "73540eed0d918bcab1513aea7d217839742423f3ed5b270956e1934f27993558",
+        "selected_by": "skillsmith",
+        "selection_mode": "manual"
+      },
+      "metrics": {
+        "applied_count": 0,
+        "success_rate": 0.0,
+        "avg_token_cost": 0.0,
+        "last_used_at": null,
+        "failure_count": 0
+      }
+    },
+    {
+      "name": "ui_ux_design",
+      "source": "local",
+      "version": "0.1.0",
+      "install_ref": ".",
+      "trust_score": 100,
+      "category": "core",
+      "tags": [],
+      "installed_at": "2026-06-16T04:18:26.113070Z",
+      "verification_timestamp": "2026-06-16T04:18:26Z",
+      "path": ".agent/skills/ui_ux_design",
+      "checksum": "c3b10726c71eda79fe56a8d5a327f77027165f828c974541bdd51a30098f02f0",
+      "metadata": {},
+      "provenance": {
+        "install_kind": "local-template",
+        "source": "local",
+        "install_ref": ".",
+        "selected_by": "manual"
+      },
+      "recommendation": {
+        "reasons": [
+          "manual install"
+        ],
+        "score": 100,
+        "reason_hash": "73540eed0d918bcab1513aea7d217839742423f3ed5b270956e1934f27993558",
+        "selected_by": "skillsmith",
+        "selection_mode": "manual"
+      },
+      "metrics": {
+        "applied_count": 0,
+        "success_rate": 0.0,
+        "avg_token_cost": 0.0,
+        "last_used_at": null,
+        "failure_count": 0
+      }
+    },
+    {
+      "name": "how_to_create_skills",
+      "source": "local",
+      "version": "1.0.0",
+      "install_ref": ".",
+      "trust_score": 100,
+      "category": "core",
+      "tags": [],
+      "installed_at": "2026-06-16T04:18:26.114626Z",
+      "verification_timestamp": "2026-06-16T04:18:26Z",
+      "path": ".agent/skills/how_to_create_skills",
+      "checksum": "a13cf4e0fa69e302eb175d524767aa23eba09507e95257f74a551669a887f287",
+      "metadata": {},
+      "provenance": {
+        "install_kind": "local-template",
+        "source": "local",
+        "install_ref": ".",
+        "selected_by": "manual"
+      },
+      "recommendation": {
+        "reasons": [
+          "manual install"
+        ],
+        "score": 100,
+        "reason_hash": "73540eed0d918bcab1513aea7d217839742423f3ed5b270956e1934f27993558",
+        "selected_by": "skillsmith",
+        "selection_mode": "manual"
+      },
+      "metrics": {
+        "applied_count": 0,
+        "success_rate": 0.0,
+        "avg_token_cost": 0.0,
+        "last_used_at": null,
+        "failure_count": 0
+      }
+    },
+    {
+      "name": "build_resolver",
+      "source": "local",
+      "version": "1.0.0",
+      "install_ref": ".",
+      "trust_score": 100,
+      "category": "core",
+      "tags": [
+        "debugging",
+        "build",
+        "ci",
+        "devops"
+      ],
+      "installed_at": "2026-06-16T04:18:26.116345Z",
+      "verification_timestamp": "2026-06-16T04:18:26Z",
+      "path": ".agent/skills/build_resolver",
+      "checksum": "c9d427ad36e8bc10e68a6c9163e1125bb144892f1c5c1f9a19346e43776daa58",
+      "metadata": {},
+      "provenance": {
+        "install_kind": "local-template",
+        "source": "local",
+        "install_ref": ".",
+        "selected_by": "manual"
+      },
+      "recommendation": {
+        "reasons": [
+          "manual install"
+        ],
+        "score": 100,
+        "reason_hash": "73540eed0d918bcab1513aea7d217839742423f3ed5b270956e1934f27993558",
+        "selected_by": "skillsmith",
+        "selection_mode": "manual"
+      },
+      "metrics": {
+        "applied_count": 0,
+        "success_rate": 0.0,
+        "avg_token_cost": 0.0,
+        "last_used_at": null,
+        "failure_count": 0
+      }
+    },
+    {
+      "name": "how_to_research",
+      "source": "local",
+      "version": "1.0.0",
+      "install_ref": ".",
+      "trust_score": 100,
+      "category": "core",
+      "tags": [],
+      "installed_at": "2026-06-16T04:18:26.118117Z",
+      "verification_timestamp": "2026-06-16T04:18:26Z",
+      "path": ".agent/skills/how_to_research",
+      "checksum": "103c0d9c37be1caee4895a17079d920c0501a7ba305be8954993e5fd115aa1c6",
+      "metadata": {},
+      "provenance": {
+        "install_kind": "local-template",
+        "source": "local",
+        "install_ref": ".",
+        "selected_by": "manual"
+      },
+      "recommendation": {
+        "reasons": [
+          "manual install"
+        ],
+        "score": 100,
+        "reason_hash": "73540eed0d918bcab1513aea7d217839742423f3ed5b270956e1934f27993558",
+        "selected_by": "skillsmith",
+        "selection_mode": "manual"
+      },
+      "metrics": {
+        "applied_count": 0,
+        "success_rate": 0.0,
+        "avg_token_cost": 0.0,
+        "last_used_at": null,
+        "failure_count": 0
+      }
+    },
+    {
+      "name": "software_lifecycle",
+      "source": "local",
+      "version": "1.0.0",
+      "install_ref": ".",
+      "trust_score": 100,
+      "category": "core",
+      "tags": [],
+      "installed_at": "2026-06-16T04:18:26.119791Z",
+      "verification_timestamp": "2026-06-16T04:18:26Z",
+      "path": ".agent/skills/software_lifecycle",
+      "checksum": "bae0807a909906c40c5dd746a13bd37376375b2e8e299d7943ea73faa5403a36",
+      "metadata": {},
+      "provenance": {
+        "install_kind": "local-template",
+        "source": "local",
+        "install_ref": ".",
+        "selected_by": "manual"
+      },
+      "recommendation": {
+        "reasons": [
+          "manual install"
+        ],
+        "score": 100,
+        "reason_hash": "73540eed0d918bcab1513aea7d217839742423f3ed5b270956e1934f27993558",
+        "selected_by": "skillsmith",
+        "selection_mode": "manual"
+      },
+      "metrics": {
+        "applied_count": 0,
+        "success_rate": 0.0,
+        "avg_token_cost": 0.0,
+        "last_used_at": null,
+        "failure_count": 0
+      }
+    },
+    {
+      "name": "git_workflow",
+      "source": "local",
+      "version": "1.0.0",
+      "install_ref": ".",
+      "trust_score": 100,
+      "category": "core",
+      "tags": [],
+      "installed_at": "2026-06-16T04:18:26.121525Z",
+      "verification_timestamp": "2026-06-16T04:18:26Z",
+      "path": ".agent/skills/git_workflow",
+      "checksum": "ffbab445a8b7e8cc29b64d4f599dab05ac18f56cae49c66e9bafb0b773fb65d5",
+      "metadata": {},
+      "provenance": {
+        "install_kind": "local-template",
+        "source": "local",
+        "install_ref": ".",
+        "selected_by": "manual"
+      },
+      "recommendation": {
+        "reasons": [
+          "manual install"
+        ],
+        "score": 100,
+        "reason_hash": "73540eed0d918bcab1513aea7d217839742423f3ed5b270956e1934f27993558",
+        "selected_by": "skillsmith",
+        "selection_mode": "manual"
+      },
+      "metrics": {
+        "applied_count": 0,
+        "success_rate": 0.0,
+        "avg_token_cost": 0.0,
+        "last_used_at": null,
+        "failure_count": 0
+      }
+    },
+    {
+      "name": "code_review",
+      "source": "local",
+      "version": "1.0.0",
+      "install_ref": ".",
+      "trust_score": 100,
+      "category": "core",
+      "tags": [],
+      "installed_at": "2026-06-16T04:18:26.123282Z",
+      "verification_timestamp": "2026-06-16T04:18:26Z",
+      "path": ".agent/skills/code_review",
+      "checksum": "1e221a5c88a397382259551f13b27820b30220e93aa149e030cc20c394256fe0",
+      "metadata": {},
+      "provenance": {
+        "install_kind": "local-template",
+        "source": "local",
+        "install_ref": ".",
+        "selected_by": "manual"
+      },
+      "recommendation": {
+        "reasons": [
+          "manual install"
+        ],
+        "score": 100,
+        "reason_hash": "73540eed0d918bcab1513aea7d217839742423f3ed5b270956e1934f27993558",
+        "selected_by": "skillsmith",
+        "selection_mode": "manual"
+      },
+      "metrics": {
+        "applied_count": 0,
+        "success_rate": 0.0,
+        "avg_token_cost": 0.0,
+        "last_used_at": null,
+        "failure_count": 0
+      }
+    }
+  ]
+}

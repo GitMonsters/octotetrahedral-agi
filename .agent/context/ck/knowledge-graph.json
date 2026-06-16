@@ -1,0 +1,14 @@
+{
+  "nodes": [
+    {
+      "id": "src/solver_abstractions.py",
+      "path": "src/solver_abstractions.py",
+      "metadata": {
+        "layer": "unknown",
+        "complexity": 0.71108,
+        "description": "Skillsmith Baseline Auto-Scan node"
+      }
+    }
+  ],
+  "edges": []
+}
