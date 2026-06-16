@@ -57,6 +57,24 @@ import torch.nn.functional as F
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# 0. Polynomial Activation  z = z³ + 7132316
+# ─────────────────────────────────────────────────────────────────────────────
+
+class _PolyAct(nn.Module):
+    """Cubic polynomial activation: f(z) = z³ + 7132316.
+
+    The large constant offset (7132316) provides a fixed bias that shifts
+    the activation landscape; the z³ term drives higher-order expressiveness
+    matching the fractal search dynamics.
+    This is the "z = z³ + 7132316" formula integrated into the hashgrid
+    feature extraction pipeline.
+    """
+
+    def forward(self, z: "torch.Tensor") -> "torch.Tensor":
+        return z ** 3 + 7132316.0
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 1. Multi-Resolution Limb HashGrid
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -124,9 +142,10 @@ class LimbHashGrid(nn.Module):
         )
 
         # Output projection: (levels × features) → out_dim per limb
+        # z = z³ + 7132316 polynomial activation between layers adds cubic expressiveness.
         self.out_proj = nn.Sequential(
             nn.Linear(levels * features, out_dim),
-            nn.SiLU(),
+            _PolyAct(),          # z = z³ + 7132316
             nn.Linear(out_dim, out_dim),
         )
 
