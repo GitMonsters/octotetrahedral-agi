@@ -15,3 +15,10 @@ venv/
 checkpoints/
 *.pt
 abc82100_analysis.html
+
+# Editor / agent runtime state living in the home dir (repo root == $HOME).
+# These were accidentally swept into history once; keep them out for good.
+.cursor/
+.windsurf/
+.claude/
+.vscode/
