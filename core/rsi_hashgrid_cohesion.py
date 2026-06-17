@@ -149,6 +149,16 @@ class LimbHashGrid(nn.Module):
             nn.Linear(out_dim, out_dim),
         )
 
+        # Per-forward memo of the *unweighted* per-level features. Within a gamma
+        # loop the same limb_states tensor is encoded repeatedly with only the
+        # level weights changing; the expensive coord projection + hash
+        # interpolation depend solely on limb_states, so we cache them keyed on
+        # input-tensor identity. Only used when no autograd graph is being built
+        # (inference / detached gamma loop) so the frozen params can't change
+        # between cache hits, and a fresh tensor each forward keeps `is` correct.
+        self._cache_input  = None
+        self._cache_levels = None
+
     def _hash(self, coords: torch.Tensor) -> torch.Tensor:
         """Map integer grid coords → table indices via Instant-NGP prime hashing.
 
@@ -234,14 +244,35 @@ class LimbHashGrid(nn.Module):
         B, N, D = limb_states.shape
         assert N == self.num_limbs, f"Expected {self.num_limbs} limbs, got {N}"
 
-        # Project to coordinate space, normalize to [0, 1]
-        coords_norm = torch.sigmoid(self.coord_proj(limb_states))  # [B, N, coord_dim]
+        # Unweighted per-level features depend only on limb_states (coord proj +
+        # multilinear hash interpolation). Reuse them across repeated encodings of
+        # the same tensor (the gamma loop); only the per-level weights vary.
+        if (not torch.is_grad_enabled()) and (self._cache_input is limb_states):
+            per_level = self._cache_levels
+        else:
+            # Project to coordinate space, normalize to [0, 1]
+            coords_norm = torch.sigmoid(self.coord_proj(limb_states))  # [B, N, coord_dim]
+            per_level = [
+                self._interp_level(coords_norm, l, level_weight=1.0)   # [B, N, F]
+                for l in range(self.levels)
+            ]
+            if not torch.is_grad_enabled():
+                # Hold a reference to the input so its id() stays valid (no reuse).
+                self._cache_input  = limb_states
+                self._cache_levels = per_level
+            else:
+                self._cache_input  = None
+                self._cache_levels = None
 
-        all_feats: List[torch.Tensor] = []
-        for l in range(self.levels):
-            lw = float(level_weights[l].item()) if level_weights is not None else 1.0
-            feat = self._interp_level(coords_norm, l, level_weight=lw)  # [B, N, F]
-            all_feats.append(feat)
+        # Apply per-level (RSI-zone) weights — the only part that varies per gamma
+        # iteration — then concatenate and project.
+        if level_weights is not None:
+            all_feats = [
+                per_level[l] * float(level_weights[l].item())
+                for l in range(self.levels)
+            ]
+        else:
+            all_feats = per_level
 
         # Concatenate all levels: [B, N, levels * F]
         multi_res = torch.cat(all_feats, dim=-1)

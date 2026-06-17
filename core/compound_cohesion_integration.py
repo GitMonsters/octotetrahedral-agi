@@ -209,32 +209,39 @@ class CompoundCohesionIntegrator(nn.Module):
         # loop stays closed (conditions on prior RSI) without losing momentum.
         _feedback = cohesion_score
 
-        for _iter in range(self.gamma_iters):
-            try:
-                _deltas, rsi_val = self.sib.step(_core, cohesion_score=_feedback)
-            except Exception:
-                break
-            accumulated_deltas = accumulated_deltas + _deltas.detach()
-            _iters_run += 1
-            _feedback = 0.5 * cohesion_score + 0.5 * rsi_val
-
-            # Adaptive compute + cognitive-loop-trap safeguard. The gamma loop is
-            # the dominant braid cost and scales linearly with gamma_iters. Once
-            # the recursion stabilises — consecutive deltas stop changing AND the
-            # RSI reading stalls — further iterations only re-add the same signal,
-            # so we stop early. Behaviour is preserved in the active regime (the
-            # loop runs the full gamma_iters whenever it is still doing work).
-            if (self.adaptive_gamma and _prev_deltas is not None
-                    and _iters_run >= self.gamma_min_iters):
-                _delta_settle = float(
-                    (_deltas.detach() - _prev_deltas).abs().mean().item()
-                )
-                _rsi_settle = abs(float(rsi_val) - float(prev_rsi))
-                if (_delta_settle < self.gamma_conv_eps
-                        and _rsi_settle < self.gamma_conv_eps):
+        # The recursive refinement below is gradient-free by construction: every
+        # delta is detached before use, the offset EMA runs under no_grad, and the
+        # resulting gate is non-differentiable. Running it under no_grad keeps the
+        # numerics identical while avoiding a throwaway autograd graph and lets the
+        # hashgrid memo (which only caches when grad is disabled) stay warm across
+        # iterations even inside a grad-enabled training forward.
+        with torch.no_grad():
+            for _iter in range(self.gamma_iters):
+                try:
+                    _deltas, rsi_val = self.sib.step(_core, cohesion_score=_feedback)
+                except Exception:
                     break
-            _prev_deltas = _deltas.detach()
-            prev_rsi = rsi_val
+                accumulated_deltas = accumulated_deltas + _deltas.detach()
+                _iters_run += 1
+                _feedback = 0.5 * cohesion_score + 0.5 * rsi_val
+
+                # Adaptive compute + cognitive-loop-trap safeguard. The gamma loop is
+                # the dominant braid cost and scales linearly with gamma_iters. Once
+                # the recursion stabilises — consecutive deltas stop changing AND the
+                # RSI reading stalls — further iterations only re-add the same signal,
+                # so we stop early. Behaviour is preserved in the active regime (the
+                # loop runs the full gamma_iters whenever it is still doing work).
+                if (self.adaptive_gamma and _prev_deltas is not None
+                        and _iters_run >= self.gamma_min_iters):
+                    _delta_settle = float(
+                        (_deltas.detach() - _prev_deltas).abs().mean().item()
+                    )
+                    _rsi_settle = abs(float(rsi_val) - float(prev_rsi))
+                    if (_delta_settle < self.gamma_conv_eps
+                            and _rsi_settle < self.gamma_conv_eps):
+                        break
+                _prev_deltas = _deltas.detach()
+                prev_rsi = rsi_val
 
         # Mean delta over the iterations actually executed. Adaptive early-stop
         # leaves this ≈ unchanged vs the full loop because the skipped iterations
