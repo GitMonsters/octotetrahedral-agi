@@ -1262,6 +1262,7 @@ class OctoTetrahedralModel(nn.Module):
                 #   hashgrid → RSI → delta → offset EMA → gate → repeat
                 # Gates are applied to each limb's output, making cohesion
                 # pressure a real computational force on the forward pass.
+                _gated_residual = None   # set inside try; folded into output below
                 try:
                     _core_limb_list = [
                         memory_out, spatial_out, language_out, meta_out,
@@ -1276,6 +1277,11 @@ class OctoTetrahedralModel(nn.Module):
                     (memory_out, spatial_out, language_out, meta_out,
                      reasoning_out, perception_echo, dream_out, empathy_out
                     ) = _gated_limbs
+                    # Pooled gated-limb signal so the cohesion gates become a real
+                    # computational force on the forward pass (without it the
+                    # gating above is discarded — combined_limbs/memory_enhanced
+                    # below are built from the pre-gate streams).
+                    _gated_residual = torch.stack(_gated_limbs, dim=0).mean(dim=0)
 
                     # Enrich braid signal with RSI cohesion pressure
                     if braid_info.get('braid_signal') is not None:
@@ -1287,6 +1293,8 @@ class OctoTetrahedralModel(nn.Module):
                     _rsi_val = 0.5   # non-fatal fallback
                 
                 multi_limb_output = memory_enhanced + 0.3 * combined_limbs
+                if _gated_residual is not None:
+                    multi_limb_output = multi_limb_output + 0.1 * _gated_residual
 
                 # System 2→1 transfer: cache this slow-path result if high confidence
                 _slow_conf = float(braid_info.get('braid_signal', torch.zeros(1)).mean().abs().clamp(0, 1).item()) if braid_info.get('braid_signal') is not None else 0.5

@@ -189,12 +189,18 @@ class CompoundCohesionIntegrator(nn.Module):
         rsi_val = cohesion_score
         accumulated_deltas = torch.zeros(self.num_limbs, device=device)
 
+        # Recursive feedback signal. Feeding the bounded RSI output (centred on
+        # 0.5) straight back as the next cohesion score collapses the deltas to
+        # ~0 after the first iteration, pinning the oscillator at neutral. We
+        # instead blend the *external* cohesion drive with the RSI reading so the
+        # loop stays closed (conditions on prior RSI) without losing momentum.
+        _feedback = cohesion_score
+
         for _iter in range(self.gamma_iters):
             try:
-                _deltas, rsi_val = self.sib.step(_core, cohesion_score=rsi_val)
+                _deltas, rsi_val = self.sib.step(_core, cohesion_score=_feedback)
                 accumulated_deltas = accumulated_deltas + _deltas.detach()
-                # Feed RSI output back as next iteration's cohesion score
-                # (the recursive loop: output becomes input)
+                _feedback = 0.5 * cohesion_score + 0.5 * rsi_val
             except Exception:
                 break
 

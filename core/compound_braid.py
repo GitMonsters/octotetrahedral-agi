@@ -79,9 +79,19 @@ class CompoundBraid(nn.Module):
     cross-pollination between complementary processing streams.
     """
 
+    # Canonical stream order — must match the braid stream list built in
+    # model.py forward (memory…ethics core limbs, then visualization limb and
+    # the vision/audio/embodiment modality encoders, then the optional KG limb).
     LIMB_NAMES = ['memory', 'spatial', 'language', 'metacognition',
-                  'reasoning', 'perception', 'visualization', 'imagination',
-                  'empathy', 'emotion', 'ethics']
+                  'reasoning', 'perception', 'dream', 'empathy',
+                  'emotion', 'ethics', 'visualization', 'vision',
+                  'audio', 'embodiment', 'kg']
+
+    @classmethod
+    def _limb_label(cls, i: int) -> str:
+        """Label for stream i — falls back to a generated name so diagnostics
+        never silently drop streams when num_limbs exceeds LIMB_NAMES."""
+        return cls.LIMB_NAMES[i] if i < len(cls.LIMB_NAMES) else f'limb{i}'
 
     def __init__(
         self,
@@ -226,16 +236,16 @@ class CompoundBraid(nn.Module):
 
         braid_info = {
             'gate_values': {
-                name: gv.item() for name, gv in
-                zip(self.LIMB_NAMES[:self.num_limbs], gate_values)
+                self._limb_label(i): gv.item()
+                for i, gv in enumerate(gate_values)
             },
             'combine_weights': {
-                name: w.item() for name, w in
-                zip(self.LIMB_NAMES[:self.num_limbs], effective_weights)
+                self._limb_label(i): w.item()
+                for i, w in enumerate(effective_weights)
             },
             'phase_angles': {
-                name: self.phase_angles[i].item() for i, name in
-                enumerate(self.LIMB_NAMES[:self.num_limbs])
+                self._limb_label(i): self.phase_angles[i].item()
+                for i in range(self.num_limbs)
             },
             'braid_signal': braid_signal,
         }
