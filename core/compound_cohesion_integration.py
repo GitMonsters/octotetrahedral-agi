@@ -103,6 +103,9 @@ class CompoundCohesionIntegrator(nn.Module):
     search_interval : how often FractalSearchRSI runs meta-search
     rsi_period      : rolling window for CohesionRSI oscillator
     gate_scale      : amplitude of RSI gating (output in [1-s, 1+s])
+    adaptive_gamma  : stop the gamma loop early once it converges / stalls
+    gamma_conv_eps  : convergence threshold for adaptive early-stop
+    gamma_min_iters : minimum gamma iterations before early-stop may fire
     """
 
     def __init__(
@@ -113,6 +116,9 @@ class CompoundCohesionIntegrator(nn.Module):
         search_interval: int = 200,
         rsi_period:      int = 14,
         gate_scale:      float = 0.3,
+        adaptive_gamma:  bool = True,
+        gamma_conv_eps:  float = 1e-3,
+        gamma_min_iters: int = 1,
     ):
         super().__init__()
         assert num_limbs == len(CORE_LIMB_NAMES), (
@@ -122,6 +128,9 @@ class CompoundCohesionIntegrator(nn.Module):
         self.num_limbs       = num_limbs
         self.gamma_iters     = gamma_iters
         self.gate_scale      = gate_scale
+        self.adaptive_gamma  = adaptive_gamma
+        self.gamma_conv_eps  = gamma_conv_eps
+        self.gamma_min_iters = max(1, int(gamma_min_iters))
 
         # SelfImproving braid: RSI + hashgrid + FractalSearch meta-optimizer
         self.sib = SelfImprovingCohesionBraid(
@@ -142,6 +151,7 @@ class CompoundCohesionIntegrator(nn.Module):
         self.register_buffer("_braid_offsets", torch.zeros(num_limbs))
 
         self._forward_count = 0
+        self._last_iters_run = gamma_iters
 
     # ── Forward ─────────────────────────────────────────────────────────────
 
@@ -187,7 +197,10 @@ class CompoundCohesionIntegrator(nn.Module):
         )  # [B, 8, D]
 
         rsi_val = cohesion_score
+        prev_rsi = cohesion_score
         accumulated_deltas = torch.zeros(self.num_limbs, device=device)
+        _prev_deltas = None
+        _iters_run = 0
 
         # Recursive feedback signal. Feeding the bounded RSI output (centred on
         # 0.5) straight back as the next cohesion score collapses the deltas to
@@ -199,13 +212,36 @@ class CompoundCohesionIntegrator(nn.Module):
         for _iter in range(self.gamma_iters):
             try:
                 _deltas, rsi_val = self.sib.step(_core, cohesion_score=_feedback)
-                accumulated_deltas = accumulated_deltas + _deltas.detach()
-                _feedback = 0.5 * cohesion_score + 0.5 * rsi_val
             except Exception:
                 break
+            accumulated_deltas = accumulated_deltas + _deltas.detach()
+            _iters_run += 1
+            _feedback = 0.5 * cohesion_score + 0.5 * rsi_val
 
-        # Average deltas over iterations
-        accumulated_deltas = accumulated_deltas / max(self.gamma_iters, 1)
+            # Adaptive compute + cognitive-loop-trap safeguard. The gamma loop is
+            # the dominant braid cost and scales linearly with gamma_iters. Once
+            # the recursion stabilises — consecutive deltas stop changing AND the
+            # RSI reading stalls — further iterations only re-add the same signal,
+            # so we stop early. Behaviour is preserved in the active regime (the
+            # loop runs the full gamma_iters whenever it is still doing work).
+            if (self.adaptive_gamma and _prev_deltas is not None
+                    and _iters_run >= self.gamma_min_iters):
+                _delta_settle = float(
+                    (_deltas.detach() - _prev_deltas).abs().mean().item()
+                )
+                _rsi_settle = abs(float(rsi_val) - float(prev_rsi))
+                if (_delta_settle < self.gamma_conv_eps
+                        and _rsi_settle < self.gamma_conv_eps):
+                    break
+            _prev_deltas = _deltas.detach()
+            prev_rsi = rsi_val
+
+        # Mean delta over the iterations actually executed. Adaptive early-stop
+        # leaves this ≈ unchanged vs the full loop because the skipped iterations
+        # contribute near-identical deltas; the active regime runs all gamma_iters
+        # so _iters_run == gamma_iters and the result is bit-for-bit the same.
+        accumulated_deltas = accumulated_deltas / max(_iters_run, 1)
+        self._last_iters_run = _iters_run
 
         # ── Step 3: Compound offset buffer (EMA across forward passes) ────
         with torch.no_grad():
@@ -238,6 +274,8 @@ class CompoundCohesionIntegrator(nn.Module):
         return {
             "forward_count":  self._forward_count,
             "gamma_iters":    self.gamma_iters,
+            "iters_run":      self._last_iters_run,
+            "adaptive_gamma": self.adaptive_gamma,
             "rsi_val":        round(self.sib.compound.rsi.value, 4),
             "rsi_zone":       self.sib.compound.rsi.zone,
             "improvements":   self.sib._improvement_count,
