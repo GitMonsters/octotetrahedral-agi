@@ -35,5 +35,5 @@ limb_states = adapter.run([0.1] * 8, task_type="reasoning")
 
 1. Deploy `LegacyForwardAdapter` first to keep existing call signatures stable.
 2. Move downstream consumers to `UnifiedForwardModel.forward` result fields.
-3. Enable benchmark checks using `python benchmarks/unified_perf.py`.
+3. Enable benchmark checks using `python -m benchmarks.unified_perf`.
 4. Remove modular wrappers after migration is complete.

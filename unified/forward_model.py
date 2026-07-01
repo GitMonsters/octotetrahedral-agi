@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TypedDict
+
 from cognitive.functions import aggregate_cognitive_state
 from cognitive.integration import bidirectional_integrate
 from quantum.operators import apply_unified_quantum_operator, tensor_decompose
@@ -9,6 +11,16 @@ from rna.adaptation import adapt_for_task
 from rna.regulatory import RNARegulatoryNetwork
 from unified.feedback_loop import UnifiedFeedbackLoop
 from unified.state_transitions import UnifiedStateTransitions
+
+
+class UnifiedForwardResult(TypedDict):
+    limb_states: list[float]
+    shared_component: float
+    residuals: list[float]
+    coherence: float
+    coupling_strength: float
+    phase: float
+    bias: float
 
 
 class UnifiedForwardModel:
@@ -20,7 +32,7 @@ class UnifiedForwardModel:
         self.state_transitions = UnifiedStateTransitions()
         self.regulatory_network = RNARegulatoryNetwork()
 
-    def forward(self, limb_states: list[float], task_signal: str | None = None) -> dict[str, object]:
+    def forward(self, limb_states: list[float], task_signal: str | None = None) -> UnifiedForwardResult:
         if len(limb_states) != self.limb_count:
             raise ValueError(f"expected {self.limb_count} limb states, got {len(limb_states)}")
 

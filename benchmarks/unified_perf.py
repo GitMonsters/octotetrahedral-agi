@@ -3,22 +3,16 @@
 from __future__ import annotations
 
 import statistics
-import sys
 import time
-from pathlib import Path
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from unified.forward_model import LegacyForwardAdapter, UnifiedForwardModel
 
 
-def _benchmark_callable(callable_obj, samples: int = 200) -> float:
+def _benchmark_callable(operation, samples: int = 200) -> float:
     latencies = []
     for _ in range(samples):
         start = time.perf_counter()
-        callable_obj()
+        operation()
         latencies.append(time.perf_counter() - start)
     return statistics.mean(latencies)
 

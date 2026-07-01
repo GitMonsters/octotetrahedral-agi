@@ -18,4 +18,4 @@ def select_action_channel(unified_state: list[float]) -> int:
     """Return the strongest action channel index."""
     if not unified_state:
         return 0
-    return max(range(len(unified_state)), key=unified_state.__getitem__)
+    return max(range(len(unified_state)), key=lambda limb_idx: unified_state[limb_idx])
