@@ -1,509 +1,265 @@
 """
-OctoTetrahedral AGI - Training Script
-Implements curiosity-driven learning with limb synchronization
+Training Script for Unified Cognitive Stack
+============================================
 
-Training features:
-- Prediction loss + information gain bonus
-- Periodic limb synchronization (FedAvg)
-- Gradient clipping for stability
-- Learning rate warmup and decay
-- Validation and checkpointing
+Complete training pipeline with metrics, checkpointing, and evaluation.
 """
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.optim import AdamW
-from torch.optim.lr_scheduler import OneCycleLR, LambdaLR
-from typing import Optional, Dict, Any, Tuple
-import time
-import math
-import logging
+import torch.optim as optim
+from torch.utils.data import DataLoader, Dataset
 from pathlib import Path
+import json
+from datetime import datetime
+import argparse
 
-try:
-    import tiktoken
-    HAS_TIKTOKEN = True
-except ImportError:
-    HAS_TIKTOKEN = False
-    print("Warning: tiktoken not installed. Using simple tokenization.")
+from unified import UnifiedForwardModel
 
-from config import Config, get_config
-from model import OctoTetrahedralModel
-from data.synthetic_tasks import (
-    create_dataloader, 
-    SyntheticTaskDataset,
-    TaskType
-)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+class ARCDataset(Dataset):
+    """Dummy ARC dataset for demonstration."""
+    
+    def __init__(self, num_examples: int = 1000, seq_len: int = 32, vocab_size: int = 1000):
+        self.num_examples = num_examples
+        self.seq_len = seq_len
+        self.vocab_size = vocab_size
+    
+    def __len__(self):
+        return self.num_examples
+    
+    def __getitem__(self, idx):
+        input_ids = torch.randint(0, self.vocab_size, (self.seq_len,))
+        labels = torch.randint(0, self.vocab_size, (self.seq_len,))
+        return input_ids, labels
 
 
 class Trainer:
-    """
-    Trainer for OctoTetrahedral AGI.
-    
-    Features:
-    - Curiosity-driven learning (prediction loss + info gain)
-    - Periodic limb synchronization
-    - Gradient clipping
-    - Learning rate scheduling
-    - Validation and checkpointing
-    """
+    """Training orchestrator for unified model."""
     
     def __init__(
         self,
-        model: OctoTetrahedralModel,
-        config: Config,
-        train_dataloader,
-        val_dataloader=None,
-        device: str = None,
-        gradient_checkpointing: bool = False,
-        mixed_precision: bool = False,
+        model: nn.Module,
+        device: torch.device,
+        checkpoint_dir: str = "checkpoints",
+        log_interval: int = 10,
     ):
         self.model = model
-        self.config = config
-        self.train_dataloader = train_dataloader
-        self.val_dataloader = val_dataloader
-        
-        # Device
-        self.device = device or config.device
-        
-        # Mixed precision: cast model to bfloat16 to halve optimizer state memory
-        self.mixed_precision = mixed_precision
-        if mixed_precision:
-            logger.info("Casting model to bfloat16 for memory-efficient training")
-            self.model = self.model.to(torch.bfloat16)
-        
-        self.model.to(self.device)
-        
-        # Enable gradient checkpointing for memory efficiency with large models
-        if gradient_checkpointing:
-            self._enable_gradient_checkpointing()
-        
-        # Optimizer
-        self.optimizer = self._create_optimizer()
-        
-        # Scheduler
-        self.scheduler = self._create_scheduler()
-        
-        # Training state
-        self.global_step = 0
-        self.epoch = 0
-        self.best_val_loss = float('inf')
-        
-        # Logging
-        self.train_losses: list = []
-        self.val_losses: list = []
-        
-        # Checkpointing
-        self.checkpoint_dir = Path("checkpoints")
+        self.device = device
+        self.checkpoint_dir = Path(checkpoint_dir)
         self.checkpoint_dir.mkdir(exist_ok=True)
-
-    def _enable_gradient_checkpointing(self):
-        """Enable gradient checkpointing on transformer layers for memory savings.
+        self.log_interval = log_interval
         
-        Note: With MoE, gradient checkpointing wraps only the attention sub-block
-        since MoE routing is non-deterministic and incompatible with recomputation.
-        For MoE models, consider using FSDP activation offloading instead.
-        """
-        if self.config.moe.enabled:
-            logger.warning(
-                "Gradient checkpointing with MoE may cause issues due to "
-                "non-deterministic routing. Using standard checkpointing on "
-                "attention blocks only."
-            )
-        from torch.utils.checkpoint import checkpoint
-        for layer in self.model.core.layers:
-            layer._original_forward = layer.forward
-            def make_ckpt_forward(mod):
-                def ckpt_forward(*args, **kwargs):
-                    return checkpoint(mod._original_forward, *args, use_reentrant=False, **kwargs)
-                return ckpt_forward
-            layer.forward = make_ckpt_forward(layer)
-        logger.info(f"Gradient checkpointing enabled on {len(self.model.core.layers)} layers")
-    
-    def _create_optimizer(self):
-        """Create optimizer with weight decay. Uses SGD+momentum in low-memory mode."""
-        # Separate parameters for weight decay
-        no_decay = ['bias', 'LayerNorm.weight', 'layer_norm.weight']
-        
-        decay_params = [
-            p for n, p in self.model.named_parameters()
-            if not any(nd in n for nd in no_decay) and p.requires_grad
-        ]
-        no_decay_params = [
-            p for n, p in self.model.named_parameters()
-            if any(nd in n for nd in no_decay) and p.requires_grad
-        ]
-        
-        optimizer_grouped_parameters = [
-            {'params': decay_params, 'weight_decay': self.config.training.weight_decay},
-            {'params': no_decay_params, 'weight_decay': 0.0}
-        ]
-        
-        # Use SGD for large models to save GPU memory (1 state vs 2 per param)
-        if self.mixed_precision:
-            logger.info("Using SGD+momentum optimizer (memory-efficient for large bf16 models)")
-            return torch.optim.SGD(
-                optimizer_grouped_parameters,
-                lr=self.config.training.learning_rate * 10,  # SGD needs higher LR
-                momentum=0.9,
-                nesterov=True,
-            )
-        
-        return AdamW(
-            optimizer_grouped_parameters,
-            lr=self.config.training.learning_rate,
-            betas=self.config.training.betas
-        )
-    
-    def _create_scheduler(self) -> LambdaLR:
-        """Create learning rate scheduler with warmup"""
-        warmup_steps = self.config.training.warmup_steps
-        max_steps = self.config.training.max_steps
-        
-        def lr_lambda(step):
-            if step < warmup_steps:
-                # Linear warmup
-                return step / max(1, warmup_steps)
-            else:
-                # Cosine decay
-                progress = (step - warmup_steps) / max(1, max_steps - warmup_steps)
-                return 0.5 * (1 + math.cos(math.pi * progress))
-        
-        return LambdaLR(self.optimizer, lr_lambda)
-    
-    def train_step(self, batch: Dict[str, torch.Tensor]) -> Dict[str, float]:
-        """Single training step with optional bfloat16"""
-        self.model.train()
-        
-        # Move batch to device
-        input_ids = batch['input_ids'].to(self.device)
-        labels = batch['labels'].to(self.device)
-        attention_mask = batch.get('attention_mask')
-        if attention_mask is not None:
-            attention_mask = attention_mask.to(self.device)
-        
-        # Forward pass
-        output = self.model(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            labels=labels,
-            return_confidences=True
-        )
-        loss = output['loss']
-        
-        # Collect MoE metrics for logging
-        moe_aux_loss = output.get('moe_aux_loss')
-        
-        # Backward pass
-        loss.backward()
-        
-        # Gradient clipping
-        if self.config.training.max_grad_norm > 0:
-            torch.nn.utils.clip_grad_norm_(
-                self.model.parameters(),
-                self.config.training.max_grad_norm
-            )
-        
-        # Optimizer step
-        self.optimizer.step()
-        self.scheduler.step()
-        self.optimizer.zero_grad()
-        
-        # Update limb gradient counters
-        for limb in self.model._limbs.values():
-            if hasattr(limb, 'increment_gradient_step'):
-                limb.increment_gradient_step()
-        
-        # Hub sync check
-        sync_result = self.model.sync_limbs(performance=1.0 - loss.item())
-        
-        self.global_step += 1
-        
-        return {
-            'loss': loss.item(),
-            'lr': self.scheduler.get_last_lr()[0],
-            'confidences': output.get('confidences', {}),
-            'synced': sync_result is not None,
-            'moe_aux_loss': moe_aux_loss.item() if moe_aux_loss is not None else None,
+        self.metrics_history = {
+            'train_loss': [],
+            'train_rna_loss': [],
+            'train_quantum_loss': [],
+            'val_loss': [],
         }
     
-    @torch.no_grad()
-    def validate(self) -> Dict[str, float]:
-        """Run validation"""
-        if self.val_dataloader is None:
-            return {}
-        
-        self.model.eval()
-        
+    def train_epoch(
+        self,
+        train_loader: DataLoader,
+        optimizer: optim.Optimizer,
+        epoch: int,
+    ) -> dict:
+        """Train for one epoch."""
+        self.model.train()
         total_loss = 0.0
-        total_correct = 0
-        total_tokens = 0
+        total_rna_loss = 0.0
+        total_quantum_loss = 0.0
         num_batches = 0
         
-        for batch in self.val_dataloader:
-            input_ids = batch['input_ids'].to(self.device)
-            labels = batch['labels'].to(self.device)
-            attention_mask = batch.get('attention_mask')
-            if attention_mask is not None:
-                attention_mask = attention_mask.to(self.device)
+        for batch_idx, (input_ids, labels) in enumerate(train_loader):
+            input_ids = input_ids.to(self.device)
+            labels = labels.to(self.device)
             
-            output = self.model(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                labels=labels
-            )
+            # Forward
+            output = self.model(input_ids, labels=labels)
+            loss = output['loss']
             
-            total_loss += output['loss'].item()
+            # Backward
+            optimizer.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+            optimizer.step()
             
-            # Compute accuracy (ignoring padding)
-            preds = output['logits'].argmax(dim=-1)
-            mask = labels != -100
-            total_correct += ((preds == labels) & mask).sum().item()
-            total_tokens += mask.sum().item()
-            
+            # Metrics
+            total_loss += loss.item()
+            total_rna_loss += output['metrics'].get('rna_loss', 0.0)
+            total_quantum_loss += output['metrics'].get('quantum_loss', 0.0)
             num_batches += 1
+            
+            if (batch_idx + 1) % self.log_interval == 0:
+                avg_loss = total_loss / num_batches
+                print(f"Epoch {epoch} [{batch_idx + 1}/{len(train_loader)}] Loss: {avg_loss:.4f}")
         
-        avg_loss = total_loss / max(1, num_batches)
-        accuracy = total_correct / max(1, total_tokens)
+        avg_loss = total_loss / num_batches
+        avg_rna_loss = total_rna_loss / num_batches
+        avg_quantum_loss = total_quantum_loss / num_batches
         
         return {
-            'val_loss': avg_loss,
-            'val_accuracy': accuracy
+            'train_loss': avg_loss,
+            'train_rna_loss': avg_rna_loss,
+            'train_quantum_loss': avg_quantum_loss,
         }
     
-    def train(
+    def eval(
         self,
-        num_epochs: int = None,
-        max_steps: int = None
-    ):
-        """
-        Main training loop.
+        val_loader: DataLoader,
+    ) -> dict:
+        """Evaluate on validation set."""
+        self.model.eval()
+        total_loss = 0.0
+        num_batches = 0
         
-        Args:
-            num_epochs: Number of epochs (overrides config)
-            max_steps: Max steps (overrides config)
-        """
-        max_steps = max_steps or self.config.training.max_steps
-        
-        logger.info(f"Starting training for {max_steps} steps")
-        logger.info(f"Model has {self.model.get_num_params():,} total parameters")
-        if self.config.moe.enabled:
-            logger.info(
-                f"MoE: {self.config.moe.num_experts} experts, "
-                f"top-{self.config.moe.top_k} routing, "
-                f"~{self.model.get_active_params():,} active params/token"
-            )
-        logger.info(f"Device: {self.device}")
-        
-        start_time = time.time()
-        running_loss = 0.0
-        
-        while self.global_step < max_steps:
-            for batch in self.train_dataloader:
-                if self.global_step >= max_steps:
-                    break
+        with torch.no_grad():
+            for input_ids, labels in val_loader:
+                input_ids = input_ids.to(self.device)
+                labels = labels.to(self.device)
                 
-                # Training step
-                step_result = self.train_step(batch)
-                running_loss += step_result['loss']
+                output = self.model(input_ids, labels=labels)
+                loss = output['loss']
                 
-                # Logging
-                if self.global_step % self.config.training.log_interval == 0:
-                    avg_loss = running_loss / self.config.training.log_interval
-                    elapsed = time.time() - start_time
-                    steps_per_sec = self.global_step / elapsed if elapsed > 0 else 0
-                    
-                    logger.info(
-                        f"Step {self.global_step}/{max_steps} | "
-                        f"Loss: {avg_loss:.4f} | "
-                        f"LR: {step_result['lr']:.2e} | "
-                        f"Speed: {steps_per_sec:.1f} steps/s"
-                    )
-                    
-                    if step_result.get('moe_aux_loss') is not None:
-                        logger.info(
-                            f"  MoE aux loss: {step_result['moe_aux_loss']:.4f}"
-                        )
-                    
-                    if step_result.get('confidences'):
-                        conf = step_result['confidences']
-                        logger.info(
-                            f"  Confidences - P: {conf.get('perception', 0):.3f}, "
-                            f"R: {conf.get('reasoning', 0):.3f}, "
-                            f"A: {conf.get('action', 0):.3f}"
-                        )
-                    
-                    if step_result.get('synced'):
-                        logger.info("  Hub sync performed")
-                    
-                    self.train_losses.append(avg_loss)
-                    running_loss = 0.0
-                
-                # Validation
-                if (self.global_step % self.config.training.eval_interval == 0 
-                    and self.val_dataloader is not None):
-                    val_result = self.validate()
-                    logger.info(
-                        f"  Validation - Loss: {val_result['val_loss']:.4f}, "
-                        f"Accuracy: {val_result['val_accuracy']:.4f}"
-                    )
-                    self.val_losses.append(val_result['val_loss'])
-                    
-                    # Save best
-                    if val_result['val_loss'] < self.best_val_loss:
-                        self.best_val_loss = val_result['val_loss']
-                        self.save_checkpoint('best.pt')
-                
-                # Periodic checkpointing
-                if self.global_step % self.config.training.save_interval == 0:
-                    self.save_checkpoint(f'step_{self.global_step}.pt')
-            
-            self.epoch += 1
+                total_loss += loss.item()
+                num_batches += 1
         
-        # Final checkpoint
-        self.save_checkpoint('final.pt')
+        avg_loss = total_loss / num_batches if num_batches > 0 else 0.0
         
-        total_time = time.time() - start_time
-        logger.info(f"Training complete! Total time: {total_time/60:.1f} minutes")
-        logger.info(f"Best validation loss: {self.best_val_loss:.4f}")
+        return {'val_loss': avg_loss}
     
-    def save_checkpoint(self, filename: str):
-        """Save training checkpoint"""
-        path = self.checkpoint_dir / filename
-        
+    def save_checkpoint(self, epoch: int, optimizer: optim.Optimizer):
+        """Save model checkpoint."""
         checkpoint = {
-            'model_state_dict': self.model.state_dict(),
-            'optimizer_state_dict': self.optimizer.state_dict(),
-            'scheduler_state_dict': self.scheduler.state_dict(),
-            'global_step': self.global_step,
-            'epoch': self.epoch,
-            'best_val_loss': self.best_val_loss,
-            'config': self.config.to_dict(),
-            'train_losses': self.train_losses,
-            'val_losses': self.val_losses
+            'epoch': epoch,
+            'model_state': self.model.state_dict(),
+            'optimizer_state': optimizer.state_dict(),
+            'metrics': self.metrics_history,
         }
         
+        path = self.checkpoint_dir / f"checkpoint_epoch_{epoch:03d}.pt"
         torch.save(checkpoint, path)
-        logger.info(f"Saved checkpoint to {path}")
+        print(f"Saved checkpoint: {path}")
     
-    def load_checkpoint(self, path: str):
-        """Load training checkpoint"""
-        checkpoint = torch.load(path, map_location=self.device)
+    def log_metrics(self, epoch: int, train_metrics: dict, val_metrics: dict):
+        """Log metrics to file and history."""
+        for key, value in train_metrics.items():
+            if key in self.metrics_history:
+                self.metrics_history[key].append(value)
         
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-        self.global_step = checkpoint['global_step']
-        self.epoch = checkpoint['epoch']
-        self.best_val_loss = checkpoint['best_val_loss']
-        self.train_losses = checkpoint.get('train_losses', [])
-        self.val_losses = checkpoint.get('val_losses', [])
+        for key, value in val_metrics.items():
+            if key in self.metrics_history:
+                self.metrics_history[key].append(value)
         
-        logger.info(f"Loaded checkpoint from {path} (step {self.global_step})")
+        # Save to JSON
+        log_path = self.checkpoint_dir / "metrics.json"
+        with open(log_path, 'w') as f:
+            json.dump(self.metrics_history, f, indent=2)
 
 
-def get_tokenizer():
-    """Get tokenizer (tiktoken if available, else simple)"""
-    if HAS_TIKTOKEN:
-        return tiktoken.get_encoding("cl100k_base")
-    else:
-        # Simple character-level tokenizer fallback
-        class SimpleTokenizer:
-            def encode(self, text):
-                return [ord(c) % 1000 for c in text]
-            def decode(self, tokens):
-                return ''.join(chr(t % 256) for t in tokens)
-        return SimpleTokenizer()
-
-
-def main():
-    """Main training entry point"""
-    # Configuration
-    config = get_config()
+def main(args):
+    """Main training script."""
     
-    # Extended training run
-    config.training.max_steps = 3000
-    config.training.log_interval = 50
-    config.training.eval_interval = 200
-    config.training.save_interval = 500
-    
-    logger.info("Configuration:")
-    logger.info(f"  Hidden dim: {config.model.hidden_dim}")
-    logger.info(f"  Num layers: {config.model.num_layers}")
-    logger.info(f"  Num heads: {config.model.num_heads}")
-    logger.info(f"  Sync frequency: {config.sync.sync_frequency}")
-    logger.info(f"  Learning rate: {config.training.learning_rate}")
-    logger.info(f"  Batch size: {config.training.batch_size}")
-    
-    # Tokenizer
-    tokenizer = get_tokenizer()
-    
-    # Data
-    logger.info("Creating datasets...")
-    train_loader = create_dataloader(
-        num_samples=5000,
-        batch_size=config.training.batch_size,
-        task_types=[
-            TaskType.ARITHMETIC,
-            TaskType.PATTERN,
-            TaskType.COPY
-        ],
-        difficulty_range=(1, 3),
-        seed=config.seed,
-        tokenizer=tokenizer,
-        shuffle=True
-    )
-    
-    val_loader = create_dataloader(
-        num_samples=500,
-        batch_size=config.training.batch_size,
-        task_types=[
-            TaskType.ARITHMETIC,
-            TaskType.PATTERN,
-            TaskType.COPY
-        ],
-        difficulty_range=(1, 3),
-        seed=config.seed + 1,
-        tokenizer=tokenizer,
-        shuffle=False
-    )
+    # Setup
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Device: {device}")
     
     # Model
-    logger.info("Creating model...")
-    model = OctoTetrahedralModel(config)
+    model = UnifiedForwardModel(
+        vocab_size=args.vocab_size,
+        hidden_dim=args.hidden_dim,
+        num_limbs=8,
+        num_heads=args.num_heads,
+        num_layers=args.num_layers,
+        enable_quantum=args.enable_quantum,
+        enable_rna_editing=True,
+    ).to(device)
+    
+    print(f"Model params: {sum(p.numel() for p in model.parameters()):,}")
+    
+    # Data
+    train_dataset = ARCDataset(num_examples=args.train_size, seq_len=args.seq_len)
+    val_dataset = ARCDataset(num_examples=args.val_size, seq_len=args.seq_len)
+    
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
+    
+    # Optimizer
+    optimizer = optim.AdamW(model.parameters(), lr=args.learning_rate)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     
     # Trainer
     trainer = Trainer(
         model=model,
-        config=config,
-        train_dataloader=train_loader,
-        val_dataloader=val_loader
+        device=device,
+        checkpoint_dir=args.checkpoint_dir,
+        log_interval=args.log_interval,
     )
     
-    # Resume from checkpoint if available
-    checkpoint_path = Path("checkpoints/best.pt")
-    if checkpoint_path.exists():
-        logger.info(f"Resuming from checkpoint: {checkpoint_path}")
-        trainer.load_checkpoint(str(checkpoint_path))
+    # Training loop
+    print(f"\nStarting training for {args.epochs} epochs...")
+    print(f"Timestamp: {datetime.now().isoformat()}\n")
     
-    # Train
-    trainer.train()
+    for epoch in range(args.epochs):
+        print(f"\n{'='*60}")
+        print(f"Epoch {epoch + 1}/{args.epochs}")
+        print(f"{'='*60}")
+        
+        # Train
+        train_metrics = trainer.train_epoch(train_loader, optimizer, epoch + 1)
+        
+        # Eval
+        val_metrics = trainer.eval(val_loader)
+        
+        # Log
+        trainer.log_metrics(epoch + 1, train_metrics, val_metrics)
+        
+        # Print summary
+        print(f"\nTrain Loss: {train_metrics['train_loss']:.4f}")
+        print(f"Train RNA Loss: {train_metrics['train_rna_loss']:.4f}")
+        print(f"Train Quantum Loss: {train_metrics['train_quantum_loss']:.4f}")
+        print(f"Val Loss: {val_metrics['val_loss']:.4f}")
+        
+        # Save checkpoint
+        if (epoch + 1) % args.checkpoint_interval == 0:
+            trainer.save_checkpoint(epoch + 1, optimizer)
+        
+        # LR scheduling
+        scheduler.step()
+    
+    print(f"\nTraining complete!")
+    print(f"Checkpoints saved to: {args.checkpoint_dir}")
     
     # Final evaluation
-    logger.info("\nFinal model statistics:")
+    print(f"\nFinal model stats:")
     stats = model.get_stats()
-    logger.info(f"  Total parameters: {stats['total_params']:,}")
-    logger.info(f"  Forward count: {stats['forward_count']}")
-    logger.info(f"  Memory utilization: {stats['memory_utilization']:.4f}")
-    logger.info(f"  Hub syncs: {stats['hub_sync_stats']['total_syncs']}")
+    for key, value in stats.items():
+        if key != 'last_metrics':
+            print(f"  {key}: {value}")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Train unified cognitive model")
+    
+    # Model
+    parser.add_argument('--vocab-size', type=int, default=1000)
+    parser.add_argument('--hidden-dim', type=int, default=256)
+    parser.add_argument('--num-heads', type=int, default=4)
+    parser.add_argument('--num-layers', type=int, default=3)
+    parser.add_argument('--enable-quantum', action='store_true', default=True)
+    
+    # Data
+    parser.add_argument('--train-size', type=int, default=1000)
+    parser.add_argument('--val-size', type=int, default=100)
+    parser.add_argument('--seq-len', type=int, default=32)
+    parser.add_argument('--batch-size', type=int, default=32)
+    
+    # Training
+    parser.add_argument('--epochs', type=int, default=10)
+    parser.add_argument('--learning-rate', type=float, default=1e-4)
+    parser.add_argument('--checkpoint-interval', type=int, default=5)
+    parser.add_argument('--checkpoint-dir', type=str, default='checkpoints')
+    parser.add_argument('--log-interval', type=int, default=10)
+    
+    args = parser.parse_args()
+    main(args)
