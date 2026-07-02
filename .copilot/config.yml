@@ -1,0 +1,70 @@
+# .copilot/config.yml
+# Copilot model selection and integration configuration
+# -------------------------------------------------------
+# Supported model spec formats:
+#   unified-stack
+#   unified-stack:16-limb
+#   gpt-4
+#   claude-3-opus
+#
+# Fallback chain: tried in order when preferred model is unavailable.
+# -------------------------------------------------------
+
+# Default model for all copilot task commands and chat sessions
+default_model: unified-stack
+
+# Ordered fallback chain (first available wins)
+fallback_chain:
+  - unified-stack
+  - gpt-4
+  - claude-3-opus
+
+# Model configurations
+models:
+  unified-stack:
+    description: "8-limb quantum-biological unified model (production)"
+    limbs: 8
+    coherence_threshold: 0.90
+    batch_size: 32
+    timeout_ms: 30000
+    capabilities:
+      - reasoning
+      - language
+      - spatial
+      - planning
+
+  unified-stack-16:
+    description: "16-limb extended model (experimental)"
+    limbs: 16
+    coherence_threshold: 0.92
+    batch_size: 16
+    timeout_ms: 50000
+    capabilities:
+      - reasoning
+      - language
+      - spatial
+      - planning
+      - multi-domain
+
+  gpt-4:
+    description: "OpenAI GPT-4"
+    batch_size: 64
+    timeout_ms: 60000
+
+  claude-3-opus:
+    description: "Anthropic Claude 3 Opus"
+    batch_size: 64
+    timeout_ms: 60000
+
+# Monitoring & observability
+monitoring:
+  enable_coherence_tracking: true
+  enable_limb_profiling: true
+  coherence_alert_threshold: 0.85
+  collect_metrics: true
+
+# User preferences
+user_preferences:
+  preferred_model: unified-stack
+  show_model_stats: true
+  auto_fallback: true
