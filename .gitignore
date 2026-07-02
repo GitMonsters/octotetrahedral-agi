@@ -25,3 +25,10 @@ octo-parallel-rs/target/
 
 # macOS
 .DS_Store
+
+# Runtime model selection state (regenerated automatically by CLI)
+.copilot/last_model.json
+
+# Generated benchmark output files (run ccl_unified_benchmark.py to regenerate)
+ccl_unified_results.json
+ccl_visualizations/
