@@ -12,6 +12,7 @@ This repository now includes a unified quantum-biological stack built around thr
 - **RNA Adaptation**: task-conditioned regulatory controls tune coupling and gate parameters.
 - **Bidirectional Integration**: forward and feedback streams are fused in one coherent pass.
 - **Scalable Design**: tensor decomposition exposes a shared component and per-limb residuals.
+- **Action Channel Selection**: the dominant output limb is identified via `select_action_channel`.
 
 ## Layering
 
