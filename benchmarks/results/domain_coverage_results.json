@@ -1,0 +1,49 @@
+{
+  "matrix": {
+    "unified-stack": {
+      "reasoning": "native",
+      "language": "native",
+      "spatial": "native",
+      "planning": "native",
+      "multi": "native"
+    },
+    "unified-stack-16limb": {
+      "reasoning": "fails",
+      "language": "fails",
+      "spatial": "fails",
+      "planning": "fails",
+      "multi": "fails"
+    },
+    "gpt-4": {
+      "reasoning": "fails",
+      "language": "fails",
+      "spatial": "fails",
+      "planning": "fails",
+      "multi": "fails"
+    },
+    "claude-3-opus": {
+      "reasoning": "fails",
+      "language": "fails",
+      "spatial": "fails",
+      "planning": "fails",
+      "multi": "fails"
+    },
+    "claude-3.5-sonnet": {
+      "reasoning": "fails",
+      "language": "fails",
+      "spatial": "fails",
+      "planning": "fails",
+      "multi": "fails"
+    }
+  },
+  "text_table": "Model                    reasoning   language    spatial     planning    multi       \n-------------------------------------------------------------------------------------\nunified-stack            ✅           ✅           ✅           ✅           ✅           \nunified-stack-16limb     ❌           ❌           ❌           ❌           ❌           \ngpt-4                    ❌           ❌           ❌           ❌           ❌           \nclaude-3-opus            ❌           ❌           ❌           ❌           ❌           \nclaude-3.5-sonnet        ❌           ❌           ❌           ❌           ❌           ",
+  "legend": {
+    "native": "✅ native support",
+    "partial": "⚠️ works but degraded",
+    "fails": "❌ consistently fails"
+  },
+  "thresholds": {
+    "native": 0.75,
+    "partial": 0.4
+  }
+}

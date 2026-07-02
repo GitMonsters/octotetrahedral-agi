@@ -1,0 +1,3690 @@
+{
+  "17ad8a8bf523bad11257d9b681f5633e868e368244bb89feba0cf02d83fd8c7a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9910840657901587,
+    "latency_ms": 12.590392761556517,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "acc11719051a7d973f80629254f8c6f309a28e9c60ee880c672a1ef686361b14": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9926182734065802,
+    "latency_ms": 8.20472186540425,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "c6b1cb263bde86813809ed907c79bc8da4c1f5ada6b086c73d7efaec78297571": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9910687270673633,
+    "latency_ms": 12.13395729942764,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "b22c92c869fbf29b145a4e1e851f1fdba353a0fdd801220867af6b2a47ebd7f1": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9953061119997307,
+    "latency_ms": 12.474719472719695,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "a3915c78f800e799c58dae2693b95a846d265abf214bdc439ce34a78b369b481": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9965984667983234,
+    "latency_ms": 13.239645998275346,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "a37cba88a1bf8811ee0f9cf2ac644573f127bf1d66420f3cc93fe51d1a9ba48d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999112530112985,
+    "latency_ms": 10.593218278204171,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "2954026a2110ca7bd477591d09cdb51052ee5a685c2b793e5b8f3621eb3cd27c": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9990749308890385,
+    "latency_ms": 11.333866976687428,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "2ff2af4685079556db246e54d8327396e5dd53661376123bd2d57e5a77c7ac49": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991850800285659,
+    "latency_ms": 11.889983719674312,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "ea9b9a8d5641fbc93cb747f1f011850d0ad6c08e81cb944b2499a897ebab7158": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995792447529035,
+    "latency_ms": 12.308719877692308,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "74524257fd6e639cee5c80b45fb2fc0ba3ac843849be4733c3845a7d24518a64": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991979626853622,
+    "latency_ms": 8.558366646690379,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "c5bb6bfe13f9decff6837d0f21a597ed1be02902eacfd36be8bc6f6d6c115b9e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997140599448192,
+    "latency_ms": 9.148972454848682,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "0e1d2a0b62e8034cfa7240018ef80b009621bbfc43fdde6aa131fdceeb3f209d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9919322863124614,
+    "latency_ms": 11.57332861172797,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "27cf5c97907e4e998cfd420a68695d3df9a30ab8a69aa2bc1778ec697c6e8f05": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9908078202618346,
+    "latency_ms": 10.727131111560215,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "4159ef8bc8e497759dd2b3680ecb34dcef4ddf13ef18c13b35d8c6cd5f9a0d70": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.993421835871809,
+    "latency_ms": 11.638464990004747,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "7d457362ca9d3e6a10abc610aa30e5a3c4a8b4d98c60798dba7cbb7a06978bd5": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9954874322576754,
+    "latency_ms": 10.724832689313438,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "6abc307c16d514f9a878d49beefb2d4e741713031e006cac955642b520da25fa": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9990583233402687,
+    "latency_ms": 11.390099596697949,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "2c17d96fdb7c26e11a588364111339efd5142ba18410a7a71c59e9b8045cc848": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9987324609799043,
+    "latency_ms": 8.78745232823308,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "6a419086315a344f3fe5c30f17c3ebbee3f8eb40034c8b3a37cee77422fbe075": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993113127748509,
+    "latency_ms": 9.66345290254128,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "f542ab0076517804f6789051697d7b2e8cb3106eeb9b8b9e8583ef05f0ed061c": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.99936988944745,
+    "latency_ms": 8.854918060129013,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "17636ec6b60ab4511e0847fa25e6f3318711182d2ca56a2f748934dcf653703c": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993543250678765,
+    "latency_ms": 8.394623693810685,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "4b0d5aed622058f9543d17f0597b8b1ee205ea5b842c4da8e677a97614759984": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996276028283448,
+    "latency_ms": 10.537100423114497,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "8b171cf33de86990b0ffa154782433a08b15befaf8dada1bdf3286e6f91bf51d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991890845012401,
+    "latency_ms": 10.296151528707993,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "75824116e8e9e285c6d511957829aab3fabe92431cfd29b97edf96cc057a9ced": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994121208243661,
+    "latency_ms": 12.442499705159115,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "10206dd30062280f19972df7260d7f43c88176fe906f726a7a71124c47214b02": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994624159689197,
+    "latency_ms": 9.727912986226796,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "526d57c48eddb87622b6d1611b1a32022cf17f6e21e14b742ac3f832f334197b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999451499826977,
+    "latency_ms": 10.307961692771716,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "e3b3eeec2cf231f8f1e0be7facf40f567ce59ccaa2f8e63b68d4286cd03a892f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995617868264652,
+    "latency_ms": 12.66016660609455,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "173845ad1369e022168249a2a002ecb02dbc3eb7f8c4041d1e7959a70e52b760": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995124602799375,
+    "latency_ms": 10.31453048054498,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "774ae46b7f3b00714cea05016260163ff40b44b7494193d735b975cc1850acac": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995590974060474,
+    "latency_ms": 8.95523527082153,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "de77774a15275ae84d86985d9b53887f428e7dc695563220fff251b5ef7eb74a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9990511676724295,
+    "latency_ms": 9.31108345861059,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "b890de22e62c7515d873038edfad3ed582b4ff0e59d16c812346e0b267b30343": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994446369960923,
+    "latency_ms": 9.525344920710507,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "21295a337c49a55544f1b72bf931c8cb698d30e571e16883df5e51c9f62ac45a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997556933680871,
+    "latency_ms": 9.912921189348028,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "b2f4e77ec2c0c2199a76cdf9fcc370916f67052c27cab5d0cd01737ea550707f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995330123503747,
+    "latency_ms": 11.473013477776703,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "7e5890e593852241157cbb79c8b90ce087502608af2584128c2beaca6e6aeed0": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993128844621939,
+    "latency_ms": 13.92961003707537,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "c75a777fd468d790c588ac02430f28b52b9942d30fca682091c27a0470aa1a63": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996284834499222,
+    "latency_ms": 9.902037091062892,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "66c67555311fb9b3e4876350919b1db905844d4a617c8b0789d5517537af8a04": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999454902983767,
+    "latency_ms": 12.088562826270076,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "aaa2359182d0d1cf662759ed1ae4cac50f1b61705cd2558d20a728a0a0633b4e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993410524338171,
+    "latency_ms": 9.496132206469198,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "1c7358a31fd07c629160b244611f3a19fa1947c159759bca51e8fd43ec6620e0": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994755993207466,
+    "latency_ms": 10.672937887422549,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "ba0cca22675a898c36565621b37af08f361487cc2d9cc650fb3834d2222cfeaa": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994402384868549,
+    "latency_ms": 12.116016014540726,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "8fdf3092aafe7de6b216d646413e3011d792f0e77a0576af68a87e4b603f1ad0": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991764122339334,
+    "latency_ms": 13.316839361724531,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "626ee2ff799e371737dbf0b751161c7de749fed90ad45ad54060f76016aba429": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996316531740024,
+    "latency_ms": 9.161021263030944,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "0110c027fd2927e6459b71ae0e9b8ec0021457e1d3da01693b3e339eb62903f2": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9998818571064183,
+    "latency_ms": 12.547314370593767,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "fc557b85a344416bc86d620286c49cc643c325925c8244a808c64ed85b025d89": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992026515246039,
+    "latency_ms": 11.855048158459324,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "1b41d562b047a72989935dc5f2ce01601581245843d13540bece31669c05af46": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993557978365682,
+    "latency_ms": 12.104541955522983,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "622f1d9faab782a3a5ef04591c589fce5c45948c25959026d02978470a402fdd": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995734978944892,
+    "latency_ms": 9.4224122924184,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "32ea4e0970e126bd605b3fd034dd201e000dafa5b8430cc2cbc202590cbffffa": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993288298983878,
+    "latency_ms": 13.302782864793532,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "76b74ef14db385c7e0f5f7c05c7128334919258af5f7eb2c3d3ca25e04f34fb1": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9998253705252474,
+    "latency_ms": 12.489350306998425,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "4e329c4aba8f4ca78ddf5a756c4a9c8e59f8249549f22787a1bad846096be943": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994361252744802,
+    "latency_ms": 8.610069446010153,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "279ca37421ed49e37ef42e8881b7fc018d810624677e19a2f2f2d27475b2f177": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997142571280199,
+    "latency_ms": 9.766037021567817,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "cf43ae0998395e7ab2e9a21a3932306671037823285800756c6585184361b3ef": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991700742496099,
+    "latency_ms": 10.010711256871124,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "19df01d32d597d2b85d996920a45167466b2684b0d2234fb4dac29eaa0aa704e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993960683252823,
+    "latency_ms": 10.641564702201862,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "6af5ddec024082624dd7bd5349e9efa5cdae7814d770c9790343dc4b4aee0cdd": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995898235474158,
+    "latency_ms": 12.857113569221015,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "b082f2771827fd04c797f04a2ed2b0e714f670d8548c96be9020732c4acec118": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993236683023318,
+    "latency_ms": 13.733936729929237,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "8fc4c6da971b7cc9a247fe2c4b0a24e4f87db813312e8e94cff797c080681613": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992286347918057,
+    "latency_ms": 11.430893208707356,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "6d5378deb5b4951fae607ee4f9b5134a9fc7bf12ce4647355f121d92a51c27e6": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992297041445404,
+    "latency_ms": 12.776372083736955,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "15f6c1b8d623abc093decf7be463facdf185e2fc98cdc8380921cc228ff1eaaa": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995000684831116,
+    "latency_ms": 8.25147702993004,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "882b5b8b770e4b4f145b3a7e10ab0ed87376ccc9a97591d6136686509c1b8fb0": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994108235485162,
+    "latency_ms": 8.565926018317638,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "b195bc86eeabaa91a49f05c7eab3f2e03e5b1d3e2c3c4f51d532d7760486107f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995693349122398,
+    "latency_ms": 11.56770114978432,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "8fd1d87dc8031f1525bd462f65bc971e2a56ac6b0b8483524658ee89c3045715": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999650971228569,
+    "latency_ms": 10.056233342701168,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "010bf4694c72f469d23248c582b005605e296e9428db10ba3b42fc156ca3e045": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994022716450393,
+    "latency_ms": 9.998343016825569,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "3f4ede7e23b142c1aa3e549c6290d5d3a91be8145424d434e121ea695f0a3593": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995496077804161,
+    "latency_ms": 12.874835856888827,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "b98de07b43383d013ff30d9dc6c0e62a5b0b9db51878460b1f4534e7b7a47e13": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993720898776141,
+    "latency_ms": 13.668985238081317,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "7b4e12c443bba1ea081300d66a4cef854fd0d8ffbf3c639b08fef361d56bb2a5": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993962779383617,
+    "latency_ms": 10.507597374790492,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "95c6b6df686bae54008dcb0e2ed97fcc9e278e71ac5e98c6847f0a3ed5e6a7a7": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997796247141729,
+    "latency_ms": 10.000852258104493,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "c3c7499f3e1c184cdf26b7ab2b0e75ebd0ceda5f4c42c6f569cc0b93fdbb1c20": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994904395770838,
+    "latency_ms": 9.324179552823278,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "02c533874bd8417ad6f390c4e1b3da968440c6eda86dafc65af33a7d1561bddd": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993485960802639,
+    "latency_ms": 11.054707687886903,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "47f301c442ca861b4171c6115f92d600b72b8bd511760cd048e6e986a916492c": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999842297114647,
+    "latency_ms": 11.750369272931234,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "4a3226bd3fb463ea4bbea922be63532ab4491041d1def71de8cff3b5bc7314eb": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997310239494018,
+    "latency_ms": 9.559696663670968,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "dbf775aa16a6a4fe90741b25350ea78210de178a43fc0251cafdea2b9822ade9": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996821100462465,
+    "latency_ms": 13.20770271895536,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "c5a3428ecab374a7f36f1dce743f21bd3eb76156f9c499be20672a8f9f3de55e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997559358561467,
+    "latency_ms": 9.617120335918024,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "234c01f1178b412e972eb39c615250ce8ee7d14f3e59dee7719911c94aae8e38": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993434030713875,
+    "latency_ms": 13.161308501909147,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "ffe1fc0d38e6134881a5b3bfd8dbb87b8a5ecaf1f6f1fbe706b5110c8df1aee9": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994866490299289,
+    "latency_ms": 9.80665674615992,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "f233d60f7c881d3c6f15d98cb34df1b90ef32ea44fad5db85d182e23b9e7a00b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992294553502383,
+    "latency_ms": 8.433549459104235,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "4877dd051eff80d0768c6ba83af0e1c85fa1ab22e74da9add5033ad68e774232": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994186315506254,
+    "latency_ms": 12.02932085671897,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "7fcc11dd612a82851d58466cf818be2c90dec078c7f58c2d5bda77e6a526ae46": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993187370345197,
+    "latency_ms": 11.86198319435745,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "2cf8d00e4b5a2d935ef8ab8aabc13cb8f67c2adb8504041a8c66113b5a5d9026": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993396282585519,
+    "latency_ms": 12.847258578755834,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "fffb3a63a171f1e0235f50a27bd5be6cfcd14dd4d29910162b8fe8cf54e4afaf": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995992502936611,
+    "latency_ms": 9.726896560879096,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "11b779d232d7589e77b2a1749eb94902cf8631e22d0b140bd6007fba687d3e96": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994903372286676,
+    "latency_ms": 12.2831403695757,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "cdb0a1beb9550491c04a975afb361cf0788601c4ae4017f84d9b5d5b3f3f0716": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994698100141344,
+    "latency_ms": 12.936511230777608,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "464c35a63acd8a897f15242ef16f5fb5a89ed64f3011b75e10d10ab8d4bf4a0e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999267880170878,
+    "latency_ms": 8.486970454309827,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "1a56557c8e16cbc52a6415c514e936194d0d1d6fec3fa8e98db962272161b60e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993302278690498,
+    "latency_ms": 10.197889138882308,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "42e63bec06aa7aa8c3a232f8eed8a14a0862a1522c4a6713427ca624aba8372a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994062764369289,
+    "latency_ms": 10.786475518604535,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "74c716c73d3349367598a1d70149f0b250159f471856d313da65273b3b9b9e99": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993931988037216,
+    "latency_ms": 9.290525611090569,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "c92f93acb6d6fe6f3205a5fe774fdcb4647ec0dc66fc80e72e00c2048114ccbc": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995555082391604,
+    "latency_ms": 10.729004510240244,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "475e2ad3637e8a263f8de75eca381b3e531916b80145a25e6a120153007149f5": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995440178619179,
+    "latency_ms": 10.55048343375183,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "bc67436a02ff0a6d38e1bd2bc66517f95be42d99aeabb963d3b2c87c24c9f382": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999482407993541,
+    "latency_ms": 11.435493183751792,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "32ef760deda5f130a1003c710baeca821b3ccd33a9b7c3936aed1e069a52ed32": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992045697636489,
+    "latency_ms": 11.642552702131352,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "ee128245b60d990ad2a1c0a21c7be3a8492061c72f0208e9e3b78388d7077a94": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993021325004561,
+    "latency_ms": 8.69711011020193,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "c28db5d5bb980b6a931e72ffa8d0ab276e7d9d161ff19878b78727477027bc4b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995294850901103,
+    "latency_ms": 10.388806652898305,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "e8dde22acde0e198cc34416de513e70dc0eabb7b0c2589ce2450746d1dccdd7e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993547788052957,
+    "latency_ms": 11.23489156922269,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "74c946db16bef8e6937f47f7ba9ccc93a75d4297af1ecbc20c1f84875998bbc7": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994194572308297,
+    "latency_ms": 11.099061800074692,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "ab56d0c8f7a9280ce4b2d7215ca671dd4ac2e38f3ea251bdd305881be09904b4": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9998371217205533,
+    "latency_ms": 13.996632838167852,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "6f53205af844b83ce6a060dabf0e703df83ac9943b94c108fe91a3a427135694": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991034992140021,
+    "latency_ms": 9.256834758127201,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "80b1aff4a27abba81ed5f5c55f3a4146d0dd19bd680123e2df23a47f81e120a8": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999379932614864,
+    "latency_ms": 13.754903809537515,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "a990eea5dc759478b13dd08b8c5649a8a65bd29ee5e31721dfb8029f0f18d41b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993096810459059,
+    "latency_ms": 11.434886956183929,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "ab05dbea6f57a61914f33ab218aa586a30e0801bf35a9cfba347397ad8a08eb7": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995179032381801,
+    "latency_ms": 8.49311934172551,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "df64954a6844ac1874dbf1d4a64dcdea894c325279008d4a7cda56814d622230": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994433384618046,
+    "latency_ms": 12.111683191290037,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "869e8d52d47f85aa525335e5c6a9d987cccb22b1ae66a3277583b37567c8f2d8": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995207425254982,
+    "latency_ms": 10.555713732217406,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "a4fbb416abbf34dcae4dceb736863750ea7c6adca9cb91ced6574e7483d1ab19": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996558174056076,
+    "latency_ms": 13.753360384001521,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "57e811ce575f3266b8d5f565271bb4b9dc036f66bcc57193a3154fd7fcb6d12c": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997693899357234,
+    "latency_ms": 9.386590784919974,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "9a21d1719dcc9929895975f60373bef4c598dc2caf3ee1890dda9d1d45fc14ed": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997833944008514,
+    "latency_ms": 13.232987059494059,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "93064b4be7422cf25ea577b16e4c14e3a25bcae3e45e6240d5d926381d2a547a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995439721816183,
+    "latency_ms": 10.224660924591793,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "8c420890c5904c8ae6a44b4f99072950df0dcd8cddebff6c2a0e341cefcf3856": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994781705989537,
+    "latency_ms": 13.47660787960945,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "c200942238800754c49cea2824eef352003c485d3f280f51b510e5f307bedc11": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993433877632191,
+    "latency_ms": 8.598018694863844,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "4e548f200838813bc7664176cc35572bc795fe902fca6f1f361ecd4faec8e386": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9990902273464407,
+    "latency_ms": 8.355218862197885,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "e5bbf854375642b2fefb4915cc8c0304e79e48f5fcd5030b3cbc0b3382889f28": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994472927835318,
+    "latency_ms": 11.328342452432564,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "e32e73b1a29bf13825cf707a600a50fb9b7fb2e518b176a03ec01dcd06f9c77b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993515473019007,
+    "latency_ms": 9.433897638801604,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "baaab97c283bdeac8420028bcb0c0156f0a1d2479ca224298d3670b523d579ef": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992985380187825,
+    "latency_ms": 9.42372458832272,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "41207fa110487d55b91b0af85f8db047b98a3e0da99fdf379c342d37195c2847": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992907837562364,
+    "latency_ms": 13.911686129888416,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "900b5809c5c7d935215ee82ef306e12c347252469af01ec74e99864ce7ed3c7e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994748597240132,
+    "latency_ms": 10.14062052907305,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "d764e83a3a565d63a5a636bdd60137cb393599aecc72e6036f7ac03b92cca5ce": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994259229439358,
+    "latency_ms": 13.170778067928882,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "14d454c03f2b5bc12410960048d8b47c6e2b329db638f0c3756ca478685864e3": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993064672473069,
+    "latency_ms": 8.419428560767706,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "9ee103417a66d6933732797ac89c895b29ebd09ea9f12dccc23f2451488e6f0a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9989616929920754,
+    "latency_ms": 11.86559174336713,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "2817f768af7b1570df0c79b592b3673fd50f86766a68deea27a10d118edefc7d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995442307260831,
+    "latency_ms": 11.760374015962185,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "f62e694b4fbbd1304847b8e662d5a160bf5209f511c22492896fbec4dc4864ea": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996355862166695,
+    "latency_ms": 12.165256008242316,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "9b0f7bd6a2668fa32d9970b5532329ecae256c20a01c260fc4e58a260f67ace8": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997397046492871,
+    "latency_ms": 10.661547126750023,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "74a3ca669f2bef80cd96ea754674884b78f289571da835ed5def27c8fd599224": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994954476107591,
+    "latency_ms": 8.485667743003507,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "839cbc8815b630bbdb235d57d4789d1088567046d509d1321a68b2716f1f4f15": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996450729012708,
+    "latency_ms": 12.776691326999886,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "e238f1348458af93b8b380fbd09a2cbd791b77d02142581b8d23b09bc4dc2463": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992913438109,
+    "latency_ms": 10.385939475585893,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "e17109871ac747cc961061db689916456bc5ec1bd9bff7eadb3e056f637c279f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997250007082943,
+    "latency_ms": 13.905671657575734,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "1922400a95176da274e0b7f693d92251c072ba5686a1e854fc52ebb78ea54574": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996604838402708,
+    "latency_ms": 10.824613117873934,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "8a40c4e32ea1a21edf9897ed7ee307233c7ae7bdc91e6b977c221a9941d0f32a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999478398613808,
+    "latency_ms": 11.291220886653507,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "144324a2fb6ca68281e49d830a4efec92017c0410240ff4e9d0a6eb4f3ee8a2a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994286852435051,
+    "latency_ms": 13.266726785206904,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "e73d10ec531914ec0b3f153f944213ce042f50582829436bf0da2df5fcd48dbe": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995355697706624,
+    "latency_ms": 13.934439748006348,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "2928ad4421cd467a07a11ef6665ea1fb7edc806a59ddc9bb51cf0d6a24b0088c": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999380802656016,
+    "latency_ms": 12.826634824000596,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "7fc0b483b3bb4da8d526e91a84dd6c0d6b88c8bddeab1a76b3a1da806d5cd36f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993639199972052,
+    "latency_ms": 8.208358180665387,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "e0abd10d550ca4048aff922a495892ca2fc81b898224fd64d5fbbb25fb5bd899": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993362942509322,
+    "latency_ms": 12.72503742245693,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "582813d861094634ffbf0cd84454d918a3c3b16c6ca5a74374cbbe97eec09703": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997588340077719,
+    "latency_ms": 11.295440153372752,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "912a29d30181375d5e079fa3c0583091c31fe9b6f14e5fae200d7ff665791731": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9999054882288676,
+    "latency_ms": 12.650970092187817,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "8fd3189dc1affa47da07a1166a68005c337582ef01e8a144072eac4796e86541": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993394398681753,
+    "latency_ms": 11.981563278911942,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "c95b9f7d77eacc5e64ccc486d6b7cfc3967d9dd2ca0d7593f6d4edbbe99aa0b2": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994971887012881,
+    "latency_ms": 10.519334753277844,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "e31fd21b442a93a1a7187452e9800481f13825c2979813853ed849d487c3e9ff": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997128032516771,
+    "latency_ms": 13.264661336195465,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "062c9b436bfccfb3c11002f50bf936f24db8ef1dca6b387c31c6147397f5a690": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994551430699391,
+    "latency_ms": 12.61462958572395,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "5345ea796d5b890e3e1d02e699f4aeec6cdb155688a61c44b5f7dce9cc9b8e4d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993070666077781,
+    "latency_ms": 10.288876777798198,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "1d9d4cb1aaa01d7bee1bdcd6a874e812690caacfef54cce72dcffbdfb976c4c1": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9988497559720991,
+    "latency_ms": 8.220019482238353,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "cad22758ccc91fdfb5773e6fcd158d242aac24778136317256404e42241ec988": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995025391513433,
+    "latency_ms": 12.501911229236438,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "d9f071b3932f137c3f523301240ca33153f306e0b29729e92f78902992f0a65d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999700340078912,
+    "latency_ms": 12.891230017275838,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "9c8903f143ba16a6a01c54dd374712818348a083e059fbe262517ae95815cccb": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993567660947097,
+    "latency_ms": 8.955849214847815,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "085471e282bd9139a62b6ecba2979ceb249cd984a98b6a353160baafe7b413cd": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9990360455537683,
+    "latency_ms": 11.242149186979656,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "dde47f4fba9ca8f50cf363b255239759b0d5cd5b7900ba5726d458cdd2206c0a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995473259297738,
+    "latency_ms": 12.080720403678889,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "2aa393af07bcc7421faa8b703f10f732133f849e91eab1ea7f7f0bc17407a4a3": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996979009734146,
+    "latency_ms": 11.106409853366568,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "dc4340f4d0aef01a916243f6d0160047c1e28c166fe1a83d9dee276bee238573": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992165752084731,
+    "latency_ms": 12.311496971097124,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "1ba08d8c5fbe0e5b15f5dea94f947444d3fe0933804f8b68c29d743ecc5947fe": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991750951143905,
+    "latency_ms": 8.883678833346714,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "cd35819742812b6af6205a40327cd643c062109028f5d0ea36c5d25b270fe470": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996063538489695,
+    "latency_ms": 9.597909904882703,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "4d019c0e4b20511b78aa99df950150d95a4d5efdc1c74c656e6d274fe399125e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992305874102556,
+    "latency_ms": 12.731246477891778,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "06e3b32b33a32704f2516faf7a6e649e7665e8c308ddea17d1d3296b6c7936a9": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9989432980026423,
+    "latency_ms": 8.89555228537326,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "0a5dc9df42be2456ac2d818a3c3a082f51eb39aa8878dd9ed0326e5bff8b6d6b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9998889629442623,
+    "latency_ms": 12.929462155282826,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "8f6653bc506e2ef643bd2507c847ba192754e48921fdb96cbff98ecdcc2a46d6": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995209023793634,
+    "latency_ms": 9.3518607282641,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "a2a3c90b5d5580a83abf1233ba29eb0d393b4541af4a020152dd42440683d2fc": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991609422357387,
+    "latency_ms": 13.840708726157086,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "1179ef7bba59398e03d64011e8afdf5f523fb00905eb44b606029ce7d8428c65": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995914747046067,
+    "latency_ms": 9.92677949371315,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "ab5559f9c5ff6421e4ca90508f0cef5d63407c84575a6ab67cf78fb170fe08fd": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996304872253458,
+    "latency_ms": 12.44115659322692,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "36470394ebec8a960fee47b4aa201f20a6582b3cf129db1a92c6c0946c6e95c6": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992887851677547,
+    "latency_ms": 8.495391441588852,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "c0ebb3e9ad674d45eb22728cc9dd80fb14f925e31a5f07571ca1c59a35a4a37c": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993129546430533,
+    "latency_ms": 13.164558878124094,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "6ef49568b747cd4908ff6d6841e081b6d0a797b3013daa844a1d719c7b89bd35": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9998120916868661,
+    "latency_ms": 10.268195422639097,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "6283bcf2bb371886d59ac2479b3a02f0c1705a1edd2e9183728be9b48e20301e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994465049245672,
+    "latency_ms": 8.80392222849547,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "fde0a117794e0e159e05e254795b587cf62af475c27cf8d3d9487a2061c0b280": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999853579097418,
+    "latency_ms": 13.099280761816177,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "5e8aacc8e4d17582095781acd2602b51c89895bf9f9d2c35e0b93bf30d804dae": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9990815270212134,
+    "latency_ms": 8.282086090015056,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "a9dcf0fbd9811b027494306e034b8a49ceac3ee27d04c55cbec0b603cad374ae": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995490270818933,
+    "latency_ms": 9.859178979567947,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "c4fc1980ef54e479699f50da2cba04c71eeb802da650f1a9b8fb10980f16667c": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993073073288142,
+    "latency_ms": 10.607732774414986,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "487fd8924df32db0c4bbd7b5fb37ae9640a7dc53468818959a06dcf581782186": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992407562647593,
+    "latency_ms": 8.503355914435042,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "af155cc2bcd3a20ce756045b5348bd037222e4240fd90d9e12fb7bc6db32ac1c": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995005148312552,
+    "latency_ms": 11.651547915222627,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "8717df09807b0e2cdc33aa413facf5ee57b22210bbc1637faf7e6a175befe150": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999296192542131,
+    "latency_ms": 12.017506491097087,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "7ef6f2b8bd20bc441a06594516da2c9bd6df0d491bcf00142a66822c88bb7136": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994428665525801,
+    "latency_ms": 9.276227469447168,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "1c0a5111750f5a56a48be446dc3e55ff634c5fb0fec881be7a865acb24e6c462": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9989413264429478,
+    "latency_ms": 13.63450336281139,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "6a93441125f9349cf706631083cbe2271f3f9b07b985e4526eee987b3f879129": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994994864820264,
+    "latency_ms": 10.637902872580455,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "624906e85f782115fbda2bbdbab502cc9fecd2a7d2216cb3c7c1b5aaea397af3": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992697552961787,
+    "latency_ms": 13.69491057337306,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "5b10b7c4c5a79a6c969f4a11a16592e73569f2500aaca18185c1f35d064f0799": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993983063223841,
+    "latency_ms": 13.045894224087675,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "bcc5a4e2cf4b4162d22c6c55b634aa71a193edbe685af33ea09258a601092cb7": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995779903297219,
+    "latency_ms": 10.393456882810064,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "1bf62a3731f46d75c2955d992dc898c3b9a8697205ed8060e81c55e98c9973a4": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992170101177985,
+    "latency_ms": 11.6922608487832,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "3e74f04cffb73f22b60d29bdb75440fb553ff2b3003d61806d8cbce46d2eb3ed": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993141901512513,
+    "latency_ms": 11.903841687516614,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "4ba3afb2a0d7701d5755e8b073a076050520894b42ba2c59d21dafb7c89a9180": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997377751544984,
+    "latency_ms": 9.882021733658167,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "137ed964eaecc814eb1bd76495f43024fb63ab504389824da6d2feb324d557cb": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993539362994962,
+    "latency_ms": 13.507723621075694,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "a0d76c68525908bf18f9fdaa9df5e69aff1f9b75312f9e8439b3aaf878f78714": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997063986346415,
+    "latency_ms": 9.378749512259528,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "f52996fcdedc787a47f8806f27d89f9a0452882b8ebeca7cf06f639087f8c138": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999214153079839,
+    "latency_ms": 12.601181548068116,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "c719c28f8dd79dab6791afee4ff7e966b721e875b2191f884ce99be752768967": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994276891315358,
+    "latency_ms": 8.017859982153372,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "38c02153f1cfcf30f0a06eaf5ec4aa4db1cff03d9a5c865f1594b3f926c9a5e3": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994918316329,
+    "latency_ms": 9.140802324367659,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "6b6f2ea3b07e5487954051d4056f13c888b915295b7a608a62ec5b4c9bef5008": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992707066412954,
+    "latency_ms": 13.99313093806254,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "5f023eb9368b5195cbdb351b17a4af025086fcca48d76a39feabcf8a46aca9f2": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997719476122159,
+    "latency_ms": 10.440939739797454,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "425ede83bc38201966e94eebb9f2465bbd7402cda3499f6e9b74bae0a44db9df": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993695912510566,
+    "latency_ms": 13.899728748275525,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "b5d2d9804fd401f0ea30ed664176397621d55fa13efa1fbdd8630523af4a3957": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996673955674271,
+    "latency_ms": 12.033341246960038,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "47571aadc2df8f394b4d99805b79643e6e7b7fdc689ced52c3d0663fed58faa5": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995706677489236,
+    "latency_ms": 11.772433612959649,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "603321854c18c882a0e0155fa253531709f9fc18d3b7441c22bcd30b677c3421": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994128404677507,
+    "latency_ms": 8.537751160867028,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "c18e94da0cdeb9d0f6acefce9bc7c00164e932f2c6055d59dcca668eb1484e7a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996554630341821,
+    "latency_ms": 12.878967445539278,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "af26f2794cc89a5c8138bcb5516271e9a4a87a2c8fac44a1931264600f996332": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992543292761751,
+    "latency_ms": 11.396383006921127,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "f5bfb1f5d3d1b2df79f8856807d23aa9921613a36b5e46c051b924f33f7fda9d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995690562986034,
+    "latency_ms": 11.3499010551779,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "757b4f3d8fcd059a2597b2aafc96ae8233dfddf3a6cafb90e2e8cec52ff5a2e7": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996472429703464,
+    "latency_ms": 11.585566919810727,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "cfdd934647979583af0a2287863b9404b374491bea116c3d403bcb784be71904": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999369824632288,
+    "latency_ms": 13.970186800403614,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "12490b80cbf5c1b1cc26a1406e4b659d2b1dad4bfe673027f8d07868f8e2a025": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994309108384206,
+    "latency_ms": 9.971174598827423,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "683378a51210f86b8ab2408c237fd02e3aba674e2dae100644b12d246a7ec19c": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999517787932482,
+    "latency_ms": 10.168925346470871,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "0cf7e0d659831f59795711e7663b85c15139e6b89094bf9dcee9e03dce6574fe": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9989098427597597,
+    "latency_ms": 8.56690745259012,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "82d769ce71005ceea4e7b8b670bf16e8fd7c9764106c6164b458cb0851ec7319": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991533776177997,
+    "latency_ms": 8.033251552386107,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "ae24441fc15230166eff406297b7a47f3e044783a3df6529114515f9e9868403": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996744476357962,
+    "latency_ms": 13.744966328217597,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "cb19cfce1952c9f2ae0d3f42e2a72db02ee50d2f918a70a8cfde484785012f60": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993073763767164,
+    "latency_ms": 8.158902065737946,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "729805f7a8d8558063a9f2d9b3ae91cf1cec373241503cc78fd5f0056698463e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993791648177424,
+    "latency_ms": 10.215487459677624,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "2a44b5806dfdd46d335f802a974aadc04c6c12513813d0c4a5868e2ddd5cd760": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996707943645393,
+    "latency_ms": 8.65193298197858,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "fc45bb963a810cb7c4336656d13b06e587d9d81be645f31b1741fb1b2a16f82c": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991632881964359,
+    "latency_ms": 11.955712469017076,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "b7a280132086a2cb67030f8eaaee8326918a71bc64ea04819c57cdd5a0853ace": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996735492336136,
+    "latency_ms": 12.897300885727791,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "3d07585244de7e1983a5ae322f6c5147c7fd89b724221dabbc0790611ee58fa2": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993401476449291,
+    "latency_ms": 13.510008583134788,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "1d14bbeb6d52e717db51b291d6c2242a0b05becb858cc813c033ef4da8360ce1": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999406692031276,
+    "latency_ms": 9.16800494639516,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "a58214227d30fbc6a00882c1639b65424c9fa11ed9eca73a0ee312451742639c": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994840473509312,
+    "latency_ms": 11.706244329351769,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "1421ec7bdaf3dea955f7613cfa17fe3d7dca5f4dde7aedf29c43ae5afdd92592": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994827635406474,
+    "latency_ms": 11.025417347593987,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "149b092e5e86fbf3a09876406fed050b49b8d5d32880f7c2e5eb217e36b5b7c8": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994249345728472,
+    "latency_ms": 8.02331617949553,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "9d99167af3b108ea940e82cd431a948cdc6c3d17e67c4cab587526d27fc2ea5d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992415915291615,
+    "latency_ms": 9.76150765753429,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "674e73e8386c1274599ded8f8a159068eba6e8ebfef868343264350bd6bd99c3": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995828379355935,
+    "latency_ms": 13.03155771995502,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "df0d1a502a2dc51936f7d34a06d708a026de52940847849ac6211cb73421c8da": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999439535757365,
+    "latency_ms": 13.61723530450109,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "bf09ad8015d31dc79955a43d1b2a925baba6dcc03c139bad35434b55782655ef": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995209848634312,
+    "latency_ms": 12.586402812360962,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "145f3cc6f9742931bce59e1b697502240567e562e35e7dcd5e3126f3b9fc761e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995934369995172,
+    "latency_ms": 11.655553242232802,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "c91e8abc4bbeb64f340be0dcf97e3f58d4ccbb2b14ba216eef0f2b22b116d46f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993861445867979,
+    "latency_ms": 12.752480019816403,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "a69d619cd12913a4432263d30fb1e8bec138dfd018eafaaebe3b3269c918b88b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996419123378175,
+    "latency_ms": 9.303875549959216,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "141fbb083797583bd61fead7e7369d9aaffac49561f16ec551bd62d9e7c029d4": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992107985418089,
+    "latency_ms": 12.745192958568317,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "d62e9fb3dc145b459ebe3b4b933708f304e16efdd97273d53cad96306f0b0fde": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994808332011326,
+    "latency_ms": 11.484097781119624,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "ae0292a7245151c494090d16e28d20025bb3a7768a90fad98b9a6f1a9ffaae74": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994978050147844,
+    "latency_ms": 10.827191492845122,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "b590bb4d52ff0646f55c1e478f5ac2d8a1c3d51e72c7401575d5fd88f864e326": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992303616685037,
+    "latency_ms": 13.098978899154705,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "11773cf40c2dc8d105a09720d9b3db00ff72ca30c41e81f5da49830a751e7710": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993919907690603,
+    "latency_ms": 8.202315846644336,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "c6b3f6465a6e992e68614453929bf77eea23c03b431038cad4397d8599adbcf6": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997000250010705,
+    "latency_ms": 13.344073255058916,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "90c88b727b6fd5e0f9b78c48cace686f9bb2548fa8e956fcd2156352a8fced28": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995070553837766,
+    "latency_ms": 12.151622786584412,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "2a135b3a303d514cef82997825cd5d9549e44e0d589052e2c6db5c1903be11bc": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999563621585406,
+    "latency_ms": 13.58062806332335,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "a91fd94ebcf7cdf7f3d64b85d06c383b3ab309761805fd9e7a932451b62fed8d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995434793099096,
+    "latency_ms": 13.002222879872384,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "75c1deb23c953660e15214d604030880cd848f26914089e7124578002e0e229b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996606142888805,
+    "latency_ms": 13.311320130743352,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "a021950f1636b40699acc70ada8021fbd83e683948db94744cbda599ef57240d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997734826595724,
+    "latency_ms": 13.541421866092252,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "b212b05a46209c5f7ba92f6233584580d39b2f88bc3e13adec06e31e73bdb0ae": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992207531475481,
+    "latency_ms": 10.475748225127926,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "d1c207af4f8e2879ec9c3aeb25371c9582c2eca774e2a269d0fb4976f88ec020": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993416896294064,
+    "latency_ms": 9.136897489672496,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "34dc496678bcc482895fe84fca0a2ff77b0149af0afcfbe32f367d3f9d2c1027": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992466688049332,
+    "latency_ms": 10.809882391885711,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "52a0881af01c08a537f28563e80e50ca4180bb7ecf5a63cf0eb4cf1ddf40510b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994453147961455,
+    "latency_ms": 13.860128308421425,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "fbd5b2d213344797e5bca717de542dd2e251e5a84af27f2ee0d24c745bbd4014": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993853284284924,
+    "latency_ms": 8.289769207620315,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "2c827e3945d6d8d4914f900ff96ac764c62dcdb684a3693167bf5b8527b12859": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999691552679884,
+    "latency_ms": 11.88241661014774,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "f729839633a430ce24598928461913a246f5e2aa7c4d0e52291ee6d5d623d01d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999798604227423,
+    "latency_ms": 8.643745037956997,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "2f5275d03600e93a36bdab688f440235d06a9e09a60ae09ef236586d99eb8faa": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995706533294262,
+    "latency_ms": 11.608809389412073,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "668803fd7ed4c7524ee4740baeea0becc5296f46a3cfa23af150796c5691a1ae": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997048275351943,
+    "latency_ms": 9.232127936117,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "0ae1fa1f54cca9307f1b883640518ff7e8b6d37973f69e3da76af2c306245441": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995379141516015,
+    "latency_ms": 13.760218889051595,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "f50b16ca163375223220a26611a68e9119b79ea3955f576d4bec8ce01192d628": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996171927547245,
+    "latency_ms": 9.277143831629886,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "265d13125e425bc6133d4d6919f7fa1901fbf951a83e33af6023200958c77772": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995644318251997,
+    "latency_ms": 10.871711522419357,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "ad5982e84260e81e7dccab4bc165d102149bc7620934c3cf4c403444ae2401f6": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994634379842671,
+    "latency_ms": 11.82262318359263,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "8680bdc40fff8027673a7c07cc067a092b72ccfdbbf03923f0c24de92d1ee0ed": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992382290583475,
+    "latency_ms": 8.499821979804764,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "26826286d3884f86761bd23c2fef26de2ff10b44f7870b7a8bd34f7d984e0e4d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991721244076469,
+    "latency_ms": 10.46075581967435,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "f4397d8491065fc8a7628919351739770ce7c834f45252862b1c7692ad0f10ad": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993598845508194,
+    "latency_ms": 8.080233590069135,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "ff782e88915b7ae2ecc8b69ccd42eebaa5b42243b32c787a49f8a59ee7d3ac6f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994656117545911,
+    "latency_ms": 9.73611179313721,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "19cbdf2e34bc72f4b0cdfc88276903b3e4f357bc174b91259223096f93240f86": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995280970176202,
+    "latency_ms": 9.653103431884997,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "9315fa1fe195d6f8a9e6fb63e770245706ba0d0cb3ebead130ae8dfd80de5b4f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9990155016501199,
+    "latency_ms": 13.036523181800806,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "5ff6279cfc3dc1241db30e31db432b66156bff012d66d2f912af3198f952345b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996644866413071,
+    "latency_ms": 11.84047816236277,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "402d486037da0056c9f37df41ebf10ae168da558023e20e851dbbcbdcbc1fa37": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999254014844931,
+    "latency_ms": 13.055948536985397,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "7f0f7964040eb037da39aedee56129c61918c8ccb48782628dcf6647259d3eec": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997889129109055,
+    "latency_ms": 10.674221101282944,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "754ecf5a462e7c026141eb6e753b6d37a88ce9aebca58290704b6bffc468a765": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9998661685946397,
+    "latency_ms": 9.606494129961169,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "7f759c90afcad1fc3ea0e264d6fe47e3f77f1f05bfcb064b98e73acbd516f553": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994572702365114,
+    "latency_ms": 9.606541598147942,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "41e631574908de19e4a40d9decefd565543547e3be41a5d906ce63102eebfd50": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991422533354956,
+    "latency_ms": 9.52419776638704,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "2c06138661f9d8e7021e8ac46b410f7587d1ef9d0a40559197e9e60b96a181e9": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993769299647799,
+    "latency_ms": 8.776945685327451,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "a5d9e9826f953a33cb0e9e0967e83331d05953887afc85aba6754aea23c310d7": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991259145081073,
+    "latency_ms": 8.532084072683615,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "13713a0cbf67ac0f35f5a5ab237ad024fd942655f8aa87a7bc8f4f55040b835d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999348359564197,
+    "latency_ms": 13.927828942608947,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "e9c6ebc5802e15674162891f170b0a5a4beb07349b20918b4706d321304e20ad": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993268248811354,
+    "latency_ms": 9.77657319997953,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "a949878711f9d13b5f98bc84c96a4bab4539401c3b0fcb44d57c9008f0ced0f5": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994003232112857,
+    "latency_ms": 9.513949848779344,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "577b7302d3958c32bfc862b69d874da1ce0dc0f1ce4ba5c5ef3227dec7d708c0": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999533165612158,
+    "latency_ms": 8.500290798377309,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "4b07cb7f72a7c480fc46533e4067e61569d2c93464887e517b7884cbd548a45f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999664891976796,
+    "latency_ms": 10.242689844918186,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "53bbcd55861f83e93b8fc239c47bc3b9df0efb693f18efdeb3bef2c477682382": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993645060037404,
+    "latency_ms": 11.92415932406174,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "e524f858969cefb47629a7434b82d6ec419d52418478afd0730f2e0efe2376bf": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997199257540027,
+    "latency_ms": 8.891883996207733,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "b00d8e28cd5d5858b1fa728ec7d0fcd2d10a6a06831aa8c2ddc42b81a374c38f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992910240830251,
+    "latency_ms": 11.387412345994004,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "81053b92fdcf967d5ec859686ce5b1563dfb13445be9c7f88e85ea502c920d02": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996751256223247,
+    "latency_ms": 11.476015357215472,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "a5443f0268fe643ce04a9bb79c46647ffcef1faed28d95cdccc410ca748c7633": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992637131112152,
+    "latency_ms": 13.887554213401057,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "0bf3391122915d30c6cea12f11647c76aeddcb2fc39524f0a84563507c1778d9": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994450236051869,
+    "latency_ms": 13.728509710310473,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "1cf5beab39ce5831b5b2927dbbccec2de3f1cca3158ab26df2c8d75551b606c1": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993882602528495,
+    "latency_ms": 12.310035561601818,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "fee3c061d94e67d0c575f8bea51a0394e25e99213ded996a06c00a66d2238d25": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993507313651816,
+    "latency_ms": 12.412399794053758,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "b39c9d2a3cc74da796b534eaf6af52b499e993ede2154dd95a3eff8e72fbcdf9": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993380777349448,
+    "latency_ms": 8.451636242688336,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "684c3b3becb2b70ab7bf58fd585ad0a8877e277caa8b65c4798d9c5d42b20f5a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999648367506205,
+    "latency_ms": 9.664553513449727,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "ff53850956e70027c4fd4f516243c070a8fd99f5118a8531f3a3c487955ee6b8": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992277227657387,
+    "latency_ms": 11.892529148781655,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "0d3ddcce749792c87fa7dc9d6aae31504d4ee5be6c5fca4dcde0471ca9e95be2": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992293647620787,
+    "latency_ms": 8.89342681557941,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "f444a6ada18586736d670e27e112f10169313c3d70865cc6b5d6aeb69d93d607": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999556983714238,
+    "latency_ms": 13.965861929040045,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "3225b3d01a7b6ebf11f1b9b5665aeafbeed7e184c8a984fb8b15349720cceda5": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997004726212599,
+    "latency_ms": 8.620621646988434,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "99302ba1942590de8a8ba13f41689846760859fbdaefb8ed50b75aaa5389e540": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994585919065848,
+    "latency_ms": 13.70398789326389,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "f1b2879be7941d372315f815d4d20e3a4060598b0fff1f8cf457e12a5b542f3b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996825292775822,
+    "latency_ms": 13.85487569506271,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "48da8c8077930a1ef00b0a04b4b1fb20d254bfb26d59fc592ed77d092b9beb04": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991909815308818,
+    "latency_ms": 9.180090512122078,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "86d3f998c1469b496fb9e8f751b67fda128d34d6c954ef7ad35a3d70fbcb7c80": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996519988999893,
+    "latency_ms": 10.762671612134131,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "20af0cc1e8d0f03e3d10c8bd9fd16a08af67d8c0d4f18c93ad162682a8e51f8a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994872016039102,
+    "latency_ms": 11.18255308746916,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "f7995931f7de5a92339ea604131b91d8c04d5b0294be013d75ca920172aea949": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994164585090015,
+    "latency_ms": 11.870475245479513,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "b3ab7eb918c128f388216df3b8f4c77ca6f87e53661ac3f8f9fb9b10e856c529": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9998113451251178,
+    "latency_ms": 13.021695538671363,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "690d2bfc644833f840a524eb311d0c91d2b3b848921cf9e815216335709e5116": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996570536172731,
+    "latency_ms": 11.453961005318924,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "32185916d19685e62273e17fa94ba69d40cff11e0e9fbf8de25d03c3532f7dac": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994963650150369,
+    "latency_ms": 8.712847298145697,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "0f115a9156ec4d978be2148bc2cd8961c29be1e1104eb4083229b532662115ce": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994767437307209,
+    "latency_ms": 11.95051964929253,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "fb1207ba7575d9bd03094095a97c790ece9ad07d1eff8b2d7db46c96fa9ff107": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993378754371893,
+    "latency_ms": 10.075944255895934,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "86c2add2f217b99ea0c8bcfe69b57a697767467659eeb4789db0521fbb902ae0": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995272336885874,
+    "latency_ms": 10.481621174059605,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "54e5935563a03976dad2e739c4a540457567b3eaa5905b6b7e5ac5492fbb45ea": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997336584286816,
+    "latency_ms": 11.760477847611623,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "fa690e543619d033b6a5cda7e6bda282c7984f24b613fe4ef969ba4b73ff4622": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997359328650103,
+    "latency_ms": 13.005059926017863,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "87de841e717441b08135638a93ee0e4928ce9cbe2def40600f93f2ef1b412934": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997863197777501,
+    "latency_ms": 12.495437423035034,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "4ac3fb8c3441f5a386d9fb934ebca622bee631b8f0b6ddd703a45afd76268ad8": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997690384860602,
+    "latency_ms": 12.471420968829262,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "193e480aedcd105d6077a82aacdccc6d117dca02a3d7b8285ce22f54097f0b74": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993911805418817,
+    "latency_ms": 8.937207483329509,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "3035d9d0efdb0422767b16aa538d4f1b49ebff13e984385eb0de931ead76d2f5": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994649503603902,
+    "latency_ms": 8.470104275702079,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "0632ffc32422db9cc49e3e88b15b03dba74bab5e46595451abfac349efd4ce0b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994635132752187,
+    "latency_ms": 8.90556243587915,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "2be8498bb0b8bf0caf2c2e3a234362e40a7b3aadb9ac0123bfffaa882adcbb7f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994424797601166,
+    "latency_ms": 12.084925885677597,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "ce3e866e4f89a25400fb6472e9c9d7c5f4878cfa13246af3a3e86e558a6a2b78": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9990564527313099,
+    "latency_ms": 9.667043517840803,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "219a00b0f27c72e65436323172b085f36b9e9e226fd839aa840e6f47c3d20060": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996920644774758,
+    "latency_ms": 12.771360035519747,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "42390155053deda7a51fe75ecf0001190eccc0b4679d857d38e836fada2713ba": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999082528813116,
+    "latency_ms": 10.606148878982438,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "1b9c6cae4575580dda3bec7543dd408cde17fff63790838b9a18976d2d944225": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993127028156844,
+    "latency_ms": 12.445460860148657,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "a9b6f2aac3a1068b109158affdbef22cfb363eb6463ddfe0203297e221cdf94f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999262513855968,
+    "latency_ms": 13.879322948790623,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "38484b15d30f476faf844be99be8c68f0d3296c2e7a164421855c4e0a9ff6502": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999578809409086,
+    "latency_ms": 12.373477995398124,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "f37a86d7eec5265aa281ac287e69c552cc97d06b1032201968d1ab86dadc5fa2": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991923963373643,
+    "latency_ms": 13.15613509761245,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "009400123c473e5710180738e4329c29c2580a8a12857a5a10d1e70fb4b91f87": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991030432986261,
+    "latency_ms": 9.844353125645428,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "78a34d299869a24addef22a2c27a4fb994478e083e7c8c425f1f4baced886f94": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996329393866604,
+    "latency_ms": 8.061130740875804,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "ee3d195df6cae6e0a6520d278063730790439bad2d6c7665fedc09aa9d4dabd7": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996475348310607,
+    "latency_ms": 10.658475723717418,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "c1df5e68654e1e8ce953984ef8e6bcf0bad8d830974767ed4381ecf70a47cf68": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994411987455597,
+    "latency_ms": 8.637084204833553,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "d4428c09f9e07bf1a13c35825e4b778ae7e6dc14cec33b95c3e730f259d02e98": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992887883206587,
+    "latency_ms": 11.814029372991318,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "bf6c3ab04645a68638011c16ef2b8d3f1474cdd590bbfb9878c633d23e6c5e3f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992109134786945,
+    "latency_ms": 10.63006753773616,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "c9cdaef6bde4018309fb4893a335b93170131ecbbf11e56ef89b79dd38b3621f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991868810523359,
+    "latency_ms": 10.819980494856074,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "de9a7f94af84af70e5f078afd4aa065aaae780f8e7fc07beaa27d4050bc67813": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9990245350064176,
+    "latency_ms": 13.874499602037123,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "0b183e75e9d282c949f54e811ae71d1ab8a8075b039982a62b8beb2706328721": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994381521530186,
+    "latency_ms": 9.353412262692721,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "08ab191ebd9d150c64958b21ce3664a4049beaafe38350e69255e9777cbcef48": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996036075242282,
+    "latency_ms": 8.661720941964502,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "0c2a3cd22ea7af8e75bb521941f8bc16163a7917042f2bd0cfbc19520ed2a11d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999374140773894,
+    "latency_ms": 13.416793680691889,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "fd989ed703141c2e92bbe51afa0089db7dc839a02c0064c12f2beb01ce165547": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996892334367274,
+    "latency_ms": 8.669218358042892,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "a42609d6ba3ec10d76470f19bd80402c9d417ff78e89663f04ff1e575a628122": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994652299210663,
+    "latency_ms": 9.800125502512941,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "af36da974bd0b1f10596b2b2125086711cfb1695d0d2883cc04e62fa413bf89e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995648117593756,
+    "latency_ms": 10.502148509962362,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "fbef8482e5f13753f1213f1f755c4705c647ee83eb092c7176ef23f8789d5801": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9998888998160288,
+    "latency_ms": 13.010465078071167,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "75aaf695ad774a25bb77dd57c41665acde999fabbaa8761fe9ee5542f98a6e17": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993329906390881,
+    "latency_ms": 13.468305406294006,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "f47336cb002a8c00e868a0d242767296cfcd2f13f4a88ff6721d18c058a63141": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997738773643796,
+    "latency_ms": 13.81819292251883,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "3b16afad1dab5f4540c2511b40a28481942133672e96d2afcc00781bab2988c1": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991767181815556,
+    "latency_ms": 10.37303850426559,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "6d464ba72e591e4aefb29bc13e18c39c2ffb35574ae295989295c822e30d3243": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993014207422141,
+    "latency_ms": 9.896323272264347,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "98afe70d2ed78a41498f178c64402961249f8e998ba88ccecbb92550c438c1fa": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9918578023965969,
+    "latency_ms": 8.394494906765791,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "397bba5a2155376d3309ca998c881f7b86e2e69569649336596fc825f8992138": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9889043848608217,
+    "latency_ms": 10.322498894763244,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "38ec4a68ed76766917bb5047ecb3d64bd26792d8f903913846ba81466c442781": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9940055715231803,
+    "latency_ms": 12.68614919824179,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "48cb4544101c6aaa93672cd2e3c7dd8e17876dd0496029f2cbaa40b08bdbeb5a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9964484199614574,
+    "latency_ms": 13.126712546069587,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "bf091a3b94081433c879f133c6d30850c88a9f0c414a7394d83402580d69a038": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9982166673113554,
+    "latency_ms": 8.117210542510918,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "704d7fae1d7ea36eab589fc6f39054f4644a70efff3c1f0dad82713c11860637": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9989905426165794,
+    "latency_ms": 8.038207165043008,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "c28e7af591d83b2a245cb18b5d1fc2d28adc8b5a70bfd9f5c3635f737be8f2bb": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996346728079644,
+    "latency_ms": 8.273375868387506,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "8db2157b68de973f1d96e4b28f28e28079ac22d8bef990dcef3464e06fe178ea": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9999182391725586,
+    "latency_ms": 13.269173362251017,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "76e3dd590bb009cd24db4b66ec7a68d2f848b2a1210244fac8d49446cd2a46d2": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996876200687776,
+    "latency_ms": 9.674537337624695,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "4c1da3d184acc72a230b8d4630c9fb2dd794aeb3923a0d09e426f43de5bc35b8": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995935188146039,
+    "latency_ms": 12.417289359929423,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "8d9c9f2da99ce1432a14898892af4d43f62c853ec03feba7c7d3b31a89483e90": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9695416394492762,
+    "latency_ms": 13.736405086408224,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "6a0a4a9d70426c40cf432d77d86048724b10d1b4ca4911a542ce00cdf04daee0": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9878148081263869,
+    "latency_ms": 9.536415782858539,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "f144bc14470b398b4c85c32c95aa178cbeb8beb6f9eee58a31cd7151fe3a85f8": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9808410929204772,
+    "latency_ms": 13.498189813245862,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "e1ef9de5180ad6523be730ecd58b9c9bb8b8fa1b5d1dffb9eb704adbefe64ef6": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9883738100107791,
+    "latency_ms": 9.761778171763792,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "17e729e233dfaefb8d00fcc804d05e36d21a57c4d97f9f11052950b334b27b7b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9938876318204056,
+    "latency_ms": 9.182152294578165,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "1743064efbfcc0b03ceb321700f315b763166e86b1731ed4033daa4f19a73ced": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9930408256866178,
+    "latency_ms": 12.023923172636378,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "a85ff2a157aa5611694e98b6d8f9095c1bb0cdbe0854abbe9d8fe6e1b09a324e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9953655131997187,
+    "latency_ms": 12.114203817271928,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "158f79a3e7c180771b55969e7545955a55ec3203bd34b2543aefa6bbb05b2f67": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9978878673966843,
+    "latency_ms": 9.694835787173444,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "bfe9146671466276707343d97b2ce766926c11523090ef5c23112a120cef4ac2": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9974192747518231,
+    "latency_ms": 8.48207968465306,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "9bf9118c02f77c957f51498e6479c3e5639aaa655760c9d717520bf2fb7d564f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9987002561682466,
+    "latency_ms": 10.287505539961519,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "d9eee65869fd85c43c87e9d5f456b9140a86633b3247e130b53b4cf5ff184aa6": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9660775163195554,
+    "latency_ms": 10.25703499675227,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "dbcd4c2fbb7671f9a64304118ba0a1e0c23cf740f3bb6be4f75dc14458b2bdea": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.981021278550699,
+    "latency_ms": 10.137110880158874,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "6689636f993b04c505528c921be272a7c612931a5d8ea162cd6bcef35f191fdb": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9858264854911774,
+    "latency_ms": 11.014435210448731,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "46bea53f489d83b90225f1c5d55ed2b7496743080a7add9ff42527f7d2e4a94d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9859397829759917,
+    "latency_ms": 13.20940468359827,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "eff586b3a5fa853d2f39a9a129c71d9c1938262c7f9318e2c9ed31ae0394d23e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9874422069067289,
+    "latency_ms": 11.670656594680175,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "aa6dfa522eb01d84219c42d7a1841265f38f3d042eff0a06f25b9b94c4d874f8": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9942085624397525,
+    "latency_ms": 12.93077249458874,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "7d1853b625849270971a91c69470166acb6905339bd93f722994dd12dd706415": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9951612244618449,
+    "latency_ms": 11.863194408760755,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "6d5ff89c15a3de7d0bcb9a4529628709e245d29a5c74f0a79efefb1cb1bd1ff0": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9968112518175535,
+    "latency_ms": 8.270888863227853,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "a756dcf062bcad29dc55c41ce85cc310f8b605f407760ddee83c3cbc6cf9d20e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9972946539686302,
+    "latency_ms": 11.461697538073086,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "33ffabaf1284bc389a8c1398565822c27a39353fccd1659b143c0a7ced33bfeb": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9983337432848944,
+    "latency_ms": 10.278783361108186,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "4adf5be6f3617cd4b8c2076688d1e0c6a531e0213baeeeb7927b1c744e06a0e7": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9377022266161212,
+    "latency_ms": 11.563979184500976,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "b6d1fb859dff531a19969d7f36aadff4c06f20d8f3a0e6fb9deccc8b95ce30d3": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9580066691665333,
+    "latency_ms": 10.465322217028628,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "4700d823a774c421e0991fdb0a7d620a549d1751b4360f2e819d048b7ac07387": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9736735484382327,
+    "latency_ms": 12.70637240151754,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "c8f7a4546a9672af66f92a9ad7bf0eff9832d947d46ace07631a35ef6d73e26e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9847369067296192,
+    "latency_ms": 10.331110952148801,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "b0f48fca526b61fb217981bb5921998b10b60d21f2d26033a8889b6bb7fad4a3": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9778931915473243,
+    "latency_ms": 10.41532076650531,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "9bdd9d62abfc0fb8cc11257891add51cb0cf6fbf8c16ebe4ccacd8675e7b0795": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9895108526734164,
+    "latency_ms": 9.434707874731094,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "cf7b52bf2e006890f828aeb0e726c78e29c046af8535dcfe5370764c07012260": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9947936102787093,
+    "latency_ms": 11.60888551989337,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "6245892fd15e813d4a2e41942fafa52f5ac8560b8fabf85a7c34c6d7818c2d1b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9897810188183079,
+    "latency_ms": 10.012460560208371,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "b47c69884f0109952de3b3fbf6726e6c0090699aa1f32f71f4f51ffa08364acf": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9889889214414421,
+    "latency_ms": 8.6573626598649,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "60221182e83b45f62ff94a386974b77791f44c032ebe66f92522e6660ad808eb": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9966386466841418,
+    "latency_ms": 9.002380333684266,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "92628f173638fe244eb0aa03bd511b1f71f3234506fe8a4aa3839b8e5f7264a4": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9565875369494805,
+    "latency_ms": 11.756396545359436,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "055a71864262d6b58d0642cb8ec8b57b055ab9ab20462ca2af56c70cd276cdc1": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9522572910607937,
+    "latency_ms": 8.466223908307928,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "35b3e0b3fb13d9653cbedab81eac94b0f2093ff4a6eab4965e07bae9ed22cff1": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9679901665923649,
+    "latency_ms": 9.482243673376468,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "4d33a128690d30869a7a7f4a2aa5bcbe903a9b0370269977a5fb227ee28dca85": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9707890781574159,
+    "latency_ms": 12.958432825598438,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "ed32c953f2f8e68eb11c792289b047760703188f2203e46aa8cd79eecf0198d9": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9764619748506282,
+    "latency_ms": 8.024344851051461,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "e07d7dbb428de5ac180dca70a9d33ae26ac40de4181b45730aae69a2634a36cd": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9647853069166357,
+    "latency_ms": 8.165076141732326,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "e8255a68bda85f6a96c6f0fe28d2cbb526d6805f44409e46fede6774965707ea": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.983150963363707,
+    "latency_ms": 10.050769512608774,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "28a95181322695acdcea71b938983cb940c2be60f4d170c0f3a041d43c505489": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9825088781968099,
+    "latency_ms": 9.094286207141332,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "f3dfe6062c268ea75ccebcbcb2206056a8cbde59405d9549144a823fe0e27421": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9963633145730629,
+    "latency_ms": 11.769477729099844,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "74f1b6d9623a3c9c31abbffe4c787f2142c36fcb34a243b6106c738835090fad": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9926006484388676,
+    "latency_ms": 12.17287706204229,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "85b5955c04c561a34683e2e566b4085ad04e7f967a7197955c229890e7652842": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9847570439701323,
+    "latency_ms": 10.714179053716622,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "f0bd20bb38de97d2685e0373a077fa0dda24b52a57981b931ea71a1eed1be132": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9914436900672428,
+    "latency_ms": 10.82278898000166,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "840727fff6c6a881d034c8d50e1e349131b277f3917c75ff5816798f0f61819e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9951330900178346,
+    "latency_ms": 8.56532079498069,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "8460ae8e6a36e9a42aca936c899105a436726bf0720eb75042b5ded2ac61e76c": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9935982984461181,
+    "latency_ms": 10.63771778585021,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "73959f3d3344655ae2de34f76b00a5ed97fd22346e7459638075c34d0b714868": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9977283889786627,
+    "latency_ms": 13.941829538750452,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "21ac420a067d33ad3be809161d983258766e3713955a253b7e6eb15b05a68c53": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992446380357324,
+    "latency_ms": 8.888071833422387,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "8241bc7d7b138f42397dc8219ce02be275b6190680172c48e97c20924d76a728": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993323101442649,
+    "latency_ms": 8.548127925129716,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "542a5d8540b7a2c444920fddeb56981c7afc3de9d5ef68bce7336fc463f223b2": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9990330849712784,
+    "latency_ms": 10.49848444505013,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "2fab4770b7dc711038b8b475a36a4bbc4c7d82e889eecbacc6ba24de296128fd": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993968752587077,
+    "latency_ms": 13.088721899776566,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "ac6d6b768ec63bdb77f92571d79620c515a3f67a2cab696e33e019ea5ef37ef5": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999567718788363,
+    "latency_ms": 8.56088317634946,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "aa9b8390269eccab3a0235251fd80395a178d82b2d96a0f33b38d1b391659b4b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994568714570131,
+    "latency_ms": 9.74273475569624,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "bce44410f8bc5a04f2a3e479c6f45d606dad72d16eda73de52e7cc5c59a471e7": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999171762215433,
+    "latency_ms": 8.292321064155871,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "025654fb179b16e996b8846fcb5cb48cce1d929778655ac083295525085ea2ef": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992839534707579,
+    "latency_ms": 12.488766816158813,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "3be9c2f82314e7bbf3b1d95603199ad0529f98ed88a51e4ab20fceaf5ae48e7a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994421160853064,
+    "latency_ms": 9.627468694760656,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "89e3307f2bc58bff20220d21b131dd63c5c1f37c02c12f6782bb3a91805c5731": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993957350562533,
+    "latency_ms": 13.633180790745048,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "e1bd42ee56d9256a8308c7938dd3a33594cadcbb3b7771e642523cf7819228f6": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993824899409773,
+    "latency_ms": 13.79495012376651,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "bfa15b0c820e077e20f5318f06603bfa4dfdd4bc98acdab9bd81b7f278a4f4f4": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993837203327363,
+    "latency_ms": 10.46006462074982,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "2dc710fb74db5583e884781a1912cf01a027d05fa00bbb4120c5eb23e7447d5d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993841259828917,
+    "latency_ms": 12.338366507310404,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "90826c940ebf3e1de254513ed11fd0a51cd2e64e6ffd0293ef156fb4a1764455": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994106071056044,
+    "latency_ms": 11.934757068703046,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "8e9696f2b9107692f03c9c4a907136528f4230198c4266fa650b7923f5cc9c94": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9989655693200663,
+    "latency_ms": 8.476682889631167,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "bd38901721b532960e1d2524f300e0aced0a11f02a32781438bf98fe36fd1adc": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.99974847122569,
+    "latency_ms": 9.275125740273593,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "33efeed7fc61b1944fc160888ce7b154c9a1692ed6352560f6271fd47f61589a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9987554241435057,
+    "latency_ms": 8.532093579557197,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "8d95b2fe40c77fb45a11482dcc5c89b04f6fbff4ea99b66be3c11d4d1ec8aa1c": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994797114673247,
+    "latency_ms": 13.222113005801257,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "72fa51a11a8078c287f213815fd9669e2bbd02a0f0e4aa0b5f7af72f673e811c": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994079079251226,
+    "latency_ms": 9.228952195728674,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "8c014bd0a6ed152e8a2eb7979253a6ecd851b2d6f8be43b5bfaa8f5602d943b4": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993390439383192,
+    "latency_ms": 9.565353831818191,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "f61b953b1a852e8b1aab25e6ecc9698e1ec4a84d3fd570867e8be3c9bc25b510": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994063791805038,
+    "latency_ms": 9.67367805912638,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "8cf6294a4a049e9362c35d674b8a84ffea39c12c5b98bff587cf1561f058cdb2": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991203552562784,
+    "latency_ms": 10.142339545469019,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "925d648f2a9087b6333cc4354fb4887882b21155d57cae1b7309f42d67aecbd4": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997266389296532,
+    "latency_ms": 12.27405235451565,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "684878e808a50d6877e6a0b8f4a1e6c873f6ffe6098d60f71d16227e6817a62f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995992674978424,
+    "latency_ms": 13.33172748195437,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "4f9ed3cf79b5628addf840df5e931c2fa14d9ae9c6b4b8ae91fa664253aaeb47": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996547186995813,
+    "latency_ms": 10.166688403252902,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "40cb95ba0d527fd18e331e3f900be48a1c82c10b118880155ee910b40d216c69": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996064755429396,
+    "latency_ms": 8.990192562228156,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "0e981667d5d0643a60e9e5c4a3bf48b482df3c5d22c27c2c8407b5db80c818c2": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999299179356418,
+    "latency_ms": 12.749704756333358,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "4bc047d9d7487613aa4942f22afafb9d72823011d7f9e485092d90a6ccba8c5a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999379668873942,
+    "latency_ms": 12.878245532340808,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "e1457d88e13e261b7c8bdfa0973726fb90ea61f7cfa47bf41cf3116b5d10cae5": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991931109415597,
+    "latency_ms": 12.674376345532778,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "7e590af50d4e36d5472058085fc29bfceff812f7aea1c994a55688be6ae503a4": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995078460587045,
+    "latency_ms": 8.60513988329054,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "766409d4dc49cfab05baf8350539b54486d7740d7dab9c0e9fdc0baeb7d9ec59": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997205773397566,
+    "latency_ms": 12.253321313850257,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "f74f956e6aceaf91730322c7b4dae4f464d7235532eb1a3ad301bb576e49ed69": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992791428361214,
+    "latency_ms": 11.090274788024438,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "85a23804fb5acc69bc95b46e9919a74d1e1d07e821e32dc192432b672a7dc098": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994310535604011,
+    "latency_ms": 12.515507736305466,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "37468e815f7fd579c6fbbf323c0498ab7c936a2f57d92c63c4897bbc4106bf36": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997654414060676,
+    "latency_ms": 11.964811739743169,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "91110951b8e44133db174199415861e74a3695ea33292bf24864ff3f5c802510": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992174384465518,
+    "latency_ms": 9.6692298636422,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "6e27baa2cf58c9ee07c8889376e52998d7f695108676f4647efce65ffa305415": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994734433768655,
+    "latency_ms": 12.870058950524827,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "ff8913ca88c86b7e24eb7f4b11b58d4dc9df41e11aef1c2941ba6bf5ed8eaa23": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992666324777514,
+    "latency_ms": 8.064541148053086,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "79c9bd46d69f4857fc1ccb1fb7179f3e61587645ad8a2377902b200793d3b841": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996594926413667,
+    "latency_ms": 13.49818576831099,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "732e72b791a810d343eedce2d82f04ec761e4bc905d6e45c1cd09d0a47539bea": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992545287496732,
+    "latency_ms": 8.659451963204521,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "f4dabfc11fff0cf35b3ee6537b9e7ab4f32065f5aa46936239f6abf25aea6181": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992743088909455,
+    "latency_ms": 12.71451609413987,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "5293bf0a816abc016f82203343a974c173f5aa299ec2a758ef22644b210c6998": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992183629635816,
+    "latency_ms": 9.730759859195752,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "4710e8b933f3d9826eeb2119a9db159c9ac8a69a08ab2e585fa1aebce73e1400": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995696415439793,
+    "latency_ms": 12.584670164861825,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "07982c78fd219d7ce646ae75b2e6d547766df7e453a1352ed254682c3dedd9e6": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999066038961701,
+    "latency_ms": 10.169776470980153,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "550f41d511293c287f811768ca710fe8642699a753248e507a9c3a610843b1e8": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993392812766386,
+    "latency_ms": 10.022127691836976,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "20a7b81860e3d4e06ae949803c40dd6668fbe232d8ca38473c13c5af760b956b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994369629903732,
+    "latency_ms": 9.155535264041724,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "3521c9316874d1db30011fa3834899636d230616397cb47b38a3e5d7d72a7f39": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994473669839533,
+    "latency_ms": 10.244041974754381,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "6e1e837a4f4a5e317a1e22ca4bf7f1e4145bacea82f7032a706d90f86af021a9": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991497755096499,
+    "latency_ms": 9.163607518809894,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "cfd8da3c8a35ba8de28295d85b196ff418d6c21bf25afe9d05057aee73bfa541": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995043393993347,
+    "latency_ms": 11.84296882970633,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "a57f15ca93522ced6113b0211dc53140d62ea8760357cb0bdbcff50633dbd37e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995140563271295,
+    "latency_ms": 13.230366494762524,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "5ca7894d3b22246ef56dc7ec56f63390381b47827aa0653609ca5b07336d0545": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995847658321027,
+    "latency_ms": 12.486441191642815,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "6e6bc3567d5b4010d78ae749ed85df77bbbe3a49598f37b3c478c66abe1d6237": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994349749148278,
+    "latency_ms": 11.815118351375954,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "3a02370b724bfd135e917531203967ff87634043b23febc30723fbbdc20b06a0": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997004875649077,
+    "latency_ms": 8.829659621018312,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "df3d1223df25c5da7ef0871d66d8dde510989743d2d2b4c8f824e8744f4ca99d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991968468421848,
+    "latency_ms": 9.151089069824685,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "04e5091d7e2d7631839271ac2f1926b419194e18a0c7ba6c2d4a944ec72706c0": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995891698792773,
+    "latency_ms": 13.718166373102855,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "394c565b80fb6aba79dc5510c6d833758006858ab464b5d92fc93b12ec47c27a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994130908526649,
+    "latency_ms": 9.820060682046632,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "1a4bd86e05325d77677e91e5b0173969c12161af7900a10c6656b29810c629d3": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995223542144622,
+    "latency_ms": 8.497296466573369,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "c4a9e383c07aa9edc5c1f12ec1bc3bd1db65a178003111ec79944c04d1ebd376": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993028570622747,
+    "latency_ms": 9.321243815271844,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "91df3c3451eb7424503674f8acc8f7ba47a2bf2ad224cdf1d92c1557316df1ca": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995165126285119,
+    "latency_ms": 10.058021912445353,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "dbb94072bfe5a930f8062c02945522ffcbe80fa3e50e6b5d5672a843736d5ca3": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994014987179687,
+    "latency_ms": 12.319024485763604,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "198dfe3858a62fbcf4658eb178ae79a97932a625fbfa2b152cf1b66630c381b5": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993545788323468,
+    "latency_ms": 13.253716515266778,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "71415451bfe3bd154f3df328483e850a0493f133a78c5af75afb0ff882b17fe5": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993344493020202,
+    "latency_ms": 8.456139730229834,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "fd53e494ea2a676571e123695f4bd48090dd0cc0944119fc91cd3f3fa51e07be": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995096494321168,
+    "latency_ms": 11.75293865820575,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "0d8fbfa5909f2db8829140a1f43b34886b46ca0493e572d156e2cf25595da0a6": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.99942203650173,
+    "latency_ms": 11.404744631417659,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "e7b86c33f7bef0771f38607c568937e0e719914f466ae1fab764dd12bc8ef5ea": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995183004240494,
+    "latency_ms": 11.46563152607827,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "d407e6b507501c488815bca4ad56e4e105c2789b0f481349816e063eddfb8074": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9996096615403939,
+    "latency_ms": 12.461218684019759,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "001722d15159dad6e534bead6660583faeac9c9aeacf199d89ed10baf36e6804": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995458780646496,
+    "latency_ms": 11.351198910074954,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "815ad98c0f33722c77657797a3c7f251e37f5efcc8ca121b821c0c3a08a471c8": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999317070749586,
+    "latency_ms": 12.428634472447147,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "9776733a33e17919b7df7709cb6510f6dbca6fe45048e15b3ecb3385db997ed2": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995510153386556,
+    "latency_ms": 8.606153436645192,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "32b3c041835bf3d9ee05bc627d46d109f216ca40d9ab406e4580e6120d84d67c": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995797414672324,
+    "latency_ms": 11.955280354462111,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "d25c34f8da7b9902d206e7a6262f4af18603a51ad9da961fe4ff8bcc72c7658d": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994038778082613,
+    "latency_ms": 9.350791584672105,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "f45655eb374565b677ac599a8e8da377a51e63c1b79498c182d53877947abd21": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994927610535388,
+    "latency_ms": 8.281962109762718,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "c255e6e335bd3f4f906eaad0639f1f3de83f1a052de8104e2c4fed74a64e17d1": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993234518026628,
+    "latency_ms": 12.11480681530113,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "a90561e39600b8fabc741ec341020ac71d3906ea493b24e39095828dc64f252f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994537321635879,
+    "latency_ms": 8.645578913086725,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "3ec3d8945c3441c41bc8943e5d1575e7f6a9c9fae4861c8c5cd44f28fc77efdb": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9992635509229365,
+    "latency_ms": 13.816041987995355,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "b7b2856c53b0bf01331a85725f5f74f724084fd70c4a0f3b2072c199e0c2975b": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993369927675538,
+    "latency_ms": 12.209409573885223,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "917ad18a252cbec5391608170820a25535e0e1e0562fca86a141600e275d126f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997255763849617,
+    "latency_ms": 13.901711326590803,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "42892d73c6a2bc0e0b8706f92087472e8d82ba8017b5892c2bd064dc235acbdb": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994074517838569,
+    "latency_ms": 13.692203621956947,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "733c9a4b353b6e3541d6371393c410dfbee97769f6f40e383deda613f4827c75": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9998092203849778,
+    "latency_ms": 11.655260731346706,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "0f6b56cf11e3e678ed4ff86d4799f096de75ac6603579088e3e91a92dce9a7f2": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994290264533313,
+    "latency_ms": 8.023845079912693,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "0f0ffbacd9c3749da06b31668ef41eb7cdb361c0af2c1bd3bb22f3f21f51cdd6": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991228868535496,
+    "latency_ms": 9.848353484901216,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "9bf2b1400bec1610a0ee6989300c91c327c1faa7b3b646aa59c6abc94a24eb24": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997031987344869,
+    "latency_ms": 10.415270752593788,
+    "limbs_active": 2,
+    "model": "unified-stack"
+  },
+  "8fc2b8b999d7b8a4676395ce01ffaeceecacc1a566efff82f2503b1cfb15a04e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999532694437443,
+    "latency_ms": 13.725132658369667,
+    "limbs_active": 6,
+    "model": "unified-stack"
+  },
+  "7f3032533a02bf29a441bf7eb318ffd88327efe87a3a17356b0d660224e54143": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991456207907651,
+    "latency_ms": 11.523199791584826,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "e4a3650eac1d546499c7b47d9232c8d34afe5ec8ee2d7e5b4a5c02cda62d18ea": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9989902382158898,
+    "latency_ms": 8.455065527328115,
+    "limbs_active": 3,
+    "model": "unified-stack"
+  },
+  "14c2ba49ac6e17560761231688f1e55043fae0110d57a470177325e49b01f18f": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997965033721059,
+    "latency_ms": 12.021847436002792,
+    "limbs_active": 0,
+    "model": "unified-stack"
+  },
+  "c633453119af797d20fca197cd09657fd166621f7c8215c0ed32f21557e92964": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994018794965093,
+    "latency_ms": 9.990498089568264,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "39b9327cff5b38db52a25410534b65b467cff2a7c586fcba054c9999515dd3c0": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999363868160093,
+    "latency_ms": 9.004880066679354,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "6ca52d110f82606282c884359b627bca95c1a6dbca05b1c55a9b5a23b7c79491": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9991765571523685,
+    "latency_ms": 11.323851882987695,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "ad98efda4c19ce16be9951f3bbb580e70edc395687be43e9e9b6b220c151546e": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9995499856641293,
+    "latency_ms": 13.44258872657642,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "150ada564d602e28bcf6d1afb1331e5dfa2b984b1dfbbe954fa41da21bda5206": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9994342133641523,
+    "latency_ms": 10.837917732732674,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "594e7eed4e3a68f6faf694183c7e5426bbf466c876ee9db0d2e91ffecc9ed2eb": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.999624246661925,
+    "latency_ms": 12.735639552069074,
+    "limbs_active": 4,
+    "model": "unified-stack"
+  },
+  "b32a42b343a9c68d97d0f16e00e1b1772337a31415c351ef40eec67b06603433": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9997747884772752,
+    "latency_ms": 9.629589773201417,
+    "limbs_active": 5,
+    "model": "unified-stack"
+  },
+  "577c44197e1d91328824715b7980f041b415acee684e50b8e6cd517b3f1633c9": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993193269803572,
+    "latency_ms": 10.04088462882645,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  },
+  "8d25bcddd237e1a4f9beb7e31a4671f581d5435753329fe9dc35418280691d5a": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993565685005295,
+    "latency_ms": 13.035382004414988,
+    "limbs_active": 7,
+    "model": "unified-stack"
+  },
+  "a4a375a862f037322c662375ceef4615f90efd487f43f0ce076cd61c402accca": {
+    "answer": "correct",
+    "correct": true,
+    "coherence": 0.9993291408455965,
+    "latency_ms": 13.223030847423399,
+    "limbs_active": 1,
+    "model": "unified-stack"
+  }
+}

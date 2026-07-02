@@ -1,0 +1,3649 @@
+{
+  "models": {
+    "unified-stack": {
+      "raw_results": [
+        {
+          "task_id": "ccl_L1_000",
+          "level": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9919322863124614,
+          "latency_ms": 11.57332861172797,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_001",
+          "level": 1,
+          "rules": [
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9908078202618346,
+          "latency_ms": 10.727131111560215,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_002",
+          "level": 1,
+          "rules": [
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.993421835871809,
+          "latency_ms": 11.638464990004747,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_003",
+          "level": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9954874322576754,
+          "latency_ms": 10.724832689313438,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_004",
+          "level": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9990583233402687,
+          "latency_ms": 11.390099596697949,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_005",
+          "level": 1,
+          "rules": [
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9987324609799043,
+          "latency_ms": 8.78745232823308,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_006",
+          "level": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9993113127748509,
+          "latency_ms": 9.66345290254128,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_007",
+          "level": 1,
+          "rules": [
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.99936988944745,
+          "latency_ms": 8.854918060129013,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_008",
+          "level": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9993543250678765,
+          "latency_ms": 8.394623693810685,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_009",
+          "level": 1,
+          "rules": [
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9996276028283448,
+          "latency_ms": 10.537100423114497,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_010",
+          "level": 1,
+          "rules": [
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9991890845012401,
+          "latency_ms": 10.296151528707993,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_011",
+          "level": 1,
+          "rules": [
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9994121208243661,
+          "latency_ms": 12.442499705159115,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_012",
+          "level": 1,
+          "rules": [
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9994624159689197,
+          "latency_ms": 9.727912986226796,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_013",
+          "level": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.999451499826977,
+          "latency_ms": 10.307961692771716,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_014",
+          "level": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9995617868264652,
+          "latency_ms": 12.66016660609455,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_015",
+          "level": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9995124602799375,
+          "latency_ms": 10.31453048054498,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_016",
+          "level": 1,
+          "rules": [
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9995590974060474,
+          "latency_ms": 8.95523527082153,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_017",
+          "level": 1,
+          "rules": [
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9990511676724295,
+          "latency_ms": 9.31108345861059,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_018",
+          "level": 1,
+          "rules": [
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9994446369960923,
+          "latency_ms": 9.525344920710507,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_019",
+          "level": 1,
+          "rules": [
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9997556933680871,
+          "latency_ms": 9.912921189348028,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_020",
+          "level": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9995330123503747,
+          "latency_ms": 11.473013477776703,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_021",
+          "level": 1,
+          "rules": [
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9993128844621939,
+          "latency_ms": 13.92961003707537,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_022",
+          "level": 1,
+          "rules": [
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9996284834499222,
+          "latency_ms": 9.902037091062892,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_023",
+          "level": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.999454902983767,
+          "latency_ms": 12.088562826270076,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_024",
+          "level": 1,
+          "rules": [
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9993410524338171,
+          "latency_ms": 9.496132206469198,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_025",
+          "level": 1,
+          "rules": [
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9994755993207466,
+          "latency_ms": 10.672937887422549,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_026",
+          "level": 1,
+          "rules": [
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9994402384868549,
+          "latency_ms": 12.116016014540726,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_027",
+          "level": 1,
+          "rules": [
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9991764122339334,
+          "latency_ms": 13.316839361724531,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_028",
+          "level": 1,
+          "rules": [
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9996316531740024,
+          "latency_ms": 9.161021263030944,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_029",
+          "level": 1,
+          "rules": [
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9998818571064183,
+          "latency_ms": 12.547314370593767,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_030",
+          "level": 1,
+          "rules": [
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9992026515246039,
+          "latency_ms": 11.855048158459324,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_031",
+          "level": 1,
+          "rules": [
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9993557978365682,
+          "latency_ms": 12.104541955522983,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_032",
+          "level": 1,
+          "rules": [
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9995734978944892,
+          "latency_ms": 9.4224122924184,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_033",
+          "level": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9993288298983878,
+          "latency_ms": 13.302782864793532,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_034",
+          "level": 1,
+          "rules": [
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9998253705252474,
+          "latency_ms": 12.489350306998425,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_035",
+          "level": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9994361252744802,
+          "latency_ms": 8.610069446010153,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_036",
+          "level": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9997142571280199,
+          "latency_ms": 9.766037021567817,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_037",
+          "level": 1,
+          "rules": [
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9991700742496099,
+          "latency_ms": 10.010711256871124,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_038",
+          "level": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9993960683252823,
+          "latency_ms": 10.641564702201862,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_039",
+          "level": 1,
+          "rules": [
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9995898235474158,
+          "latency_ms": 12.857113569221015,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_040",
+          "level": 1,
+          "rules": [
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9993236683023318,
+          "latency_ms": 13.733936729929237,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_041",
+          "level": 1,
+          "rules": [
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9992286347918057,
+          "latency_ms": 11.430893208707356,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_042",
+          "level": 1,
+          "rules": [
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9992297041445404,
+          "latency_ms": 12.776372083736955,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_043",
+          "level": 1,
+          "rules": [
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9995000684831116,
+          "latency_ms": 8.25147702993004,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_044",
+          "level": 1,
+          "rules": [
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9994108235485162,
+          "latency_ms": 8.565926018317638,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_045",
+          "level": 1,
+          "rules": [
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9995693349122398,
+          "latency_ms": 11.56770114978432,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_046",
+          "level": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.999650971228569,
+          "latency_ms": 10.056233342701168,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_047",
+          "level": 1,
+          "rules": [
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9994022716450393,
+          "latency_ms": 9.998343016825569,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_048",
+          "level": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9995496077804161,
+          "latency_ms": 12.874835856888827,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_049",
+          "level": 1,
+          "rules": [
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9993720898776141,
+          "latency_ms": 13.668985238081317,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_050",
+          "level": 1,
+          "rules": [
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9993962779383617,
+          "latency_ms": 10.507597374790492,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_051",
+          "level": 1,
+          "rules": [
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9997796247141729,
+          "latency_ms": 10.000852258104493,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_052",
+          "level": 1,
+          "rules": [
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9994904395770838,
+          "latency_ms": 9.324179552823278,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_053",
+          "level": 1,
+          "rules": [
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9993485960802639,
+          "latency_ms": 11.054707687886903,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_054",
+          "level": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.999842297114647,
+          "latency_ms": 11.750369272931234,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_055",
+          "level": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9997310239494018,
+          "latency_ms": 9.559696663670968,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_056",
+          "level": 1,
+          "rules": [
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9996821100462465,
+          "latency_ms": 13.20770271895536,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_057",
+          "level": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9997559358561467,
+          "latency_ms": 9.617120335918024,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_058",
+          "level": 1,
+          "rules": [
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9993434030713875,
+          "latency_ms": 13.161308501909147,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_059",
+          "level": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9994866490299289,
+          "latency_ms": 9.80665674615992,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_060",
+          "level": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9992294553502383,
+          "latency_ms": 8.433549459104235,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_061",
+          "level": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9994186315506254,
+          "latency_ms": 12.02932085671897,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_062",
+          "level": 1,
+          "rules": [
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9993187370345197,
+          "latency_ms": 11.86198319435745,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_063",
+          "level": 1,
+          "rules": [
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9993396282585519,
+          "latency_ms": 12.847258578755834,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_064",
+          "level": 1,
+          "rules": [
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9995992502936611,
+          "latency_ms": 9.726896560879096,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_065",
+          "level": 1,
+          "rules": [
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9994903372286676,
+          "latency_ms": 12.2831403695757,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_066",
+          "level": 1,
+          "rules": [
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9994698100141344,
+          "latency_ms": 12.936511230777608,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_067",
+          "level": 1,
+          "rules": [
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.999267880170878,
+          "latency_ms": 8.486970454309827,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_068",
+          "level": 1,
+          "rules": [
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9993302278690498,
+          "latency_ms": 10.197889138882308,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_069",
+          "level": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9994062764369289,
+          "latency_ms": 10.786475518604535,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_070",
+          "level": 1,
+          "rules": [
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9993931988037216,
+          "latency_ms": 9.290525611090569,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_071",
+          "level": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9995555082391604,
+          "latency_ms": 10.729004510240244,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_072",
+          "level": 1,
+          "rules": [
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9995440178619179,
+          "latency_ms": 10.55048343375183,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_073",
+          "level": 1,
+          "rules": [
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.999482407993541,
+          "latency_ms": 11.435493183751792,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_074",
+          "level": 1,
+          "rules": [
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9992045697636489,
+          "latency_ms": 11.642552702131352,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_075",
+          "level": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9993021325004561,
+          "latency_ms": 8.69711011020193,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_076",
+          "level": 1,
+          "rules": [
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9995294850901103,
+          "latency_ms": 10.388806652898305,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_077",
+          "level": 1,
+          "rules": [
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9993547788052957,
+          "latency_ms": 11.23489156922269,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_078",
+          "level": 1,
+          "rules": [
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9994194572308297,
+          "latency_ms": 11.099061800074692,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_079",
+          "level": 1,
+          "rules": [
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9998371217205533,
+          "latency_ms": 13.996632838167852,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_080",
+          "level": 1,
+          "rules": [
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9991034992140021,
+          "latency_ms": 9.256834758127201,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_081",
+          "level": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.999379932614864,
+          "latency_ms": 13.754903809537515,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_082",
+          "level": 1,
+          "rules": [
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9993096810459059,
+          "latency_ms": 11.434886956183929,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_083",
+          "level": 1,
+          "rules": [
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9995179032381801,
+          "latency_ms": 8.49311934172551,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_084",
+          "level": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9994433384618046,
+          "latency_ms": 12.111683191290037,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_085",
+          "level": 1,
+          "rules": [
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9995207425254982,
+          "latency_ms": 10.555713732217406,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_086",
+          "level": 1,
+          "rules": [
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9996558174056076,
+          "latency_ms": 13.753360384001521,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_087",
+          "level": 1,
+          "rules": [
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9997693899357234,
+          "latency_ms": 9.386590784919974,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_088",
+          "level": 1,
+          "rules": [
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9997833944008514,
+          "latency_ms": 13.232987059494059,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_089",
+          "level": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9995439721816183,
+          "latency_ms": 10.224660924591793,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_090",
+          "level": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9994781705989537,
+          "latency_ms": 13.47660787960945,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_091",
+          "level": 1,
+          "rules": [
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9993433877632191,
+          "latency_ms": 8.598018694863844,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_092",
+          "level": 1,
+          "rules": [
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9990902273464407,
+          "latency_ms": 8.355218862197885,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_093",
+          "level": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9994472927835318,
+          "latency_ms": 11.328342452432564,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_094",
+          "level": 1,
+          "rules": [
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9993515473019007,
+          "latency_ms": 9.433897638801604,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_095",
+          "level": 1,
+          "rules": [
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9992985380187825,
+          "latency_ms": 9.42372458832272,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_096",
+          "level": 1,
+          "rules": [
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9992907837562364,
+          "latency_ms": 13.911686129888416,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_097",
+          "level": 1,
+          "rules": [
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9994748597240132,
+          "latency_ms": 10.14062052907305,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_098",
+          "level": 1,
+          "rules": [
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9994259229439358,
+          "latency_ms": 13.170778067928882,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L1_099",
+          "level": 1,
+          "rules": [
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9993064672473069,
+          "latency_ms": 8.419428560767706,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_000",
+          "level": 2,
+          "rules": [
+            "scale_double",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9989616929920754,
+          "latency_ms": 11.86559174336713,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_001",
+          "level": 2,
+          "rules": [
+            "negate_pattern",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9995442307260831,
+          "latency_ms": 11.760374015962185,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_002",
+          "level": 2,
+          "rules": [
+            "border_fill",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9996355862166695,
+          "latency_ms": 12.165256008242316,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_003",
+          "level": 2,
+          "rules": [
+            "border_fill",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9997397046492871,
+          "latency_ms": 10.661547126750023,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_004",
+          "level": 2,
+          "rules": [
+            "shift_right",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9994954476107591,
+          "latency_ms": 8.485667743003507,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_005",
+          "level": 2,
+          "rules": [
+            "reflect_horizontal",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9996450729012708,
+          "latency_ms": 12.776691326999886,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_006",
+          "level": 2,
+          "rules": [
+            "transpose",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9992913438109,
+          "latency_ms": 10.385939475585893,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_007",
+          "level": 2,
+          "rules": [
+            "colour_swap",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9997250007082943,
+          "latency_ms": 13.905671657575734,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_008",
+          "level": 2,
+          "rules": [
+            "reflect_horizontal",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9996604838402708,
+          "latency_ms": 10.824613117873934,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_009",
+          "level": 2,
+          "rules": [
+            "shift_down",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.999478398613808,
+          "latency_ms": 11.291220886653507,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_010",
+          "level": 2,
+          "rules": [
+            "shift_down",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9994286852435051,
+          "latency_ms": 13.266726785206904,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_011",
+          "level": 2,
+          "rules": [
+            "border_fill",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9995355697706624,
+          "latency_ms": 13.934439748006348,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_012",
+          "level": 2,
+          "rules": [
+            "negate_pattern",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.999380802656016,
+          "latency_ms": 12.826634824000596,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_013",
+          "level": 2,
+          "rules": [
+            "negate_pattern",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9993639199972052,
+          "latency_ms": 8.208358180665387,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_014",
+          "level": 2,
+          "rules": [
+            "rotate_90",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9993362942509322,
+          "latency_ms": 12.72503742245693,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_015",
+          "level": 2,
+          "rules": [
+            "invert_values",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9997588340077719,
+          "latency_ms": 11.295440153372752,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_016",
+          "level": 2,
+          "rules": [
+            "rotate_90",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9999054882288676,
+          "latency_ms": 12.650970092187817,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_017",
+          "level": 2,
+          "rules": [
+            "shift_down",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9993394398681753,
+          "latency_ms": 11.981563278911942,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_018",
+          "level": 2,
+          "rules": [
+            "transpose",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9994971887012881,
+          "latency_ms": 10.519334753277844,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_019",
+          "level": 2,
+          "rules": [
+            "invert_values",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9997128032516771,
+          "latency_ms": 13.264661336195465,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_020",
+          "level": 2,
+          "rules": [
+            "reflect_horizontal",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9994551430699391,
+          "latency_ms": 12.61462958572395,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_021",
+          "level": 2,
+          "rules": [
+            "rotate_90",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9993070666077781,
+          "latency_ms": 10.288876777798198,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_022",
+          "level": 2,
+          "rules": [
+            "negate_pattern",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9988497559720991,
+          "latency_ms": 8.220019482238353,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_023",
+          "level": 2,
+          "rules": [
+            "reflect_horizontal",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9995025391513433,
+          "latency_ms": 12.501911229236438,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_024",
+          "level": 2,
+          "rules": [
+            "reflect_horizontal",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.999700340078912,
+          "latency_ms": 12.891230017275838,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_025",
+          "level": 2,
+          "rules": [
+            "negate_pattern",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9993567660947097,
+          "latency_ms": 8.955849214847815,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_026",
+          "level": 2,
+          "rules": [
+            "border_fill",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9990360455537683,
+          "latency_ms": 11.242149186979656,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_027",
+          "level": 2,
+          "rules": [
+            "transpose",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9995473259297738,
+          "latency_ms": 12.080720403678889,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_028",
+          "level": 2,
+          "rules": [
+            "rotate_90",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9996979009734146,
+          "latency_ms": 11.106409853366568,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_029",
+          "level": 2,
+          "rules": [
+            "invert_values",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9992165752084731,
+          "latency_ms": 12.311496971097124,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_030",
+          "level": 2,
+          "rules": [
+            "colour_swap",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9991750951143905,
+          "latency_ms": 8.883678833346714,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_031",
+          "level": 2,
+          "rules": [
+            "border_fill",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9996063538489695,
+          "latency_ms": 9.597909904882703,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_032",
+          "level": 2,
+          "rules": [
+            "rotate_90",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9992305874102556,
+          "latency_ms": 12.731246477891778,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_033",
+          "level": 2,
+          "rules": [
+            "rotate_90",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9989432980026423,
+          "latency_ms": 8.89555228537326,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_034",
+          "level": 2,
+          "rules": [
+            "reflect_horizontal",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9998889629442623,
+          "latency_ms": 12.929462155282826,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_035",
+          "level": 2,
+          "rules": [
+            "transpose",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9995209023793634,
+          "latency_ms": 9.3518607282641,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_036",
+          "level": 2,
+          "rules": [
+            "reflect_horizontal",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9991609422357387,
+          "latency_ms": 13.840708726157086,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_037",
+          "level": 2,
+          "rules": [
+            "negate_pattern",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9995914747046067,
+          "latency_ms": 9.92677949371315,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_038",
+          "level": 2,
+          "rules": [
+            "scale_double",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9996304872253458,
+          "latency_ms": 12.44115659322692,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_039",
+          "level": 2,
+          "rules": [
+            "scale_double",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9992887851677547,
+          "latency_ms": 8.495391441588852,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_040",
+          "level": 2,
+          "rules": [
+            "shift_down",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9993129546430533,
+          "latency_ms": 13.164558878124094,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_041",
+          "level": 2,
+          "rules": [
+            "transpose",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9998120916868661,
+          "latency_ms": 10.268195422639097,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_042",
+          "level": 2,
+          "rules": [
+            "transpose",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9994465049245672,
+          "latency_ms": 8.80392222849547,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_043",
+          "level": 2,
+          "rules": [
+            "scale_double",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.999853579097418,
+          "latency_ms": 13.099280761816177,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_044",
+          "level": 2,
+          "rules": [
+            "rotate_90",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9990815270212134,
+          "latency_ms": 8.282086090015056,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_045",
+          "level": 2,
+          "rules": [
+            "colour_swap",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9995490270818933,
+          "latency_ms": 9.859178979567947,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_046",
+          "level": 2,
+          "rules": [
+            "scale_double",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9993073073288142,
+          "latency_ms": 10.607732774414986,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_047",
+          "level": 2,
+          "rules": [
+            "colour_swap",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9992407562647593,
+          "latency_ms": 8.503355914435042,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_048",
+          "level": 2,
+          "rules": [
+            "colour_swap",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9995005148312552,
+          "latency_ms": 11.651547915222627,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_049",
+          "level": 2,
+          "rules": [
+            "rotate_90",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.999296192542131,
+          "latency_ms": 12.017506491097087,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_050",
+          "level": 2,
+          "rules": [
+            "shift_right",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9994428665525801,
+          "latency_ms": 9.276227469447168,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_051",
+          "level": 2,
+          "rules": [
+            "negate_pattern",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9989413264429478,
+          "latency_ms": 13.63450336281139,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_052",
+          "level": 2,
+          "rules": [
+            "invert_values",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9994994864820264,
+          "latency_ms": 10.637902872580455,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_053",
+          "level": 2,
+          "rules": [
+            "scale_double",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9992697552961787,
+          "latency_ms": 13.69491057337306,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_054",
+          "level": 2,
+          "rules": [
+            "reflect_horizontal",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9993983063223841,
+          "latency_ms": 13.045894224087675,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_055",
+          "level": 2,
+          "rules": [
+            "scale_double",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9995779903297219,
+          "latency_ms": 10.393456882810064,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_056",
+          "level": 2,
+          "rules": [
+            "shift_down",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9992170101177985,
+          "latency_ms": 11.6922608487832,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_057",
+          "level": 2,
+          "rules": [
+            "rotate_90",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9993141901512513,
+          "latency_ms": 11.903841687516614,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_058",
+          "level": 2,
+          "rules": [
+            "shift_down",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9997377751544984,
+          "latency_ms": 9.882021733658167,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_059",
+          "level": 2,
+          "rules": [
+            "shift_down",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9993539362994962,
+          "latency_ms": 13.507723621075694,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_060",
+          "level": 2,
+          "rules": [
+            "transpose",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9997063986346415,
+          "latency_ms": 9.378749512259528,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_061",
+          "level": 2,
+          "rules": [
+            "rotate_90",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.999214153079839,
+          "latency_ms": 12.601181548068116,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_062",
+          "level": 2,
+          "rules": [
+            "shift_down",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9994276891315358,
+          "latency_ms": 8.017859982153372,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_063",
+          "level": 2,
+          "rules": [
+            "rotate_90",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9994918316329,
+          "latency_ms": 9.140802324367659,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_064",
+          "level": 2,
+          "rules": [
+            "scale_double",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9992707066412954,
+          "latency_ms": 13.99313093806254,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_065",
+          "level": 2,
+          "rules": [
+            "negate_pattern",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9997719476122159,
+          "latency_ms": 10.440939739797454,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_066",
+          "level": 2,
+          "rules": [
+            "reflect_horizontal",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9993695912510566,
+          "latency_ms": 13.899728748275525,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_067",
+          "level": 2,
+          "rules": [
+            "reflect_horizontal",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9996673955674271,
+          "latency_ms": 12.033341246960038,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_068",
+          "level": 2,
+          "rules": [
+            "transpose",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9995706677489236,
+          "latency_ms": 11.772433612959649,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_069",
+          "level": 2,
+          "rules": [
+            "rotate_90",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9994128404677507,
+          "latency_ms": 8.537751160867028,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_070",
+          "level": 2,
+          "rules": [
+            "negate_pattern",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9996554630341821,
+          "latency_ms": 12.878967445539278,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_071",
+          "level": 2,
+          "rules": [
+            "colour_swap",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9992543292761751,
+          "latency_ms": 11.396383006921127,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_072",
+          "level": 2,
+          "rules": [
+            "colour_swap",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9995690562986034,
+          "latency_ms": 11.3499010551779,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_073",
+          "level": 2,
+          "rules": [
+            "scale_double",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9996472429703464,
+          "latency_ms": 11.585566919810727,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_074",
+          "level": 2,
+          "rules": [
+            "shift_down",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.999369824632288,
+          "latency_ms": 13.970186800403614,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_075",
+          "level": 2,
+          "rules": [
+            "transpose",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9994309108384206,
+          "latency_ms": 9.971174598827423,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_076",
+          "level": 2,
+          "rules": [
+            "shift_down",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.999517787932482,
+          "latency_ms": 10.168925346470871,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_077",
+          "level": 2,
+          "rules": [
+            "reflect_horizontal",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9989098427597597,
+          "latency_ms": 8.56690745259012,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_078",
+          "level": 2,
+          "rules": [
+            "colour_swap",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9991533776177997,
+          "latency_ms": 8.033251552386107,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_079",
+          "level": 2,
+          "rules": [
+            "invert_values",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9996744476357962,
+          "latency_ms": 13.744966328217597,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_080",
+          "level": 2,
+          "rules": [
+            "invert_values",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9993073763767164,
+          "latency_ms": 8.158902065737946,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_081",
+          "level": 2,
+          "rules": [
+            "negate_pattern",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9993791648177424,
+          "latency_ms": 10.215487459677624,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_082",
+          "level": 2,
+          "rules": [
+            "reflect_horizontal",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9996707943645393,
+          "latency_ms": 8.65193298197858,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_083",
+          "level": 2,
+          "rules": [
+            "invert_values",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9991632881964359,
+          "latency_ms": 11.955712469017076,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_084",
+          "level": 2,
+          "rules": [
+            "colour_swap",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9996735492336136,
+          "latency_ms": 12.897300885727791,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_085",
+          "level": 2,
+          "rules": [
+            "colour_swap",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9993401476449291,
+          "latency_ms": 13.510008583134788,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_086",
+          "level": 2,
+          "rules": [
+            "colour_swap",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.999406692031276,
+          "latency_ms": 9.16800494639516,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_087",
+          "level": 2,
+          "rules": [
+            "border_fill",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9994840473509312,
+          "latency_ms": 11.706244329351769,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_088",
+          "level": 2,
+          "rules": [
+            "negate_pattern",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9994827635406474,
+          "latency_ms": 11.025417347593987,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_089",
+          "level": 2,
+          "rules": [
+            "reflect_horizontal",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9994249345728472,
+          "latency_ms": 8.02331617949553,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_090",
+          "level": 2,
+          "rules": [
+            "negate_pattern",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9992415915291615,
+          "latency_ms": 9.76150765753429,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_091",
+          "level": 2,
+          "rules": [
+            "reflect_horizontal",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9995828379355935,
+          "latency_ms": 13.03155771995502,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_092",
+          "level": 2,
+          "rules": [
+            "border_fill",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.999439535757365,
+          "latency_ms": 13.61723530450109,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_093",
+          "level": 2,
+          "rules": [
+            "scale_double",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9995209848634312,
+          "latency_ms": 12.586402812360962,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_094",
+          "level": 2,
+          "rules": [
+            "rotate_90",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9995934369995172,
+          "latency_ms": 11.655553242232802,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_095",
+          "level": 2,
+          "rules": [
+            "border_fill",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9993861445867979,
+          "latency_ms": 12.752480019816403,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_096",
+          "level": 2,
+          "rules": [
+            "border_fill",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9996419123378175,
+          "latency_ms": 9.303875549959216,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_097",
+          "level": 2,
+          "rules": [
+            "shift_down",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9992107985418089,
+          "latency_ms": 12.745192958568317,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_098",
+          "level": 2,
+          "rules": [
+            "shift_right",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9994808332011326,
+          "latency_ms": 11.484097781119624,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L2_099",
+          "level": 2,
+          "rules": [
+            "scale_double",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9994978050147844,
+          "latency_ms": 10.827191492845122,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_000",
+          "level": 3,
+          "rules": [
+            "scale_double",
+            "invert_values",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9992303616685037,
+          "latency_ms": 13.098978899154705,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_001",
+          "level": 3,
+          "rules": [
+            "reflect_horizontal",
+            "invert_values",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9993919907690603,
+          "latency_ms": 8.202315846644336,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_002",
+          "level": 3,
+          "rules": [
+            "shift_right",
+            "rotate_90",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9997000250010705,
+          "latency_ms": 13.344073255058916,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_003",
+          "level": 3,
+          "rules": [
+            "transpose",
+            "rotate_90",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9995070553837766,
+          "latency_ms": 12.151622786584412,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_004",
+          "level": 3,
+          "rules": [
+            "negate_pattern",
+            "scale_double",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.999563621585406,
+          "latency_ms": 13.58062806332335,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_005",
+          "level": 3,
+          "rules": [
+            "reflect_horizontal",
+            "shift_right",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9995434793099096,
+          "latency_ms": 13.002222879872384,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_006",
+          "level": 3,
+          "rules": [
+            "scale_double",
+            "shift_right",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9996606142888805,
+          "latency_ms": 13.311320130743352,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_007",
+          "level": 3,
+          "rules": [
+            "reflect_horizontal",
+            "transpose",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9997734826595724,
+          "latency_ms": 13.541421866092252,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_008",
+          "level": 3,
+          "rules": [
+            "border_fill",
+            "negate_pattern",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9992207531475481,
+          "latency_ms": 10.475748225127926,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_009",
+          "level": 3,
+          "rules": [
+            "negate_pattern",
+            "invert_values",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9993416896294064,
+          "latency_ms": 9.136897489672496,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_010",
+          "level": 3,
+          "rules": [
+            "reflect_horizontal",
+            "invert_values",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9992466688049332,
+          "latency_ms": 10.809882391885711,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_011",
+          "level": 3,
+          "rules": [
+            "rotate_90",
+            "negate_pattern",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9994453147961455,
+          "latency_ms": 13.860128308421425,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_012",
+          "level": 3,
+          "rules": [
+            "invert_values",
+            "border_fill",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9993853284284924,
+          "latency_ms": 8.289769207620315,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_013",
+          "level": 3,
+          "rules": [
+            "shift_right",
+            "scale_double",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.999691552679884,
+          "latency_ms": 11.88241661014774,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_014",
+          "level": 3,
+          "rules": [
+            "negate_pattern",
+            "transpose",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.999798604227423,
+          "latency_ms": 8.643745037956997,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_015",
+          "level": 3,
+          "rules": [
+            "colour_swap",
+            "rotate_90",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9995706533294262,
+          "latency_ms": 11.608809389412073,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_016",
+          "level": 3,
+          "rules": [
+            "invert_values",
+            "colour_swap",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9997048275351943,
+          "latency_ms": 9.232127936117,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_017",
+          "level": 3,
+          "rules": [
+            "shift_right",
+            "reflect_horizontal",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9995379141516015,
+          "latency_ms": 13.760218889051595,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_018",
+          "level": 3,
+          "rules": [
+            "reflect_horizontal",
+            "transpose",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9996171927547245,
+          "latency_ms": 9.277143831629886,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_019",
+          "level": 3,
+          "rules": [
+            "negate_pattern",
+            "colour_swap",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9995644318251997,
+          "latency_ms": 10.871711522419357,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_020",
+          "level": 3,
+          "rules": [
+            "rotate_90",
+            "reflect_horizontal",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9994634379842671,
+          "latency_ms": 11.82262318359263,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_021",
+          "level": 3,
+          "rules": [
+            "shift_right",
+            "negate_pattern",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9992382290583475,
+          "latency_ms": 8.499821979804764,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_022",
+          "level": 3,
+          "rules": [
+            "shift_down",
+            "reflect_horizontal",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9991721244076469,
+          "latency_ms": 10.46075581967435,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_023",
+          "level": 3,
+          "rules": [
+            "invert_values",
+            "shift_right",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9993598845508194,
+          "latency_ms": 8.080233590069135,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_024",
+          "level": 3,
+          "rules": [
+            "shift_right",
+            "scale_double",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9994656117545911,
+          "latency_ms": 9.73611179313721,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_025",
+          "level": 3,
+          "rules": [
+            "rotate_90",
+            "shift_right",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9995280970176202,
+          "latency_ms": 9.653103431884997,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_026",
+          "level": 3,
+          "rules": [
+            "border_fill",
+            "reflect_horizontal",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9990155016501199,
+          "latency_ms": 13.036523181800806,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_027",
+          "level": 3,
+          "rules": [
+            "reflect_horizontal",
+            "border_fill",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9996644866413071,
+          "latency_ms": 11.84047816236277,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_028",
+          "level": 3,
+          "rules": [
+            "colour_swap",
+            "reflect_horizontal",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.999254014844931,
+          "latency_ms": 13.055948536985397,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_029",
+          "level": 3,
+          "rules": [
+            "shift_down",
+            "scale_double",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9997889129109055,
+          "latency_ms": 10.674221101282944,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_030",
+          "level": 3,
+          "rules": [
+            "reflect_horizontal",
+            "rotate_90",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9998661685946397,
+          "latency_ms": 9.606494129961169,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_031",
+          "level": 3,
+          "rules": [
+            "colour_swap",
+            "transpose",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9994572702365114,
+          "latency_ms": 9.606541598147942,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_032",
+          "level": 3,
+          "rules": [
+            "scale_double",
+            "transpose",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9991422533354956,
+          "latency_ms": 9.52419776638704,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_033",
+          "level": 3,
+          "rules": [
+            "invert_values",
+            "scale_double",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9993769299647799,
+          "latency_ms": 8.776945685327451,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_034",
+          "level": 3,
+          "rules": [
+            "colour_swap",
+            "scale_double",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9991259145081073,
+          "latency_ms": 8.532084072683615,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_035",
+          "level": 3,
+          "rules": [
+            "shift_right",
+            "invert_values",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.999348359564197,
+          "latency_ms": 13.927828942608947,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_036",
+          "level": 3,
+          "rules": [
+            "invert_values",
+            "shift_right",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9993268248811354,
+          "latency_ms": 9.77657319997953,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_037",
+          "level": 3,
+          "rules": [
+            "negate_pattern",
+            "shift_right",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9994003232112857,
+          "latency_ms": 9.513949848779344,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_038",
+          "level": 3,
+          "rules": [
+            "rotate_90",
+            "invert_values",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.999533165612158,
+          "latency_ms": 8.500290798377309,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_039",
+          "level": 3,
+          "rules": [
+            "border_fill",
+            "invert_values",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.999664891976796,
+          "latency_ms": 10.242689844918186,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_040",
+          "level": 3,
+          "rules": [
+            "rotate_90",
+            "shift_down",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9993645060037404,
+          "latency_ms": 11.92415932406174,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_041",
+          "level": 3,
+          "rules": [
+            "shift_right",
+            "shift_down",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9997199257540027,
+          "latency_ms": 8.891883996207733,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_042",
+          "level": 3,
+          "rules": [
+            "shift_down",
+            "scale_double",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9992910240830251,
+          "latency_ms": 11.387412345994004,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_043",
+          "level": 3,
+          "rules": [
+            "colour_swap",
+            "shift_down",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9996751256223247,
+          "latency_ms": 11.476015357215472,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_044",
+          "level": 3,
+          "rules": [
+            "negate_pattern",
+            "border_fill",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9992637131112152,
+          "latency_ms": 13.887554213401057,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_045",
+          "level": 3,
+          "rules": [
+            "shift_right",
+            "shift_down",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9994450236051869,
+          "latency_ms": 13.728509710310473,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_046",
+          "level": 3,
+          "rules": [
+            "shift_right",
+            "border_fill",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9993882602528495,
+          "latency_ms": 12.310035561601818,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_047",
+          "level": 3,
+          "rules": [
+            "invert_values",
+            "negate_pattern",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9993507313651816,
+          "latency_ms": 12.412399794053758,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_048",
+          "level": 3,
+          "rules": [
+            "shift_down",
+            "shift_right",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9993380777349448,
+          "latency_ms": 8.451636242688336,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_049",
+          "level": 3,
+          "rules": [
+            "invert_values",
+            "negate_pattern",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.999648367506205,
+          "latency_ms": 9.664553513449727,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_050",
+          "level": 3,
+          "rules": [
+            "scale_double",
+            "shift_down",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9992277227657387,
+          "latency_ms": 11.892529148781655,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_051",
+          "level": 3,
+          "rules": [
+            "reflect_horizontal",
+            "invert_values",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9992293647620787,
+          "latency_ms": 8.89342681557941,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_052",
+          "level": 3,
+          "rules": [
+            "negate_pattern",
+            "colour_swap",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.999556983714238,
+          "latency_ms": 13.965861929040045,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_053",
+          "level": 3,
+          "rules": [
+            "invert_values",
+            "scale_double",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9997004726212599,
+          "latency_ms": 8.620621646988434,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_054",
+          "level": 3,
+          "rules": [
+            "border_fill",
+            "shift_right",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9994585919065848,
+          "latency_ms": 13.70398789326389,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_055",
+          "level": 3,
+          "rules": [
+            "transpose",
+            "border_fill",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9996825292775822,
+          "latency_ms": 13.85487569506271,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_056",
+          "level": 3,
+          "rules": [
+            "negate_pattern",
+            "transpose",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9991909815308818,
+          "latency_ms": 9.180090512122078,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_057",
+          "level": 3,
+          "rules": [
+            "rotate_90",
+            "invert_values",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9996519988999893,
+          "latency_ms": 10.762671612134131,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_058",
+          "level": 3,
+          "rules": [
+            "rotate_90",
+            "scale_double",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9994872016039102,
+          "latency_ms": 11.18255308746916,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_059",
+          "level": 3,
+          "rules": [
+            "scale_double",
+            "border_fill",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9994164585090015,
+          "latency_ms": 11.870475245479513,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_060",
+          "level": 3,
+          "rules": [
+            "colour_swap",
+            "border_fill",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9998113451251178,
+          "latency_ms": 13.021695538671363,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_061",
+          "level": 3,
+          "rules": [
+            "transpose",
+            "rotate_90",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9996570536172731,
+          "latency_ms": 11.453961005318924,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_062",
+          "level": 3,
+          "rules": [
+            "shift_down",
+            "scale_double",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9994963650150369,
+          "latency_ms": 8.712847298145697,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_063",
+          "level": 3,
+          "rules": [
+            "transpose",
+            "shift_down",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9994767437307209,
+          "latency_ms": 11.95051964929253,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_064",
+          "level": 3,
+          "rules": [
+            "reflect_horizontal",
+            "colour_swap",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9993378754371893,
+          "latency_ms": 10.075944255895934,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_065",
+          "level": 3,
+          "rules": [
+            "shift_down",
+            "scale_double",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9995272336885874,
+          "latency_ms": 10.481621174059605,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_066",
+          "level": 3,
+          "rules": [
+            "negate_pattern",
+            "transpose",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9997336584286816,
+          "latency_ms": 11.760477847611623,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_067",
+          "level": 3,
+          "rules": [
+            "negate_pattern",
+            "scale_double",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9997359328650103,
+          "latency_ms": 13.005059926017863,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_068",
+          "level": 3,
+          "rules": [
+            "transpose",
+            "reflect_horizontal",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9997863197777501,
+          "latency_ms": 12.495437423035034,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_069",
+          "level": 3,
+          "rules": [
+            "negate_pattern",
+            "border_fill",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9997690384860602,
+          "latency_ms": 12.471420968829262,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_070",
+          "level": 3,
+          "rules": [
+            "transpose",
+            "negate_pattern",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9993911805418817,
+          "latency_ms": 8.937207483329509,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_071",
+          "level": 3,
+          "rules": [
+            "negate_pattern",
+            "transpose",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9994649503603902,
+          "latency_ms": 8.470104275702079,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_072",
+          "level": 3,
+          "rules": [
+            "transpose",
+            "border_fill",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9994635132752187,
+          "latency_ms": 8.90556243587915,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_073",
+          "level": 3,
+          "rules": [
+            "scale_double",
+            "invert_values",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9994424797601166,
+          "latency_ms": 12.084925885677597,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_074",
+          "level": 3,
+          "rules": [
+            "scale_double",
+            "invert_values",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9990564527313099,
+          "latency_ms": 9.667043517840803,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_075",
+          "level": 3,
+          "rules": [
+            "rotate_90",
+            "invert_values",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9996920644774758,
+          "latency_ms": 12.771360035519747,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_076",
+          "level": 3,
+          "rules": [
+            "invert_values",
+            "shift_right",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.999082528813116,
+          "latency_ms": 10.606148878982438,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_077",
+          "level": 3,
+          "rules": [
+            "negate_pattern",
+            "rotate_90",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9993127028156844,
+          "latency_ms": 12.445460860148657,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_078",
+          "level": 3,
+          "rules": [
+            "reflect_horizontal",
+            "scale_double",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.999262513855968,
+          "latency_ms": 13.879322948790623,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_079",
+          "level": 3,
+          "rules": [
+            "reflect_horizontal",
+            "scale_double",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.999578809409086,
+          "latency_ms": 12.373477995398124,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_080",
+          "level": 3,
+          "rules": [
+            "shift_down",
+            "border_fill",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9991923963373643,
+          "latency_ms": 13.15613509761245,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_081",
+          "level": 3,
+          "rules": [
+            "negate_pattern",
+            "transpose",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9991030432986261,
+          "latency_ms": 9.844353125645428,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_082",
+          "level": 3,
+          "rules": [
+            "colour_swap",
+            "scale_double",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9996329393866604,
+          "latency_ms": 8.061130740875804,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_083",
+          "level": 3,
+          "rules": [
+            "shift_down",
+            "colour_swap",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9996475348310607,
+          "latency_ms": 10.658475723717418,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_084",
+          "level": 3,
+          "rules": [
+            "transpose",
+            "colour_swap",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9994411987455597,
+          "latency_ms": 8.637084204833553,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_085",
+          "level": 3,
+          "rules": [
+            "invert_values",
+            "shift_down",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9992887883206587,
+          "latency_ms": 11.814029372991318,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_086",
+          "level": 3,
+          "rules": [
+            "negate_pattern",
+            "border_fill",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9992109134786945,
+          "latency_ms": 10.63006753773616,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_087",
+          "level": 3,
+          "rules": [
+            "transpose",
+            "scale_double",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9991868810523359,
+          "latency_ms": 10.819980494856074,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_088",
+          "level": 3,
+          "rules": [
+            "shift_down",
+            "transpose",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9990245350064176,
+          "latency_ms": 13.874499602037123,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_089",
+          "level": 3,
+          "rules": [
+            "shift_down",
+            "shift_right",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9994381521530186,
+          "latency_ms": 9.353412262692721,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_090",
+          "level": 3,
+          "rules": [
+            "reflect_horizontal",
+            "transpose",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9996036075242282,
+          "latency_ms": 8.661720941964502,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_091",
+          "level": 3,
+          "rules": [
+            "border_fill",
+            "negate_pattern",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.999374140773894,
+          "latency_ms": 13.416793680691889,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_092",
+          "level": 3,
+          "rules": [
+            "shift_down",
+            "colour_swap",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9996892334367274,
+          "latency_ms": 8.669218358042892,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_093",
+          "level": 3,
+          "rules": [
+            "shift_down",
+            "reflect_horizontal",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9994652299210663,
+          "latency_ms": 9.800125502512941,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_094",
+          "level": 3,
+          "rules": [
+            "reflect_horizontal",
+            "colour_swap",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9995648117593756,
+          "latency_ms": 10.502148509962362,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_095",
+          "level": 3,
+          "rules": [
+            "shift_down",
+            "shift_right",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9998888998160288,
+          "latency_ms": 13.010465078071167,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_096",
+          "level": 3,
+          "rules": [
+            "transpose",
+            "shift_right",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9993329906390881,
+          "latency_ms": 13.468305406294006,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_097",
+          "level": 3,
+          "rules": [
+            "shift_down",
+            "invert_values",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9997738773643796,
+          "latency_ms": 13.81819292251883,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_098",
+          "level": 3,
+          "rules": [
+            "invert_values",
+            "rotate_90",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9991767181815556,
+          "latency_ms": 10.37303850426559,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "ccl_L3_099",
+          "level": 3,
+          "rules": [
+            "colour_swap",
+            "negate_pattern",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9993014207422141,
+          "latency_ms": 9.896323272264347,
+          "model": "unified-stack"
+        }
+      ],
+      "summary": {
+        "L1": {
+          "accuracy": 1.0,
+          "coherence": 0.9991809315783587,
+          "latency_ms": 10.895408452636842,
+          "n": 100
+        },
+        "L2": {
+          "accuracy": 1.0,
+          "coherence": 0.9994430957795043,
+          "latency_ms": 11.22588458877356,
+          "n": 100
+        },
+        "L3": {
+          "accuracy": 1.0,
+          "coherence": 0.9994619110029239,
+          "latency_ms": 11.0504495262334,
+          "n": 100
+        },
+        "CES": 1.0,
+        "error_analysis": {},
+        "total_tasks": 300
+      }
+    }
+  },
+  "cost": {
+    "cost_usd": {
+      "unified-stack": 0.0,
+      "unified-stack-16limb": 0.0,
+      "gpt-4": 0.0,
+      "claude-3-opus": 0.0,
+      "claude-3.5-sonnet": 0.0
+    },
+    "api_calls": {
+      "unified-stack": 0,
+      "unified-stack-16limb": 0,
+      "gpt-4": 0,
+      "claude-3-opus": 0,
+      "claude-3.5-sonnet": 0
+    },
+    "total_cost_usd": 0.0
+  },
+  "seed": 42
+}

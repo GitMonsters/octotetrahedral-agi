@@ -1,0 +1,1363 @@
+{
+  "models": {
+    "unified-stack": {
+      "raw_results": [
+        {
+          "task_id": "stress_d1_000",
+          "depth": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9847570439701323,
+          "latency_ms": 10.714179053716622,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_001",
+          "depth": 1,
+          "rules": [
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9914436900672428,
+          "latency_ms": 10.82278898000166,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_002",
+          "depth": 1,
+          "rules": [
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9951330900178346,
+          "latency_ms": 8.56532079498069,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_003",
+          "depth": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9935982984461181,
+          "latency_ms": 10.63771778585021,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_004",
+          "depth": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9977283889786627,
+          "latency_ms": 13.941829538750452,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_005",
+          "depth": 1,
+          "rules": [
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9992446380357324,
+          "latency_ms": 8.888071833422387,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_006",
+          "depth": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9993323101442649,
+          "latency_ms": 8.548127925129716,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_007",
+          "depth": 1,
+          "rules": [
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9990330849712784,
+          "latency_ms": 10.49848444505013,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_008",
+          "depth": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9993968752587077,
+          "latency_ms": 13.088721899776566,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_009",
+          "depth": 1,
+          "rules": [
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.999567718788363,
+          "latency_ms": 8.56088317634946,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_010",
+          "depth": 1,
+          "rules": [
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9994568714570131,
+          "latency_ms": 9.74273475569624,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_011",
+          "depth": 1,
+          "rules": [
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.999171762215433,
+          "latency_ms": 8.292321064155871,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_012",
+          "depth": 1,
+          "rules": [
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9992839534707579,
+          "latency_ms": 12.488766816158813,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_013",
+          "depth": 1,
+          "rules": [
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9994421160853064,
+          "latency_ms": 9.627468694760656,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_014",
+          "depth": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9993957350562533,
+          "latency_ms": 13.633180790745048,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_015",
+          "depth": 1,
+          "rules": [
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9993824899409773,
+          "latency_ms": 13.79495012376651,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_016",
+          "depth": 1,
+          "rules": [
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9993837203327363,
+          "latency_ms": 10.46006462074982,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_017",
+          "depth": 1,
+          "rules": [
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9993841259828917,
+          "latency_ms": 12.338366507310404,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_018",
+          "depth": 1,
+          "rules": [
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9994106071056044,
+          "latency_ms": 11.934757068703046,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d1_019",
+          "depth": 1,
+          "rules": [
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9989655693200663,
+          "latency_ms": 8.476682889631167,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_000",
+          "depth": 2,
+          "rules": [
+            "scale_double",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.99974847122569,
+          "latency_ms": 9.275125740273593,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_001",
+          "depth": 2,
+          "rules": [
+            "shift_down",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9987554241435057,
+          "latency_ms": 8.532093579557197,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_002",
+          "depth": 2,
+          "rules": [
+            "transpose",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9994797114673247,
+          "latency_ms": 13.222113005801257,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_003",
+          "depth": 2,
+          "rules": [
+            "colour_swap",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9994079079251226,
+          "latency_ms": 9.228952195728674,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_004",
+          "depth": 2,
+          "rules": [
+            "shift_down",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9993390439383192,
+          "latency_ms": 9.565353831818191,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_005",
+          "depth": 2,
+          "rules": [
+            "invert_values",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9994063791805038,
+          "latency_ms": 9.67367805912638,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_006",
+          "depth": 2,
+          "rules": [
+            "scale_double",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9991203552562784,
+          "latency_ms": 10.142339545469019,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_007",
+          "depth": 2,
+          "rules": [
+            "rotate_90",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9997266389296532,
+          "latency_ms": 12.27405235451565,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_008",
+          "depth": 2,
+          "rules": [
+            "shift_down",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9995992674978424,
+          "latency_ms": 13.33172748195437,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_009",
+          "depth": 2,
+          "rules": [
+            "shift_right",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9996547186995813,
+          "latency_ms": 10.166688403252902,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_010",
+          "depth": 2,
+          "rules": [
+            "border_fill",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9996064755429396,
+          "latency_ms": 8.990192562228156,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_011",
+          "depth": 2,
+          "rules": [
+            "colour_swap",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.999299179356418,
+          "latency_ms": 12.749704756333358,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_012",
+          "depth": 2,
+          "rules": [
+            "negate_pattern",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.999379668873942,
+          "latency_ms": 12.878245532340808,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_013",
+          "depth": 2,
+          "rules": [
+            "shift_down",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9991931109415597,
+          "latency_ms": 12.674376345532778,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_014",
+          "depth": 2,
+          "rules": [
+            "negate_pattern",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9995078460587045,
+          "latency_ms": 8.60513988329054,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_015",
+          "depth": 2,
+          "rules": [
+            "border_fill",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9997205773397566,
+          "latency_ms": 12.253321313850257,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_016",
+          "depth": 2,
+          "rules": [
+            "border_fill",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9992791428361214,
+          "latency_ms": 11.090274788024438,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_017",
+          "depth": 2,
+          "rules": [
+            "rotate_90",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9994310535604011,
+          "latency_ms": 12.515507736305466,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_018",
+          "depth": 2,
+          "rules": [
+            "scale_double",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9997654414060676,
+          "latency_ms": 11.964811739743169,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d2_019",
+          "depth": 2,
+          "rules": [
+            "rotate_90",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9992174384465518,
+          "latency_ms": 9.6692298636422,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_000",
+          "depth": 3,
+          "rules": [
+            "rotate_90",
+            "shift_down",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9994734433768655,
+          "latency_ms": 12.870058950524827,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_001",
+          "depth": 3,
+          "rules": [
+            "transpose",
+            "shift_right",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9992666324777514,
+          "latency_ms": 8.064541148053086,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_002",
+          "depth": 3,
+          "rules": [
+            "shift_right",
+            "border_fill",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9996594926413667,
+          "latency_ms": 13.49818576831099,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_003",
+          "depth": 3,
+          "rules": [
+            "invert_values",
+            "rotate_90",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9992545287496732,
+          "latency_ms": 8.659451963204521,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_004",
+          "depth": 3,
+          "rules": [
+            "negate_pattern",
+            "scale_double",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9992743088909455,
+          "latency_ms": 12.71451609413987,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_005",
+          "depth": 3,
+          "rules": [
+            "transpose",
+            "shift_down",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9992183629635816,
+          "latency_ms": 9.730759859195752,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_006",
+          "depth": 3,
+          "rules": [
+            "negate_pattern",
+            "scale_double",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9995696415439793,
+          "latency_ms": 12.584670164861825,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_007",
+          "depth": 3,
+          "rules": [
+            "colour_swap",
+            "scale_double",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.999066038961701,
+          "latency_ms": 10.169776470980153,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_008",
+          "depth": 3,
+          "rules": [
+            "shift_right",
+            "shift_down",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9993392812766386,
+          "latency_ms": 10.022127691836976,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_009",
+          "depth": 3,
+          "rules": [
+            "rotate_90",
+            "scale_double",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9994369629903732,
+          "latency_ms": 9.155535264041724,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_010",
+          "depth": 3,
+          "rules": [
+            "scale_double",
+            "transpose",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9994473669839533,
+          "latency_ms": 10.244041974754381,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_011",
+          "depth": 3,
+          "rules": [
+            "transpose",
+            "reflect_horizontal",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9991497755096499,
+          "latency_ms": 9.163607518809894,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_012",
+          "depth": 3,
+          "rules": [
+            "reflect_horizontal",
+            "scale_double",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9995043393993347,
+          "latency_ms": 11.84296882970633,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_013",
+          "depth": 3,
+          "rules": [
+            "border_fill",
+            "shift_down",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9995140563271295,
+          "latency_ms": 13.230366494762524,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_014",
+          "depth": 3,
+          "rules": [
+            "shift_right",
+            "scale_double",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9995847658321027,
+          "latency_ms": 12.486441191642815,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_015",
+          "depth": 3,
+          "rules": [
+            "negate_pattern",
+            "transpose",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9994349749148278,
+          "latency_ms": 11.815118351375954,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_016",
+          "depth": 3,
+          "rules": [
+            "colour_swap",
+            "rotate_90",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9997004875649077,
+          "latency_ms": 8.829659621018312,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_017",
+          "depth": 3,
+          "rules": [
+            "reflect_horizontal",
+            "shift_down",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9991968468421848,
+          "latency_ms": 9.151089069824685,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_018",
+          "depth": 3,
+          "rules": [
+            "shift_down",
+            "border_fill",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9995891698792773,
+          "latency_ms": 13.718166373102855,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d3_019",
+          "depth": 3,
+          "rules": [
+            "negate_pattern",
+            "invert_values",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9994130908526649,
+          "latency_ms": 9.820060682046632,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_000",
+          "depth": 4,
+          "rules": [
+            "rotate_90",
+            "negate_pattern",
+            "invert_values",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9995223542144622,
+          "latency_ms": 8.497296466573369,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_001",
+          "depth": 4,
+          "rules": [
+            "shift_right",
+            "rotate_90",
+            "invert_values",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.9993028570622747,
+          "latency_ms": 9.321243815271844,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_002",
+          "depth": 4,
+          "rules": [
+            "reflect_horizontal",
+            "transpose",
+            "colour_swap",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9995165126285119,
+          "latency_ms": 10.058021912445353,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_003",
+          "depth": 4,
+          "rules": [
+            "invert_values",
+            "negate_pattern",
+            "reflect_horizontal",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9994014987179687,
+          "latency_ms": 12.319024485763604,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_004",
+          "depth": 4,
+          "rules": [
+            "rotate_90",
+            "invert_values",
+            "scale_double",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9993545788323468,
+          "latency_ms": 13.253716515266778,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_005",
+          "depth": 4,
+          "rules": [
+            "shift_right",
+            "reflect_horizontal",
+            "colour_swap",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9993344493020202,
+          "latency_ms": 8.456139730229834,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_006",
+          "depth": 4,
+          "rules": [
+            "shift_right",
+            "transpose",
+            "colour_swap",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9995096494321168,
+          "latency_ms": 11.75293865820575,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_007",
+          "depth": 4,
+          "rules": [
+            "shift_right",
+            "invert_values",
+            "scale_double",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.99942203650173,
+          "latency_ms": 11.404744631417659,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_008",
+          "depth": 4,
+          "rules": [
+            "scale_double",
+            "rotate_90",
+            "negate_pattern",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9995183004240494,
+          "latency_ms": 11.46563152607827,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_009",
+          "depth": 4,
+          "rules": [
+            "transpose",
+            "rotate_90",
+            "reflect_horizontal",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9996096615403939,
+          "latency_ms": 12.461218684019759,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_010",
+          "depth": 4,
+          "rules": [
+            "transpose",
+            "negate_pattern",
+            "reflect_horizontal",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9995458780646496,
+          "latency_ms": 11.351198910074954,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_011",
+          "depth": 4,
+          "rules": [
+            "negate_pattern",
+            "shift_down",
+            "scale_double",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.999317070749586,
+          "latency_ms": 12.428634472447147,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_012",
+          "depth": 4,
+          "rules": [
+            "scale_double",
+            "invert_values",
+            "shift_down",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9995510153386556,
+          "latency_ms": 8.606153436645192,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_013",
+          "depth": 4,
+          "rules": [
+            "shift_right",
+            "transpose",
+            "negate_pattern",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9995797414672324,
+          "latency_ms": 11.955280354462111,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_014",
+          "depth": 4,
+          "rules": [
+            "scale_double",
+            "border_fill",
+            "rotate_90",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9994038778082613,
+          "latency_ms": 9.350791584672105,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_015",
+          "depth": 4,
+          "rules": [
+            "colour_swap",
+            "negate_pattern",
+            "scale_double",
+            "invert_values"
+          ],
+          "correct": true,
+          "coherence": 0.9994927610535388,
+          "latency_ms": 8.281962109762718,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_016",
+          "depth": 4,
+          "rules": [
+            "scale_double",
+            "colour_swap",
+            "rotate_90",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9993234518026628,
+          "latency_ms": 12.11480681530113,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_017",
+          "depth": 4,
+          "rules": [
+            "colour_swap",
+            "scale_double",
+            "rotate_90",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9994537321635879,
+          "latency_ms": 8.645578913086725,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_018",
+          "depth": 4,
+          "rules": [
+            "shift_right",
+            "rotate_90",
+            "scale_double",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9992635509229365,
+          "latency_ms": 13.816041987995355,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d4_019",
+          "depth": 4,
+          "rules": [
+            "transpose",
+            "scale_double",
+            "reflect_horizontal",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9993369927675538,
+          "latency_ms": 12.209409573885223,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_000",
+          "depth": 5,
+          "rules": [
+            "border_fill",
+            "transpose",
+            "scale_double",
+            "shift_down",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9997255763849617,
+          "latency_ms": 13.901711326590803,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_001",
+          "depth": 5,
+          "rules": [
+            "shift_down",
+            "scale_double",
+            "rotate_90",
+            "colour_swap",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9994074517838569,
+          "latency_ms": 13.692203621956947,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_002",
+          "depth": 5,
+          "rules": [
+            "shift_down",
+            "shift_right",
+            "border_fill",
+            "scale_double",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9998092203849778,
+          "latency_ms": 11.655260731346706,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_003",
+          "depth": 5,
+          "rules": [
+            "colour_swap",
+            "rotate_90",
+            "border_fill",
+            "scale_double",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9994290264533313,
+          "latency_ms": 8.023845079912693,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_004",
+          "depth": 5,
+          "rules": [
+            "shift_right",
+            "rotate_90",
+            "scale_double",
+            "negate_pattern",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9991228868535496,
+          "latency_ms": 9.848353484901216,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_005",
+          "depth": 5,
+          "rules": [
+            "negate_pattern",
+            "transpose",
+            "reflect_horizontal",
+            "scale_double",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9997031987344869,
+          "latency_ms": 10.415270752593788,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_006",
+          "depth": 5,
+          "rules": [
+            "invert_values",
+            "transpose",
+            "scale_double",
+            "shift_down",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.999532694437443,
+          "latency_ms": 13.725132658369667,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_007",
+          "depth": 5,
+          "rules": [
+            "transpose",
+            "negate_pattern",
+            "rotate_90",
+            "colour_swap",
+            "shift_right"
+          ],
+          "correct": true,
+          "coherence": 0.9991456207907651,
+          "latency_ms": 11.523199791584826,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_008",
+          "depth": 5,
+          "rules": [
+            "negate_pattern",
+            "colour_swap",
+            "rotate_90",
+            "shift_down",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9989902382158898,
+          "latency_ms": 8.455065527328115,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_009",
+          "depth": 5,
+          "rules": [
+            "reflect_horizontal",
+            "shift_down",
+            "transpose",
+            "scale_double",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9997965033721059,
+          "latency_ms": 12.021847436002792,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_010",
+          "depth": 5,
+          "rules": [
+            "shift_down",
+            "colour_swap",
+            "reflect_horizontal",
+            "scale_double",
+            "negate_pattern"
+          ],
+          "correct": true,
+          "coherence": 0.9994018794965093,
+          "latency_ms": 9.990498089568264,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_011",
+          "depth": 5,
+          "rules": [
+            "shift_down",
+            "invert_values",
+            "transpose",
+            "reflect_horizontal",
+            "scale_double"
+          ],
+          "correct": true,
+          "coherence": 0.999363868160093,
+          "latency_ms": 9.004880066679354,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_012",
+          "depth": 5,
+          "rules": [
+            "negate_pattern",
+            "transpose",
+            "reflect_horizontal",
+            "rotate_90",
+            "border_fill"
+          ],
+          "correct": true,
+          "coherence": 0.9991765571523685,
+          "latency_ms": 11.323851882987695,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_013",
+          "depth": 5,
+          "rules": [
+            "scale_double",
+            "colour_swap",
+            "negate_pattern",
+            "shift_right",
+            "reflect_horizontal"
+          ],
+          "correct": true,
+          "coherence": 0.9995499856641293,
+          "latency_ms": 13.44258872657642,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_014",
+          "depth": 5,
+          "rules": [
+            "colour_swap",
+            "border_fill",
+            "transpose",
+            "invert_values",
+            "shift_down"
+          ],
+          "correct": true,
+          "coherence": 0.9994342133641523,
+          "latency_ms": 10.837917732732674,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_015",
+          "depth": 5,
+          "rules": [
+            "reflect_horizontal",
+            "colour_swap",
+            "rotate_90",
+            "shift_down",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.999624246661925,
+          "latency_ms": 12.735639552069074,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_016",
+          "depth": 5,
+          "rules": [
+            "rotate_90",
+            "border_fill",
+            "scale_double",
+            "transpose",
+            "colour_swap"
+          ],
+          "correct": true,
+          "coherence": 0.9997747884772752,
+          "latency_ms": 9.629589773201417,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_017",
+          "depth": 5,
+          "rules": [
+            "border_fill",
+            "scale_double",
+            "colour_swap",
+            "invert_values",
+            "transpose"
+          ],
+          "correct": true,
+          "coherence": 0.9993193269803572,
+          "latency_ms": 10.04088462882645,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_018",
+          "depth": 5,
+          "rules": [
+            "shift_down",
+            "negate_pattern",
+            "shift_right",
+            "reflect_horizontal",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9993565685005295,
+          "latency_ms": 13.035382004414988,
+          "failure_type": null
+        },
+        {
+          "task_id": "stress_d5_019",
+          "depth": 5,
+          "rules": [
+            "shift_right",
+            "scale_double",
+            "invert_values",
+            "negate_pattern",
+            "rotate_90"
+          ],
+          "correct": true,
+          "coherence": 0.9993291408455965,
+          "latency_ms": 13.223030847423399,
+          "failure_type": null
+        }
+      ],
+      "by_depth": {
+        "1": {
+          "success_rate": 1.0,
+          "coherence": 0.9976256044822689,
+          "latency_ms": 10.752770938235274,
+          "n": 20,
+          "failure_classification": {}
+        },
+        "2": {
+          "success_rate": 1.0,
+          "coherence": 0.9994318926313142,
+          "latency_ms": 10.94014643593942,
+          "n": 20,
+          "failure_classification": {}
+        },
+        "3": {
+          "success_rate": 1.0,
+          "coherence": 0.9994046783989454,
+          "latency_ms": 10.888557174109705,
+          "n": 20,
+          "failure_classification": {}
+        },
+        "4": {
+          "success_rate": 1.0,
+          "coherence": 0.999437998539727,
+          "latency_ms": 10.887491729180244,
+          "n": 20,
+          "failure_classification": {}
+        },
+        "5": {
+          "success_rate": 1.0,
+          "coherence": 0.9994496496357153,
+          "latency_ms": 11.326307685753365,
+          "n": 20,
+          "failure_classification": {}
+        }
+      }
+    }
+  },
+  "cost": {
+    "cost_usd": {
+      "unified-stack": 0.0,
+      "unified-stack-16limb": 0.0,
+      "gpt-4": 0.0,
+      "claude-3-opus": 0.0,
+      "claude-3.5-sonnet": 0.0
+    },
+    "api_calls": {
+      "unified-stack": 0,
+      "unified-stack-16limb": 0,
+      "gpt-4": 0,
+      "claude-3-opus": 0,
+      "claude-3.5-sonnet": 0
+    },
+    "total_cost_usd": 0.0
+  },
+  "seed": 42
+}
