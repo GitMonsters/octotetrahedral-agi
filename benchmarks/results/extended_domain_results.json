@@ -1,0 +1,562 @@
+{
+  "models": {
+    "unified-stack": {
+      "raw_results": [
+        {
+          "task_id": "domain_reasoning_000",
+          "domain": "reasoning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9918578023965969,
+          "latency_ms": 8.394494906765791,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_reasoning_001",
+          "domain": "reasoning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9889043848608217,
+          "latency_ms": 10.322498894763244,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_reasoning_002",
+          "domain": "reasoning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9940055715231803,
+          "latency_ms": 12.68614919824179,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_reasoning_003",
+          "domain": "reasoning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9964484199614574,
+          "latency_ms": 13.126712546069587,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_reasoning_004",
+          "domain": "reasoning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9982166673113554,
+          "latency_ms": 8.117210542510918,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_reasoning_005",
+          "domain": "reasoning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9989905426165794,
+          "latency_ms": 8.038207165043008,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_reasoning_006",
+          "domain": "reasoning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9996346728079644,
+          "latency_ms": 8.273375868387506,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_reasoning_007",
+          "domain": "reasoning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9999182391725586,
+          "latency_ms": 13.269173362251017,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_reasoning_008",
+          "domain": "reasoning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9996876200687776,
+          "latency_ms": 9.674537337624695,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_reasoning_009",
+          "domain": "reasoning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9995935188146039,
+          "latency_ms": 12.417289359929423,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_language_000",
+          "domain": "language",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9695416394492762,
+          "latency_ms": 13.736405086408224,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_language_001",
+          "domain": "language",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9878148081263869,
+          "latency_ms": 9.536415782858539,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_language_002",
+          "domain": "language",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9808410929204772,
+          "latency_ms": 13.498189813245862,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_language_003",
+          "domain": "language",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9883738100107791,
+          "latency_ms": 9.761778171763792,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_language_004",
+          "domain": "language",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9938876318204056,
+          "latency_ms": 9.182152294578165,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_language_005",
+          "domain": "language",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9930408256866178,
+          "latency_ms": 12.023923172636378,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_language_006",
+          "domain": "language",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9953655131997187,
+          "latency_ms": 12.114203817271928,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_language_007",
+          "domain": "language",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9978878673966843,
+          "latency_ms": 9.694835787173444,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_language_008",
+          "domain": "language",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9974192747518231,
+          "latency_ms": 8.48207968465306,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_language_009",
+          "domain": "language",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9987002561682466,
+          "latency_ms": 10.287505539961519,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_spatial_000",
+          "domain": "spatial",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9660775163195554,
+          "latency_ms": 10.25703499675227,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_spatial_001",
+          "domain": "spatial",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.981021278550699,
+          "latency_ms": 10.137110880158874,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_spatial_002",
+          "domain": "spatial",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9858264854911774,
+          "latency_ms": 11.014435210448731,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_spatial_003",
+          "domain": "spatial",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9859397829759917,
+          "latency_ms": 13.20940468359827,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_spatial_004",
+          "domain": "spatial",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9874422069067289,
+          "latency_ms": 11.670656594680175,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_spatial_005",
+          "domain": "spatial",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9942085624397525,
+          "latency_ms": 12.93077249458874,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_spatial_006",
+          "domain": "spatial",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9951612244618449,
+          "latency_ms": 11.863194408760755,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_spatial_007",
+          "domain": "spatial",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9968112518175535,
+          "latency_ms": 8.270888863227853,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_spatial_008",
+          "domain": "spatial",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9972946539686302,
+          "latency_ms": 11.461697538073086,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_spatial_009",
+          "domain": "spatial",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9983337432848944,
+          "latency_ms": 10.278783361108186,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_planning_000",
+          "domain": "planning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9377022266161212,
+          "latency_ms": 11.563979184500976,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_planning_001",
+          "domain": "planning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9580066691665333,
+          "latency_ms": 10.465322217028628,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_planning_002",
+          "domain": "planning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9736735484382327,
+          "latency_ms": 12.70637240151754,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_planning_003",
+          "domain": "planning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9847369067296192,
+          "latency_ms": 10.331110952148801,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_planning_004",
+          "domain": "planning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9778931915473243,
+          "latency_ms": 10.41532076650531,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_planning_005",
+          "domain": "planning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9895108526734164,
+          "latency_ms": 9.434707874731094,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_planning_006",
+          "domain": "planning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9947936102787093,
+          "latency_ms": 11.60888551989337,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_planning_007",
+          "domain": "planning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9897810188183079,
+          "latency_ms": 10.012460560208371,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_planning_008",
+          "domain": "planning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9889889214414421,
+          "latency_ms": 8.6573626598649,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_planning_009",
+          "domain": "planning",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9966386466841418,
+          "latency_ms": 9.002380333684266,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_multi_000",
+          "domain": "multi",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9565875369494805,
+          "latency_ms": 11.756396545359436,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_multi_001",
+          "domain": "multi",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9522572910607937,
+          "latency_ms": 8.466223908307928,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_multi_002",
+          "domain": "multi",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9679901665923649,
+          "latency_ms": 9.482243673376468,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_multi_003",
+          "domain": "multi",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9707890781574159,
+          "latency_ms": 12.958432825598438,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_multi_004",
+          "domain": "multi",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9764619748506282,
+          "latency_ms": 8.024344851051461,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_multi_005",
+          "domain": "multi",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9647853069166357,
+          "latency_ms": 8.165076141732326,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_multi_006",
+          "domain": "multi",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.983150963363707,
+          "latency_ms": 10.050769512608774,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_multi_007",
+          "domain": "multi",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9825088781968099,
+          "latency_ms": 9.094286207141332,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_multi_008",
+          "domain": "multi",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9963633145730629,
+          "latency_ms": 11.769477729099844,
+          "model": "unified-stack"
+        },
+        {
+          "task_id": "domain_multi_009",
+          "domain": "multi",
+          "correct": true,
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "coherence": 0.9926006484388676,
+          "latency_ms": 12.17287706204229,
+          "model": "unified-stack"
+        }
+      ],
+      "domain_summary": {
+        "reasoning": {
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "latency_ms": 10.431964918158698,
+          "coherence": 0.9967257439533895,
+          "n": 10
+        },
+        "language": {
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "latency_ms": 10.83174891505509,
+          "coherence": 0.9902872719530416,
+          "n": 10
+        },
+        "spatial": {
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "latency_ms": 11.109397903139694,
+          "coherence": 0.9888116706216827,
+          "n": 10
+        },
+        "planning": {
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "latency_ms": 10.419790247008326,
+          "coherence": 0.979172559239385,
+          "n": 10
+        },
+        "multi": {
+          "accuracy": 1.0,
+          "quality_score": 1.0,
+          "latency_ms": 10.194012845631828,
+          "coherence": 0.9743495159099765,
+          "n": 10
+        }
+      }
+    }
+  },
+  "cost": {
+    "cost_usd": {
+      "unified-stack": 0.0,
+      "unified-stack-16limb": 0.0,
+      "gpt-4": 0.0,
+      "claude-3-opus": 0.0,
+      "claude-3.5-sonnet": 0.0
+    },
+    "api_calls": {
+      "unified-stack": 0,
+      "unified-stack-16limb": 0,
+      "gpt-4": 0,
+      "claude-3-opus": 0,
+      "claude-3.5-sonnet": 0
+    },
+    "total_cost_usd": 0.0
+  }
+}
