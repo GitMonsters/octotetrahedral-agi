@@ -75,6 +75,9 @@ def _trend_arrow(current: float, previous: float) -> str:
     return "→"
 
 
+_PANEL_WIDTH = 58
+
+
 def render_stats(
     stats: dict[str, Any],
     prev_coherence: float,
@@ -83,15 +86,15 @@ def render_stats(
 ) -> str:
     """Render stats as a formatted terminal string."""
     lines = []
-    sep = "─" * 58
+    sep = "─" * _PANEL_WIDTH
 
-    lines.append(_color(f"{'═' * 58}", _CYAN))
+    lines.append(_color(f"{'═' * _PANEL_WIDTH}", _CYAN))
     lines.append(_color("  🧠  UNIFIED COGNITIVE STACK — LIVE MONITOR", _BOLD))
     lines.append(_color(sep, _CYAN))
 
     if not stats.get("current"):
         lines.append("  Waiting for inferences…")
-        lines.append(_color(f"{'═' * 58}", _CYAN))
+        lines.append(_color(f"{'═' * _PANEL_WIDTH}", _CYAN))
         return "\n".join(lines)
 
     cur = stats["current"]

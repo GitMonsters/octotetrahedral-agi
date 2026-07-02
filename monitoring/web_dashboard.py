@@ -147,7 +147,7 @@ function push(chart, index, values) {
   values.forEach((v, i) => chart.data.datasets[i].data.push(v));
   if (chart.data.labels.length > MAX_POINTS) {
     chart.data.labels.shift();
-    chart.data.datasets.forEach(d => d.shift ? d.data.shift() : d.data.shift());
+    chart.data.datasets.forEach(d => d.data.shift());
   }
   chart.update('none');
 }
