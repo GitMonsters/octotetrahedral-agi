@@ -291,8 +291,13 @@ def _render_markdown(aggregated: dict[str, Any], chart_paths: dict[str, str | No
             lat = data.get("latency", {})
             thr = data.get("throughput", {})
             cost = data.get("cost_per_1m_usd", 0)
+            p50 = lat.get("p50_ms", 0)
+            p99 = lat.get("p99_ms", 0)
+            # Use enough precision so sub-millisecond values aren't rounded to 0
+            p50_str = f"{p50:.4f}" if p50 < 1.0 else f"{p50:.1f}"
+            p99_str = f"{p99:.4f}" if p99 < 1.0 else f"{p99:.1f}"
             lines.append(
-                f"| {m} | {lat.get('p50_ms', 0):.1f} | {lat.get('p99_ms', 0):.1f} "
+                f"| {m} | {p50_str} | {p99_str} "
                 f"| {thr.get('single_tps', 0):.1f} | {cost:.2f} |"
             )
         lines.append("")

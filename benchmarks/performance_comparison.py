@@ -106,6 +106,9 @@ def profile_model(
     cost_per_1m = estimate_cost(1_000_000, [client.model]).get(client.model, 0.0)
 
     # Quality proxy: use mean accuracy from short sample
+    # TODO: replace with actual quality score from CCL/domain benchmark results
+    # once those benchmarks have been run and their output is available.
+    # E.g. load from benchmarks/results/ccl_comparison_results.json → CES score.
     quality_proxy = 0.90  # placeholder; real quality from CCL/domain benchmarks
 
     efficiency = quality_proxy / (latency_metrics["mean_ms"] / 1000) if latency_metrics["mean_ms"] > 0 else 0.0
