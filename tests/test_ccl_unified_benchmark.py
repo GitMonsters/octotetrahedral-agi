@@ -5,6 +5,8 @@ from ccl_unified_benchmark import (
     select_task_signal,
 )
 
+MIN_BASELINE_LIMB_ACTIVATION = 0.1
+
 
 def test_apply_rules_compound_pipeline_matches_expected_output():
     grid = [
@@ -29,8 +31,8 @@ def test_encode_task_to_limb_state_prioritizes_spatial_and_action_limbs():
     encoded = encode_task_to_limb_state(grid, ["rot_cw", "gravity_down"], level=2)
 
     assert len(encoded) == 8
-    assert encoded[4] > 0.1
-    assert encoded[6] > 0.1
+    assert encoded[4] > MIN_BASELINE_LIMB_ACTIVATION
+    assert encoded[6] > MIN_BASELINE_LIMB_ACTIVATION
 
 
 def test_route_rules_and_signal_for_compound_rules():

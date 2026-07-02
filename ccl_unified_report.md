@@ -37,7 +37,7 @@ Evaluated **300 tasks** across L1-L3 from the Compound Concept Learning benchmar
 ## CES score vs baseline
 
 - Unified CES (coherence@L3 / coherence@L1): **1.000**
-- Baseline CES (Claude/GPT-4 reference): **0.000**
+- Baseline CES (Claude/GPT-4 reference, L3 collapse to ~0%): **0.000**
 - Improvement: **+1.000**
 
 ## Generalization insights

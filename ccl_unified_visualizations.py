@@ -12,14 +12,18 @@ def _load_results(path: Path) -> dict:
         return json.load(handle)
 
 
+def _get_level_metric(results: dict, level: str, metric: str) -> float:
+    return results["level_summary"].get(level, {}).get(metric, 0.0)
+
+
 def _plot_with_matplotlib(results: dict, output_dir: Path) -> None:
     import matplotlib.pyplot as plt
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
     levels = ["L1", "L2", "L3"]
-    coherence = [results["level_summary"].get(level, {}).get("avg_coherence", 0.0) for level in levels]
-    coupling = [results["level_summary"].get(level, {}).get("avg_coupling_strength", 0.0) for level in levels]
+    coherence = [_get_level_metric(results, level, "avg_coherence") for level in levels]
+    coupling = [_get_level_metric(results, level, "avg_coupling_strength") for level in levels]
 
     fig, ax = plt.subplots(figsize=(7, 4))
     ax.plot(levels, coherence, marker="o", label="Coherence")
@@ -83,7 +87,9 @@ def _write_text_fallback(results: dict, output_dir: Path) -> None:
     for rule, counts in sorted(results["rule_routing"].items()):
         lines.append(
             f"- {rule}: "
-            + ", ".join(f"L{limb}={count}" for limb, count in sorted(counts.items(), key=lambda kv: int(kv[0])))
+            + ", ".join(
+                f"limb{limb}={count}" for limb, count in sorted(counts.items(), key=lambda kv: int(kv[0]))
+            )
         )
 
     (output_dir / "ccl_visualization_summary.md").write_text("\n".join(lines), encoding="utf-8")
@@ -93,7 +99,7 @@ def generate_visualizations(results_path: Path, output_dir: Path) -> None:
     results = _load_results(results_path)
     try:
         _plot_with_matplotlib(results, output_dir)
-    except ModuleNotFoundError:
+    except (ModuleNotFoundError, ImportError):
         _write_text_fallback(results, output_dir)
 
 

@@ -8,14 +8,18 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from statistics import mean
 from typing import Any
-from urllib.request import urlopen
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
 from unified.forward_model import UnifiedForwardModel
 
-CCL_DOWNLOAD_URL = (
+CCL_BENCHMARK_COMMIT = "17776d2aacd2bc42d3ecadaef5529e5dba9ea3d3"
+CCL_DOWNLOAD_URL_TEMPLATE = (
     "https://raw.githubusercontent.com/GitMonsters/ccl-benchmark/"
-    "17776d2aacd2bc42d3ecadaef5529e5dba9ea3d3/ccl_benchmark.json"
+    "{commit}/ccl_benchmark.json"
 )
+CCL_ALLOWED_HOST = "raw.githubusercontent.com"
+MAX_BENCHMARK_SIZE_BYTES = 5_000_000
 
 Grid = list[list[int]]
 
@@ -122,6 +126,7 @@ DOMAIN_TO_LIMBS = {
     "action": (6, 7),
 }
 
+# Baseline from the CCL paper context: baseline systems collapse at L3 (~0%), so CES≈0.
 BASELINE_CES = 0.0
 
 
@@ -188,7 +193,36 @@ def route_rules(rule_names: list[str]) -> list[dict[str, Any]]:
     return routes
 
 
-def load_ccl_benchmark(path: str | Path | None = None) -> dict[str, Any]:
+def _infer_task_level(metadata: dict[str, Any]) -> int:
+    rules = metadata.get("rules", [])
+    return int(metadata.get("level") or len(rules) or 1)
+
+
+def _download_benchmark(url: str) -> dict[str, Any]:
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or parsed.netloc != CCL_ALLOWED_HOST:
+        raise ValueError("benchmark URL must use https and an approved host")
+
+    request = Request(url, headers={"User-Agent": "octotetrahedral-agi-ccl-benchmark"})
+    with urlopen(request, timeout=30) as response:
+        final_url = urlparse(response.geturl())
+        if final_url.scheme != "https" or final_url.netloc != CCL_ALLOWED_HOST:
+            raise ValueError("benchmark download redirected to a non-approved host")
+
+        content_type = response.headers.get("Content-Type", "").lower()
+        if "json" not in content_type and "text/plain" not in content_type:
+            raise ValueError(f"unexpected content-type for benchmark: {content_type}")
+
+        payload = response.read(MAX_BENCHMARK_SIZE_BYTES + 1)
+        if len(payload) > MAX_BENCHMARK_SIZE_BYTES:
+            raise ValueError(
+                f"benchmark payload ({len(payload)} bytes) exceeds max allowed size "
+                f"({MAX_BENCHMARK_SIZE_BYTES} bytes)"
+            )
+        return json.loads(payload.decode("utf-8"))
+
+
+def load_ccl_benchmark(path: str | Path | None = None, commit: str = CCL_BENCHMARK_COMMIT) -> dict[str, Any]:
     if path:
         benchmark_path = Path(path)
         with benchmark_path.open("r", encoding="utf-8") as handle:
@@ -199,8 +233,7 @@ def load_ccl_benchmark(path: str | Path | None = None) -> dict[str, Any]:
         with default_path.open("r", encoding="utf-8") as handle:
             return json.load(handle)
 
-    with urlopen(CCL_DOWNLOAD_URL) as response:  # noqa: S310
-        return json.loads(response.read().decode("utf-8"))
+    return _download_benchmark(CCL_DOWNLOAD_URL_TEMPLATE.format(commit=commit))
 
 
 def _task_examples(task: dict[str, Any]) -> list[dict[str, Grid]]:
@@ -216,7 +249,7 @@ def evaluate_benchmark(benchmark: dict[str, Any]) -> dict[str, Any]:
 
     for task_index, task in enumerate(benchmark["tasks"]):
         metadata = task.get("metadata", {})
-        level = int(metadata.get("level", len(metadata.get("rules", [])) or 1))
+        level = _infer_task_level(metadata)
         rules = metadata["rules"]
         signal = select_task_signal(rules)
         routes = route_rules(rules)
@@ -285,7 +318,7 @@ def evaluate_benchmark(benchmark: dict[str, Any]) -> dict[str, Any]:
 
     l1 = level_summary.get("L1", {}).get("avg_coherence", 1.0)
     l3 = level_summary.get("L3", {}).get("avg_coherence", 1.0)
-    ces = l3 / l1 if l1 else 0.0
+    ces = l3 / l1 if l1 > 0 else 0.0
 
     return {
         "benchmark_name": benchmark.get("name", "CCL"),
@@ -359,7 +392,7 @@ def build_markdown_report(results: dict[str, Any]) -> str:
             "## CES score vs baseline",
             "",
             f"- Unified CES (coherence@L3 / coherence@L1): **{ces['unified']:.3f}**",
-            f"- Baseline CES (Claude/GPT-4 reference): **{ces['baseline']:.3f}**",
+            f"- Baseline CES (Claude/GPT-4 reference, L3 collapse to ~0%): **{ces['baseline']:.3f}**",
             f"- Improvement: **{ces['improvement']:+.3f}**",
             "",
             "## Generalization insights",
@@ -377,7 +410,7 @@ def save_outputs(results: dict[str, Any], results_path: Path, report_path: Path)
 
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
-    benchmark = load_ccl_benchmark(args.benchmark)
+    benchmark = load_ccl_benchmark(args.benchmark, commit=args.commit)
     results = evaluate_benchmark(benchmark)
     save_outputs(results, Path(args.results_output), Path(args.report_output))
     return results
@@ -386,6 +419,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate CCL tasks with UnifiedForwardModel")
     parser.add_argument("--benchmark", default=None, help="Path to ccl_benchmark.json (optional)")
+    parser.add_argument("--commit", default=CCL_BENCHMARK_COMMIT, help="CCL benchmark commit SHA for remote fetch")
     parser.add_argument("--results-output", default="ccl_unified_results.json")
     parser.add_argument("--report-output", default="ccl_unified_report.md")
     return parser.parse_args()
