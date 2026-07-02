@@ -21,6 +21,7 @@ Returned dictionary keys:
 - `coupling_strength`
 - `phase`
 - `bias`
+- `action_channel`
 
 ## Legacy compatibility path
 

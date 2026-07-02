@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TypedDict
 
-from cognitive.functions import aggregate_cognitive_state
+from cognitive.functions import aggregate_cognitive_state, select_action_channel
 from cognitive.integration import bidirectional_integrate
 from quantum.operators import apply_unified_quantum_operator, tensor_decompose
 from rna.adaptation import adapt_for_task
@@ -21,6 +21,7 @@ class UnifiedForwardResult(TypedDict):
     coupling_strength: float
     phase: float
     bias: float
+    action_channel: int
 
 
 class UnifiedForwardModel:
@@ -62,6 +63,7 @@ class UnifiedForwardModel:
             "coupling_strength": adaptation["coupling_strength"],
             "phase": adaptation["phase"],
             "bias": adaptation["bias"],
+            "action_channel": select_action_channel(unified_state),
         }
 
 
