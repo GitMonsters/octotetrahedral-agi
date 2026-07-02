@@ -43,4 +43,5 @@ def test_action_channel_selects_dominant_limb():
     result = model.forward([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0], task_signal="action")
 
     assert isinstance(result["action_channel"], int)
-    assert 0 <= result["action_channel"] < 8
+    expected = max(range(len(result["limb_states"])), key=result["limb_states"].__getitem__)
+    assert result["action_channel"] == expected
