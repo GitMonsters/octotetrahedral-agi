@@ -388,7 +388,7 @@ class SelfImprovingCohesionBraid(nn.Module):
 
         # Launch background search if interval reached and none running
         if self._cycle % self.search_interval == 0:
-            self._launch_search(limb_states.detach(), rsi_val)
+            self._launch_search(limb_states, rsi_val)
 
         return deltas, rsi_val
 
