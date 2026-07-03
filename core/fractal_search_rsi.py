@@ -408,7 +408,9 @@ class SelfImprovingCohesionBraid(nn.Module):
 
         def _worker():
             states = limb_states[:2] if limb_states.shape[0] > 2 else limb_states
-            states = states.detach().cpu()
+            states = states.detach()
+            if states.device.type != "cpu":
+                states = states.cpu()
             try:
                 best_cfg, best_score, improved = self.searcher.search_step(states, rsi_val)
                 if improved:
