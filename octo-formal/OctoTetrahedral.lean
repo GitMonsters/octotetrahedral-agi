@@ -34,15 +34,13 @@ export GCITheory
    gci
    Phase
    classify_phase
-   phi
    phi_sq
    is_valid_cp_inputs
    gci_well_defined
    phase_classification_total
    phase_classification_unique
    cp_nonneg
-   cp_bounded
-   golden_ratio_property)
+   cp_bounded)
 
 export WabiSabiTerminator
   (MetricsState
@@ -77,8 +75,107 @@ export E8Lattice
    golden_ratio_property
    icosahedral_projection
    e8_root_count_exact
-   octopus_limbs_independent
+   octopus_limb_projection_def
    e8_to_quasicrystal_well_defined)
+
+export Solvers
+  (Grid
+   BBox
+   pixel_at
+   is_non_background
+   is_background
+   non_background_pixels
+   extract_bounding_box
+   extract_region
+   TransformType
+   TransformGrid
+   rotate_90_cw
+   rotate_180
+   rotate_270_cw
+   flip_horizontal
+   flip_vertical
+   scale_uniform
+   FractalGrid
+   ScalePattern
+   detect_scale_factor
+   extract_tile_pattern
+   expand_pattern
+   AdaptiveGrid
+   ComplexityMetrics
+   SolveStrategy
+   count_colors
+   compute_connectivity
+   compute_symmetry
+   compute_complexity_score
+   select_strategy
+   CompoundGrid
+   Solution
+   Subsolver
+   SolverResult
+   PipelineConfig
+   add_subsolver
+   get_subsolver
+   has_capability
+   compose_solutions_voting
+   compose_solutions_weighted)
+
+export SynthesisPipeline
+  (TrainPair
+   ArcTask
+   Solver
+   AttemptResult
+   passes_pair
+   training_valid
+   apply_perm
+   perm_equivariant
+   loop_measure
+   budget_exhaustion_reachable
+   PipelineAccepted
+   pipeline_sound
+   statically_hardcoded
+   pipeline_rejects_static)
+
+export OctoLimbArchitecture
+  (n_limbs
+   embed_dim
+   n_heads
+   LimbOutput
+   combine_limbs
+   LimbState
+   total_performance
+   fedavg
+   Checkpoint
+   first_checkpoint
+   EditGate
+   rna_blend
+   limbs_independent
+   limb_to_e8_coordinate
+   limb_to_e8_correspondence)
+
+export AGICapabilityCriteria
+  (CholletCriterion
+   ComplianceLevel
+   CapabilityAssessment
+   ARCGrid
+   ARCPair
+   ARCTask
+   ARCSolver
+   solver_correct_on
+   passes_training
+   passes_test
+   task_solved
+   decides_solved
+   count_solved
+   benchmark_score
+   Representation
+   aligned
+   TransferFn
+   transfer_sound
+   octotetrahedral_assessment
+   human_arc_score
+   octo_arc_score
+   transcendplexity_impossible13_score
+   agi_gap)
 
 export FibonacciCohesion
   (phi_inv
@@ -133,27 +230,27 @@ export PisanoLaderman
        - Caputo derivatives (order-α memory)
        - History buffer approximation
        - Gamma function positivity and decay properties
-       - ~189 lines of Lean
+       - ~174 lines of Lean
     
     2. **Consciousness Metrics** (`GCITheory.lean`)
        - Compounding Parallplexity (CP) definition and boundedness
        - Golden Consciousness Index (GCI) and log-derivative interpretation
        - Phase classification (4 consciousness phases)
-       - ~269 lines of Lean
+       - ~230 lines of Lean
     
     3. **Termination Guarantees** (`WabiSabiTerminator.lean`)
        - Halt predicate with 4 stop triggers
        - Termination theorem: execution halts within max_steps
        - Wabi-sabi philosophy: "good enough" acceptance
-       - ~237 lines of Lean
+       - ~201 lines of Lean
     
     4. **Spectral Coherence** (`CouplingMatrix.lean` in `Lib.lean`)
        - Parallplexity tensor properties
        - Eigenvalue bounds and spectral dominance
        - Coherence metrics from matrix theory
-       - ~253 lines of Lean
+       - ~239 lines of Lean
     
-    **Total: ~948 lines of Lean 4 + Mathlib**
+    **Total: ~844 lines of Lean 4 + Mathlib**
      
      **NEW: Solver Family Verification** (`SolverFamily/` directory)
      - BBoxSolver: Bounding box extraction completeness & minimality

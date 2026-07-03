@@ -3,10 +3,10 @@
 > **CRITICAL**: AI agents MUST read this file at the start of every session.
 > Update this file after every significant step to prevent context rot.
 
-**Last Updated:** 2026-06-15
+**Last Updated:** 2026-07-03
 
 ## Current Objective
-Keep project instructions, rules, and workflows aligned with `.agent/project_profile.yaml`.
+Apply TranscendPlexity PR review fixes needed to merge `copilot/transcendplexity-submission`.
 
 ## Context
 - Idea: Project using skillsmith
@@ -26,11 +26,12 @@ Keep project instructions, rules, and workflows aligned with `.agent/project_pro
 
 ## Recent Changes
 - Generated or aligned project instructions from the saved profile.
+- Began TranscendPlexity PR review remediation across Python, Lean, and notebook artifacts.
 
 ## Next Steps
-1. Update the profile when project assumptions change.
-2. Run `skillsmith align` to re-render managed files.
-3. Verify generated paths with `skillsmith doctor`.
+1. Finish TranscendPlexity security, correctness, and formal-proof fixes.
+2. Run targeted Python verification and artifact checks.
+3. Reconcile any remaining Lean/documentation review comments.
 
 ## Known Issues
 None recorded.

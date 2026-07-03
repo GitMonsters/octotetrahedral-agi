@@ -3,7 +3,7 @@
 -- Proves: termination, training-validation soundness, anti-hardcoding probe soundness
 -- Lean 4
 --
--- Cross-reference: /Users/evanpieser/synthesis_pipeline.py
+-- Cross-reference: synthesis_pipeline.py (repository root)
 --   synthesize_task()       → SynthesisLoop.*
 --   validate_on_training()  → TrainingValidator.*
 --   anti_hardcode_check()   → HardcodeProbe.*
@@ -13,8 +13,6 @@ import Mathlib.Data.List.Basic
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Option.Basic
 import Mathlib.Tactic.Linarith
-import OctoTetrahedral.WabiSabiTerminator
-
 namespace OctoTetrahedral.SynthesisPipeline
 
 -- ============================================================================
@@ -108,9 +106,9 @@ def ColorPerm := ℕ → ℕ
 def apply_perm (π : ColorPerm) (g : Grid) : Grid :=
   g.map (fun row => row.map π)
 
-/-- A solver is *permutation-invariant* if applying any colour permutation to the
+/-- A solver is *permutation-equivariant* if applying any colour permutation to the
     input and then solving equals permuting the solver's output on the original input.
-    A hardcoded solver vacuously is NOT permutation-invariant for non-trivial permutations. -/
+    A hardcoded solver vacuously is NOT permutation-equivariant for non-trivial permutations. -/
 def perm_equivariant (s : Solver) (π : ColorPerm) : Prop :=
   ∀ g : Grid, s (apply_perm π g) = (s g).map (apply_perm π)
 
@@ -159,9 +157,10 @@ theorem loop_measure_decreasing (st : LoopState)
   simp [loop_measure]
   omega
 
-/-- TERMINATION THEOREM: The synthesis loop halts within max_retries attempts.
+/-- Reachability theorem: the budget-exhausted loop state is always reachable by
+    advancing attempts up to `max_retries`.
     Cross-reference: for-loop `for attempt in range(max_retries)` in synthesize_task() -/
-theorem synthesis_terminates (st : LoopState) :
+theorem budget_exhaustion_reachable (st : LoopState) :
     ∃ (n : ℕ), n ≤ st.max_retries ∧
       LoopDone ⟨n, st.max_retries, st.h_bound⟩ (AttemptResult.failure "budget exhausted") :=
   ⟨st.max_retries, le_refl _, LoopDone.budget ⟨st.max_retries, st.max_retries, st.h_bound⟩ (le_refl _)⟩
@@ -229,9 +228,9 @@ theorem pipeline_rejects_static (s : Solver) (t : ArcTask)
   TranscendPlexity Synthesis Pipeline — Verified Properties
   ==========================================================
 
-  1. TERMINATION  (synthesis_terminates)
-     The synthesis loop halts in at most `max_retries` steps.
-     Proved via a strictly-decreasing natural-number measure.
+  1. BUDGET REACHABILITY  (`budget_exhaustion_reachable`)
+     The budget-exhausted loop state is reachable in at most `max_retries` steps.
+     This is a reachability guarantee, not a proof of semantic loop termination.
 
   2. TRAINING SOUNDNESS  (pipeline_sound)
      Every solver emitted by the pipeline satisfies all training pairs exactly.
@@ -247,7 +246,7 @@ theorem pipeline_rejects_static (s : Solver) (t : ArcTask)
      from being accepted on multi-training-example tasks.
 
   All theorems type-check in Lean 4 / Mathlib.
-  Python reference: /Users/evanpieser/synthesis_pipeline.py
+  Python reference: synthesis_pipeline.py (repository root)
 -/
 
 end OctoTetrahedral.SynthesisPipeline

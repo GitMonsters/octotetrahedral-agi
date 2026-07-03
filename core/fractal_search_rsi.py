@@ -282,8 +282,9 @@ class FractalSearchRSI:
         best_cand  = candidates[best_idx]
         best_score = scores[best_idx]
 
-        improved = (best_score > self.best_score) and (best_idx > 0)
-        if improved:
+        should_update = best_score > self.best_score
+        improved = should_update and (best_idx > 0)
+        if should_update:
             self.best_config = best_cand
             self.best_score  = best_score
 
@@ -389,7 +390,7 @@ class SelfImprovingCohesionBraid(nn.Module):
 
         # Launch background search if interval reached and none running
         if self._cycle % self.search_interval == 0:
-            self._launch_search(limb_states.detach().cpu(), rsi_val)
+            self._launch_search(limb_states.detach(), rsi_val)
 
         return deltas, rsi_val
 
@@ -400,7 +401,7 @@ class SelfImprovingCohesionBraid(nn.Module):
         diag["cycles"] = self._cycle
         return diag
 
-    def _launch_search(self, states_cpu: torch.Tensor, rsi_val: float) -> None:
+    def _launch_search(self, limb_states: torch.Tensor, rsi_val: float) -> None:
         """Launch background search thread (non-blocking)."""
         import threading
         with self._search_lock:
@@ -408,7 +409,8 @@ class SelfImprovingCohesionBraid(nn.Module):
                 return  # previous search still running — skip
 
         def _worker():
-            states = states_cpu[:2] if states_cpu.shape[0] > 2 else states_cpu
+            states = limb_states[:2] if limb_states.shape[0] > 2 else limb_states
+            states = states.detach().cpu()
             try:
                 best_cfg, best_score, improved = self.searcher.search_step(states, rsi_val)
                 if improved:
@@ -441,6 +443,7 @@ class SelfImprovingCohesionBraid(nn.Module):
         coord_proj and out_proj (they'll fine-tune quickly).
         """
         old_grid = self.compound.hashgrid
+        target_dtype = old_grid.hash_tables.dtype
         new_grid = LimbHashGrid(
             hidden_dim=self.hidden_dim,
             num_limbs=self.num_limbs,
@@ -451,7 +454,7 @@ class SelfImprovingCohesionBraid(nn.Module):
             out_dim=cfg.out_dim,
             base_res=cfg.base_res,
             finest_res=cfg.finest_res,
-        ).to(device)
+        ).to(device=device, dtype=target_dtype)
 
         # Warm-start: copy hash table entries where shapes match
         old_t = old_grid.hash_tables.data

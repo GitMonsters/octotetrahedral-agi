@@ -201,7 +201,6 @@ class MyAgent(Agent):
 
         # BFS state
         self._tried: dict[int, set] = {}       # frame_hash -> tried actions/coords
-        self._advance_seq: list[GameAction] = []  # actions that last advanced a level
         self._advance_seqs: list[list[GameAction]] = []  # per-level advance sequences
         self._recording: list[GameAction] = []   # current level recording
 

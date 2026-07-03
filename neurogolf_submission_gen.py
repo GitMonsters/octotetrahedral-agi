@@ -4,11 +4,9 @@ NeuroGolf 2026 Submission Builder
 Combines 266 library ONNX files + generates identity fallback for 134 missing tasks.
 Output: neurogolf_submission.zip with task001.onnx ... task400.onnx
 """
-import os, sys, json, csv, zipfile, shutil
+import json, zipfile, shutil
 from pathlib import Path
 import numpy as np
-
-sys.path.insert(0, str(Path.home()))
 
 LIBRARY_DIR  = Path.home() / "kaggle_data/neurogolf/submission"
 DATA_FILE    = Path.home() / "kaggle_data/arc-agi-2/arc-agi_training_challenges.json"
@@ -173,7 +171,8 @@ def main():
 
     size_mb = ZIP_FILE.stat().st_size / 1024 / 1024
     print(f"Done: {ZIP_FILE}  ({size_mb:.2f} MB)")
-    entries = sum(1 for _ in zipfile.ZipFile(ZIP_FILE).namelist())
+    with zipfile.ZipFile(ZIP_FILE) as zf:
+        entries = len(zf.namelist())
     print(f"Zip contains: {entries} files")
 
 

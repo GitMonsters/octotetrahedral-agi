@@ -63,9 +63,8 @@ noncomputable def phi : ℝ := (1 + Real.sqrt 5) / 2
 /-- Golden ratio property: φ² = φ + 1 -/
 theorem golden_ratio_property : phi ^ 2 = phi + 1 := by
   unfold phi
-  field_simp
-  ring_nf
-  sorry -- Full algebraic proof
+  have h5 : Real.sqrt 5 ^ 2 = 5 := Real.sq_sqrt (by norm_num)
+  nlinarith [h5]
 
 /-- Icosahedral projection: E8 → ℝ³ using golden ratio -/
 noncomputable def icosahedral_projection (v : Fin e8_dim → ℝ) : Fin 3 → ℝ :=
@@ -104,14 +103,10 @@ axiom e8_root_inner_discrete :
 def octopus_limb_projection (limb_idx : Fin e8_dim) (v : Fin e8_dim → ℝ) : ℝ :=
   v limb_idx
 
-/-- Each limb receives a distinct component of the E8 vector -/
-theorem octopus_limbs_independent :
-  ∀ (v : Fin e8_dim → ℝ) (i j : Fin e8_dim),
-    i ≠ j →
-    octopus_limb_projection i v = v i ∧
-    octopus_limb_projection j v = v j := by
-  intros v i j _
-  constructor <;> rfl
+/-- `octopus_limb_projection` is definitionally the selected E8 coordinate. -/
+theorem octopus_limb_projection_def (v : Fin e8_dim → ℝ) (i : Fin e8_dim) :
+    octopus_limb_projection i v = v i := by
+  rfl
 
 -- ============================================================================
 -- Theorem 4: Quasicrystal projection preserves key symmetries
@@ -121,28 +116,30 @@ theorem octopus_limbs_independent :
 def norm_sq_3d (v : Fin 3 → ℝ) : ℝ :=
   (Finset.univ.sum fun i => v i * v i)
 
-/-- Icosahedral projection maps E8 roots to quasicrystal vertices -/
-theorem e8_to_quasicrystal_well_defined :
+/-- Icosahedral projection maps E8 roots to quasicrystal vertices.
+
+    The bounded-norm proof is deferred: it depends on additional geometric facts
+    about the chosen E8 root basis and the icosahedral projection constants that
+    are not encoded constructively in this repository yet. -/
+axiom e8_to_quasicrystal_well_defined :
   ∀ (v : Fin e8_dim → ℝ),
     is_norm2_root v →
     ∃ (proj : Fin 3 → ℝ),
       proj = icosahedral_projection v ∧
-      -- Projected norm is bounded (quasicrystal constraint)
-      norm_sq_3d proj ≤ 4 * phi := by
-  intros v hroot
-  use icosahedral_projection v
-  constructor
-  · rfl
-  · sorry -- Requires golden ratio algebra
+      norm_sq_3d proj ≤ 4 * phi
 
 -- ============================================================================
 -- Theorem 5: E8 lattice is self-dual
 -- ============================================================================
 
-/-- The E8 lattice is equal to its dual lattice (unimodular property) -/
+/-- A vector lies in the E8 dual lattice when it pairs integrally with every norm-2 root. -/
+def in_e8_dual_lattice (v : Fin e8_dim → ℝ) : Prop :=
+  ∀ w : Fin e8_dim → ℝ, is_norm2_root w → ∃ z : ℤ, e8_inner v w = z
+
+/-- The E8 lattice is equal to its dual lattice (unimodular property). -/
 axiom e8_self_dual :
   ∀ (v : Fin e8_dim → ℝ),
-    (∀ w : Fin e8_dim → ℝ, is_norm2_root w → e8_inner v w ∈ Set.univ) →
+    in_e8_dual_lattice v →
     is_norm2_root v
 
 -- ============================================================================
@@ -179,8 +176,8 @@ class E8Lattice:
 1. ✓ `e8_root_count_exact`: 240 roots (axiom, verified in Python)
 2. ✓ `is_norm2_root`: Each root has norm² = 2
 3. ✓ `golden_ratio_property`: φ² = φ + 1
-4. ✓ `octopus_limbs_independent`: 8 limbs map to 8 dimensions
-5. (stub) `e8_to_quasicrystal_well_defined`: Projection to 3D quasicrystal
+4. ✓ `octopus_limb_projection_def`: each limb reads exactly one E8 coordinate
+5. (axiom) `e8_to_quasicrystal_well_defined`: Projection to 3D quasicrystal
 -/
 
 end OctoTetrahedral

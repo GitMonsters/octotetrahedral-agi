@@ -27,9 +27,10 @@ TASK_IDS = [
     "e12f9a14",
 ]
 
-TASKS_DIR = Path("/Users/evanpieser/13-Impossible-ARC-Tasks-SOLVED/dataset/tasks")
-SOLVES_DIR = Path("/Users/evanpieser/13-Impossible-ARC-Tasks-SOLVED/solves")
-OUTPUT_HTML = Path("/Users/evanpieser/impossible13_animation.html")
+SCRIPT_DIR = Path(__file__).resolve().parent
+TASKS_DIR = SCRIPT_DIR / "13-Impossible-ARC-Tasks-SOLVED" / "dataset" / "tasks"
+SOLVES_DIR = SCRIPT_DIR / "13-Impossible-ARC-Tasks-SOLVED" / "solves"
+OUTPUT_HTML = SCRIPT_DIR / "impossible13_animation.html"
 
 PALETTE = {
     0: "#000000",
@@ -114,6 +115,8 @@ def load_task_payload(task_id: str) -> dict[str, Any]:
             }
         )
 
+    if not task.get("test"):
+        raise RuntimeError(f"Task {task_id} has no test cases")
     test_input = task["test"][0]["input"]
     test_output = run_solver(solver, test_input)
 

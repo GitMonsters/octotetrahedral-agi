@@ -4,10 +4,10 @@
 -- Lean 4
 --
 -- Cross-references:
---   /Users/evanpieser/model.py            — full architecture
---   /Users/evanpieser/LEAN_AGI_VALIDATOR.md — validated capability scores
---   /Users/evanpieser/core/cross_domain_transfer.py — transfer layer
---   /Users/evanpieser/arc_solver.py       — ARC benchmark solver
+--   model.py                   — full architecture
+--   LEAN_AGI_VALIDATOR.md      — validated capability scores
+--   core/cross_domain_transfer.py — transfer layer
+--   arc_solver.py              — ARC benchmark solver
 
 import Mathlib.Data.List.Basic
 import Mathlib.Data.Nat.Basic
@@ -89,13 +89,18 @@ def task_solved (s : ARCSolver) (t : ARCTask) : Prop :=
 -- Section 3: Benchmark Scoring
 -- ============================================================================
 
+/-- Boolean decision procedure matching `task_solved`. -/
+def decides_solved (s : ARCSolver) (t : ARCTask) : Bool :=
+  decide (task_solved s t)
+
+/-- `decides_solved` is definitionally aligned with `task_solved`. -/
+theorem decides_solved_iff_task_solved (s : ARCSolver) (t : ARCTask) :
+    decides_solved s t = true ↔ task_solved s t := by
+  simp [decides_solved]
+
 /-- Count solved tasks in a benchmark suite. -/
 def count_solved (s : ARCSolver) (tasks : List ARCTask) : ℕ :=
   (tasks.filter (fun t => decides_solved s t)).length
-where
-  decides_solved (s : ARCSolver) (t : ARCTask) : Bool :=
-    t.train.all (fun p => s p.input == p.output) &&
-    t.test.all  (fun p => s p.input == p.output)
 
 /-- Benchmark score: fraction of tasks solved (as a real number 0–1). -/
 noncomputable def benchmark_score (s : ARCSolver) (tasks : List ARCTask)
@@ -157,7 +162,7 @@ structure Representation where
 
 /-- Two representations are aligned if they have the same dimension and values. -/
 def aligned (r₁ r₂ : Representation) : Prop :=
-  r₁.dim = r₂.dim
+  ∃ h : r₁.dim = r₂.dim, ∀ i : Fin r₁.dim, r₁.vals i = r₂.vals (i.cast h)
 
 /-- A transfer function maps a source representation to a target domain. -/
 def TransferFn := Representation → Domain → Representation
@@ -222,8 +227,10 @@ noncomputable def octo_arc_score : ℝ := 0.4688
 /-- OctoTetrahedral score on 13 impossible tasks (Popperian method). -/
 noncomputable def octo_impossible13_score : ℝ := 0.581
 
-/-- TranscendPlexity synthesis score on impossible-13 test set. -/
-noncomputable def transcendplexity_impossible13_score : ℝ := 1.0
+/-- Asserted external validation claim for the impossible-13 score.
+    The repository does not currently include the empirical validation artifacts,
+    so this value is treated as an assumption rather than a derived result. -/
+axiom transcendplexity_impossible13_score : ℝ
 
 /-- The AGI gap: how far the system is from human baseline on RE-ARC. -/
 noncomputable def agi_gap : ℝ := human_arc_score - octo_arc_score
@@ -233,14 +240,15 @@ theorem agi_gap_positive : 0 < agi_gap := by
   simp [agi_gap, human_arc_score, octo_arc_score]
   norm_num
 
-/-- TranscendPlexity synthesis achieves perfect score on the 13 impossible tasks. -/
-theorem transcendplexity_perfect_on_impossible :
-    transcendplexity_impossible13_score = 1.0 := by rfl
+/-- Assumed external validation claim: TranscendPlexity achieved a perfect score on impossible-13. -/
+axiom transcendplexity_perfect_on_impossible :
+    transcendplexity_impossible13_score = 1.0
 
 /-- TranscendPlexity exceeds human baseline on the impossible-13 subset. -/
 theorem transcendplexity_exceeds_human_on_impossible :
     human_arc_score < transcendplexity_impossible13_score := by
-  simp [human_arc_score, transcendplexity_impossible13_score]
+  rw [transcendplexity_perfect_on_impossible]
+  simp [human_arc_score]
   norm_num
 
 -- ============================================================================

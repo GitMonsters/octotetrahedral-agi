@@ -324,8 +324,9 @@ class CohesionRSI:
             self.value = 0.5
             return self.value
 
-        gains = [d for d in self._deltas if d > 0]
-        losses = [-d for d in self._deltas if d < 0]
+        window = list(self._deltas)[-self.period:]
+        gains = [d for d in window if d > 0]
+        losses = [-d for d in window if d < 0]
 
         avg_gain = (sum(gains) / self.period) if gains else 0.0
         avg_loss = (sum(losses) / self.period) if losses else 1e-9

@@ -135,12 +135,12 @@ structure Checkpoint where
   h_perf : 0 ≤ performance
 
 /-- Simplified checkpoint selection: choose the head of the buffer. -/
-def best_checkpoint (buf : List Checkpoint) (h : 0 < buf.length) : Checkpoint :=
+def first_checkpoint (buf : List Checkpoint) (h : 0 < buf.length) : Checkpoint :=
   buf.get ⟨0, h⟩
 
 theorem rollback_soundness (buf : List Checkpoint) (h : 0 < buf.length) :
-    0 ≤ (best_checkpoint buf h).performance := by
-  unfold best_checkpoint
+    0 ≤ (first_checkpoint buf h).performance := by
+  unfold first_checkpoint
   simpa using (buf.get ⟨0, h⟩).h_perf
 
 -- ============================================================================
@@ -196,11 +196,22 @@ theorem rna_full_edit (base edited : ℝ)
 -- Section 6: Hub-Limb Independence
 -- ============================================================================
 
-theorem limbs_independent : ∀ i j : Fin n_limbs, i ≠ j → True := by
-  intro i j _
-  trivial
+/-- Updating one limb leaves every distinct limb output unchanged. -/
+theorem limbs_independent
+    (outputs : Fin n_limbs → LimbOutput) (i j : Fin n_limbs)
+    (hij : i ≠ j) (replacement : LimbOutput) :
+    (Function.update outputs i replacement) j = outputs j := by
+  have hji : j ≠ i := by
+    intro h
+    exact hij h.symm
+  simp [Function.update, hji]
 
-theorem n_limbs_covers_e8 : n_limbs = 8 := by
+/-- Each limb index corresponds directly to an E8 coordinate index. -/
+def limb_to_e8_coordinate (i : Fin n_limbs) : Fin 8 :=
+  ⟨i.1, by simpa [n_limbs] using i.2⟩
+
+theorem limb_to_e8_correspondence (i : Fin n_limbs) :
+    (limb_to_e8_coordinate i).1 = i.1 := by
   rfl
 
 /-
@@ -210,11 +221,11 @@ Summary:
 - `combine_limbs_bounded` proves average-pooled limb outputs remain LayerNorm-bounded.
 - `fedavg_in_range` models the simplified hub synchronization behavior from
   `hub_sync.py::HubSync.sync_limbs`, showing mean performance stays in [0, 1].
-- `rollback_soundness` shows the simplified rollback buffer returns a checkpoint
+- `rollback_soundness` shows the simplified rollback buffer returns the first checkpoint
   with nonnegative performance.
 - `rna_blend_convex`, `rna_identity_at_zero`, and `rna_full_edit` formalize the
   gated RNA editing blend from `adaptation/rna_editing.py`.
-- `limbs_independent` and `n_limbs_covers_e8` capture the dedicated 8-limb / E8 alignment.
+- `limbs_independent` and `limb_to_e8_correspondence` capture the dedicated 8-limb / E8 alignment.
 -/
 
 end OctoTetrahedral.OctoLimbArchitecture

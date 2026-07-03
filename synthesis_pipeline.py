@@ -43,9 +43,8 @@ from __future__ import annotations
 import argparse
 import ast
 import copy
-import importlib.util
 import json
-import os
+import subprocess
 import sys
 import tempfile
 import textwrap
@@ -59,6 +58,47 @@ from typing import Optional
 # ─── Grid utilities ───────────────────────────────────────────────────────────
 
 Grid = list[list[int]]
+DEFAULT_MODEL = "claude-opus-4-5"
+SOLVER_TIMEOUT_SECONDS = 2.0
+
+_SOLVER_RUNNER = textwrap.dedent("""\
+    import json
+    import sys
+    import traceback
+
+    try:
+        import resource
+    except ImportError:
+        resource = None
+
+    if resource is not None:
+        try:
+            resource.setrlimit(resource.RLIMIT_CPU, (2, 2))
+            resource.setrlimit(resource.RLIMIT_AS, (256 * 1024 * 1024, 256 * 1024 * 1024))
+        except Exception:
+            pass
+
+    def emit(payload):
+        sys.stdout.write(json.dumps(payload))
+
+    try:
+        request = json.loads(sys.stdin.read())
+        namespace = {"__name__": "__solver__", "__builtins__": __builtins__}
+        exec(compile(request["code"], "<generated-solver>", "exec"), namespace, namespace)
+        solve = namespace.get("solve")
+        if not callable(solve):
+            emit({"ok": False, "error": "No `solve` function defined"})
+            raise SystemExit(0)
+
+        if request["mode"] == "probe":
+            emit({"ok": True})
+            raise SystemExit(0)
+
+        result = solve(request["grid"])
+        emit({"ok": True, "result": result})
+    except Exception:
+        emit({"ok": False, "error": traceback.format_exc()})
+""")
 
 
 def grid_to_str(grid: Grid) -> str:
@@ -171,22 +211,68 @@ def extract_code(response: str) -> Optional[str]:
 
 # ─── Validation ───────────────────────────────────────────────────────────────
 
+class SubprocessSolver:
+    """Run generated solver code in an isolated subprocess."""
+
+    def __init__(self, code: str, timeout: float = SOLVER_TIMEOUT_SECONDS):
+        self.code = code
+        self.timeout = timeout
+
+    def _invoke(self, mode: str, grid: Optional[Grid] = None) -> tuple[bool, Optional[object], str]:
+        payload = {"code": self.code, "mode": mode, "grid": grid}
+        try:
+            with tempfile.TemporaryDirectory(prefix="solver-run-") as tmpdir:
+                proc = subprocess.run(
+                    [sys.executable, "-I", "-c", _SOLVER_RUNNER],
+                    input=json.dumps(payload),
+                    capture_output=True,
+                    text=True,
+                    timeout=self.timeout,
+                    cwd=tmpdir,
+                    env={"PYTHONIOENCODING": "utf-8"},
+                )
+        except subprocess.TimeoutExpired:
+            return False, None, f"Solver timed out after {self.timeout:.1f}s"
+        except Exception:
+            return False, None, traceback.format_exc()
+
+        stdout = proc.stdout.strip()
+        stderr = proc.stderr.strip()
+        if proc.returncode != 0:
+            return False, None, stderr or stdout or f"Solver subprocess exited with {proc.returncode}"
+
+        try:
+            response = json.loads(stdout)
+        except json.JSONDecodeError:
+            return False, None, f"Invalid solver response: {stdout or stderr or '<empty>'}"
+
+        if not response.get("ok"):
+            return False, None, str(response.get("error", "Unknown solver failure"))
+        return True, response.get("result"), ""
+
+    def probe(self) -> tuple[bool, str]:
+        ok, _, err = self._invoke("probe")
+        return ok, err
+
+    def __call__(self, grid: Grid) -> object:
+        ok, result, err = self._invoke("run", grid)
+        if not ok:
+            raise RuntimeError(err)
+        return result
+
+
 def load_solver(code: str) -> tuple[bool, Optional[object], str]:
     """Compile solver code and return (ok, solve_fn, error)."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-        f.write(code)
-        path = f.name
     try:
-        spec = importlib.util.spec_from_file_location("_solver_tmp", path)
-        mod = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
-        spec.loader.exec_module(mod)  # type: ignore[union-attr]
-        if not hasattr(mod, "solve"):
-            return False, None, "No `solve` function defined"
-        return True, mod.solve, ""
+        compile(code, "<generated-solver>", "exec")
     except Exception:
         return False, None, traceback.format_exc()
-    finally:
-        os.unlink(path)
+
+    solver = SubprocessSolver(code)
+    ok, err = solver.probe()
+    if not ok:
+        return False, None, err
+    return True, solver, ""
 
 
 def validate_on_training(solve_fn: object, task: dict) -> tuple[bool, str]:
@@ -210,6 +296,8 @@ def validate_on_training(solve_fn: object, task: dict) -> tuple[bool, str]:
                 f"≠ expected {len(expected)}×{len(expected[0]) if expected else '?'}",
             )
         for r, (got_row, exp_row) in enumerate(zip(result, expected)):
+            if len(got_row) != len(exp_row):
+                return False, f"Train {i}: row {r} width {len(got_row)} ≠ expected {len(exp_row)}"
             for c, (got, exp) in enumerate(zip(got_row, exp_row)):
                 if got != exp:
                     return (
@@ -248,8 +336,7 @@ def anti_hardcode_check(solve_fn: object, task: dict) -> tuple[bool, str]:
             original_out = solve_fn(copy.deepcopy(ex["input"]))  # type: ignore[operator]
             mutated_out = solve_fn(copy.deepcopy(mutated))  # type: ignore[operator]
         except Exception:
-            # Solver crashes on mutation → accept (it's not purely static)
-            return True, ""
+            return False, "Hardcode probe failed: solver crashed on perturbed input."
 
         if original_out is not None and mutated_out is not None:
             if not grids_equal(list(original_out), list(mutated_out)):  # type: ignore[arg-type]
@@ -285,7 +372,7 @@ def static_hardcode_check(code: str) -> tuple[bool, str]:
             if len(body) == 1 and isinstance(body[0], ast.Return):
                 ret = body[0].value
                 # A bare `return [[...]]` or `return CONSTANT` is suspicious
-                if isinstance(ret, (ast.List, ast.Constant)):
+                if isinstance(ret, (ast.List, ast.Tuple, ast.Dict, ast.Set, ast.Constant)):
                     return (
                         False,
                         "Static hardcoding: `solve` body is a single `return <literal>`. "
@@ -445,7 +532,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--task-ids", help="Comma-separated task IDs to run (default: all)")
     p.add_argument("--workers", type=int, default=4, help="Parallel synthesis workers (default: 4)")
     p.add_argument("--retries", type=int, default=6, help="Claude retries per task (default: 6)")
-    p.add_argument("--model", default="claude-opus-4-5", help="Claude model name (default: claude-opus-4-5)")
+    p.add_argument("--model", default=DEFAULT_MODEL, help=f"Claude model name (default: {DEFAULT_MODEL})")
     p.add_argument("--verify-only", action="store_true", help="Verify existing solvers without generating new ones")
     p.add_argument("--verbose", action="store_true", help="Print per-attempt detail")
     p.add_argument("--skip-existing", action="store_true", default=True, help="Skip tasks that already have a solver (default: true)")

@@ -164,8 +164,9 @@ class CohesionScorer:
                    + 0.3 * feedback_latency    (1 - normalized latency)
     """
 
-    def __init__(self, window: int = 256):
+    def __init__(self, window: int = 256, decay: float = 0.95):
         self.window = window
+        self.decay = decay
         self.limb_counts: Dict[str, int] = defaultdict(int)
         self.skill_counts: Dict[str, int] = defaultdict(int)
         self.events: Deque[BraidEvent] = deque(maxlen=window)
@@ -173,6 +174,16 @@ class CohesionScorer:
         self._ewma_score: float = 0.0
 
     def record(self, ev: BraidEvent) -> None:
+        if self.events.maxlen is not None and len(self.events) == self.events.maxlen:
+            old = self.events[0]
+            if old.limb:
+                self.limb_counts[old.limb] -= 1
+                if self.limb_counts[old.limb] <= 0:
+                    del self.limb_counts[old.limb]
+            if old.skill:
+                self.skill_counts[old.skill] -= 1
+                if self.skill_counts[old.skill] <= 0:
+                    del self.skill_counts[old.skill]
         self.events.append(ev)
         if ev.limb:
             self.limb_counts[ev.limb] += 1
@@ -206,7 +217,7 @@ class CohesionScorer:
 
         score = (0.4 * limb_balance) + (0.3 * skill_coverage) + (0.3 * latency_score)
         # EWMA smoothing
-        self._ewma_score = 0.95 * self._ewma_score + 0.05 * score
+        self._ewma_score = self.decay * self._ewma_score + (1.0 - self.decay) * score
         return {
             "cohesion_score": round(score, 4),
             "ewma_score": round(self._ewma_score, 4),
@@ -244,7 +255,10 @@ class CognitiveCohesionBraid:
     def __init__(self, config: Optional[CohesionConfig] = None,
                  enable_all: bool = True):
         self.config = config or CohesionConfig(enabled=enable_all)
-        self.scorer = CohesionScorer(window=self.config.history_window)
+        self.scorer = CohesionScorer(
+            window=self.config.history_window,
+            decay=self.config.coherence_decay,
+        )
 
         # Bridges (any object exposing .record_* / .queue_* methods, or None)
         self.simula_bridge: Any = None
@@ -256,7 +270,7 @@ class CognitiveCohesionBraid:
         self.hermes_enqueue_cb: Optional[Callable[[Dict[str, Any]], None]] = None
         self.euphan_log_cb:    Optional[Callable[[Dict[str, Any]], None]] = None
 
-        self.event_log: List[BraidEvent] = []
+        self.event_log: Deque[BraidEvent] = deque(maxlen=self.config.history_window)
         self.braid_stats = {
             "simula_to_euphan": 0,
             "euphan_to_hermes": 0,
@@ -340,15 +354,16 @@ class CognitiveCohesionBraid:
 
         # Braid: SIMULA → EUPHAN (log every batch through EUPHAN timeline)
         if self.config.enabled and self.config.braid_simula_to_euphan:
-            self._route_to_euphan({
+            routed = self._route_to_euphan({
                 "kind": "simula_data_batch",
                 "limb": ev.limb or "perception",
                 "confidence": ev.confidence,
                 "num_examples": event.get("num_examples", 0),
                 "ts": ev.timestamp,
             })
-            ev.routed_to.append("euphan")
-            self.braid_stats["simula_to_euphan"] += 1
+            if routed:
+                ev.routed_to.append("euphan")
+                self.braid_stats["simula_to_euphan"] += 1
         return ev
 
     # ── Ingress: EUPHAN ────────────────────────────────────────────────────
@@ -368,7 +383,7 @@ class CognitiveCohesionBraid:
         if (self.config.enabled and self.config.braid_euphan_to_hermes
                 and ev.confidence < self.config.weak_confidence_threshold):
             t0 = time.time()
-            self._route_to_hermes({
+            routed = self._route_to_hermes({
                 "kind": "weak_limb_recovery",
                 "limb": ev.limb,
                 "confidence": ev.confidence,
@@ -376,9 +391,10 @@ class CognitiveCohesionBraid:
                 "skills_needed": self._skills_for_limb(ev.limb),
                 "ts": ev.timestamp,
             })
-            self.scorer.record_feedback_latency(time.time() - t0)
-            ev.routed_to.append("hermes")
-            self.braid_stats["euphan_to_hermes"] += 1
+            if routed:
+                self.scorer.record_feedback_latency(time.time() - t0)
+                ev.routed_to.append("hermes")
+                self.braid_stats["euphan_to_hermes"] += 1
         return ev
 
     # ── Ingress: HERMES ────────────────────────────────────────────────────
@@ -402,42 +418,64 @@ class CognitiveCohesionBraid:
         if (self.config.enabled and self.config.braid_hermes_to_simula
                 and not ev.success):
             t0 = time.time()
-            self._route_to_simula({
+            routed = self._route_to_simula({
                 "kind": "failure_augmentation_request",
                 "task_id": result.get("task_id"),
                 "n_examples": self.config.failure_augmentation_count,
                 "weak_limb": ev.limb,
                 "ts": ev.timestamp,
             })
-            self.scorer.record_feedback_latency(time.time() - t0)
-            ev.routed_to.append("simula")
-            self.braid_stats["hermes_to_simula"] += 1
+            if routed:
+                self.scorer.record_feedback_latency(time.time() - t0)
+                ev.routed_to.append("simula")
+                self.braid_stats["hermes_to_simula"] += 1
         return ev
 
     # ── Internal: routing helpers (graceful no-op if bridge missing) ───────
-    def _route_to_euphan(self, payload: Dict[str, Any]) -> None:
+    def _route_to_euphan(self, payload: Dict[str, Any]) -> bool:
         if self.euphan_log_cb:
-            try: self.euphan_log_cb(payload)
-            except Exception: pass
-        elif self.euphan_bridge and hasattr(self.euphan_bridge, "log_event"):
-            try: self.euphan_bridge.log_event(payload)
-            except Exception: pass
+            try:
+                self.euphan_log_cb(payload)
+                return True
+            except Exception:
+                return False
+        if self.euphan_bridge and hasattr(self.euphan_bridge, "log_event"):
+            try:
+                self.euphan_bridge.log_event(payload)
+                return True
+            except Exception:
+                return False
+        return False
 
-    def _route_to_hermes(self, payload: Dict[str, Any]) -> None:
+    def _route_to_hermes(self, payload: Dict[str, Any]) -> bool:
         if self.hermes_enqueue_cb:
-            try: self.hermes_enqueue_cb(payload)
-            except Exception: pass
-        elif self.hermes_bridge and hasattr(self.hermes_bridge, "queue_solve_task"):
-            try: self.hermes_bridge.queue_solve_task(payload)
-            except Exception: pass
+            try:
+                self.hermes_enqueue_cb(payload)
+                return True
+            except Exception:
+                return False
+        if self.hermes_bridge and hasattr(self.hermes_bridge, "queue_solve_task"):
+            try:
+                self.hermes_bridge.queue_solve_task(payload)
+                return True
+            except Exception:
+                return False
+        return False
 
-    def _route_to_simula(self, payload: Dict[str, Any]) -> None:
+    def _route_to_simula(self, payload: Dict[str, Any]) -> bool:
         if self.simula_augment_cb:
-            try: self.simula_augment_cb(payload)
-            except Exception: pass
-        elif self.simula_bridge and hasattr(self.simula_bridge, "augment"):
-            try: self.simula_bridge.augment(payload)
-            except Exception: pass
+            try:
+                self.simula_augment_cb(payload)
+                return True
+            except Exception:
+                return False
+        if self.simula_bridge and hasattr(self.simula_bridge, "augment"):
+            try:
+                self.simula_bridge.augment(payload)
+                return True
+            except Exception:
+                return False
+        return False
 
     def _ingest(self, ev: BraidEvent) -> None:
         self.scorer.record(ev)
