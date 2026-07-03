@@ -63,6 +63,8 @@ noncomputable def phi : ℝ := (1 + Real.sqrt 5) / 2
 /-- Golden ratio property: φ² = φ + 1 -/
 theorem golden_ratio_property : phi ^ 2 = phi + 1 := by
   unfold phi
+  -- Reduce the square root term with `Real.sq_sqrt`, then let `nlinarith`
+  -- discharge the remaining polynomial identity.
   have h5 : Real.sqrt 5 ^ 2 = 5 := Real.sq_sqrt (by norm_num)
   nlinarith [h5]
 

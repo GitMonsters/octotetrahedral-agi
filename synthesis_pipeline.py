@@ -44,6 +44,7 @@ import argparse
 import ast
 import copy
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -220,6 +221,11 @@ class SubprocessSolver:
 
     def _invoke(self, mode: str, grid: Optional[Grid] = None) -> tuple[bool, Optional[object], str]:
         payload = {"code": self.code, "mode": mode, "grid": grid}
+        safe_env = {
+            "PATH": os.environ.get("PATH", ""),
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONIOENCODING": "utf-8",
+        }
         try:
             with tempfile.TemporaryDirectory(prefix="solver-run-") as tmpdir:
                 proc = subprocess.run(
@@ -229,7 +235,7 @@ class SubprocessSolver:
                     text=True,
                     timeout=self.timeout,
                     cwd=tmpdir,
-                    env={"PYTHONIOENCODING": "utf-8"},
+                    env=safe_env,
                 )
         except subprocess.TimeoutExpired:
             return False, None, f"Solver timed out after {self.timeout:.1f}s"
