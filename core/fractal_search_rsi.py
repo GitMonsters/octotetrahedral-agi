@@ -47,7 +47,7 @@ from __future__ import annotations
 import copy
 import math
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 import torch
@@ -57,7 +57,6 @@ import torch.nn.functional as F
 from .rsi_hashgrid_cohesion import (
     CompoundingCohesionRSIHashgrid,
     LimbHashGrid,
-    CohesionRSI,
 )
 
 
@@ -263,7 +262,6 @@ class FractalSearchRSI:
         Evaluates `population` mutations + incumbent; keeps winner.
         """
         self.step_count += 1
-        device = limb_states.device
 
         # Always include incumbent as baseline
         candidates = [self.best_config]
@@ -420,7 +418,6 @@ class SelfImprovingCohesionBraid(nn.Module):
             except Exception:
                 pass
 
-        import threading
         t = threading.Thread(target=_worker, daemon=True)
         t.start()
         with self._search_lock:

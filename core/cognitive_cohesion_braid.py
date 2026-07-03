@@ -485,7 +485,7 @@ class CognitiveCohesionBraid:
     def _skills_for_limb(self, limb: Optional[str]) -> List[str]:
         if not limb:
             return []
-        return [s for s, l in SKILL_LIMB_MAP.items() if l == limb]
+        return [skill for skill, limb_name in SKILL_LIMB_MAP.items() if limb_name == limb]
 
     # ── Reporting ──────────────────────────────────────────────────────────
     def cohesion_score(self) -> Dict[str, Any]:
@@ -521,8 +521,8 @@ class CognitiveCohesionBraid:
         m = self.cohesion_score()
 
         rows_limbs = "".join(
-            f"<tr><td>{l}</td><td>{self.scorer.limb_counts.get(l, 0)}</td></tr>"
-            for l in ALL_LIMBS
+            f"<tr><td>{limb_name}</td><td>{self.scorer.limb_counts.get(limb_name, 0)}</td></tr>"
+            for limb_name in ALL_LIMBS
         )
         rows_skills = "".join(
             f"<tr><td>{s}</td><td>{SKILL_SOURCE.get(s,'?')}</td>"

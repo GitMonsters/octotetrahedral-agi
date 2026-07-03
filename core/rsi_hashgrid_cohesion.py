@@ -49,11 +49,10 @@ from __future__ import annotations
 
 import math
 from collections import deque
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -137,7 +136,7 @@ class LimbHashGrid(nn.Module):
         growth = math.exp(math.log(finest_res / base_res) / max(levels - 1, 1))
         self.register_buffer(
             "resolutions",
-            torch.tensor([int(base_res * growth ** l) for l in range(levels)],
+            torch.tensor([int(base_res * growth ** level_idx) for level_idx in range(levels)],
                          dtype=torch.float32),
         )
 
@@ -253,8 +252,8 @@ class LimbHashGrid(nn.Module):
             # Project to coordinate space, normalize to [0, 1]
             coords_norm = torch.sigmoid(self.coord_proj(limb_states))  # [B, N, coord_dim]
             per_level = [
-                self._interp_level(coords_norm, l, level_weight=1.0)   # [B, N, F]
-                for l in range(self.levels)
+                self._interp_level(coords_norm, level_idx, level_weight=1.0)   # [B, N, F]
+                for level_idx in range(self.levels)
             ]
             if not torch.is_grad_enabled():
                 # Hold a reference to the input so its id() stays valid (no reuse).
@@ -268,8 +267,8 @@ class LimbHashGrid(nn.Module):
         # iteration — then concatenate and project.
         if level_weights is not None:
             all_feats = [
-                per_level[l] * float(level_weights[l].item())
-                for l in range(self.levels)
+                per_level[level_idx] * float(level_weights[level_idx].item())
+                for level_idx in range(self.levels)
             ]
         else:
             all_feats = per_level

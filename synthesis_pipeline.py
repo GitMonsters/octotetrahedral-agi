@@ -545,7 +545,7 @@ def main() -> None:
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"TranscendPlexity Synthesis Pipeline")
+    print("TranscendPlexity Synthesis Pipeline")
     print(f"  model   : {args.model}")
     print(f"  retries : {args.retries}")
     print(f"  workers : {args.workers}")
@@ -631,7 +631,7 @@ def main() -> None:
     # ── Report ────────────────────────────────────────────────────────────────
     print()
     print("=" * 60)
-    print(f"SYNTHESIS COMPLETE")
+    print("SYNTHESIS COMPLETE")
     print(f"  Solved  : {solved_count} / {len(todo)}")
     print(f"  Failed  : {len(failed_ids)}")
     print(f"  Time    : {elapsed:.0f}s")
@@ -639,7 +639,7 @@ def main() -> None:
         print(f"  Rate    : {solved_count / len(todo) * 100:.1f}%")
 
     if failed_ids:
-        print(f"\nFailed task IDs:")
+        print("\nFailed task IDs:")
         for fid in failed_ids:
             print(f"    {fid}")
 

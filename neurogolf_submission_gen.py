@@ -4,7 +4,9 @@ NeuroGolf 2026 Submission Builder
 Combines 266 library ONNX files + generates identity fallback for 134 missing tasks.
 Output: neurogolf_submission.zip with task001.onnx ... task400.onnx
 """
-import json, zipfile, shutil
+import json
+import shutil
+import zipfile
 from pathlib import Path
 import numpy as np
 
@@ -106,8 +108,6 @@ def infer_color_map(task: dict) -> dict | None:
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    import onnx
-
     # Load ARC training tasks (sorted = task001 mapping)
     with open(DATA_FILE) as f:
         arc_train = json.load(f)
