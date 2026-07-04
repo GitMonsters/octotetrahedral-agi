@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Dict, List, Any
 
 # Import the refactored trait-based solvers
-sys.path.insert(0, '/Users/evanpieser')
+sys.path.insert(0, str(Path(__file__).parent))
 
 try:
     from arc_compound_solver_refactored import CompoundArcSolverRefactored
@@ -99,8 +99,13 @@ def main():
     print("=" * 80 + "\n")
 
     # Load RE-ARC tasks
-    task_file = "/Users/evanpieser/re_arc_bench_clean.json"
-    print(f"📂 Loading RE-ARC tasks from: {task_file}")
+    import os
+    task_file = (
+        sys.argv[1]
+        if len(sys.argv) > 1
+        else os.environ.get("REARC_CHALLENGES", "")
+    )
+    print(f"📂 Loading RE-ARC tasks from: {task_file or '(no file specified)'}")
     
     tasks = load_rearc_tasks(task_file, limit=5)
     

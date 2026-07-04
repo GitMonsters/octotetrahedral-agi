@@ -313,11 +313,31 @@ class EnsembleREARCSolver:
 
 
 def main():
+    import os
+    import sys as _sys
     solver = EnsembleREARCSolver()
-    
-    dataset_path = "/Users/evanpieser/Downloads/re-arc_test_challenges-2026-05-06T02-34-30.json"
-    output_path = "/Users/evanpieser/Desktop/72%/octotetrahedral_rearc_v46_ensemble_voting.json"
-    
+
+    dataset_path = (
+        _sys.argv[1]
+        if len(_sys.argv) > 1
+        else os.environ.get("REARC_CHALLENGES", "")
+    )
+    output_path = (
+        _sys.argv[2]
+        if len(_sys.argv) > 2
+        else os.environ.get(
+            "REARC_OUTPUT",
+            str(Path(__file__).parent / "octotetrahedral_rearc_v46_ensemble_voting.json"),
+        )
+    )
+
+    if not dataset_path or not Path(dataset_path).exists():
+        print(
+            "Usage: python rearc_v46_ensemble_voting.py <dataset.json> [output.json]\n"
+            "Or set REARC_CHALLENGES (and optionally REARC_OUTPUT) environment variables."
+        )
+        return
+
     solver.solve_rearc_dataset(dataset_path, output_path)
 
 

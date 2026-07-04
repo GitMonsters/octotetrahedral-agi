@@ -13,7 +13,7 @@ from typing import Dict, List, Any, Tuple
 from collections import defaultdict
 
 # Import trait-based solvers
-sys.path.insert(0, '/Users/evanpieser')
+sys.path.insert(0, str(Path(__file__).parent))
 
 try:
     from arc_compound_solver_refactored import CompoundArcSolverRefactored
@@ -22,6 +22,9 @@ try:
     SOLVERS_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️  Warning: {e}")
+    CompoundArcSolverRefactored = None  # type: ignore[assignment,misc]
+    EnsembleSolverRefactored = None  # type: ignore[assignment,misc]
+    TransformSolverRefactored = None  # type: ignore[assignment,misc]
     SOLVERS_AVAILABLE = False
 
 
@@ -266,17 +269,23 @@ def generate_report(challenges_filepath: str) -> Dict[str, Any]:
 
 
 if __name__ == "__main__":
-    filepath = "/Users/evanpieser/Downloads/re-arc_test_challenges-2026-04-30T18-07-23.json"
-    
-    if not Path(filepath).exists():
-        print(f"❌ File not found: {filepath}")
+    import os
+    filepath = sys.argv[1] if len(sys.argv) > 1 else os.environ.get(
+        "REARC_CHALLENGES", ""
+    )
+
+    if not filepath or not Path(filepath).exists():
+        print(
+            "Usage: python evaluate_rearc_challenges.py <challenges.json>\n"
+            "Or set the REARC_CHALLENGES environment variable."
+        )
         sys.exit(1)
-    
+
     report = generate_report(filepath)
-    
-    # Save report
-    report_file = "/Users/evanpieser/rearc_evaluation_report.json"
+
+    # Save report next to the input file by default.
+    report_file = Path(filepath).with_name("rearc_evaluation_report.json")
     with open(report_file, 'w') as f:
         json.dump(report, f, indent=2)
-    
+
     print(f"📊 Report saved: {report_file}")

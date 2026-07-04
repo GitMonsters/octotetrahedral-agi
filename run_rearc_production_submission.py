@@ -11,12 +11,13 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Any
 
-sys.path.insert(0, '/Users/evanpieser')
+sys.path.insert(0, str(Path(__file__).parent))
 
 try:
     from arc_ensemble_solver_refactored import EnsembleSolverRefactored
     SOLVER_AVAILABLE = True
 except ImportError:
+    EnsembleSolverRefactored = None  # type: ignore[assignment,misc]
     SOLVER_AVAILABLE = False
 
 
@@ -163,19 +164,25 @@ def generate_submission(challenges_filepath: str) -> Dict[str, Any]:
 
 
 if __name__ == "__main__":
-    filepath = "/Users/evanpieser/Downloads/re-arc_test_challenges-2026-04-30T18-07-23.json"
-    
-    if not Path(filepath).exists():
-        print(f"❌ File not found: {filepath}")
+    import os
+    filepath = sys.argv[1] if len(sys.argv) > 1 else os.environ.get(
+        "REARC_CHALLENGES", ""
+    )
+
+    if not filepath or not Path(filepath).exists():
+        print(
+            "Usage: python run_rearc_production_submission.py <challenges.json>\n"
+            "Or set the REARC_CHALLENGES environment variable."
+        )
         sys.exit(1)
-    
+
     submission = generate_submission(filepath)
-    
+
     if submission:
-        # Save submission
-        output_file = "/Users/evanpieser/rearc_production_submission.json"
+        # Save submission next to the input file by default.
+        output_file = Path(filepath).with_name("rearc_production_submission.json")
         with open(output_file, 'w') as f:
             json.dump(submission, f, indent=2)
-        
+
         print(f"📦 Submission saved: {output_file}")
         print(f"   Size: {len(json.dumps(submission))} bytes")

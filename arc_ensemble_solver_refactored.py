@@ -21,8 +21,8 @@ import numpy as np
 from pathlib import Path
 import sys
 
-# Add src path
-sys.path.insert(0, str(Path.home()))
+# Add repo root to path so that src.solver_abstractions resolves portably.
+sys.path.insert(0, str(Path(__file__).parent))
 
 from src.solver_abstractions import (
     Solver, CompoundTrait, TransformTrait, BBoxTrait, GridUtils
