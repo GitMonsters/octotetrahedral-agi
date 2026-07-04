@@ -60,7 +60,7 @@ from core.compound_braid import CompoundBraid
 from core.compound_loop import CompoundLoopController, CompoundLoopConfig as _LoopCfg
 from core.cognitive_geometry import CognitiveGeometryEngine, CognitiveGeometryConfig
 from core.cross_domain_transfer import CrossDomainTransferLayer, CrossDomainConfig
-from core.cognitive_cohesion_braid import CognitiveCohesionBraid, CohesionConfig
+from core.cognitive_cohesion_braid import CognitiveCohesionBraid
 from core.tetrahedral_vision_calculus import TetrahedralVisionCalculus
 from core.s2_to_s1_cache import S2ToS1Cache
 from cognition import AGICognition, CognitionConfig
@@ -1894,7 +1894,6 @@ class OctoTetrahedralModel(nn.Module):
         braid_signal = getattr(self, '_cached_braid_signal', None)
         core_result = self.core(edited, head_gates=head_gates, braid_signal=braid_signal)
         core_output = core_result['hidden_states']
-        reasoning_state = core_result['reasoning_state']
 
         # 4. Geometric physics (skip NaN)
         if self.use_geometric_physics and self.geometric_physics is not None:
