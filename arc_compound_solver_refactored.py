@@ -37,8 +37,6 @@ class _CompoundTraitImpl(CompoundTrait):
         self.subsolvers: List[Tuple[Solver, int]] = []
 
     def add_subsolver(self, solver: Solver, priority: int = 0) -> None:
-        if solver is None:
-            raise ValueError("solver cannot be None")
         self.subsolvers.append((solver, priority))
 
     def compose_solutions(

@@ -129,7 +129,7 @@ class GridUtils:
     @staticmethod
     def find_background_color(grid: List[List[int]]) -> int:
         """Return the most-frequent colour in *grid* (background heuristic)."""
-        counts: Counter = Counter()
+        counts = Counter()
         for row in grid:
             counts.update(row)
         return counts.most_common(1)[0][0] if counts else 0

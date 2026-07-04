@@ -113,7 +113,7 @@ class TransformSolverRefactored(Solver):
         # Determine target output shape from first training example.
         try:
             target = train[0].get("output", [])
-            target_shape = (len(target), len(target[0]) if target else 0)
+            target_shape = (len(target), len(target[0])) if target and target[0] else (0, 0)
         except (IndexError, KeyError):
             target_shape = None
 
