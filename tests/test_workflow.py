@@ -23,19 +23,24 @@ import pytest
 
 def test_monitoring_package_exports_inference_monitor():
     """InferenceMonitor must be importable from the monitoring package."""
-    from monitoring import CoherenceAlert, InferenceMonitor, MonitoringStats  # noqa: F401
+    from monitoring import CoherenceAlert, InferenceMonitor, MonitoringStats
 
     monitor = InferenceMonitor()
     assert callable(monitor.record)
     assert callable(monitor.stats)
     assert callable(monitor.reset)
+    # Verify type annotations are also importable
+    assert CoherenceAlert is not None
+    assert MonitoringStats is not None
 
 
 def test_monitoring_inference_monitor_module_importable():
     """monitoring.inference_monitor sub-module must also be importable."""
-    from monitoring.inference_monitor import InferenceMonitor as IM  # noqa: F401
+    from monitoring import InferenceMonitor
+    from monitoring.inference_monitor import InferenceMonitor as IM
 
-    assert IM is not None
+    # Both import paths must resolve to the same class
+    assert IM is InferenceMonitor
 
 
 # ---------------------------------------------------------------------------
@@ -45,12 +50,13 @@ def test_monitoring_inference_monitor_module_importable():
 
 def test_workflow_imports():
     """workflow module must import without errors."""
-    import workflow  # noqa: F401
+    import workflow
 
-    from workflow import CompoundWorkflow, WorkflowConfig  # noqa: F401
+    from workflow import CompoundWorkflow, WorkflowConfig
 
     assert CompoundWorkflow is not None
     assert WorkflowConfig is not None
+    assert hasattr(workflow, "main")
 
 
 # ---------------------------------------------------------------------------

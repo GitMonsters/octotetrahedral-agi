@@ -329,7 +329,8 @@ class CompoundWorkflow:
             limb_vals = [
                 ((b % 100) / 100.0) for b in task_bytes[: self.config.limb_count]
             ]
-            # Pad or truncate to limb_count
+            # Pad to limb_count with 0.5, then truncate to exactly limb_count.
+            # (limb_vals may be shorter than limb_count if task_id is short.)
             limb_vals = (limb_vals + [0.5] * self.config.limb_count)[: self.config.limb_count]
 
             resp = self.infer(limb_vals, task_signal=task.family)
@@ -392,6 +393,8 @@ class CompoundWorkflow:
             "--port", str(port),
         ] + (extra_args or [])
         logger.info(json.dumps({"event": "server_launch", "cmd": cmd}))
+        # extra_args are forwarded verbatim to serve.py; callers are responsible
+        # for ensuring only known-safe arguments are passed (e.g. --scale, --checkpoint).
         return subprocess.Popen(cmd)  # noqa: S603
 
 
@@ -504,7 +507,7 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 limb_states = [float(x) for x in args.limb_states.split(",")]
             except ValueError as exc:
-                parser.error(f"--limb-states parse error: {exc}")
+                parser.error(f"--limb-states parse error for '{args.limb_states}': {exc}")
         else:
             limb_states = [0.5] * cfg.MODEL_LIMB_COUNT
 
