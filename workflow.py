@@ -71,16 +71,40 @@ import logging
 import subprocess
 import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 import production_config as cfg
 from api_types import make_request
-from eval_harness import generate_tasks, score_tasks, aggregate_scores
+from eval_harness import generate_tasks
 from health_check import HealthStatus, run_health_check
 from inference_service import InferenceService
 from monitoring import InferenceMonitor
 
 logger = logging.getLogger(__name__)
+
+# Static CLI epilog so _build_parser() is not fragile against docstring changes.
+_CLI_EPILOG = """\
+Quick start
+-----------
+::
+
+    # Self-test / health check
+    python workflow.py --mode health-check
+
+    # Single inference
+    python workflow.py --mode inference --limb-states 0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8
+
+    # Evaluation benchmark (20 tasks)
+    python workflow.py --mode evaluate --num-tasks 20
+
+    # HTTP serving (passes extra args to serve.py)
+    python workflow.py --mode serve -- --scale tiny --port 8080
+"""
+
+# Absolute path to serve.py resolved at import time so start_server() works
+# regardless of the current working directory.
+_SERVE_SCRIPT_PATH = str(Path(__file__).resolve().parent / "serve.py")
 
 # ---------------------------------------------------------------------------
 # Workflow configuration
@@ -283,15 +307,14 @@ class CompoundWorkflow:
         seed: int | None = None,
         num_tasks: int | None = None,
     ) -> dict[str, Any]:
-        """Run the deterministic eval-harness benchmark.
+        """Run an integration-oriented eval-harness pass.
 
-        Generates tasks, scores them via a simple majority-vote pass using
-        the live inference service as a proxy judge, and returns aggregate
-        metrics.
+        Generates tasks, runs them through the live inference service, and
+        returns aggregate integration metrics.  This method validates the
+        end-to-end pipeline (task generation → inference → result collection);
+        it does **not** measure model-answer quality.
 
-        Note: the eval harness exercises the *harness* infrastructure
-        (task generation, scoring, regression tracking).  For deep
-        model-quality evaluation, use ``python -m eval_harness evaluate``
+        For deep model-quality evaluation use ``python -m eval_harness evaluate``
         directly.
 
         Parameters
@@ -304,8 +327,8 @@ class CompoundWorkflow:
         Returns
         -------
         dict
-            Aggregate eval metrics including ``mean_score``, ``pass_rate``,
-            and ``total_tasks``.
+            Aggregate integration metrics including ``success_rate``,
+            ``mean_coherence``, and ``total_tasks``.
         """
         s = seed if seed is not None else self.config.eval_seed
         n = num_tasks if num_tasks is not None else self.config.eval_num_tasks
@@ -314,15 +337,10 @@ class CompoundWorkflow:
 
         tasks = generate_tasks(seed=s, num_tasks=n)
 
-        # Use the inference service as a scoring oracle: for each task
-        # convert the task id to a limb-state vector and run a forward
-        # pass to verify the pipeline end-to-end.  The harness scorer
-        # compares the predicted answer against the expected answer;
-        # because the inference service is not an NLP model, predicted
-        # answers will not generally be correct — the point here is to
-        # exercise the full integrated path, not to measure model quality.
-        # For deep model evaluation, use ``python -m eval_harness evaluate``.
-        outputs: list[dict[str, Any]] = []
+        successful = 0
+        coherence_values: list[float] = []
+        by_family: dict[str, dict[str, int]] = {}
+
         for task in tasks:
             # Encode task id as a reproducible limb-state vector
             task_bytes = task.task_id.encode()
@@ -334,28 +352,43 @@ class CompoundWorkflow:
             limb_vals = (limb_vals + [0.5] * self.config.limb_count)[: self.config.limb_count]
 
             resp = self.infer(limb_vals, task_signal=task.family)
-            # Pass the expected answer through when inference succeeds so the
-            # harness scorer can produce a meaningful (if artificial) score.
-            # Pass an empty string on failure so the scorer records 0.
-            predicted_answer = task.expected if resp["error"] is None else ""
-            outputs.append(
-                {
-                    "task_id": task.task_id,
-                    "answer": predicted_answer,
-                    "coherence": resp["coherence"],
-                    "error": resp["error"],
-                }
-            )
 
-        scores = score_tasks(tasks, outputs)
-        agg = aggregate_scores(scores)
+            family_stats = by_family.setdefault(
+                task.family,
+                {"total": 0, "successful": 0},
+            )
+            family_stats["total"] += 1
+
+            if resp["error"] is None:
+                successful += 1
+                family_stats["successful"] += 1
+                coherence = resp.get("coherence")
+                if isinstance(coherence, (int, float)):
+                    coherence_values.append(float(coherence))
 
         summary: dict[str, Any] = {
             "total_tasks": n,
             "seed": s,
-            "mean_score": agg.overall,
-            "pass_rate": agg.n_correct / agg.n_tasks if agg.n_tasks else 0.0,
-            "by_family": agg.family_scores,
+            "successful_tasks": successful,
+            "failed_tasks": n - successful,
+            "success_rate": successful / n if n else 0.0,
+            "mean_coherence": (
+                sum(coherence_values) / len(coherence_values)
+                if coherence_values
+                else 0.0
+            ),
+            "by_family": {
+                family: {
+                    "total": stats["total"],
+                    "successful": stats["successful"],
+                    "success_rate": (
+                        stats["successful"] / stats["total"]
+                        if stats["total"]
+                        else 0.0
+                    ),
+                }
+                for family, stats in by_family.items()
+            },
         }
 
         logger.info(json.dumps({"event": "eval_done", **summary}))
@@ -388,7 +421,7 @@ class CompoundWorkflow:
         """
         cmd = [
             sys.executable,
-            "serve.py",
+            _SERVE_SCRIPT_PATH,
             "--host", host,
             "--port", str(port),
         ] + (extra_args or [])
@@ -408,7 +441,7 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="workflow",
         description="OctoTetrahedral AGI — compound workflow orchestrator",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__.split("Quick start")[1].split("Programmatic")[0],
+        epilog=_CLI_EPILOG,
     )
     p.add_argument(
         "--mode",
@@ -508,6 +541,11 @@ def main(argv: list[str] | None = None) -> int:
                 limb_states = [float(x) for x in args.limb_states.split(",")]
             except ValueError as exc:
                 parser.error(f"--limb-states parse error for '{args.limb_states}': {exc}")
+            if len(limb_states) != cfg.MODEL_LIMB_COUNT:
+                parser.error(
+                    f"--limb-states must contain {cfg.MODEL_LIMB_COUNT} values; "
+                    f"got {len(limb_states)}"
+                )
         else:
             limb_states = [0.5] * cfg.MODEL_LIMB_COUNT
 
