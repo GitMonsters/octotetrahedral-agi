@@ -102,6 +102,10 @@ Quick start
     python workflow.py --mode serve -- --scale tiny --port 8080
 """
 
+# Absolute path to serve.py resolved at import time so start_server() works
+# regardless of the current working directory.
+_SERVE_SCRIPT_PATH = str(Path(__file__).resolve().parent / "serve.py")
+
 # ---------------------------------------------------------------------------
 # Workflow configuration
 # ---------------------------------------------------------------------------
@@ -417,7 +421,7 @@ class CompoundWorkflow:
         """
         cmd = [
             sys.executable,
-            str(Path(__file__).resolve().parent / "serve.py"),
+            _SERVE_SCRIPT_PATH,
             "--host", host,
             "--port", str(port),
         ] + (extra_args or [])
