@@ -181,13 +181,43 @@ def test_workflow_evaluate_returns_summary():
 
     assert summary["total_tasks"] == 4
     assert summary["seed"] == 99
-    assert 0.0 <= summary["mean_score"] <= 1.0
-    assert 0.0 <= summary["pass_rate"] <= 1.0
+    # Integration metrics — not answer-quality metrics
+    assert "successful_tasks" in summary
+    assert "failed_tasks" in summary
+    assert 0.0 <= summary["success_rate"] <= 1.0
+    assert 0.0 <= summary["mean_coherence"] <= 1.0
     assert isinstance(summary["by_family"], dict)
+    # Old answer-quality keys must not appear
+    assert "mean_score" not in summary
+    assert "pass_rate" not in summary
+
+
+def test_workflow_evaluate_counts_are_consistent():
+    """successful_tasks + failed_tasks must equal total_tasks."""
+    from workflow import CompoundWorkflow
+
+    with CompoundWorkflow() as wf:
+        summary = wf.evaluate(num_tasks=6, seed=1)
+
+    assert summary["successful_tasks"] + summary["failed_tasks"] == summary["total_tasks"]
+
+
+def test_workflow_evaluate_by_family_structure():
+    """Each family entry must have total, successful, and success_rate keys."""
+    from workflow import CompoundWorkflow
+
+    with CompoundWorkflow() as wf:
+        summary = wf.evaluate(num_tasks=8, seed=2)
+
+    for _family, stats in summary["by_family"].items():
+        assert "total" in stats
+        assert "successful" in stats
+        assert "success_rate" in stats
+        assert 0.0 <= stats["success_rate"] <= 1.0
 
 
 def test_workflow_evaluate_all_pipeline_stages():
-    """Evaluate should exercise model init, inference, and scoring without error."""
+    """Evaluate should exercise model init, inference, and reporting without error."""
     from workflow import CompoundWorkflow
 
     with CompoundWorkflow() as wf:
@@ -198,6 +228,7 @@ def test_workflow_evaluate_all_pipeline_stages():
         summary = wf.evaluate(num_tasks=8, seed=0)
 
     assert summary["total_tasks"] == 8
+    assert "success_rate" in summary
 
 
 # ---------------------------------------------------------------------------
@@ -252,3 +283,122 @@ def test_workflow_main_evaluate_mode(capsys):
     captured = capsys.readouterr()
     data = json.loads(captured.out)
     assert data["total_tasks"] == 4
+    assert "success_rate" in data
+    assert "mean_coherence" in data
+    assert "mean_score" not in data
+    assert "pass_rate" not in data
+
+
+# ---------------------------------------------------------------------------
+# 8. Serve mode argument forwarding (no real subprocess)
+# ---------------------------------------------------------------------------
+
+
+def test_workflow_start_server_uses_absolute_path(monkeypatch):
+    """start_server() must resolve serve.py relative to workflow.py, not CWD."""
+    import subprocess
+    import workflow as wf_module
+
+    captured_cmd: list[list] = []
+
+    def fake_popen(cmd, **kwargs):
+        captured_cmd.append(list(cmd))
+
+        class _FakeProc:
+            returncode = 0
+
+            def wait(self):
+                return 0
+
+            def terminate(self):
+                pass
+
+        return _FakeProc()
+
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    wf_module.CompoundWorkflow.start_server(host="127.0.0.1", port=9999)
+
+    assert len(captured_cmd) == 1
+    serve_arg = captured_cmd[0][1]
+    # Must be an absolute path ending in serve.py
+    assert serve_arg.endswith("serve.py")
+    assert serve_arg.startswith("/"), f"Expected absolute path, got: {serve_arg}"
+
+
+def test_workflow_start_server_forwards_extra_args(monkeypatch):
+    """start_server() must forward extra_args verbatim to serve.py."""
+    import subprocess
+    import workflow as wf_module
+
+    captured_cmd: list[list] = []
+
+    def fake_popen(cmd, **kwargs):
+        captured_cmd.append(list(cmd))
+
+        class _FakeProc:
+            returncode = 0
+
+            def wait(self):
+                return 0
+
+        return _FakeProc()
+
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    wf_module.CompoundWorkflow.start_server(
+        host="0.0.0.0",
+        port=8000,
+        extra_args=["--scale", "tiny"],
+    )
+
+    assert "--scale" in captured_cmd[0]
+    assert "tiny" in captured_cmd[0]
+    assert "--host" in captured_cmd[0]
+    assert "--port" in captured_cmd[0]
+
+
+# ---------------------------------------------------------------------------
+# 9. CLI limb-state length validation
+# ---------------------------------------------------------------------------
+
+
+def test_workflow_main_inference_wrong_limb_count_exits():
+    """CLI must fail fast when --limb-states count != MODEL_LIMB_COUNT."""
+    import production_config as cfg
+    from workflow import main
+
+    # Provide one fewer value than expected
+    wrong_count = cfg.MODEL_LIMB_COUNT - 1
+    wrong_states = ",".join(["0.5"] * wrong_count)
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--mode", "inference", "--limb-states", wrong_states])
+    assert exc_info.value.code != 0
+
+
+def test_workflow_main_inference_correct_limb_count_ok(capsys):
+    """CLI must accept exactly MODEL_LIMB_COUNT limb-state values."""
+    import production_config as cfg
+    from workflow import main
+
+    correct_states = ",".join(["0.5"] * cfg.MODEL_LIMB_COUNT)
+    exit_code = main(["--mode", "inference", "--limb-states", correct_states])
+    assert exit_code == 0
+
+
+# ---------------------------------------------------------------------------
+# 10. _build_parser() docstring resilience
+# ---------------------------------------------------------------------------
+
+
+def test_build_parser_does_not_require_docstring(monkeypatch):
+    """_build_parser() must work even when __doc__ is None."""
+    import workflow as wf_module
+
+    original_doc = wf_module.__doc__
+    try:
+        monkeypatch.setattr(wf_module, "__doc__", None)
+        # Should not raise even without module docstring
+        parser = wf_module._build_parser()
+        assert parser is not None
+    finally:
+        monkeypatch.setattr(wf_module, "__doc__", original_doc)
