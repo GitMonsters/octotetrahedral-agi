@@ -1,10 +1,15 @@
 import asyncio, json, websockets, uuid, platform, time, base64, statistics
+import os
 from pathlib import Path
 import pytest
 from cryptography.hazmat.primitives.serialization import load_pem_private_key, load_pem_public_key, Encoding, PublicFormat
-import sys; sys.path.insert(0, '/Users/evanpieser')
 
-_DEVICE_PATH = Path('/Users/evanpieser/.openclaw/identity/device.json')
+_DEVICE_PATH = Path(
+    os.environ.get(
+        "OPENCLAW_IDENTITY_PATH",
+        str(Path.home() / ".openclaw" / "identity" / "device.json"),
+    )
+)
 if not _DEVICE_PATH.exists():
     pytest.skip("OpenClaw local identity not present; skipping integration benchmark test.", allow_module_level=True)
 

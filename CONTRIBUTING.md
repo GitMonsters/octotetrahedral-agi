@@ -25,6 +25,8 @@ pip install -r requirements-dev.txt
 
 ## Lightweight validation before PR
 
+Keep this command set aligned with `.github/workflows/ci.yml`.
+
 ```bash
 ruff check config.py cognition.py inference.py workflow.py health_check.py --ignore E501
 python -m pytest -q tests/test_eval_harness.py tests/test_workflow.py tests/test_unified.py
