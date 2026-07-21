@@ -356,6 +356,47 @@ def test_workflow_start_server_forwards_extra_args(monkeypatch):
     assert "--port" in captured_cmd[0]
 
 
+def test_workflow_main_serve_mode_forwards_extra_args(monkeypatch):
+    """Serve mode through main() should health-check then forward args to start_server()."""
+    from workflow import CompoundWorkflow, main
+
+    calls: dict[str, object] = {}
+
+    def fake_health_check(self, num_tests=1):  # noqa: ANN001
+        calls["health_num_tests"] = num_tests
+        return {"healthy": True}
+
+    class _FakeProc:
+        returncode = 0
+
+        def wait(self):
+            calls["wait_called"] = True
+            return 0
+
+        def terminate(self):
+            calls["terminate_called"] = True
+
+    def fake_start_server(host="0.0.0.0", port=8000, extra_args=None):
+        calls["start_server_called"] = True
+        calls["host"] = host
+        calls["port"] = port
+        calls["extra_args"] = extra_args
+        return _FakeProc()
+
+    monkeypatch.setattr(CompoundWorkflow, "health_check", fake_health_check)
+    monkeypatch.setattr(CompoundWorkflow, "start_server", staticmethod(fake_start_server))
+
+    exit_code = main(["--mode", "serve", "--", "--scale", "tiny"])
+
+    assert exit_code == 0
+    assert calls["health_num_tests"] == 1
+    assert calls["start_server_called"] is True
+    assert calls["wait_called"] is True
+    assert calls["host"] == "0.0.0.0"
+    assert calls["port"] == 8000
+    assert calls["extra_args"] == ["--scale", "tiny"]
+
+
 # ---------------------------------------------------------------------------
 # 9. CLI limb-state length validation
 # ---------------------------------------------------------------------------
