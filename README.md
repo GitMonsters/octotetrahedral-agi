@@ -88,6 +88,10 @@ Requires ARC-AGI dataset. Set the data path:
 --data-dir /path/to/ARC-AGI/data
 ```
 
+## Contributing
+
+See `CONTRIBUTING.md` for canonical entrypoints, script categories, and lightweight validation commands.
+
 ## Files
 
 - `model.py` - Main OctoTetrahedral model
