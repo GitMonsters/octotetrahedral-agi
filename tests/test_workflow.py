@@ -362,21 +362,25 @@ def test_workflow_main_serve_mode_forwards_extra_args(monkeypatch):
 
     calls: dict[str, object] = {}
 
-    def fake_health_check(self, num_tests=1):  # noqa: ANN001
+    def fake_health_check(self: CompoundWorkflow, num_tests: int = 1) -> dict[str, bool]:
         calls["health_num_tests"] = num_tests
         return {"healthy": True}
 
     class _FakeProc:
         returncode = 0
 
-        def wait(self):
+        def wait(self) -> int:
             calls["wait_called"] = True
             return 0
 
-        def terminate(self):
+        def terminate(self) -> None:
             calls["terminate_called"] = True
 
-    def fake_start_server(host="0.0.0.0", port=8000, extra_args=None):
+    def fake_start_server(
+        host: str = "0.0.0.0",
+        port: int = 8000,
+        extra_args: list[str] | None = None,
+    ) -> _FakeProc:
         calls["start_server_called"] = True
         calls["host"] = host
         calls["port"] = port
