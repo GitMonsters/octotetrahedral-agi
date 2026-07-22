@@ -1,0 +1,50 @@
+name: Stress — PR Quick Suite
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: stress-quick-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quick-stress:
+    name: Quick Stress Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy tiktoken pyyaml tqdm pytest ruff
+
+      - name: Set stress environment
+        run: |
+          echo "PYTHONHASHSEED=0"      >> "$GITHUB_ENV"
+          echo "STRESS_SEED=1337"      >> "$GITHUB_ENV"
+          STRESS_TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+          echo "STRESS_TIMESTAMP=${STRESS_TIMESTAMP}" >> "$GITHUB_ENV"
+          echo "STRESS_OUT_DIR=artifacts/stress/quick/${STRESS_TIMESTAMP}" >> "$GITHUB_ENV"
+
+      - name: Run PR quick stress suite
+        run: bash scripts/stress/quick_suite.sh
+
+      - name: Upload stress artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stress-quick-${{ env.STRESS_TIMESTAMP }}
+          path: artifacts/stress/quick/
+          retention-days: 14
