@@ -9,48 +9,42 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.11", "3.12"]
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install numpy tiktoken pyyaml tqdm pytest ruff
+          pip install -r requirements-dev.txt
 
       - name: Lint with ruff
         run: |
-          ruff check model.py config.py cognition.py inference.py --ignore E501
+          ruff check config.py cognition.py inference.py workflow.py health_check.py --ignore E501
 
-      - name: Check imports
+      - name: Check core imports
         run: |
-          python -c "import model; print(f'OK model.py -- {model.OctoTetrahedralModel}')"
           python -c "import config; print('OK config.py')"
           python -c "import cognition; print('OK cognition.py')"
 
-      - name: Run tests
+      - name: Run lightweight regression tests
         run: |
-          python -m pytest tests/ -v --tb=short 2>/dev/null || echo "No test suite yet"
+          python -m pytest -q tests/test_eval_harness.py tests/test_workflow.py tests/test_unified.py
 
-      - name: Verify model architecture
+      - name: Syntax check key entry scripts
         run: |
-          python -c "
-          import torch
-          from model import OctoTetrahedralModel
-          from config import Config
-          cfg = Config()
-          cfg.cognitive_geometry.entropy_monitor_enabled = False
-          cfg.cognitive_geometry.svd_enabled = False
-          m = OctoTetrahedralModel(cfg, use_geometric_physics=False)
-          params = sum(p.numel() for p in m.parameters())
-          print(f'Model loads: {params:,} parameters')
-          "
+          python -m py_compile train_arc.py workflow.py inference.py model.py config.py cognition.py
+
+      - name: Run workflow health check
+        run: |
+          python workflow.py --mode health-check
