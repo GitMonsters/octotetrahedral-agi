@@ -51,6 +51,7 @@ The API now treats Apple Metal as a first-class backend:
 - reports fallback reasons via `GET /health`
 - builds request tensors with MPS-safe contiguous `torch.long` inputs
 - falls back to CPU automatically when Metal is unavailable during startup
+- retries on CPU after Metal inference failures; the first fallback request can be slower because the model is migrated off the GPU
 
 ### Platform requirements
 

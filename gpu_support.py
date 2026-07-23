@@ -284,6 +284,7 @@ def benchmark_inference(
     resolution = resolve_device(device)
     working_model = model or _SyntheticBenchmarkModel()
     working_model = working_model.to(resolution.torch_device)
+    # Keep eval mode for deterministic inference; inference_mode disables autograd only.
     working_model.eval()
 
     tokens = list(input_ids or range(32))
