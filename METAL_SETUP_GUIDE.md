@@ -72,7 +72,7 @@ Expected outcome on Apple Silicon:
 
 - Close other GPU-heavy applications
 - Restart the Python process to clear Metal allocations
-- rerun `python - <<'PY' ...` smoke validation above
+- Rerun `python - <<'PY' ...` smoke validation above
 
 ### API falls back to CPU
 

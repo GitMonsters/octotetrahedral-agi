@@ -5,7 +5,7 @@ import torch
 import gpu_support
 
 
-def test_resolve_device_prefers_mps_when_available(monkeypatch):
+def test_resolve_device_selects_mps_when_cuda_unavailable(monkeypatch):
     monkeypatch.setattr(gpu_support, "cuda_available", lambda: False)
     monkeypatch.setattr(gpu_support, "mps_available", lambda: True)
     monkeypatch.setattr(gpu_support, "mps_built", lambda: True)

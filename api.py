@@ -151,7 +151,10 @@ def create_app(
             }
         except Exception as exc:
             if app.state.device_resolution.selected == "mps":
-                logger.warning("⚠️ Metal inference failed, retrying on CPU: %s", exc)
+                logger.warning(
+                    "⚠️ Metal inference failed, falling back to CPU for this and future requests: %s",
+                    exc,
+                )
                 clear_device_cache("mps")
                 app.state.model.to("cpu")
                 app.state.device_resolution = DeviceResolution(

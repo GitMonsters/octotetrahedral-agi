@@ -351,7 +351,7 @@ def compare_benchmarks(
     for result in results:
         result["speedup_vs_cpu"] = (
             cpu_latency / result["latency_ms_avg"]
-            if result["latency_ms_avg"]
+            if result["latency_ms_avg"] > 0
             else None
         )
     return results
