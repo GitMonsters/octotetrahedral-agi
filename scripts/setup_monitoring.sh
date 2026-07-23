@@ -25,12 +25,18 @@ echo
 
 # ── Verify monitoring module ──────────────────────────────────────────────────
 echo "▶ Verifying monitoring package…"
-"$PYTHON" -c "from monitoring import InferenceMonitor; print('  ✓ monitoring package OK')"
+cd "$REPO_ROOT"
+"$PYTHON" -c "
+import sys
+sys.path.insert(0, '.')
+from monitoring import InferenceMonitor
+print('  ✓ monitoring package OK')
+"
 
 # ── Verify API endpoints exist ────────────────────────────────────────────────
 echo "▶ Verifying api.py endpoints…"
 "$PYTHON" -c "
-import ast, sys
+import sys
 with open('$REPO_ROOT/api.py') as f:
     src = f.read()
 for ep in ['/metrics', '/performance', '/stats']:
@@ -44,7 +50,10 @@ for ep in ['/metrics', '/performance', '/stats']:
 # ── Configure logging directory ───────────────────────────────────────────────
 echo "▶ Setting up log directory…"
 LOG_DIR="$HOME/Library/Logs/octotetrahedral"
-mkdir -p "$LOG_DIR" 2>/dev/null || LOG_DIR="/tmp/octotetrahedral-logs" && mkdir -p "$LOG_DIR"
+if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
+    LOG_DIR="/tmp/octotetrahedral-logs"
+    mkdir -p "$LOG_DIR"
+fi
 echo "  ✓ Log directory: $LOG_DIR"
 
 # ── Optionally start monitoring in background ─────────────────────────────────

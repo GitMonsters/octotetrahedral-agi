@@ -76,7 +76,7 @@ _AUTH_ENABLED = os.getenv("OCTO_AUTH_ENABLED", "true").lower() != "false"
 
 
 def _extract_bearer(request: Request) -> Optional[str]:
-    """Extract the ****** from the Authorization header."""
+    """Extract the ****** or API key from the Authorization header."""
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
         return auth[7:].strip()
@@ -84,7 +84,7 @@ def _extract_bearer(request: Request) -> Optional[str]:
 
 
 async def require_auth(request: Request) -> str:
-    """FastAPI dependency: validate ****** and enforce rate limit.
+    """FastAPI dependency: validate ****** or API key and enforce rate limit.
 
     Returns the key hash on success; raises HTTP 401/429 on failure.
     Authentication can be disabled by setting ``OCTO_AUTH_ENABLED=false``.
@@ -94,7 +94,10 @@ async def require_auth(request: Request) -> str:
 
     credential = _extract_bearer(request)
     if not credential:
-        raise HTTPException(status_code=401, detail="Missing Authorization: ******")
+        raise HTTPException(
+            status_code=401,
+            detail="Missing Authorization header. Use: Authorization: ******",
+        )
 
     # Accept raw API keys or JWT tokens
     if "." in credential:
@@ -114,6 +117,26 @@ async def require_auth(request: Request) -> str:
 
     _key_usage[key_hash] += 1
     return key_hash
+
+
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
+
+
+def _get_memory_stats() -> Optional[dict]:
+    """Return memory stats dict from psutil, or None if unavailable."""
+    try:
+        import psutil
+        mem = psutil.virtual_memory()
+        return {
+            "total_mb": round(mem.total / 1e6, 1),
+            "available_mb": round(mem.available / 1e6, 1),
+            "used_mb": round(mem.used / 1e6, 1),
+            "used_pct": mem.percent,
+        }
+    except Exception:
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -175,8 +198,6 @@ async def health():
 @app.get("/metrics", response_class=PlainTextResponse)
 async def metrics():
     """Prometheus-compatible metrics endpoint."""
-    import psutil  # optional; silently skip if unavailable
-
     reqs = int(_metrics["requests_total"])
     failed = int(_metrics["requests_failed"])
     total_lat = float(_metrics["total_latency_ms"])
@@ -203,16 +224,14 @@ async def metrics():
         f"octoagi_uptime_seconds {uptime:.1f}",
     ]
 
-    try:
-        mem = psutil.virtual_memory()
+    mem = _get_memory_stats()
+    if mem is not None:
         lines += [
             "",
-            "# HELP octoagi_memory_used_bytes Process memory used",
-            "# TYPE octoagi_memory_used_bytes gauge",
-            f"octoagi_memory_used_bytes {mem.used}",
+            "# HELP octoagi_memory_used_mb Memory used (MB)",
+            "# TYPE octoagi_memory_used_mb gauge",
+            f"octoagi_memory_used_mb {mem['used_mb']:.1f}",
         ]
-    except Exception:
-        pass
 
     lines.append("")
     return "\n".join(lines)
@@ -258,17 +277,7 @@ async def stats():
     """Real-time statistics endpoint."""
     uptime = time.time() - float(_metrics["start_time"])
     reqs = int(_metrics["requests_total"])
-
-    try:
-        import psutil
-        mem = psutil.virtual_memory()
-        memory = {
-            "total_mb": round(mem.total / 1e6, 1),
-            "available_mb": round(mem.available / 1e6, 1),
-            "used_pct": mem.percent,
-        }
-    except Exception:
-        memory = {}
+    mem = _get_memory_stats()
 
     return {
         "uptime_seconds": round(uptime, 1),
@@ -277,7 +286,7 @@ async def stats():
         "device": str(device),
         "metal_available": torch.backends.mps.is_available(),
         "cuda_available": torch.cuda.is_available(),
-        "memory": memory,
+        "memory": mem or {},
     }
 
 

@@ -8,8 +8,16 @@
 
 set -euo pipefail
 
-LABEL="${2:-default}"
+LABEL="default"
 PYTHON="${PYTHON:-python3}"
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --label) LABEL="$2"; shift 2 ;;
+        *) shift ;;
+    esac
+done
 
 echo "╔══════════════════════════════════════════════════╗"
 echo "║  OctoTetrahedral AGI — Generate API Key          ║"
