@@ -132,7 +132,7 @@ The script checks:
 3. **Metal / MPS detection** – GPU backend is functional
 4. **Model loading** – model is loaded and reported
 5. **Inference accuracy** – `/predict` returns a valid response
-6. **Latency baseline** – response time is below 2 000 ms
+6. **Latency baseline** – response time is below 2000 ms
 7. **Memory usage** – sufficient free memory available
 
 Exit code `0` = healthy; exit code `1` = one or more checks failed.
@@ -268,4 +268,4 @@ for i in $(seq 1 10); do
 done
 ```
 
-Latency under 100 ms per request on Apple Silicon with Metal indicates a healthy production configuration.
+Latency under 2000 ms per request indicates a healthy production configuration.

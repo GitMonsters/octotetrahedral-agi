@@ -31,12 +31,15 @@ die()   { error "$*"; exit 1; }
 # Parse arguments
 # ---------------------------------------------------------------------------
 SKIP_BREW=0
-for arg in "$@"; do
-  case "$arg" in
+while [[ $# -gt 0 ]]; do
+  case "$1" in
     --skip-brew) SKIP_BREW=1 ;;
-    --port=*) PORT="${arg#*=}" ;;
-    --port) shift; PORT="$1" ;;
+    --port=*) PORT="${1#*=}" ;;
+    --port)
+      [[ $# -ge 2 ]] || die "--port requires a value"
+      PORT="$2"; shift ;;
   esac
+  shift
 done
 
 # ---------------------------------------------------------------------------

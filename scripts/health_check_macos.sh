@@ -34,13 +34,18 @@ FAILURES=0
 # ---------------------------------------------------------------------------
 # Parse arguments
 # ---------------------------------------------------------------------------
-for arg in "$@"; do
-  case "$arg" in
-    --port=*) PORT="${arg#*=}" ;;
-    --port)   shift; PORT="$1" ;;
-    --host=*) HOST="${arg#*=}" ;;
-    --host)   shift; HOST="$1" ;;
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --port=*) PORT="${1#*=}" ;;
+    --port)
+      [[ $# -ge 2 ]] || { echo "Error: --port requires a value" >&2; exit 1; }
+      PORT="$2"; shift ;;
+    --host=*) HOST="${1#*=}" ;;
+    --host)
+      [[ $# -ge 2 ]] || { echo "Error: --host requires a value" >&2; exit 1; }
+      HOST="$2"; shift ;;
   esac
+  shift
 done
 
 BASE_URL="http://${HOST}:${PORT}"

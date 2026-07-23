@@ -40,7 +40,7 @@ model:
   # Inference pool
   pool_size: auto         # "auto" = min(4, cpu_count)
   max_retries: 3
-  inference_timeout_ms: 20.0
+  inference_timeout_ms: 20.0  # Max time for a single internal model forward pass (milliseconds)
 
 # ---------------------------------------------------------------------------
 # Rate limiting
@@ -55,7 +55,7 @@ rate_limiting:
 # ---------------------------------------------------------------------------
 monitoring:
   coherence_alert_threshold: 0.90
-  latency_warn_ms: 20.0
+  latency_warn_ms: 20.0   # Alert threshold for internal inference latency (milliseconds)
   metrics_endpoint: "/metrics"    # Prometheus-compatible metrics
   health_endpoint: "/health"
 
