@@ -23,7 +23,7 @@ benchmark_comparison = build_benchmark_comparison()
 # Load model once at startup
 try:
     model = OctoTetrahedralModel()
-    checkpoint = torch.load('checkpoints/arc/arc_final.pt', map_location='cpu', weights_only=False)
+    checkpoint = torch.load('checkpoints/arc/arc_final.pt', map_location='cpu', weights_only=True)
 
     if 'model_state_dict' in checkpoint:
         state_dict = checkpoint['model_state_dict']
@@ -77,7 +77,7 @@ async def predict(request: InferenceRequest):
         validated_ids = _validate_input_ids(request.input_ids)
         input_ids = torch.tensor([validated_ids], device=device)
 
-        with torch.inference_mode():
+        with torch.no_grad():
             output = model(input_ids=input_ids, return_confidences=False)
 
         predictions = output['logits'].argmax(dim=-1).tolist()

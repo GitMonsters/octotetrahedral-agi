@@ -50,7 +50,7 @@ def _load_api_module(monkeypatch: pytest.MonkeyPatch, *, resolved_device: str = 
     monkeypatch.setitem(sys.modules, "model", fake_model)
     monkeypatch.setitem(sys.modules, "config", fake_config)
     monkeypatch.setitem(sys.modules, "gpu_support", fake_gpu)
-    monkeypatch.setattr(torch, "load", lambda *_args, **_kwargs: {"model_state_dict": {}}, raising=True)
+    monkeypatch.setattr(torch, "load", lambda *_args, **_kwargs: {"model_state_dict": {}})
     monkeypatch.delitem(sys.modules, "api", raising=False)
 
     return importlib.import_module("api")

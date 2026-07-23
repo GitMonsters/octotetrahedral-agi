@@ -25,7 +25,10 @@ class DeviceInfo:
 
 
 def _cuda_available() -> bool:
-    return os.getenv("CUDA_VISIBLE_DEVICES", None) != "" and torch.cuda.is_available()
+    visible_devices = os.getenv("CUDA_VISIBLE_DEVICES")
+    if visible_devices == "":
+        return False
+    return torch.cuda.is_available()
 
 
 def _mps_available() -> bool:
