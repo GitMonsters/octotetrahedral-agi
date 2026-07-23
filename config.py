@@ -10,39 +10,13 @@ Combines:
 
 from dataclasses import dataclass, field
 from typing import List, Dict, Any
-import os
-import torch
+
+from gpu_support import detect_device
 
 
 def _select_device() -> str:
     """Select a usable device; fall back if accelerators are broken."""
-    forced = os.getenv("OCTO_DEVICE") or os.getenv("OCTOTETRAHEDRAL_DEVICE")
-    if forced:
-        return forced
-
-    # Respect explicit CUDA disable.
-    if os.getenv("CUDA_VISIBLE_DEVICES", None) == "":
-        cuda_available = False
-    else:
-        cuda_available = torch.cuda.is_available()
-
-    if cuda_available:
-        # Some environments report CUDA available but fail at runtime
-        # (e.g. invalid device function on embedding kernels). Smoke-test.
-        try:
-            emb = torch.nn.Embedding(16, 8).to("cuda")
-            ids = torch.tensor([1, 2, 3, 4], device="cuda")
-            _ = emb(ids).sum().item()
-            return "cuda"
-        except Exception:
-            pass
-
-    if torch.backends.mps.is_available():
-        # TEMPORARILY DISABLED: MPS hangs on first forward pass with large complex models
-        # return "mps"
-        pass  # Fall through to CPU
-
-    return "cpu"
+    return detect_device().resolved
 
 
 @dataclass
