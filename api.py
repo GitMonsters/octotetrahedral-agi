@@ -120,7 +120,7 @@ def create_app(
     app.state.device_resolution = device_resolution
     app.state.model_error = model_error
 
-    def _predict_on(device_name: str, input_ids: list) -> list[list[int]]:
+    def _run_inference(device_name: str, input_ids: list) -> list[list[int]]:
         tensor = prepare_input_tensor(input_ids, device_name)
         with torch.inference_mode():
             output = app.state.model(
@@ -139,7 +139,7 @@ def create_app(
             )
 
         try:
-            predictions = _predict_on(
+            predictions = _run_inference(
                 app.state.device_resolution.selected,
                 request.input_ids,
             )
@@ -167,7 +167,7 @@ def create_app(
                     mps_available=app.state.device_resolution.mps_available,
                     mps_built=app.state.device_resolution.mps_built,
                 )
-                predictions = _predict_on("cpu", request.input_ids)
+                predictions = _run_inference("cpu", request.input_ids)
                 return {
                     "predictions": predictions,
                     "device": "cpu",

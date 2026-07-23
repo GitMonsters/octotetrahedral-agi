@@ -13,6 +13,7 @@ from gpu_support import DeviceResolution
 
 class DummyModel(torch.nn.Module):
     def forward(self, input_ids: torch.Tensor, return_confidences: bool = False):
+        del return_confidences
         batch, seq = input_ids.shape
         logits = torch.zeros(batch, seq, 4, device=input_ids.device)
         logits[..., 2] = 1.0
