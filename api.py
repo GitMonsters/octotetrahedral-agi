@@ -29,7 +29,7 @@ class InferenceRequest(BaseModel):
     input_ids: list
 
 def _load_state_dict(checkpoint_path: str) -> dict:
-    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
     if "model_state_dict" in checkpoint:
         return checkpoint["model_state_dict"]
     return checkpoint
@@ -157,6 +157,7 @@ def create_app(
                 )
                 clear_device_cache("mps")
                 app.state.model.to("cpu")
+                app.state.model.eval()
                 app.state.device_resolution = DeviceResolution(
                     requested=app.state.device_resolution.requested,
                     selected="cpu",

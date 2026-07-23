@@ -34,7 +34,7 @@ def test_resolve_device_falls_back_when_forced_mps_unavailable(monkeypatch):
     assert "MPS" in resolution.fallback_reason
 
 
-def test_prepare_input_tensor_uses_long_dtype():
+def test_prepare_input_tensor_creates_long_tensor_with_correct_shape():
     tensor = gpu_support.prepare_input_tensor([1, 2, 3], "cpu")
 
     assert tensor.dtype == torch.long
@@ -42,7 +42,7 @@ def test_prepare_input_tensor_uses_long_dtype():
     assert tensor.device.type == "cpu"
 
 
-def test_benchmark_inference_returns_expected_metrics():
+def test_benchmark_inference_returns_latency_throughput_and_memory_metrics():
     result = gpu_support.benchmark_inference(device="cpu", runs=2, warmup_runs=1)
 
     assert result["device"] == "cpu"
