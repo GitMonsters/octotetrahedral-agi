@@ -1,10 +1,11 @@
+from typing import Any
+
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import torch
 from model import OctoTetrahedralModel
 import logging
 import sys
-import json
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -12,6 +13,9 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="OctoTetrahedral AGI Inference")
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+MAX_INPUT_TOKENS = 256
+MIN_TOKEN_ID = 0
+MAX_TOKEN_ID = 50000
 
 # Load model once at startup
 try:
@@ -32,29 +36,66 @@ except Exception as e:
     raise
 
 class InferenceRequest(BaseModel):
-    input_ids: list
+    input_ids: list[Any] = Field(..., description="List of token IDs to run inference on")
+
+
+def validate_input_ids(input_ids: list[Any]) -> list[int]:
+    """Validate token inputs before they reach the model."""
+    if not input_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="input_ids must contain at least 1 token.",
+        )
+
+    if len(input_ids) > MAX_INPUT_TOKENS:
+        raise HTTPException(
+            status_code=413,
+            detail=f"input_ids must contain no more than {MAX_INPUT_TOKENS} tokens.",
+        )
+
+    validated_input_ids: list[int] = []
+    for index, token_id in enumerate(input_ids):
+        if not isinstance(token_id, int) or isinstance(token_id, bool):
+            raise HTTPException(
+                status_code=400,
+                detail=f"input_ids[{index}] must be an integer.",
+            )
+        if token_id < MIN_TOKEN_ID or token_id > MAX_TOKEN_ID:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"input_ids[{index}] must be between "
+                    f"{MIN_TOKEN_ID} and {MAX_TOKEN_ID}."
+                ),
+            )
+        validated_input_ids.append(token_id)
+
+    return validated_input_ids
 
 @app.post("/predict")
 async def predict(request: InferenceRequest):
     """Run inference on input tokens"""
     try:
-        input_ids = torch.tensor([request.input_ids]).to(device)
+        validated_input_ids = validate_input_ids(request.input_ids)
+        input_ids = torch.tensor([validated_input_ids], dtype=torch.long, device=device)
         
         with torch.no_grad():
             output = model(input_ids=input_ids, return_confidences=False)
         
         predictions = output['logits'].argmax(dim=-1).tolist()
         
-        logger.info(f"✅ Prediction successful")
+        logger.info("✅ Prediction successful")
         
         return {
             "predictions": predictions,
             "device": str(device),
             "success": True
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"❌ Inference error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Inference failed.")
 
 @app.get("/health")
 async def health():
