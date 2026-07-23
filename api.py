@@ -42,7 +42,19 @@ class InferenceRequest(BaseModel):
 
 
 def validate_input_ids(input_ids: list[Any]) -> list[int]:
-    """Validate token inputs before they reach the model."""
+    """Validate request token IDs before they reach the model.
+
+    Args:
+        input_ids: Raw token IDs from the request payload.
+
+    Returns:
+        A validated list of integer token IDs.
+
+    Raises:
+        HTTPException: 400 when the payload is empty, contains non-integers,
+            or includes token IDs outside the 0-50000 range.
+        HTTPException: 413 when the payload contains more than 256 tokens.
+    """
     if not input_ids:
         raise HTTPException(
             status_code=400,
@@ -80,6 +92,8 @@ async def predict(request: InferenceRequest):
     """Run inference on input tokens"""
     try:
         validated_input_ids = validate_input_ids(request.input_ids)
+        # Wrap the validated token list in an outer list to create the
+        # single-request batch dimension expected by the model: [1, seq_len].
         input_ids = torch.tensor([validated_input_ids], dtype=torch.long, device=device)
         
         with torch.no_grad():
