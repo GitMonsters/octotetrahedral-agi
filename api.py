@@ -65,6 +65,25 @@ def _run_inference(
     return output["logits"].argmax(dim=-1).detach().cpu().tolist()
 
 
+def _fallback_to_cpu(
+    model: torch.nn.Module,
+    resolution: DeviceResolution,
+    exc: Exception,
+) -> DeviceResolution:
+    clear_device_cache("mps")
+    model.to("cpu")
+    model.eval()
+    return DeviceResolution(
+        requested=resolution.requested,
+        selected="cpu",
+        backend="cpu",
+        fallback_reason=f"Metal inference failed: {exc}",
+        cuda_available=resolution.cuda_available,
+        mps_available=resolution.mps_available,
+        mps_built=resolution.mps_built,
+    )
+
+
 def initialize_runtime(
     checkpoint_path: str = DEFAULT_CHECKPOINT,
     requested_device: str | None = None,
@@ -161,17 +180,10 @@ def create_app(
                     "⚠️ Metal inference failed, falling back to CPU for this and future requests: %s",
                     exc,
                 )
-                clear_device_cache("mps")
-                app.state.model.to("cpu")
-                app.state.model.eval()
-                app.state.device_resolution = DeviceResolution(
-                    requested=app.state.device_resolution.requested,
-                    selected="cpu",
-                    backend="cpu",
-                    fallback_reason=f"Metal inference failed: {exc}",
-                    cuda_available=app.state.device_resolution.cuda_available,
-                    mps_available=app.state.device_resolution.mps_available,
-                    mps_built=app.state.device_resolution.mps_built,
+                app.state.device_resolution = _fallback_to_cpu(
+                    app.state.model,
+                    app.state.device_resolution,
+                    exc,
                 )
                 predictions = _run_inference(
                     app.state.model,

@@ -43,7 +43,11 @@ def test_prepare_input_tensor_creates_long_tensor_with_correct_shape():
 
 
 def test_benchmark_inference_returns_latency_throughput_and_memory_metrics():
-    result = gpu_support.benchmark_inference(device="cpu", runs=2, warmup_runs=1)
+    result = gpu_support.benchmark_inference(
+        requested_device="cpu",
+        runs=2,
+        warmup_runs=1,
+    )
 
     assert result["device"] == "cpu"
     assert result["latency_ms_avg"] >= 0
@@ -51,6 +55,29 @@ def test_benchmark_inference_returns_latency_throughput_and_memory_metrics():
     assert result["latency_ms_max"] >= result["latency_ms_min"]
     assert result["throughput_tokens_per_second"] > 0
     assert "allocated_mb" in result["memory"]
+
+
+def test_benchmark_inference_reports_cpu_when_mps_falls_back(monkeypatch):
+    monkeypatch.setattr(
+        gpu_support,
+        "resolve_device",
+        lambda requested=None: gpu_support.DeviceResolution(
+            requested=requested,
+            selected="cpu",
+            backend="cpu",
+            fallback_reason="MPS backend is unavailable on this machine.",
+        ),
+    )
+
+    result = gpu_support.benchmark_inference(
+        requested_device="mps",
+        runs=1,
+        warmup_runs=0,
+    )
+
+    assert result["requested"] == "mps"
+    assert result["device"] == "cpu"
+    assert result["fallback_reason"] == "MPS backend is unavailable on this machine."
 
 
 def test_render_benchmark_table_includes_speedup_column():

@@ -277,15 +277,15 @@ def get_memory_stats(device: str | torch.device) -> dict[str, float | None]:
 def benchmark_inference(
     model: torch.nn.Module | None = None,
     input_ids: Sequence[int] | None = None,
-    device: str = "cpu",
+    requested_device: str = "cpu",
     runs: int = 10,
     warmup_runs: int = 3,
 ) -> dict[str, Any]:
-    resolution = resolve_device(device)
+    resolution = resolve_device(requested_device)
     working_model = model or _SyntheticBenchmarkModel()
     working_model = working_model.to(resolution.torch_device)
-    # Use eval() with inference_mode(): inference_mode disables autograd, while
-    # eval mode also freezes layer behavior such as dropout and batch norm.
+    # Use eval() for layer behavior (for example dropout/batch norm) and
+    # inference_mode() below for no-grad execution and lower runtime overhead.
     working_model.eval()
 
     tokens = list(input_ids or range(32))
@@ -336,13 +336,20 @@ def compare_benchmarks(
     input_ids: Sequence[int] | None = None,
     runs: int = 10,
 ) -> list[dict[str, Any]]:
-    results = [benchmark_inference(model=model, input_ids=input_ids, device="cpu", runs=runs)]
+    results = [
+        benchmark_inference(
+            model=model,
+            input_ids=input_ids,
+            requested_device="cpu",
+            runs=runs,
+        )
+    ]
 
     for candidate in ("mps", "cuda"):
         result = benchmark_inference(
             model=model,
             input_ids=input_ids,
-            device=candidate,
+            requested_device=candidate,
             runs=runs,
         )
         if result["device"] != "cpu":
