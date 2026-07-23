@@ -29,7 +29,13 @@ class InferenceRequest(BaseModel):
     input_ids: list
 
 def _load_state_dict(checkpoint_path: str) -> dict:
-    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+    try:
+        checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+    except Exception as exc:
+        raise RuntimeError(
+            "Checkpoint loading failed with weights_only=True. "
+            "Re-export the checkpoint as a plain state dict if it contains legacy metadata."
+        ) from exc
     if "model_state_dict" in checkpoint:
         return checkpoint["model_state_dict"]
     return checkpoint

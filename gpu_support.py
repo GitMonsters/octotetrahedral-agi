@@ -284,7 +284,7 @@ def benchmark_inference(
     resolution = resolve_device(requested_device)
     working_model = model or _SyntheticBenchmarkModel()
     working_model = working_model.to(resolution.torch_device)
-    # Use eval() for layer behavior (for example dropout/batch norm) and
+    # Use eval() for layer behavior (e.g. dropout/batch norm) and
     # inference_mode() below for no-grad execution and lower runtime overhead.
     working_model.eval()
 
@@ -314,7 +314,7 @@ def benchmark_inference(
 
     memory = get_memory_stats(resolution.selected)
     total_tokens = len(tokens) * runs
-    throughput = total_tokens / total_seconds if total_seconds else 0.0
+    throughput = total_tokens / total_seconds if total_seconds > 1e-9 else 0.0
 
     return {
         "device": resolution.selected,
