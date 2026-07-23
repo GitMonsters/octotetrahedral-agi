@@ -31,6 +31,8 @@ class _DummyModel:
 
 @pytest.fixture
 def client(monkeypatch) -> TestClient:
+    original_model_module = sys.modules.get("model")
+
     monkeypatch.setattr(torch, "load", lambda *args, **kwargs: {})
 
     fake_model_module = types.ModuleType("model")
@@ -40,7 +42,14 @@ def client(monkeypatch) -> TestClient:
     sys.modules.pop("api", None)
     api = importlib.import_module("api")
 
-    return TestClient(api.app)
+    try:
+        yield TestClient(api.app)
+    finally:
+        sys.modules.pop("api", None)
+        if original_model_module is not None:
+            sys.modules["model"] = original_model_module
+        else:
+            sys.modules.pop("model", None)
 
 
 @pytest.mark.parametrize(

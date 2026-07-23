@@ -36,6 +36,8 @@ except Exception as e:
     raise
 
 class InferenceRequest(BaseModel):
+    # Keep raw values here so invalid payloads can return the API's explicit
+    # 400/413 contract instead of FastAPI/Pydantic's default 422 response.
     input_ids: list[Any] = Field(..., description="List of token IDs to run inference on")
 
 
@@ -55,6 +57,7 @@ def validate_input_ids(input_ids: list[Any]) -> list[int]:
 
     validated_input_ids: list[int] = []
     for index, token_id in enumerate(input_ids):
+        # bool is a subclass of int in Python, so reject it explicitly.
         if not isinstance(token_id, int) or isinstance(token_id, bool):
             raise HTTPException(
                 status_code=400,
