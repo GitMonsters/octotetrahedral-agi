@@ -1,0 +1,76 @@
+# OctoTetrahedral AGI – Production Configuration
+# ================================================
+# This file is the canonical production settings file.
+# Environment-specific overrides can be set via OCTOAGI_* env vars.
+
+# ---------------------------------------------------------------------------
+# Environment
+# ---------------------------------------------------------------------------
+environment: prod
+
+# ---------------------------------------------------------------------------
+# Server
+# ---------------------------------------------------------------------------
+server:
+  host: "127.0.0.1"      # Bind to localhost; use a reverse-proxy for external access
+  port: 8000
+  workers: auto           # "auto" = number of physical CPU cores
+  timeout: 30             # Request timeout (seconds)
+  keep_alive: 5           # Keep-alive timeout (seconds)
+  access_log: false       # Disable verbose access logs in production
+
+# ---------------------------------------------------------------------------
+# Compute device
+# ---------------------------------------------------------------------------
+device:
+  preference: "metal"     # Options: metal | cuda | cpu | auto
+  fallback: "cpu"         # Used when preferred device is unavailable
+  # Metal-specific options (Apple Silicon / MPS backend)
+  metal:
+    enable_mps: true
+    mps_fallback_cpu: true  # Gracefully fall back if an MPS op is unsupported
+
+# ---------------------------------------------------------------------------
+# Model
+# ---------------------------------------------------------------------------
+model:
+  version: "1.0.0"
+  path: ""                # Empty = in-memory model (no checkpoint load)
+  limb_count: 8
+  # Inference pool
+  pool_size: auto         # "auto" = min(4, cpu_count)
+  max_retries: 3
+  inference_timeout_ms: 20.0
+
+# ---------------------------------------------------------------------------
+# Rate limiting
+# ---------------------------------------------------------------------------
+rate_limiting:
+  enabled: true
+  requests_per_minute: 1000
+  burst_size: 100         # Allow short bursts above steady-state limit
+
+# ---------------------------------------------------------------------------
+# Monitoring
+# ---------------------------------------------------------------------------
+monitoring:
+  coherence_alert_threshold: 0.90
+  latency_warn_ms: 20.0
+  metrics_endpoint: "/metrics"    # Prometheus-compatible metrics
+  health_endpoint: "/health"
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+logging:
+  level: "WARNING"        # DEBUG | INFO | WARNING | ERROR | CRITICAL
+  format: "json"
+  log_dir: "~/Library/Logs/OctoTetrahedralAGI"
+
+# ---------------------------------------------------------------------------
+# Security
+# ---------------------------------------------------------------------------
+security:
+  cors_origins: []        # Empty = no CORS (API served from same origin or behind proxy)
+  api_key_required: false # Set to true and configure OCTOAGI_API_KEY env var to enable
+  tls: false              # Terminate TLS at the reverse-proxy layer

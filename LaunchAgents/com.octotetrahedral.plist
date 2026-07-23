@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  OctoTetrahedral AGI – macOS LaunchAgent
+  =========================================
+  Manages the production inference service as a persistent user-level agent.
+
+  Tokens replaced by setup_macos_production.sh:
+    __REPO_ROOT__  – absolute path to the repository root
+    __VENV_DIR__   – absolute path to the Python virtual environment
+    __LOG_DIR__    – absolute path to the log directory
+    __PORT__       – TCP port for the inference API (default: 8000)
+
+  Manual load:
+    launchctl load -w ~/Library/LaunchAgents/com.octotetrahedral.plist
+
+  Manual unload:
+    launchctl unload ~/Library/LaunchAgents/com.octotetrahedral.plist
+-->
+<plist version="1.0">
+<dict>
+
+  <!-- ── Identity ─────────────────────────────────────────────────────── -->
+  <key>Label</key>
+  <string>com.octotetrahedral.agi</string>
+
+  <!-- ── Executable ───────────────────────────────────────────────────── -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>__VENV_DIR__/bin/python</string>
+    <string>-m</string>
+    <string>uvicorn</string>
+    <string>api:app</string>
+    <string>--host</string>
+    <string>127.0.0.1</string>
+    <string>--port</string>
+    <string>__PORT__</string>
+    <string>--workers</string>
+    <string>1</string>
+  </array>
+
+  <!-- ── Working directory ────────────────────────────────────────────── -->
+  <key>WorkingDirectory</key>
+  <string>__REPO_ROOT__</string>
+
+  <!-- ── Environment variables ────────────────────────────────────────── -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>OCTOAGI_ENV</key>
+    <string>prod</string>
+    <key>OCTOTETRAHEDRAL_DEVICE</key>
+    <string>auto</string>
+    <key>OCTOAGI_LOG_LEVEL</key>
+    <string>WARNING</string>
+    <key>PYTHONUNBUFFERED</key>
+    <string>1</string>
+    <key>PATH</key>
+    <string>__VENV_DIR__/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+
+  <!-- ── Logging ───────────────────────────────────────────────────────── -->
+  <key>StandardOutPath</key>
+  <string>__LOG_DIR__/stdout.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>__LOG_DIR__/stderr.log</string>
+
+  <!-- ── Lifecycle ─────────────────────────────────────────────────────── -->
+  <!-- Start automatically when the user logs in -->
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Restart on crash/non-zero exit -->
+  <key>KeepAlive</key>
+  <dict>
+    <key>Crashed</key>
+    <true/>
+  </dict>
+
+  <!-- Throttle rapid restarts (seconds) -->
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+
+  <!-- ── Resource limits ───────────────────────────────────────────────── -->
+  <!-- Nice level: 0 = normal priority (lower = higher priority) -->
+  <key>Nice</key>
+  <integer>0</integer>
+
+  <!-- Soft resource limits -->
+  <key>SoftResourceLimits</key>
+  <dict>
+    <!-- Open file descriptors -->
+    <key>NumberOfFiles</key>
+    <integer>8192</integer>
+  </dict>
+
+  <key>HardResourceLimits</key>
+  <dict>
+    <key>NumberOfFiles</key>
+    <integer>16384</integer>
+  </dict>
+
+</dict>
+</plist>
