@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import os
 import torch
 from config import get_config
 from gpu_support import build_benchmark_comparison, detect_device
@@ -14,6 +15,7 @@ app = FastAPI(title="OctoTetrahedral AGI Inference")
 
 MAX_INPUT_TOKENS = 256
 MAX_TOKEN_ID = 50_000
+CHECKPOINT_PATH = os.getenv("OCTO_CHECKPOINT_PATH", "checkpoints/arc/arc_final.pt")
 
 config = get_config()
 device_info = detect_device(config.device)
@@ -23,7 +25,7 @@ benchmark_comparison = build_benchmark_comparison()
 # Load model once at startup
 try:
     model = OctoTetrahedralModel()
-    checkpoint = torch.load('checkpoints/arc/arc_final.pt', map_location='cpu', weights_only=True)
+    checkpoint = torch.load(CHECKPOINT_PATH, map_location='cpu', weights_only=True)
 
     if 'model_state_dict' in checkpoint:
         state_dict = checkpoint['model_state_dict']

@@ -11,6 +11,8 @@ import torch
 CPU_BASELINE_LATENCY_MS = 65.29
 GPU_TARGET_LATENCY_MS = 6.53
 BASELINE_CONCURRENCY = 50
+PRIMARY_DEVICE_ENV = "OCTO_DEVICE"
+LEGACY_DEVICE_ENV = "OCTOTETRAHEDRAL_DEVICE"
 
 
 @dataclass(frozen=True)
@@ -44,8 +46,12 @@ def _smoke_test(device_name: str) -> bool:
         return False
 
 
+def _requested_device(preferred: str | None = None) -> str:
+    return preferred or os.getenv(PRIMARY_DEVICE_ENV) or os.getenv(LEGACY_DEVICE_ENV) or "auto"
+
+
 def _candidate_devices(preferred: str | None) -> list[str]:
-    requested = (preferred or os.getenv("OCTO_DEVICE") or os.getenv("OCTOTETRAHEDRAL_DEVICE") or "auto").lower()
+    requested = _requested_device(preferred).lower()
     if requested == "auto":
         return ["cuda", "mps", "cpu"]
     if requested.startswith("cuda"):
@@ -59,7 +65,7 @@ def _candidate_devices(preferred: str | None) -> list[str]:
 
 def detect_device(preferred: str | None = None) -> DeviceInfo:
     """Resolve the best available device with accelerator smoke tests."""
-    requested = preferred or os.getenv("OCTO_DEVICE") or os.getenv("OCTOTETRAHEDRAL_DEVICE") or "auto"
+    requested = _requested_device(preferred)
     requested_lower = requested.lower()
 
     for candidate in _candidate_devices(preferred):

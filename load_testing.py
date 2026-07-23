@@ -55,14 +55,22 @@ def summarize_latencies(latency_samples_ms: list[float]) -> dict[str, float]:
         raise ValueError("latency_samples_ms must not be empty")
 
     ordered = sorted(latency_samples_ms)
+    if len(ordered) == 1:
+        p50 = p95 = p99 = ordered[0]
+    else:
+        percentiles = statistics.quantiles(ordered, n=100, method="inclusive")
+        p50 = percentiles[49]
+        p95 = percentiles[94]
+        p99 = percentiles[98]
+
     return {
         "avg_ms": statistics.mean(ordered),
         "min_ms": ordered[0],
         "max_ms": ordered[-1],
         "stddev_ms": statistics.stdev(ordered) if len(ordered) > 1 else 0.0,
-        "p50_ms": ordered[int((len(ordered) - 1) * 0.50)],
-        "p95_ms": ordered[int((len(ordered) - 1) * 0.95)],
-        "p99_ms": ordered[int((len(ordered) - 1) * 0.99)],
+        "p50_ms": p50,
+        "p95_ms": p95,
+        "p99_ms": p99,
     }
 
 

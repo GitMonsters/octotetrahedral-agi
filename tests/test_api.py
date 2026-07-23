@@ -11,6 +11,9 @@ import torch
 pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 
+EXPECTED_TOKEN_ID = 444
+TEST_VOCAB_SIZE = 512
+
 
 def _load_api_module(monkeypatch: pytest.MonkeyPatch, *, resolved_device: str = "cpu"):
     fake_model = types.ModuleType("model")
@@ -28,8 +31,8 @@ def _load_api_module(monkeypatch: pytest.MonkeyPatch, *, resolved_device: str = 
 
         def __call__(self, input_ids, return_confidences=False):
             batch_size, seq_len = input_ids.shape
-            logits = torch.zeros((batch_size, seq_len, 512), device=input_ids.device)
-            logits[..., 444] = 1.0
+            logits = torch.zeros((batch_size, seq_len, TEST_VOCAB_SIZE), device=input_ids.device)
+            logits[..., EXPECTED_TOKEN_ID] = 1.0
             return {"logits": logits}
 
     fake_model.OctoTetrahedralModel = FakeOctoTetrahedralModel
@@ -63,7 +66,7 @@ def test_predict_returns_predictions_for_valid_input(monkeypatch: pytest.MonkeyP
     response = client.post("/predict", json={"input_ids": [1, 2, 3]})
 
     assert response.status_code == 200
-    assert response.json()["predictions"] == [[444, 444, 444]]
+    assert response.json()["predictions"] == [[EXPECTED_TOKEN_ID, EXPECTED_TOKEN_ID, EXPECTED_TOKEN_ID]]
     assert response.json()["device"] == "cpu"
 
 
