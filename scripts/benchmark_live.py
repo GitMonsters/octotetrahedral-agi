@@ -365,7 +365,7 @@ def main() -> None:
 
     if args.export:
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output = args.output or f"/tmp/benchmark_{ts}.{args.export if args.export != 'md' else 'md'}"
+        output = args.output or f"/tmp/benchmark_{ts}.{args.export}"
         if args.export == "json":
             export_json(results, output)
         elif args.export == "csv":

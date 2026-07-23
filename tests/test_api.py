@@ -53,14 +53,11 @@ def _patch_api_deps():
     """Patch model, checkpoint loading, and gpu_support before importing api."""
     import torch
 
-    with (
-        patch("builtins.__import__", _safe_import),
-        patch.dict(
-            "sys.modules",
-            {
-                "gpu_support": _make_gpu_support_stub(),
-            },
-        ),
+    with patch.dict(
+        "sys.modules",
+        {
+            "gpu_support": _make_gpu_support_stub(),
+        },
     ):
         # Patch torch.load to avoid needing a checkpoint file
         original_load = torch.load
@@ -101,13 +98,6 @@ def _inject_model_stub():
         sys.modules["model"].OctoTetrahedralModel = MagicMock(
             return_value=_mock_model_instance
         )
-
-
-_ORIGINAL_IMPORT = __builtins__.__import__ if hasattr(__builtins__, "__import__") else __import__
-
-
-def _safe_import(name, *args, **kwargs):
-    return _ORIGINAL_IMPORT(name, *args, **kwargs)
 
 
 # ---------------------------------------------------------------------------
