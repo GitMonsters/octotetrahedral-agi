@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OctoTetrahedral AGI — Performance Dashboard</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2e3245;
+      --accent: #5b8dee;
+      --green: #4caf6e;
+      --yellow: #f0b429;
+      --red: #e05252;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 1.5rem;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 600; }
+    #status-badge {
+      padding: 0.3rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: var(--green);
+      color: #fff;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+    .card-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .card-sub { font-size: 0.8rem; color: var(--muted); margin-top: 0.3rem; }
+    .section-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.8rem;
+      margin-top: 1.5rem;
+    }
+    canvas { width: 100% !important; }
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem;
+      margin-bottom: 1rem;
+    }
+    .chart-title {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+    .error-rate-bar {
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border);
+      margin-top: 0.5rem;
+    }
+    .error-rate-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--red);
+      transition: width 0.4s;
+    }
+    footer {
+      margin-top: 2rem;
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .tag-mps { background: #2d4a7a; color: #93c5fd; }
+    .tag-cuda { background: #3a2a1a; color: #fbbf24; }
+    .tag-cpu  { background: #1e2a1e; color: #86efac; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🐙 OctoTetrahedral AGI — Performance Dashboard</h1>
+    <div id="device-tag" style="margin-top:0.3rem;"></div>
+  </div>
+  <div>
+    <span id="status-badge">● LOADING</span>
+    <div style="font-size:0.7rem;color:var(--muted);margin-top:0.3rem;text-align:right;">
+      Auto-refresh: <span id="countdown">5</span>s
+    </div>
+  </div>
+</header>
+
+<!-- KPI cards -->
+<div class="grid" id="kpi-grid">
+  <div class="card">
+    <div class="card-label">Requests Total</div>
+    <div class="card-value" id="kpi-requests">—</div>
+    <div class="card-sub" id="kpi-uptime">uptime: —</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Throughput</div>
+    <div class="card-value" id="kpi-rps">—</div>
+    <div class="card-sub">requests / second</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Avg Latency</div>
+    <div class="card-value" id="kpi-avg-lat">—</div>
+    <div class="card-sub">milliseconds</div>
+  </div>
+  <div class="card">
+    <div class="card-label">P99 Latency</div>
+    <div class="card-value" id="kpi-p99-lat">—</div>
+    <div class="card-sub">milliseconds</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Error Rate</div>
+    <div class="card-value" id="kpi-error">—</div>
+    <div class="error-rate-bar"><div class="error-rate-fill" id="error-bar" style="width:0%"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-label">Memory Used</div>
+    <div class="card-value" id="kpi-mem">—</div>
+    <div class="card-sub" id="kpi-mem-pct">—</div>
+  </div>
+</div>
+
+<!-- Latency history chart -->
+<div class="section-title">Request Latency (ms)</div>
+<div class="chart-card">
+  <div class="chart-title">Last 60 poll intervals</div>
+  <canvas id="latencyChart" height="90"></canvas>
+</div>
+
+<!-- Throughput history chart -->
+<div class="section-title">Throughput (req/s)</div>
+<div class="chart-card">
+  <div class="chart-title">Last 60 poll intervals</div>
+  <canvas id="throughputChart" height="90"></canvas>
+</div>
+
+<footer>
+  Dashboard polls <span id="api-url-display"></span> every 5 s &nbsp;|&nbsp;
+  OctoTetrahedral AGI &copy; 2026
+</footer>
+
+<script>
+  // ── Config ────────────────────────────────────────────────────────────────
+  const API_URL = localStorage.getItem('octo_api_url') || 'http://localhost:8000';
+  const POLL_MS = 5000;
+
+  document.getElementById('api-url-display').textContent = API_URL;
+
+  // ── History buffers ────────────────────────────────────────────────────────
+  const MAX_HISTORY = 60;
+  const latencyHistory    = Array(MAX_HISTORY).fill(null);
+  const throughputHistory = Array(MAX_HISTORY).fill(null);
+  const labels            = Array.from({length: MAX_HISTORY}, (_, i) => i - MAX_HISTORY + 1);
+
+  // ── Simple canvas sparkline renderer ──────────────────────────────────────
+  function drawSparkline(canvasId, data, color) {
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext('2d');
+    const W = canvas.clientWidth;
+    const H = canvas.clientHeight || 90;
+    canvas.width = W;
+    canvas.height = H;
+    ctx.clearRect(0, 0, W, H);
+
+    const valid = data.filter(v => v !== null);
+    if (valid.length < 2) return;
+
+    const max = Math.max(...valid) * 1.1 || 1;
+    const min = 0;
+    const range = max - min || 1;
+    const step = W / (data.length - 1);
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(46,50,69,0.8)';
+    ctx.lineWidth = 1;
+    [0.25, 0.5, 0.75].forEach(f => {
+      const y = H - (f * H);
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    });
+
+    // Line
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    let started = false;
+    data.forEach((v, i) => {
+      if (v === null) return;
+      const x = i * step;
+      const y = H - ((v - min) / range) * H;
+      if (!started) { ctx.moveTo(x, y); started = true; } else { ctx.lineTo(x, y); }
+    });
+    ctx.stroke();
+
+    // Fill
+    ctx.fillStyle = color.replace(')', ',0.15)').replace('rgb', 'rgba');
+    ctx.beginPath();
+    started = false;
+    let firstX = 0, lastX = 0;
+    data.forEach((v, i) => {
+      if (v === null) return;
+      const x = i * step; lastX = x;
+      const y = H - ((v - min) / range) * H;
+      if (!started) { ctx.moveTo(x, H); ctx.lineTo(x, y); firstX = x; started = true; }
+      else ctx.lineTo(x, y);
+    });
+    ctx.lineTo(lastX, H); ctx.lineTo(firstX, H); ctx.fill();
+  }
+
+  // ── Fetch and update ───────────────────────────────────────────────────────
+  let countdown = POLL_MS / 1000;
+
+  async function fetchAndUpdate() {
+    const badge = document.getElementById('status-badge');
+    try {
+      const [perfRes, statsRes] = await Promise.all([
+        fetch(`${API_URL}/performance`),
+        fetch(`${API_URL}/stats`),
+      ]);
+      const perf  = await perfRes.json();
+      const stats = await statsRes.json();
+
+      badge.textContent = '● LIVE';
+      badge.style.background = 'var(--green)';
+
+      // KPIs
+      document.getElementById('kpi-requests').textContent = perf.requests_total ?? '—';
+      document.getElementById('kpi-uptime').textContent   = `uptime: ${formatUptime(perf.uptime_seconds)}`;
+      document.getElementById('kpi-rps').textContent      = (perf.throughput_rps ?? 0).toFixed(2);
+      document.getElementById('kpi-avg-lat').textContent  = (perf.avg_latency_ms ?? 0).toFixed(1);
+      document.getElementById('kpi-p99-lat').textContent  = (perf.p99_latency_ms ?? 0).toFixed(1);
+
+      const errPct = ((perf.error_rate ?? 0) * 100).toFixed(2);
+      document.getElementById('kpi-error').textContent = `${errPct}%`;
+      document.getElementById('error-bar').style.width = `${Math.min(errPct, 100)}%`;
+
+      const mem = stats.memory ?? {};
+      document.getElementById('kpi-mem').textContent     = mem.total_mb ? `${((mem.total_mb - mem.available_mb)).toFixed(0)} MB` : '—';
+      document.getElementById('kpi-mem-pct').textContent = mem.used_pct ? `${mem.used_pct}% used` : '';
+
+      // Device tag
+      const devTag = document.getElementById('device-tag');
+      const dev = stats.device ?? 'cpu';
+      const cls  = dev === 'mps' ? 'tag-mps' : dev === 'cuda' ? 'tag-cuda' : 'tag-cpu';
+      const lbl  = dev === 'mps' ? '🍎 Apple Metal (MPS)' : dev === 'cuda' ? '⚡ CUDA' : '💻 CPU';
+      devTag.innerHTML = `<span class="tag ${cls}">${lbl}</span>`;
+
+      // History
+      latencyHistory.shift();    latencyHistory.push(perf.avg_latency_ms ?? null);
+      throughputHistory.shift(); throughputHistory.push(perf.throughput_rps ?? null);
+
+    } catch (e) {
+      badge.textContent = '● OFFLINE';
+      badge.style.background = 'var(--red)';
+    }
+
+    drawSparkline('latencyChart',    latencyHistory,    'rgb(91,141,238)');
+    drawSparkline('throughputChart', throughputHistory, 'rgb(76,175,110)');
+  }
+
+  function formatUptime(s) {
+    if (!s) return '—';
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
+    return h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+  }
+
+  // ── Countdown ticker ───────────────────────────────────────────────────────
+  setInterval(() => {
+    countdown -= 1;
+    document.getElementById('countdown').textContent = countdown;
+    if (countdown <= 0) countdown = POLL_MS / 1000;
+  }, 1000);
+
+  // ── Poll ───────────────────────────────────────────────────────────────────
+  fetchAndUpdate();
+  setInterval(fetchAndUpdate, POLL_MS);
+
+  // Handle resize
+  window.addEventListener('resize', () => {
+    drawSparkline('latencyChart',    latencyHistory,    'rgb(91,141,238)');
+    drawSparkline('throughputChart', throughputHistory, 'rgb(76,175,110)');
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+# OctoTetrahedral AGI — Security Configuration
+
+api_keys:
+  # Storage path for persisted API keys (~ expands to home directory)
+  store_path: "~/.octotetrahedral/api_keys.json"
+  # Length in bytes for key material (32 = 256-bit)
+  key_bytes: 32
+  # Human-readable prefix for all generated keys
+  key_prefix: "octo_"
+
+rate_limiting:
+  # Maximum requests per minute per API key
+  requests_per_minute: 1000
+  # Sliding window duration (seconds)
+  window_seconds: 60
+  # Return HTTP 429 when limit exceeded
+  enforce: true
+
+jwt:
+  # Algorithm used for JWT signing
+  algorithm: "HS256"
+  # Token validity in seconds (default 1 hour)
+  expires_in: 3600
+  # Secret loaded from env: OCTO_JWT_SECRET (auto-generated if absent)
+  secret_env_var: "OCTO_JWT_SECRET"
+
+cors:
+  # Origins allowed to make cross-origin requests
+  allow_origins:
+    - "http://localhost:8001"
+    - "http://localhost:3000"
+  allow_methods:
+    - "GET"
+    - "POST"
+  allow_headers:
+    - "Authorization"
+    - "Content-Type"
+    - "X-Request-Signature"
+  allow_credentials: false
+
+security_headers:
+  X-Content-Type-Options: "nosniff"
+  X-Frame-Options: "DENY"
+  X-XSS-Protection: "1; mode=block"
+  Referrer-Policy: "strict-origin-when-cross-origin"
+  Content-Security-Policy: "default-src 'self'"
+
+monitoring:
+  # Port for the standalone monitoring dashboard
+  dashboard_port: 8001
+  # Prometheus metrics exposed on the main API
+  metrics_path: "/metrics"
+  performance_path: "/performance"
+  stats_path: "/stats"
