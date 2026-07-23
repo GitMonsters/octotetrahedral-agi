@@ -51,6 +51,20 @@ def _instantiate_model(
     return model
 
 
+def _run_inference(
+    model: torch.nn.Module,
+    input_ids: list,
+    device_name: str,
+) -> list[list[int]]:
+    tensor = prepare_input_tensor(input_ids, device_name)
+    with torch.inference_mode():
+        output = model(
+            input_ids=tensor,
+            return_confidences=False,
+        )
+    return output["logits"].argmax(dim=-1).detach().cpu().tolist()
+
+
 def initialize_runtime(
     checkpoint_path: str = DEFAULT_CHECKPOINT,
     requested_device: str | None = None,
@@ -120,15 +134,6 @@ def create_app(
     app.state.device_resolution = device_resolution
     app.state.model_error = model_error
 
-    def _run_inference(device_name: str, input_ids: list) -> list[list[int]]:
-        tensor = prepare_input_tensor(input_ids, device_name)
-        with torch.inference_mode():
-            output = app.state.model(
-                input_ids=tensor,
-                return_confidences=False,
-            )
-        return output["logits"].argmax(dim=-1).detach().cpu().tolist()
-
     @app.post("/predict")
     async def predict(request: InferenceRequest):
         """Run inference on input tokens."""
@@ -140,8 +145,9 @@ def create_app(
 
         try:
             predictions = _run_inference(
-                app.state.device_resolution.selected,
+                app.state.model,
                 request.input_ids,
+                app.state.device_resolution.selected,
             )
             logger.info("✅ Prediction successful")
             return {
@@ -167,7 +173,11 @@ def create_app(
                     mps_available=app.state.device_resolution.mps_available,
                     mps_built=app.state.device_resolution.mps_built,
                 )
-                predictions = _run_inference("cpu", request.input_ids)
+                predictions = _run_inference(
+                    app.state.model,
+                    request.input_ids,
+                    "cpu",
+                )
                 return {
                     "predictions": predictions,
                     "device": "cpu",
