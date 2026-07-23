@@ -343,7 +343,7 @@ def compare_benchmarks(
             device=candidate,
             runs=runs,
         )
-        if result["device"] != "cpu" or candidate == "cpu":
+        if result["device"] != "cpu":
             results.append(result)
 
     cpu_latency = results[0]["latency_ms_avg"]

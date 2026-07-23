@@ -71,7 +71,7 @@ Expected outcome on Apple Silicon:
 ### `Metal smoke test failed`
 
 - Close other GPU-heavy applications
-- restart the Python process to clear Metal allocations
+- Restart the Python process to clear Metal allocations
 - rerun `python - <<'PY' ...` smoke validation above
 
 ### API falls back to CPU
