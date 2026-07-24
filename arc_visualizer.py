@@ -58,7 +58,7 @@ def _cell(value: int) -> str:
     return f" {sym}"
 
 
-def render_grid(grid: Grid, title: str = "", max_cols: int = 60) -> None:
+def render_grid(grid: Grid, title: str = "") -> None:
     """Print *grid* to stdout with an optional *title* header."""
     rows = len(grid)
     cols = len(grid[0]) if rows else 0

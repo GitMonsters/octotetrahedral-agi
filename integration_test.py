@@ -33,6 +33,7 @@ def _is_valid_grid(grid: Any) -> bool:
     """Return True if *grid* is a non-empty list of equal-length int rows."""
     if not isinstance(grid, list) or len(grid) == 0:
         return False
+    # grid is confirmed non-empty here, so grid[0] is safe to access
     row_len = len(grid[0])
     if row_len == 0:
         return False
