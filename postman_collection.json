@@ -1,0 +1,503 @@
+{
+  "info": {
+    "_postman_id": "octotetrahedral-agi-benchmark",
+    "name": "OctoTetrahedral AGI - API Benchmark",
+    "description": "Complete API testing and benchmarking suite for OctoTetrahedral AGI inference engine",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["health"]
+            },
+            "description": "Get system health and device information"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/stats",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["stats"]
+            },
+            "description": "Get performance statistics"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Metrics (Prometheus)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/metrics",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["metrics"]
+            },
+            "description": "Get Prometheus-compatible metrics"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Inference Tests",
+      "item": [
+        {
+          "name": "Single Inference - Basic",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer qU62MH7IOkLzFDUHCVJoRlrc41nzzNNa8-Hhnm2YwVQ"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"input_ids\": [1, 2, 3, 4, 5]}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/predict",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["predict"]
+            },
+            "description": "Basic single inference test"
+          },
+          "response": []
+        },
+        {
+          "name": "Single Inference - Extended",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer qU62MH7IOkLzFDUHCVJoRlrc41nzzNNa8-Hhnm2YwVQ"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"input_ids\": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/predict",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["predict"]
+            },
+            "description": "Inference with longer input sequence"
+          },
+          "response": []
+        },
+        {
+          "name": "Batch - 10 Requests (Sequential)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer qU62MH7IOkLzFDUHCVJoRlrc41nzzNNa8-Hhnm2YwVQ"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"input_ids\": [1, 2, 3]}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/predict",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["predict"]
+            },
+            "description": "Run this 10 times sequentially in Postman's test runner to benchmark batch throughput",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test('Status 200', function() {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "pm.test('Has predictions', function() {",
+                    "    var data = pm.response.json();",
+                    "    pm.expect(data).to.have.property('predictions');",
+                    "});",
+                    "pm.test('Has latency', function() {",
+                    "    var data = pm.response.json();",
+                    "    pm.expect(data).to.have.property('latency_ms');",
+                    "});"
+                  ]
+                }
+              }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid API Key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid_key_12345"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"input_ids\": [1, 2, 3]}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/predict",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["predict"]
+            },
+            "description": "Test authentication error handling"
+          },
+          "response": []
+        },
+        {
+          "name": "Missing Auth Header",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"input_ids\": [1, 2, 3]}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/predict",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["predict"]
+            },
+            "description": "Test missing authentication header"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Performance Benchmarks",
+      "item": [
+        {
+          "name": "Latency Test (Single)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer qU62MH7IOkLzFDUHCVJoRlrc41nzzNNa8-Hhnm2YwVQ"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"input_ids\": [1, 2, 3, 4, 5]}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/predict",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["predict"]
+            },
+            "description": "Measure single request latency",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "var response = pm.response.json();",
+                    "var latency = response.latency_ms;",
+                    "",
+                    "pm.test('Latency < 5000ms', function() {",
+                    "    pm.expect(latency).to.be.below(5000);",
+                    "});",
+                    "",
+                    "pm.test('Latency > 0ms', function() {",
+                    "    pm.expect(latency).to.be.above(0);",
+                    "});",
+                    "",
+                    "console.log('📊 Latency: ' + latency + 'ms');"
+                  ]
+                }
+              }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Throughput Test (Concurrent x5)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer qU62MH7IOkLzFDUHCVJoRlrc41nzzNNa8-Hhnm2YwVQ"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"input_ids\": [1, 2, 3]}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/predict",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["predict"]
+            },
+            "description": "Use Postman Runner to execute this 5 times concurrently",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test('Success', function() {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "if (!pm.collectionVariables.get('total_latency')) {",
+                    "    pm.collectionVariables.set('total_latency', 0);",
+                    "    pm.collectionVariables.set('request_count', 0);",
+                    "}",
+                    "",
+                    "var latency = pm.response.json().latency_ms;",
+                    "var total = parseInt(pm.collectionVariables.get('total_latency')) + latency;",
+                    "var count = parseInt(pm.collectionVariables.get('request_count')) + 1;",
+                    "",
+                    "pm.collectionVariables.set('total_latency', total);",
+                    "pm.collectionVariables.set('request_count', count);",
+                    "",
+                    "console.log('Request ' + count + ': ' + latency + 'ms | Avg: ' + (total/count).toFixed(2) + 'ms');"
+                  ]
+                }
+              }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Stress Test (Large Batch)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer qU62MH7IOkLzFDUHCVJoRlrc41nzzNNa8-Hhnm2YwVQ"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"input_ids\": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/predict",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["predict"]
+            },
+            "description": "Test with maximum input size"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Environment Tests",
+      "item": [
+        {
+          "name": "Check Device (GPU)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["health"]
+            },
+            "description": "Verify Metal GPU is active",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "var data = pm.response.json();",
+                    "",
+                    "pm.test('Device is mps (Metal GPU)', function() {",
+                    "    pm.expect(data.device).to.include('mps');",
+                    "});",
+                    "",
+                    "pm.test('Status is healthy', function() {",
+                    "    pm.expect(data.status).to.equal('healthy');",
+                    "});",
+                    "",
+                    "console.log('🍎 Device: ' + data.device);",
+                    "console.log('📱 Backend: ' + data.device_info.backend);"
+                  ]
+                }
+              }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Check Memory Usage",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/stats",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["stats"]
+            },
+            "description": "Monitor memory consumption",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "var data = pm.response.json();",
+                    "",
+                    "pm.test('Memory usage < 4GB', function() {",
+                    "    pm.expect(data.memory_mb).to.be.below(4096);",
+                    "});",
+                    "",
+                    "console.log('💾 Memory: ' + data.memory_mb.toFixed(1) + ' MB');",
+                    "console.log('⏱️  Uptime: ' + data.uptime_seconds + ' seconds');",
+                    "console.log('📊 Total requests: ' + data.total_requests);"
+                  ]
+                }
+              }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Performance Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/stats",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["stats"]
+            },
+            "description": "View comprehensive performance metrics",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "var data = pm.response.json();",
+                    "",
+                    "console.log('');",
+                    "console.log('═══════════════════════════════════════════════════');",
+                    "console.log('📊 OctoTetrahedral AGI - Performance Summary');",
+                    "console.log('═══════════════════════════════════════════════════');",
+                    "console.log('⏱️  Uptime: ' + data.uptime_seconds + 's');",
+                    "console.log('📈 Total Requests: ' + data.total_requests);",
+                    "console.log('🔄 Avg Latency: ' + data.avg_latency_ms.toFixed(2) + 'ms');",
+                    "console.log('📊 Min Latency: ' + data.min_latency_ms.toFixed(2) + 'ms');",
+                    "console.log('📈 Max Latency: ' + data.max_latency_ms.toFixed(2) + 'ms');",
+                    "console.log('⚡ Throughput: ' + data.throughput_req_per_sec.toFixed(2) + ' req/sec');",
+                    "console.log('❌ Errors: ' + data.error_count);",
+                    "console.log('💾 Memory: ' + data.memory_mb.toFixed(1) + ' MB');",
+                    "console.log('═══════════════════════════════════════════════════');",
+                    "console.log('');"
+                  ]
+                }
+              }
+            ]
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "api_key",
+      "value": "qU62MH7IOkLzFDUHCVJoRlrc41nzzNNa8-Hhnm2YwVQ"
+    },
+    {
+      "key": "total_latency",
+      "value": "0"
+    },
+    {
+      "key": "request_count",
+      "value": "0"
+    }
+  ]
+}
