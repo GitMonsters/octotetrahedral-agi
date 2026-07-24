@@ -16,7 +16,9 @@ Key structure:
      - Section with color-7 marker -> (directional hint)
 """
 
+import argparse
 import json
+from pathlib import Path
 
 
 def extract_key(grid, rows, col_start, col_end, sep_col_val=6):
@@ -265,8 +267,15 @@ def rotate_grid(grid, k):
     return result
 
 
-def main():
-    with open('/Users/evanpieser/arc-puzzle-catalog/dataset/tasks/a32d8b75.json') as f:
+TASK_PATH = Path(__file__).resolve().parents[2] / 'dataset' / 'tasks' / 'a32d8b75.json'
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description='Validate ARC task a32d8b75 solver')
+    parser.add_argument('--task', default=str(TASK_PATH), help='Path to the task JSON file')
+    args = parser.parse_args(argv)
+
+    with open(args.task) as f:
         data = json.load(f)
 
     all_pass = True
@@ -280,7 +289,6 @@ def main():
         else:
             print(f"Train {i}: FAIL")
             all_pass = False
-            # Show first few differences
             diffs = 0
             for r in range(len(expected)):
                 for c in range(len(expected[0])):
@@ -297,7 +305,8 @@ def main():
         print("\nAll training examples PASS!")
     else:
         print("\nSome training examples FAILED.")
+    return 0 if all_pass else 1
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())
