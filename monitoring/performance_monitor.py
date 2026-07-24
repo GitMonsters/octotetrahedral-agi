@@ -1,42 +1,29 @@
-"""Real-time coherence monitoring for the unified cognitive stack.
+"""Lightweight request-level performance monitor for OctoTetrahedral AGI.
 
-.. deprecated::
-    This top-level module is retained for backward compatibility only.
-    The canonical implementation now lives in the ``monitoring`` package
-    (``monitoring/inference_monitor.py``).  Import directly from the package::
-
-        from monitoring import InferenceMonitor, CoherenceAlert, MonitoringStats
-
-This module also exposes :class:`PerformanceMonitor` for lightweight request-level
-latency, throughput, error-rate, and memory tracking used by ``api.py``.
+Tracks inference latency, throughput, error rates, and optional memory usage
+using a bounded sliding-window buffer so memory stays constant over time.
 """
 
-import time
 import threading
+import time
 from collections import deque
 from typing import Deque
 
-from monitoring.inference_monitor import (  # noqa: F401  (re-export)
-    CoherenceAlert,
-    InferenceMonitor,
-    MonitoringStats,
-)
-from monitoring.performance_monitor import PerformanceMonitor  # noqa: F401
+__all__ = ["PerformanceMonitor"]
 
-__all__ = ["CoherenceAlert", "InferenceMonitor", "MonitoringStats", "PerformanceMonitor"]
-
-# ---------------------------------------------------------------------------
-# PerformanceMonitor
-# ---------------------------------------------------------------------------
-
-_WINDOW_SIZE = 1000  # keep the last N request records in memory
+_WINDOW_SIZE = 1000  # max records kept in memory
 
 
 class PerformanceMonitor:
-    """Lightweight, thread-safe request-level performance tracker.
+    """Thread-safe sliding-window request performance tracker.
 
-    Tracks latency, throughput, and error rates using a fixed-size sliding
-    window so memory usage stays bounded regardless of uptime.
+    Example::
+
+        pm = PerformanceMonitor()
+        pm.record(latency_ms=23.4)
+        pm.record(latency_ms=5.0, error=True)
+        stats = pm.get_stats()
+        print(stats["avg_latency_ms"])
     """
 
     def __init__(self, window: int = _WINDOW_SIZE) -> None:
@@ -86,7 +73,11 @@ class PerformanceMonitor:
         throughput_rps = round(len(recent) / 60.0, 3)
 
         avg_latency = round(sum(latencies) / len(latencies), 2) if latencies else 0.0
-        p95_latency = round(sorted(latencies)[int(len(latencies) * 0.95)], 2) if len(latencies) >= 20 else avg_latency
+        p95_latency = (
+            round(sorted(latencies)[int(len(latencies) * 0.95)], 2)
+            if len(latencies) >= 20
+            else avg_latency
+        )
         error_rate = round(errors / total * 100, 2) if total else 0.0
 
         result: dict = {
