@@ -63,7 +63,8 @@ class TestBenchmarkModels:
         from benchmarks.llm_config import ResponseCache as RC, CostTracker as CT
 
         # Use a temp cache so we hit the mock path, not disk
-        import tempfile, pathlib
+        import pathlib
+        import tempfile
         with tempfile.TemporaryDirectory() as td:
             cache = RC(cache_path=str(pathlib.Path(td) / "c.json"))
             tracker = CT()

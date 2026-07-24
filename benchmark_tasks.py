@@ -97,13 +97,16 @@ def _percentile(data: list[float], pct: float) -> float:
     return sd[lo] * (1 - frac) + sd[hi] * frac
 
 
+_FILLER_SENTENCE = "The quick brown fox jumps over the lazy dog. "
+
+
 def _make_long_context_prompt(n_tokens: int) -> str:
     """Generate a prompt approximating n_tokens (4 chars ≈ 1 token)."""
     base = "Please summarise the following text and answer: What is the main theme?\n\n"
     suffix = "\n\nMain theme (one sentence):"
     target_chars = n_tokens * 4
     fill_chars = max(0, target_chars - len(base) - len(suffix))
-    filler = ("The quick brown fox jumps over the lazy dog. " * (fill_chars // 44 + 1))[:fill_chars]
+    filler = (_FILLER_SENTENCE * (fill_chars // len(_FILLER_SENTENCE) + 1))[:fill_chars]
     return base + filler + suffix
 
 

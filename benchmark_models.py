@@ -167,7 +167,7 @@ class BenchmarkModelClient:
         payload = json.dumps({"input_ids": input_ids}).encode()
         headers: dict[str, str] = {"Content-Type": "application/json"}
         if self._octo_api_key:
-            headers["Authorization"] = f"******"
+            headers["Authorization"] = "Bearer " + self._octo_api_key
         req = urllib.request.Request(
             f"{self._octo_api_url}/predict",
             data=payload,
