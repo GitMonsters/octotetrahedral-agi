@@ -1,0 +1,22 @@
+# OctoTetrahedral AGI Benchmark Suite — optional dependencies
+# Install with:  pip install -r requirements_bench.txt
+#
+# Core deps (already in requirements.txt) are listed here for reference only.
+# All benchmark files fall back to mock responses if these are unavailable.
+
+# ── Web framework (live dashboard endpoint) ──────────────────────────────────
+fastapi>=0.100.0
+uvicorn>=0.23.0
+
+# ── External LLM API clients ─────────────────────────────────────────────────
+openai>=1.0.0
+anthropic>=0.20.0
+google-generativeai>=0.4.0
+
+# ── Charting (benchmark_reporter.py charts — optional) ───────────────────────
+matplotlib>=3.7.0
+
+# ── Core deps (already in requirements.txt) ──────────────────────────────────
+# torch>=2.0.0
+# numpy>=1.24.0
+# tqdm>=4.65.0
