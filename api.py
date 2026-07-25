@@ -78,10 +78,11 @@ def _ollama_model_candidates() -> List[str]:
     fallback_models = os.getenv("OLLAMA_FALLBACK_MODELS", "")
 
     models = [primary]
-    for model_name in fallback_models.split(","):
-        candidate = model_name.strip()
-        if candidate and candidate not in models:
-            models.append(candidate)
+    if fallback_models:
+        for model_name in fallback_models.split(","):
+            candidate = model_name.strip()
+            if candidate and candidate not in models:
+                models.append(candidate)
     return models
 
 
@@ -137,9 +138,12 @@ def _run_ollama_chat(
                 messages=messages,
                 options=options,
             )
-            content = (response.get("message") or {}).get("content", "").strip()
+            message_obj = response.get("message") or {}
+            content = message_obj.get("content", "").strip()
             if not content:
-                raise OllamaServiceError(f"Ollama returned an empty response for model '{model_name}'")
+                raise OllamaServiceError(
+                    f"Ollama returned empty message content for model '{model_name}'"
+                )
             return content, model_name
         except OllamaResponseError as exc:
             last_error = exc
@@ -182,17 +186,17 @@ async def verify_api_key(authorization: Optional[str] = Header(None)):
     """Verify API key from Authorization header"""
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing Authorization header")
-    
+
     try:
         scheme, token = authorization.split(" ")
         if scheme.lower() != "bearer":
             raise HTTPException(status_code=401, detail="Invalid authentication scheme")
     except ValueError:
         raise HTTPException(status_code=401, detail="Invalid authorization header format")
-    
+
     if not validate_api_key(token):
         raise HTTPException(status_code=401, detail="Invalid API key")
-    
+
     return token
 
 
@@ -249,17 +253,17 @@ async def predict(request: InferenceRequest, api_key: str = Depends(verify_api_k
     t0 = time.time()
     try:
         input_ids = torch.tensor([request.input_ids]).to(device)
-        
+
         with torch.no_grad():
             output = model(input_ids=input_ids, return_confidences=False)
-        
+
         predictions = output['logits'].argmax(dim=-1).tolist()
-        
+
         latency_ms = (time.time() - t0) * 1000
         monitor.record_request(latency_ms, error=False)
-        
+
         logger.info(f"✅ Prediction successful ({latency_ms:.1f}ms)")
-        
+
         return {
             "predictions": predictions,
             "device": str(device),
@@ -286,7 +290,7 @@ async def handle_prompt(
 ):
     """
     Natural language prompt endpoint
-    
+
     Modes: answer, code, creative, technical
     """
     t0 = time.time()
@@ -302,10 +306,10 @@ async def handle_prompt(
             top_p=request.top_p,
             max_length=request.max_length,
         )
-        
+
         latency_ms = (time.time() - t0) * 1000
         monitor.record_request(latency_ms, error=False)
-        
+
         return {
             "success": True,
             "prompt": request.prompt,
@@ -347,16 +351,18 @@ async def handle_chat(
             messages.append({"role": "system", "content": request.system_prompt})
         for msg in request.messages:
             role = msg.role if msg.role in {"system", "user", "assistant"} else "user"
+            if msg.role not in {"system", "user", "assistant"}:
+                logger.warning(f"⚠️ Unsupported chat role '{msg.role}' coerced to 'user'")
             messages.append({"role": role, "content": msg.content})
 
         response_text, used_model = _run_ollama_chat(
             messages,
             max_length=request.max_length,
         )
-        
+
         latency_ms = (time.time() - t0) * 1000
         monitor.record_request(latency_ms, error=False)
-        
+
         return {
             "success": True,
             "response": response_text,
@@ -393,10 +399,10 @@ async def ask(
     try:
         messages = [{"role": "user", "content": request.question}]
         answer, used_model = _run_ollama_chat(messages)
-        
+
         latency_ms = (time.time() - t0) * 1000
         monitor.record_request(latency_ms, error=False)
-        
+
         return {
             "success": True,
             "question": request.question,
@@ -429,7 +435,7 @@ async def handle_command(
 ):
     """
     Execute natural language commands
-    
+
     Commands: summarize, analyze, translate, expand, simplify
     """
     t0 = time.time()
@@ -447,10 +453,10 @@ async def handle_command(
         )
         messages = [{"role": "user", "content": prompt}]
         response, used_model = _run_ollama_chat(messages)
-        
+
         latency_ms = (time.time() - t0) * 1000
         monitor.record_request(latency_ms, error=False)
-        
+
         return {
             "success": True,
             "command": command,
@@ -494,7 +500,7 @@ async def health():
         device_info["backend"] = "NVIDIA CUDA"
     else:
         device_info["backend"] = "CPU"
-    
+
     return {
         "status": "healthy",
         "model": "OctoTetrahedralModel",

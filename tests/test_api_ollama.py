@@ -10,12 +10,20 @@ import pytest
 class _DummyMonitor:
     def __init__(self):
         self.total_requests = 0
+        self.error_count = 0
 
     def record_request(self, _latency_ms, error=False):
         self.total_requests += 1
+        if error:
+            self.error_count += 1
 
     def get_stats(self):
-        return {"total_requests": self.total_requests, "avg_latency_ms": 0, "error_count": 0, "memory_mb": 0}
+        return {
+            "total_requests": self.total_requests,
+            "avg_latency_ms": 0,
+            "error_count": self.error_count,
+            "memory_mb": 0,
+        }
 
 
 class _FakeTensor:
