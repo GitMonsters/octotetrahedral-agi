@@ -42,7 +42,7 @@ except Exception as e:
     raise
 
 
-DEFAULT_OLLAMA_MODEL = "mistral"
+DEFAULT_OLLAMA_MODEL = "mistral:latest"
 DEFAULT_OLLAMA_TEMPERATURE = 0.7
 DEFAULT_OLLAMA_TOP_P = 0.9
 
@@ -145,7 +145,11 @@ def _run_ollama_chat(
             content = message_obj.get("content", "").strip()
             if not content:
                 has_fallbacks = idx < len(models) - 1
-                next_step = "Try a fallback model." if has_fallbacks else "Check the selected model configuration."
+                next_step = (
+                    "Check the selected model configuration and Ollama logs."
+                    if not has_fallbacks
+                    else "Fallback model will be attempted automatically."
+                )
                 raise OllamaServiceError(
                     f"Ollama returned empty message content for model '{model_name}'. "
                     f"{next_step}"
@@ -153,8 +157,9 @@ def _run_ollama_chat(
             return content, model_name
         except OllamaResponseError as exc:
             last_error = exc
-            if getattr(exc, "status_code", None) == 404 and idx < len(models) - 1:
-                logger.warning(f"⚠️ Ollama model '{model_name}' unavailable, trying fallback model")
+            if getattr(exc, "status_code", None) == 404:
+                if idx < len(models) - 1:
+                    logger.warning(f"⚠️ Ollama model '{model_name}' unavailable, trying fallback model")
                 continue
             raise OllamaServiceError(f"Ollama request failed for model '{model_name}': {exc}") from exc
         except Exception as exc:

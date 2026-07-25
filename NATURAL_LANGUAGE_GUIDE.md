@@ -27,7 +27,7 @@ ollama serve
 ollama pull mistral
 
 # 3) (Optional) Configure model fallback + sampling
-export OLLAMA_MODEL=mistral
+export OLLAMA_MODEL=mistral:latest
 export OLLAMA_FALLBACK_MODELS="llama3.2,phi3"
 export OLLAMA_TEMPERATURE=0.7
 export OLLAMA_TOP_P=0.9

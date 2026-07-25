@@ -77,7 +77,7 @@ ollama pull mistral
 ### 2) Configure model + inference parameters (optional)
 
 ```bash
-export OLLAMA_MODEL=mistral
+export OLLAMA_MODEL=mistral:latest
 export OLLAMA_FALLBACK_MODELS="llama3.2,phi3"
 export OLLAMA_HOST="http://localhost:11434"
 export OLLAMA_TEMPERATURE=0.7

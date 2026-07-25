@@ -60,6 +60,8 @@ class _FakeModel:
 
 @pytest.fixture
 def api_module(monkeypatch):
+    # api.py imports torch/model and loads checkpoints at module import time, so
+    # we provide lightweight stubs to isolate Ollama endpoint behavior in tests.
     fake_torch = types.ModuleType("torch")
     fake_torch.backends = types.SimpleNamespace(mps=types.SimpleNamespace(is_available=lambda: False))
     fake_torch.cuda = types.SimpleNamespace(is_available=lambda: False)
