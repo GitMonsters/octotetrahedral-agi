@@ -7,7 +7,7 @@ from auth import validate_api_key
 from monitoring import monitor
 import logging
 import sys
-from typing import Optional
+from typing import Optional, List, Dict
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -53,9 +53,52 @@ async def verify_api_key(authorization: Optional[str] = Header(None)):
     return token
 
 
+# ============================================================================
+# Request/Response Models
+# ============================================================================
+
 class InferenceRequest(BaseModel):
+    """Token-based inference request"""
     input_ids: list
 
+
+class PromptRequest(BaseModel):
+    """Natural language prompt request"""
+    prompt: str
+    mode: str = "answer"  # answer, code, creative, technical
+    max_length: int = 200
+    temperature: float = 0.7
+    top_p: float = 0.9
+
+
+class ChatMessage(BaseModel):
+    """Chat message"""
+    role: str  # user, assistant, system
+    content: str
+
+
+class ChatRequest(BaseModel):
+    """Chat request"""
+    messages: List[ChatMessage]
+    system_prompt: Optional[str] = None
+    max_length: int = 200
+
+
+class CommandRequest(BaseModel):
+    """Command request"""
+    command: str  # analyze, summarize, translate, expand, simplify
+    input_text: str
+    options: Optional[Dict] = None
+
+
+class AskRequest(BaseModel):
+    """Simple ask request"""
+    question: str
+
+
+# ============================================================================
+# Token-Based Inference (Original)
+# ============================================================================
 
 @app.post("/predict")
 async def predict(request: InferenceRequest, api_key: str = Depends(verify_api_key)):
@@ -89,6 +132,161 @@ async def predict(request: InferenceRequest, api_key: str = Depends(verify_api_k
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ============================================================================
+# Natural Language Endpoints
+# ============================================================================
+
+@app.post("/prompt")
+async def handle_prompt(
+    request: PromptRequest,
+    api_key: str = Depends(verify_api_key)
+):
+    """
+    Natural language prompt endpoint
+    
+    Modes: answer, code, creative, technical
+    """
+    t0 = time.time()
+    try:
+        # Simulate prompt processing
+        response_text = f"Response to '{request.prompt}': This is a generated response based on mode '{request.mode}'"
+        
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=False)
+        
+        return {
+            "success": True,
+            "prompt": request.prompt,
+            "response": response_text,
+            "mode": request.mode,
+            "device": str(device),
+            "latency_ms": round(latency_ms, 2)
+        }
+    except Exception as e:
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=True)
+        logger.error(f"❌ Prompt error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/chat")
+async def handle_chat(
+    request: ChatRequest,
+    api_key: str = Depends(verify_api_key)
+):
+    """
+    Conversational chat endpoint
+    """
+    t0 = time.time()
+    try:
+        # Build conversation context
+        conversation = "\n".join([
+            f"{msg.role}: {msg.content}"
+            for msg in request.messages
+        ])
+        
+        # Simulate chat response
+        response_text = f"Chat response based on conversation: {conversation[:100]}..."
+        
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=False)
+        
+        return {
+            "success": True,
+            "response": response_text,
+            "device": str(device),
+            "latency_ms": round(latency_ms, 2)
+        }
+    except Exception as e:
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=True)
+        logger.error(f"❌ Chat error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/ask")
+async def ask(
+    request: AskRequest,
+    api_key: str = Depends(verify_api_key)
+):
+    """
+    Simple question answering endpoint
+    """
+    t0 = time.time()
+    try:
+        # Simulate Q&A
+        answer = f"Answer to '{request.question}': This is a generated answer based on your question."
+        
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=False)
+        
+        return {
+            "success": True,
+            "question": request.question,
+            "answer": answer,
+            "device": str(device),
+            "latency_ms": round(latency_ms, 2)
+        }
+    except Exception as e:
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=True)
+        logger.error(f"❌ Ask error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/command")
+async def handle_command(
+    request: CommandRequest,
+    api_key: str = Depends(verify_api_key)
+):
+    """
+    Execute natural language commands
+    
+    Commands: summarize, analyze, translate, expand, simplify
+    """
+    t0 = time.time()
+    try:
+        command = request.command.lower()
+        
+        # Map commands to responses
+        if command == "summarize":
+            response = f"Summary: {request.input_text[:100]}..."
+        elif command == "analyze":
+            response = f"Analysis of: {request.input_text[:100]}..."
+        elif command == "translate":
+            target_lang = request.options.get("target_language", "Spanish") if request.options else "Spanish"
+            response = f"Translation to {target_lang}: {request.input_text}"
+        elif command == "expand":
+            response = f"Expanded: {request.input_text}...[expanded content]"
+        elif command == "simplify":
+            response = f"Simplified: {request.input_text}...[simplified content]"
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown command: {command}")
+        
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=False)
+        
+        return {
+            "success": True,
+            "command": command,
+            "input": request.input_text,
+            "output": response,
+            "device": str(device),
+            "latency_ms": round(latency_ms, 2)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=True)
+        logger.error(f"❌ Command error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# Health & Monitoring
+# ============================================================================
+
 @app.get("/health")
 async def health():
     """Health check with device information"""
@@ -105,7 +303,8 @@ async def health():
         "status": "healthy",
         "model": "OctoTetrahedralModel",
         "device": str(device),
-        "device_info": device_info
+        "device_info": device_info,
+        "features": ["predict", "prompt", "chat", "ask", "command"]
     }
 
 
