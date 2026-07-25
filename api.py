@@ -8,7 +8,7 @@ from monitoring import monitor
 import logging
 import sys
 import os
-from typing import Any, Optional, List, Dict
+from typing import Any, Optional, List, Dict, Tuple
 
 try:
     from ollama import Client as OllamaClient, ResponseError as OllamaResponseError
@@ -73,7 +73,7 @@ def _parse_float(value: Optional[str], default: float) -> float:
         return default
 
 
-def _ollama_model_candidates() -> list[str]:
+def _ollama_model_candidates() -> List[str]:
     primary = os.getenv("OLLAMA_MODEL", DEFAULT_OLLAMA_MODEL).strip() or DEFAULT_OLLAMA_MODEL
     fallback_models = os.getenv("OLLAMA_FALLBACK_MODELS", "")
 
@@ -119,12 +119,12 @@ def _is_connection_error(exc: Exception) -> bool:
 
 
 def _run_ollama_chat(
-    messages: list[dict[str, str]],
+    messages: List[Dict[str, str]],
     *,
     temperature: Optional[float] = None,
     top_p: Optional[float] = None,
     max_length: Optional[int] = None,
-) -> tuple[str, str]:
+) -> Tuple[str, str]:
     client = _ollama_client()
     options = _ollama_options(temperature=temperature, top_p=top_p, max_length=max_length)
     models = _ollama_model_candidates()
@@ -161,7 +161,7 @@ def _run_ollama_chat(
     raise OllamaServiceError(f"Ollama request failed for all configured models: {last_error}")
 
 
-def _ollama_health() -> dict[str, Any]:
+def _ollama_health() -> Dict[str, Any]:
     models = _ollama_model_candidates()
     try:
         client = _ollama_client()
