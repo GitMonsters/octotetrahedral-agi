@@ -6,15 +6,12 @@ a running API server: argument parsing, conversation history management, and
 command dispatch routing.  Network calls are mocked.
 """
 import sys
-import json
-import types
 import unittest
 from unittest.mock import MagicMock, patch
 
 # ---------------------------------------------------------------------------
 # Import the module under test
 # ---------------------------------------------------------------------------
-import importlib
 import chat as chat_mod
 
 OctoAGIClient = chat_mod.OctoAGIClient

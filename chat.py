@@ -508,12 +508,12 @@ def main() -> None:
         history=InMemoryHistory(),
         auto_suggest=AutoSuggestFromHistory(),
         style=pt_style,
-        multiline=False,
+        multiline=True,
     )
 
     app = ChatApp(client)
 
-    console.print("[dim]Tip: Use [bold]Alt+Enter[/bold] or [bold]Escape Enter[/bold] for multi-line input.[/dim]\n")
+    console.print("[dim]Tip: Use [bold]Alt+Enter[/bold] or [bold]Escape Enter[/bold] to submit multi-line input.[/dim]\n")
 
     while True:
         try:
