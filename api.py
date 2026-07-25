@@ -55,6 +55,7 @@ MODE_SYSTEM_PROMPTS = {
 
 # Supported natural-language command operations for /command endpoint.
 SUPPORTED_COMMANDS = {"summarize", "analyze", "translate", "expand", "simplify"}
+VALID_CHAT_ROLES = {"system", "user", "assistant"}
 
 
 class OllamaServiceError(Exception):
@@ -145,14 +146,14 @@ def _run_ollama_chat(
             content = message_obj.get("content", "").strip()
             if not content:
                 has_fallbacks = idx < len(models) - 1
-                next_step = (
-                    "Check the selected model configuration and Ollama logs."
-                    if not has_fallbacks
-                    else "Fallback model will be attempted automatically."
-                )
+                if has_fallbacks:
+                    logger.warning(
+                        f"⚠️ Ollama model '{model_name}' returned empty content, trying fallback model"
+                    )
+                    continue
                 raise OllamaServiceError(
                     f"Ollama returned empty message content for model '{model_name}'. "
-                    f"{next_step}"
+                    "Check the selected model configuration and Ollama logs."
                 )
             return content, model_name
         except OllamaResponseError as exc:
@@ -359,9 +360,8 @@ async def handle_chat(
         messages = []
         if request.system_prompt:
             messages.append({"role": "system", "content": request.system_prompt})
-        valid_roles = {"system", "user", "assistant"}
         for msg in request.messages:
-            if msg.role not in valid_roles:
+            if msg.role not in VALID_CHAT_ROLES:
                 raise HTTPException(
                     status_code=400,
                     detail=f"Invalid message role: {msg.role}. Supported roles: system, user, assistant.",
