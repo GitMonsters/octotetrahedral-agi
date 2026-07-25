@@ -62,6 +62,36 @@ Training on ARC-AGI dataset:
 pip install -r requirements.txt
 ```
 
+## Ollama Integration (Natural Language Endpoints)
+
+`/ask`, `/prompt`, `/chat`, and `/command` now use a local Ollama model instead of mock responses.
+
+### 1) Install and start Ollama
+
+```bash
+# Install Ollama from https://ollama.com/download
+ollama serve
+ollama pull mistral
+```
+
+### 2) Configure model + inference parameters (optional)
+
+```bash
+export OLLAMA_MODEL=mistral:latest
+export OLLAMA_FALLBACK_MODELS="llama3.2,phi3"
+export OLLAMA_HOST="http://localhost:11434"
+export OLLAMA_TEMPERATURE=0.7
+export OLLAMA_TOP_P=0.9
+```
+
+### 3) Start the API
+
+```bash
+python3 -m uvicorn api:app --host 0.0.0.0 --port 8000
+```
+
+If Ollama is not reachable, natural language endpoints return HTTP `503` with a helpful startup message.
+
 ## Resume Training (GPU)
 
 To continue training from the checkpoint:

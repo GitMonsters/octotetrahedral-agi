@@ -16,6 +16,26 @@ Instead of passing raw token IDs, you can:
 
 ## 🚀 Quick Start
 
+### Ollama Runtime Setup (Required)
+
+```bash
+# 1) Install deps
+pip install -r requirements.txt
+
+# 2) Start Ollama and pull a model
+ollama serve
+ollama pull mistral
+
+# 3) (Optional) Configure model fallback + sampling
+export OLLAMA_MODEL=mistral:latest
+export OLLAMA_FALLBACK_MODELS="llama3.2,phi3"
+export OLLAMA_TEMPERATURE=0.7
+export OLLAMA_TOP_P=0.9
+
+# 4) Start API
+python3 -m uvicorn api:app --host 0.0.0.0 --port 8000
+```
+
 ### Current Method (Token IDs)
 ```bash
 curl -X POST http://localhost:8000/predict \
