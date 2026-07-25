@@ -135,6 +135,16 @@ def test_chat_endpoint_uses_ollama(client, api_module, monkeypatch):
     assert data["model"] == "llama3.2"
 
 
+def test_chat_endpoint_invalid_role_returns_400(client):
+    response = client.post(
+        "/chat",
+        json={"messages": [{"role": "tool", "content": "hi"}]},
+    )
+
+    assert response.status_code == 400
+    assert "Invalid message role" in response.json()["detail"]
+
+
 def test_command_endpoint_uses_ollama(client, api_module, monkeypatch):
     monkeypatch.setattr(api_module, "_run_ollama_chat", lambda messages, **kwargs: ("Short summary", "mistral"))
 

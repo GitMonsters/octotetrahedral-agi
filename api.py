@@ -75,7 +75,9 @@ def _parse_float(value: Optional[str], default: float) -> float:
 
 
 def _ollama_model_candidates() -> List[str]:
-    primary = os.getenv("OLLAMA_MODEL", DEFAULT_OLLAMA_MODEL).strip() or DEFAULT_OLLAMA_MODEL
+    primary = (os.getenv("OLLAMA_MODEL") or DEFAULT_OLLAMA_MODEL).strip()
+    if not primary:
+        primary = DEFAULT_OLLAMA_MODEL
     fallback_models = os.getenv("OLLAMA_FALLBACK_MODELS", "")
 
     models = [primary]
@@ -142,9 +144,11 @@ def _run_ollama_chat(
             message_obj = response.get("message") or {}
             content = message_obj.get("content", "").strip()
             if not content:
+                has_fallbacks = idx < len(models) - 1
+                next_step = "Try a fallback model." if has_fallbacks else "Check the selected model configuration."
                 raise OllamaServiceError(
                     f"Ollama returned empty message content for model '{model_name}'. "
-                    "Check model configuration or try a fallback model."
+                    f"{next_step}"
                 )
             return content, model_name
         except OllamaResponseError as exc:
@@ -159,9 +163,6 @@ def _run_ollama_chat(
                 raise OllamaUnavailableError(
                     "Unable to connect to Ollama. Start it with `ollama serve` and ensure the model is installed."
                 ) from exc
-            if "not found" in str(exc).lower() and idx < len(models) - 1:
-                logger.warning(f"⚠️ Ollama model '{model_name}' unavailable, trying fallback model")
-                continue
             raise OllamaServiceError(f"Ollama request failed for model '{model_name}': {exc}") from exc
 
     raise OllamaServiceError(f"Ollama request failed for all configured models: {last_error}")
@@ -321,6 +322,8 @@ async def handle_prompt(
             "device": str(device),
             "latency_ms": round(latency_ms, 2)
         }
+    except HTTPException:
+        raise
     except OllamaUnavailableError as e:
         latency_ms = (time.time() - t0) * 1000
         monitor.record_request(latency_ms, error=True)
@@ -351,12 +354,14 @@ async def handle_chat(
         messages = []
         if request.system_prompt:
             messages.append({"role": "system", "content": request.system_prompt})
+        valid_roles = {"system", "user", "assistant"}
         for msg in request.messages:
-            valid_roles = {"system", "user", "assistant"}
             if msg.role not in valid_roles:
-                logger.warning(f"⚠️ Unsupported chat role '{msg.role}' coerced to 'user'")
-            role = msg.role if msg.role in valid_roles else "user"
-            messages.append({"role": role, "content": msg.content})
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid message role: {msg.role}. Supported roles: system, user, assistant.",
+                )
+            messages.append({"role": msg.role, "content": msg.content})
 
         response_text, used_model = _run_ollama_chat(
             messages,
@@ -373,6 +378,8 @@ async def handle_chat(
             "device": str(device),
             "latency_ms": round(latency_ms, 2)
         }
+    except HTTPException:
+        raise
     except OllamaUnavailableError as e:
         latency_ms = (time.time() - t0) * 1000
         monitor.record_request(latency_ms, error=True)
@@ -414,6 +421,8 @@ async def ask(
             "device": str(device),
             "latency_ms": round(latency_ms, 2)
         }
+    except HTTPException:
+        raise
     except OllamaUnavailableError as e:
         latency_ms = (time.time() - t0) * 1000
         monitor.record_request(latency_ms, error=True)
