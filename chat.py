@@ -17,10 +17,7 @@ Commands in chat:
 """
 
 import sys
-import json
-import time
 import argparse
-from pathlib import Path
 from typing import Optional
 from datetime import datetime
 
@@ -53,28 +50,12 @@ except ImportError:
     sys.exit(1)
 
 
-API_KEYS_FILE = Path.home() / ".octotetrahedral" / "api_keys.json"
-
 console = Console()
 
 
 # ---------------------------------------------------------------------------
 # API client helpers
 # ---------------------------------------------------------------------------
-
-def _load_api_key() -> Optional[str]:
-    """Load the first saved API key from the local keys file."""
-    if not API_KEYS_FILE.exists():
-        return None
-    try:
-        with open(API_KEYS_FILE) as f:
-            keys = json.load(f)
-        # Return the raw key hint stored alongside the hash – not available;
-        # the keys file only stores hashes.  Return None so callers fall back
-        # to prompting.
-    except Exception:
-        pass
-    return None
 
 
 class OctoAGIClient:
@@ -412,22 +393,22 @@ class ChatApp:
             return True
 
         if stripped.lower().startswith("/ask ") or stripped.lower() == "/ask":
-            args = stripped[4:].strip()
+            args = stripped[5:].strip()
             self._safe_call(self.handle_ask, args)
             return True
 
         if stripped.lower().startswith("/prompt ") or stripped.lower() == "/prompt":
-            args = stripped[7:].strip()
+            args = stripped[8:].strip()
             self._safe_call(self.handle_prompt, args)
             return True
 
         if stripped.lower().startswith("/command ") or stripped.lower() == "/command":
-            args = stripped[8:].strip()
+            args = stripped[9:].strip()
             self._safe_call(self.handle_command, args)
             return True
 
         if stripped.lower().startswith("/chat ") or stripped.lower() == "/chat":
-            args = stripped[5:].strip()
+            args = stripped[6:].strip()
             self._safe_call(self.handle_chat, args)
             return True
 
