@@ -53,6 +53,7 @@ MODE_SYSTEM_PROMPTS = {
     "technical": "Provide precise technical detail and actionable guidance.",
 }
 
+# Supported natural-language command operations for /command endpoint.
 SUPPORTED_COMMANDS = {"summarize", "analyze", "translate", "expand", "simplify"}
 
 
@@ -142,7 +143,8 @@ def _run_ollama_chat(
             content = message_obj.get("content", "").strip()
             if not content:
                 raise OllamaServiceError(
-                    f"Ollama returned empty message content for model '{model_name}'"
+                    f"Ollama returned empty message content for model '{model_name}'. "
+                    "Check model configuration or try a fallback model."
                 )
             return content, model_name
         except OllamaResponseError as exc:
@@ -350,9 +352,10 @@ async def handle_chat(
         if request.system_prompt:
             messages.append({"role": "system", "content": request.system_prompt})
         for msg in request.messages:
-            role = msg.role if msg.role in {"system", "user", "assistant"} else "user"
-            if msg.role not in {"system", "user", "assistant"}:
+            valid_roles = {"system", "user", "assistant"}
+            if msg.role not in valid_roles:
                 logger.warning(f"⚠️ Unsupported chat role '{msg.role}' coerced to 'user'")
+            role = msg.role if msg.role in valid_roles else "user"
             messages.append({"role": role, "content": msg.content})
 
         response_text, used_model = _run_ollama_chat(
