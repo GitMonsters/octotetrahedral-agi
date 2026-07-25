@@ -7,7 +7,14 @@ from auth import validate_api_key
 from monitoring import monitor
 import logging
 import sys
-from typing import Optional, List, Dict
+import os
+from typing import Any, Optional, List, Dict
+
+try:
+    from ollama import Client as OllamaClient, ResponseError as OllamaResponseError
+except ImportError:  # pragma: no cover - guarded in runtime checks
+    OllamaClient = None
+    OllamaResponseError = Exception
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -33,6 +40,142 @@ try:
 except Exception as e:
     logger.error(f"❌ Failed to load model: {e}")
     raise
+
+
+DEFAULT_OLLAMA_MODEL = "mistral"
+DEFAULT_OLLAMA_TEMPERATURE = 0.7
+DEFAULT_OLLAMA_TOP_P = 0.9
+
+MODE_SYSTEM_PROMPTS = {
+    "answer": "Provide a clear and accurate answer.",
+    "code": "Provide production-quality code with brief explanation.",
+    "creative": "Respond creatively while staying relevant.",
+    "technical": "Provide precise technical detail and actionable guidance.",
+}
+
+SUPPORTED_COMMANDS = {"summarize", "analyze", "translate", "expand", "simplify"}
+
+
+class OllamaServiceError(Exception):
+    """Raised when Ollama request fails."""
+
+
+class OllamaUnavailableError(OllamaServiceError):
+    """Raised when Ollama server is unavailable."""
+
+
+def _parse_float(value: Optional[str], default: float) -> float:
+    if value is None:
+        return default
+    try:
+        return float(value)
+    except ValueError:
+        return default
+
+
+def _ollama_model_candidates() -> list[str]:
+    primary = os.getenv("OLLAMA_MODEL", DEFAULT_OLLAMA_MODEL).strip() or DEFAULT_OLLAMA_MODEL
+    fallback_models = os.getenv("OLLAMA_FALLBACK_MODELS", "")
+
+    models = [primary]
+    for model_name in fallback_models.split(","):
+        candidate = model_name.strip()
+        if candidate and candidate not in models:
+            models.append(candidate)
+    return models
+
+
+def _ollama_client() -> Any:
+    if OllamaClient is None:
+        raise OllamaUnavailableError(
+            "Ollama dependency is not installed. Run: pip install -r requirements.txt"
+        )
+
+    host = os.getenv("OLLAMA_HOST")
+    if host:
+        return OllamaClient(host=host)
+    return OllamaClient()
+
+
+def _ollama_options(
+    temperature: Optional[float] = None,
+    top_p: Optional[float] = None,
+    max_length: Optional[int] = None,
+) -> Dict[str, Any]:
+    options: Dict[str, Any] = {
+        "temperature": temperature
+        if temperature is not None
+        else _parse_float(os.getenv("OLLAMA_TEMPERATURE"), DEFAULT_OLLAMA_TEMPERATURE),
+        "top_p": top_p if top_p is not None else _parse_float(os.getenv("OLLAMA_TOP_P"), DEFAULT_OLLAMA_TOP_P),
+    }
+    if max_length is not None and max_length > 0:
+        options["num_predict"] = max_length
+    return options
+
+
+def _is_connection_error(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return any(token in msg for token in ("connection", "refused", "timed out", "failed to connect"))
+
+
+def _run_ollama_chat(
+    messages: list[dict[str, str]],
+    *,
+    temperature: Optional[float] = None,
+    top_p: Optional[float] = None,
+    max_length: Optional[int] = None,
+) -> tuple[str, str]:
+    client = _ollama_client()
+    options = _ollama_options(temperature=temperature, top_p=top_p, max_length=max_length)
+    models = _ollama_model_candidates()
+
+    last_error: Optional[Exception] = None
+    for idx, model_name in enumerate(models):
+        try:
+            response = client.chat(
+                model=model_name,
+                messages=messages,
+                options=options,
+            )
+            content = (response.get("message") or {}).get("content", "").strip()
+            if not content:
+                raise OllamaServiceError(f"Ollama returned an empty response for model '{model_name}'")
+            return content, model_name
+        except OllamaResponseError as exc:
+            last_error = exc
+            if getattr(exc, "status_code", None) == 404 and idx < len(models) - 1:
+                logger.warning(f"⚠️ Ollama model '{model_name}' unavailable, trying fallback model")
+                continue
+            raise OllamaServiceError(f"Ollama request failed for model '{model_name}': {exc}") from exc
+        except Exception as exc:
+            last_error = exc
+            if _is_connection_error(exc):
+                raise OllamaUnavailableError(
+                    "Unable to connect to Ollama. Start it with `ollama serve` and ensure the model is installed."
+                ) from exc
+            if "not found" in str(exc).lower() and idx < len(models) - 1:
+                logger.warning(f"⚠️ Ollama model '{model_name}' unavailable, trying fallback model")
+                continue
+            raise OllamaServiceError(f"Ollama request failed for model '{model_name}': {exc}") from exc
+
+    raise OllamaServiceError(f"Ollama request failed for all configured models: {last_error}")
+
+
+def _ollama_health() -> dict[str, Any]:
+    models = _ollama_model_candidates()
+    try:
+        client = _ollama_client()
+        client.list()
+        return {
+            "status": "healthy",
+            "host": os.getenv("OLLAMA_HOST", "http://localhost:11434"),
+            "model": models[0],
+            "fallback_models": models[1:],
+        }
+    except OllamaUnavailableError as exc:
+        return {"status": "unavailable", "error": str(exc), "model": models[0], "fallback_models": models[1:]}
+    except Exception as exc:
+        return {"status": "unavailable", "error": str(exc), "model": models[0], "fallback_models": models[1:]}
 
 
 async def verify_api_key(authorization: Optional[str] = Header(None)):
@@ -148,8 +291,17 @@ async def handle_prompt(
     """
     t0 = time.time()
     try:
-        # Simulate prompt processing
-        response_text = f"Response to '{request.prompt}': This is a generated response based on mode '{request.mode}'"
+        system_prompt = MODE_SYSTEM_PROMPTS.get(request.mode.lower(), MODE_SYSTEM_PROMPTS["answer"])
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": request.prompt},
+        ]
+        response_text, used_model = _run_ollama_chat(
+            messages,
+            temperature=request.temperature,
+            top_p=request.top_p,
+            max_length=request.max_length,
+        )
         
         latency_ms = (time.time() - t0) * 1000
         monitor.record_request(latency_ms, error=False)
@@ -159,9 +311,20 @@ async def handle_prompt(
             "prompt": request.prompt,
             "response": response_text,
             "mode": request.mode,
+            "model": used_model,
             "device": str(device),
             "latency_ms": round(latency_ms, 2)
         }
+    except OllamaUnavailableError as e:
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=True)
+        logger.error(f"❌ Ollama unavailable for /prompt: {e}")
+        raise HTTPException(status_code=503, detail=str(e))
+    except OllamaServiceError as e:
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=True)
+        logger.error(f"❌ Ollama error for /prompt: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         latency_ms = (time.time() - t0) * 1000
         monitor.record_request(latency_ms, error=True)
@@ -179,14 +342,17 @@ async def handle_chat(
     """
     t0 = time.time()
     try:
-        # Build conversation context
-        conversation = "\n".join([
-            f"{msg.role}: {msg.content}"
-            for msg in request.messages
-        ])
-        
-        # Simulate chat response
-        response_text = f"Chat response based on conversation: {conversation[:100]}..."
+        messages = []
+        if request.system_prompt:
+            messages.append({"role": "system", "content": request.system_prompt})
+        for msg in request.messages:
+            role = msg.role if msg.role in {"system", "user", "assistant"} else "user"
+            messages.append({"role": role, "content": msg.content})
+
+        response_text, used_model = _run_ollama_chat(
+            messages,
+            max_length=request.max_length,
+        )
         
         latency_ms = (time.time() - t0) * 1000
         monitor.record_request(latency_ms, error=False)
@@ -194,9 +360,20 @@ async def handle_chat(
         return {
             "success": True,
             "response": response_text,
+            "model": used_model,
             "device": str(device),
             "latency_ms": round(latency_ms, 2)
         }
+    except OllamaUnavailableError as e:
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=True)
+        logger.error(f"❌ Ollama unavailable for /chat: {e}")
+        raise HTTPException(status_code=503, detail=str(e))
+    except OllamaServiceError as e:
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=True)
+        logger.error(f"❌ Ollama error for /chat: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         latency_ms = (time.time() - t0) * 1000
         monitor.record_request(latency_ms, error=True)
@@ -214,8 +391,8 @@ async def ask(
     """
     t0 = time.time()
     try:
-        # Simulate Q&A
-        answer = f"Answer to '{request.question}': This is a generated answer based on your question."
+        messages = [{"role": "user", "content": request.question}]
+        answer, used_model = _run_ollama_chat(messages)
         
         latency_ms = (time.time() - t0) * 1000
         monitor.record_request(latency_ms, error=False)
@@ -224,9 +401,20 @@ async def ask(
             "success": True,
             "question": request.question,
             "answer": answer,
+            "model": used_model,
             "device": str(device),
             "latency_ms": round(latency_ms, 2)
         }
+    except OllamaUnavailableError as e:
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=True)
+        logger.error(f"❌ Ollama unavailable for /ask: {e}")
+        raise HTTPException(status_code=503, detail=str(e))
+    except OllamaServiceError as e:
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=True)
+        logger.error(f"❌ Ollama error for /ask: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         latency_ms = (time.time() - t0) * 1000
         monitor.record_request(latency_ms, error=True)
@@ -247,21 +435,18 @@ async def handle_command(
     t0 = time.time()
     try:
         command = request.command.lower()
-        
-        # Map commands to responses
-        if command == "summarize":
-            response = f"Summary: {request.input_text[:100]}..."
-        elif command == "analyze":
-            response = f"Analysis of: {request.input_text[:100]}..."
-        elif command == "translate":
-            target_lang = request.options.get("target_language", "Spanish") if request.options else "Spanish"
-            response = f"Translation to {target_lang}: {request.input_text}"
-        elif command == "expand":
-            response = f"Expanded: {request.input_text}...[expanded content]"
-        elif command == "simplify":
-            response = f"Simplified: {request.input_text}...[simplified content]"
-        else:
+
+        if command not in SUPPORTED_COMMANDS:
             raise HTTPException(status_code=400, detail=f"Unknown command: {command}")
+
+        options_text = f"\nOptions: {request.options}" if request.options else ""
+        prompt = (
+            f"Command: {command}\n"
+            f"Input:\n{request.input_text}{options_text}\n\n"
+            "Execute this command and return only the processed result."
+        )
+        messages = [{"role": "user", "content": prompt}]
+        response, used_model = _run_ollama_chat(messages)
         
         latency_ms = (time.time() - t0) * 1000
         monitor.record_request(latency_ms, error=False)
@@ -271,11 +456,22 @@ async def handle_command(
             "command": command,
             "input": request.input_text,
             "output": response,
+            "model": used_model,
             "device": str(device),
             "latency_ms": round(latency_ms, 2)
         }
     except HTTPException:
         raise
+    except OllamaUnavailableError as e:
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=True)
+        logger.error(f"❌ Ollama unavailable for /command: {e}")
+        raise HTTPException(status_code=503, detail=str(e))
+    except OllamaServiceError as e:
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=True)
+        logger.error(f"❌ Ollama error for /command: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         latency_ms = (time.time() - t0) * 1000
         monitor.record_request(latency_ms, error=True)
@@ -304,7 +500,8 @@ async def health():
         "model": "OctoTetrahedralModel",
         "device": str(device),
         "device_info": device_info,
-        "features": ["predict", "prompt", "chat", "ask", "command"]
+        "features": ["predict", "prompt", "chat", "ask", "command"],
+        "ollama": _ollama_health(),
     }
 
 
