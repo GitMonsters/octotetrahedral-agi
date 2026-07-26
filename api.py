@@ -16,6 +16,8 @@ except ImportError:  # pragma: no cover - guarded in runtime checks
     OllamaClient = None
     OllamaResponseError = Exception
 
+from src.arc_solver_engine import ARCSolverEngine
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -40,6 +42,9 @@ try:
 except Exception as e:
     logger.error(f"❌ Failed to load model: {e}")
     raise
+
+# ARC solver engine – initialised after the model loads
+arc_solver = ARCSolverEngine(model=model, device=device)
 
 
 DEFAULT_OLLAMA_MODEL = "mistral:latest"
@@ -250,6 +255,13 @@ class CommandRequest(BaseModel):
 class AskRequest(BaseModel):
     """Simple ask request"""
     question: str
+
+
+class ARCSolveRequest(BaseModel):
+    """ARC-AGI puzzle solve request"""
+    task: Dict  # ARC task with 'train' and 'test' keys
+    method: str = "auto"  # auto | rule_learner | catalog | neural | mistral
+    task_id: Optional[str] = None  # puzzle ID for catalog lookup
 
 
 # ============================================================================
@@ -503,6 +515,68 @@ async def handle_command(
 
 
 # ============================================================================
+# ARC-AGI Puzzle Solver
+# ============================================================================
+
+_VALID_SOLVE_METHODS = {"auto", "rule_learner", "catalog", "neural", "mistral"}
+
+
+@app.post("/solve-arc")
+async def solve_arc(
+    request: ARCSolveRequest,
+    api_key: str = Depends(verify_api_key),
+):
+    """
+    Solve an ARC-AGI puzzle using the strongest applicable method.
+
+    The solver tries four strategies in priority order (when method='auto'):
+      1. **Catalog Lookup** – exact match against 514 pre-solved puzzles
+      2. **Rule Learner** – geometric/color/scale rules from training pairs
+      3. **Neural Inference** – OctoTetrahedralModel token-level predictions
+      4. **Mistral Reasoning** – Ollama LLM for novel/complex puzzles
+
+    Returns structured predictions with confidence scores and reasoning.
+    """
+    t0 = time.time()
+    try:
+        method = request.method.lower()
+        if method not in _VALID_SOLVE_METHODS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown method '{method}'. Valid options: {sorted(_VALID_SOLVE_METHODS)}",
+            )
+
+        task = request.task
+        if "train" not in task or "test" not in task:
+            raise HTTPException(
+                status_code=422,
+                detail="Task must contain both 'train' and 'test' keys.",
+            )
+
+        # Wire Ollama into the solver on each request so it picks up any
+        # runtime config changes without restarting the server.
+        arc_solver._mistral._run_ollama_chat = _run_ollama_chat  # type: ignore[attr-defined]
+
+        result = arc_solver.solve(task, method=method, task_id=request.task_id)
+
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=False)
+        logger.info(
+            f"✅ /solve-arc method={result['method']} "
+            f"confidence={result['confidence']:.2f} ({latency_ms:.1f}ms)"
+        )
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        latency_ms = (time.time() - t0) * 1000
+        monitor.record_request(latency_ms, error=True)
+        logger.error(f"❌ /solve-arc error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
 # Health & Monitoring
 # ============================================================================
 
@@ -523,7 +597,7 @@ async def health():
         "model": "OctoTetrahedralModel",
         "device": str(device),
         "device_info": device_info,
-        "features": ["predict", "prompt", "chat", "ask", "command"],
+        "features": ["predict", "prompt", "chat", "ask", "command", "solve-arc"],
         "ollama": _ollama_health(),
     }
 
