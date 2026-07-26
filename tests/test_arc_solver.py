@@ -84,6 +84,21 @@ GRAVITY_TASK = {
 
 EMPTY_TASK: dict = {"train": [], "test": [{"input": [[0]]}]}
 
+# Keys that every ARCSolverEngine result must contain
+REQUIRED_RESULT_KEYS = (
+    "success", "method", "rule", "confidence", "predictions",
+    "verified_on_training", "reasoning", "latency_ms",
+)
+
+
+def _rot90_fn(x):
+    import numpy as np
+    return np.rot90(x, 1)
+
+
+def _identity_fn(x):
+    return x.copy()
+
 
 # ---------------------------------------------------------------------------
 # _all_pairs_match
@@ -91,17 +106,11 @@ EMPTY_TASK: dict = {"train": [], "test": [{"input": [[0]]}]}
 
 
 def test_all_pairs_match_true():
-    import numpy as np
-
-    fn = lambda x: np.rot90(x, 1)  # noqa: E731
-    assert _all_pairs_match(fn, ROT90_TASK["train"])
+    assert _all_pairs_match(_rot90_fn, ROT90_TASK["train"])
 
 
 def test_all_pairs_match_false():
-    import numpy as np
-
-    fn = lambda x: x.copy()  # noqa: E731
-    assert not _all_pairs_match(fn, ROT90_TASK["train"])
+    assert not _all_pairs_match(_identity_fn, ROT90_TASK["train"])
 
 
 # ---------------------------------------------------------------------------
@@ -416,8 +425,7 @@ class TestARCSolverEngine:
     def test_result_always_has_required_keys(self):
         engine = ARCSolverEngine()
         result = engine.solve(ROT90_TASK, method="auto")
-        for key in ("success", "method", "rule", "confidence", "predictions",
-                    "verified_on_training", "reasoning", "latency_ms"):
+        for key in REQUIRED_RESULT_KEYS:
             assert key in result, f"Missing key: {key}"
 
     def test_latency_ms_is_positive(self):

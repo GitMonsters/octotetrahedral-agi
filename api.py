@@ -555,7 +555,7 @@ async def solve_arc(
 
         # Wire Ollama into the solver on each request so it picks up any
         # runtime config changes without restarting the server.
-        arc_solver._mistral._run_ollama_chat = _run_ollama_chat  # type: ignore[attr-defined]
+        arc_solver.set_ollama_fn(_run_ollama_chat)
 
         result = arc_solver.solve(task, method=method, task_id=request.task_id)
 

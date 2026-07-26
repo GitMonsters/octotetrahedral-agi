@@ -36,7 +36,7 @@ def _to_list(arr: NDArray) -> Grid:
 
 
 def _detect_bg(grid: NDArray) -> int:
-    """Return the most-frequent colour (background heuristic)."""
+    """Return the most-frequent color (background heuristic)."""
     return int(Counter(grid.flatten().tolist()).most_common(1)[0][0])
 
 
@@ -643,6 +643,14 @@ class ARCSolverEngine:
             return m
 
         return self._identity_fallback(task)
+
+    def set_ollama_fn(self, run_ollama_chat_fn: Optional[Callable]) -> None:
+        """Update the Ollama chat function used by the Mistral strategy.
+
+        Call this at request time to pick up any runtime configuration changes
+        (e.g. model name or host) without restarting the server.
+        """
+        self._mistral._run_ollama_chat = run_ollama_chat_fn
 
     @staticmethod
     def _identity_fallback(task: Dict) -> Dict:
