@@ -60,7 +60,7 @@ from core.compound_braid import CompoundBraid
 from core.compound_loop import CompoundLoopController, CompoundLoopConfig as _LoopCfg
 from core.cognitive_geometry import CognitiveGeometryEngine, CognitiveGeometryConfig
 from core.cross_domain_transfer import CrossDomainTransferLayer, CrossDomainConfig
-from core.cognitive_cohesion_braid import CognitiveCohesionBraid, CohesionConfig
+from core.cognitive_cohesion_braid import CognitiveCohesionBraid
 from core.tetrahedral_vision_calculus import TetrahedralVisionCalculus
 from core.s2_to_s1_cache import S2ToS1Cache
 from cognition import AGICognition, CognitionConfig
