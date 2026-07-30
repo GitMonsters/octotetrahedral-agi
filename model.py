@@ -1894,7 +1894,6 @@ class OctoTetrahedralModel(nn.Module):
         braid_signal = getattr(self, '_cached_braid_signal', None)
         core_result = self.core(edited, head_gates=head_gates, braid_signal=braid_signal)
         core_output = core_result['hidden_states']
-        reasoning_state = core_result['reasoning_state']
 
         # 4. Geometric physics (skip NaN)
         if self.use_geometric_physics and self.geometric_physics is not None:
