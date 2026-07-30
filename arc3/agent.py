@@ -98,6 +98,13 @@ class OctoTetraAgent:
 
         obs = env.step(gac.RESET)
         total = 1
+        if obs is None:
+            # Environment failed to load (e.g. missing/corrupt game asset on
+            # disk) — report gracefully instead of crashing the whole batch.
+            logger.error("RESET failed: environment returned no observation")
+            result = self._res(total, 0, 0, False, t0)
+            result['error'] = 'RESET failed: environment returned no observation'
+            return result
         wl = obs.win_levels
         raw_avail = sorted(obs.available_actions)
         has_click = 6 in raw_avail
