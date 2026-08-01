@@ -6,6 +6,6 @@ a separate showcase repo and has been removed to de-duplicate this codebase.
 The unified, honestly-verified catalog (514/632 independently-verified solvers, with
 full caveats) now lives at:
 
-**→ https://github.com/GitMonsters/SOLVED-540-of-540**
+**→ https://github.com/GitMonsters/SOLVED-514-of-632**
 
 This repo (`octotetrahedral-agi`) remains focused on the neural network training project.
