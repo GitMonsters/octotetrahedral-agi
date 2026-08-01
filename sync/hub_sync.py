@@ -44,9 +44,19 @@ class RollbackBuffer:
         step: int,
         performance: float
     ):
-        """Save a checkpoint"""
+        """Save a checkpoint.
+
+        Clones are moved to CPU rather than left on the training device.
+        This is a full model.state_dict() snapshot taken every sync_frequency
+        steps; keeping even a handful of copies resident on an accelerator
+        with a hard memory ceiling (e.g. MPS's shared-pool watermark) causes
+        steady, unreclaimable growth since these tensors stay live-referenced
+        by the deque and are never eligible for allocator cache eviction.
+        CPU/host memory is comparatively abundant and load_state_dict()
+        handles the cross-device copy transparently on restore.
+        """
         self.buffer.append({
-            'state': {k: v.clone() for k, v in state_dict.items()},
+            'state': {k: v.detach().cpu().clone() for k, v in state_dict.items()},
             'step': step,
             'performance': performance
         })
