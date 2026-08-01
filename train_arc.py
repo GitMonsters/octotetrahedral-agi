@@ -258,6 +258,12 @@ class ARCTrainer:
         
         self.global_step += 1
         
+        # MPS's caching allocator can accumulate un-released memory across steps
+        # for architectures with many small/varied ops; periodic empty_cache()
+        # keeps memory bounded without affecting correctness.
+        if self.device == 'mps' and self.global_step % 10 == 0:
+            torch.mps.empty_cache()
+        
         # Quick token accuracy on this batch
         with torch.no_grad():
             preds = output['logits'].argmax(dim=-1)
@@ -756,7 +762,7 @@ def main():
     config.training.batch_size = args.batch_size
     config.training.log_interval = 10
     config.training.eval_interval = 100
-    config.training.save_interval = 200
+    config.training.save_interval = 50
     
     # SIMULA settings from command line
     if args.use_simula:
