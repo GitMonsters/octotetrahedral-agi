@@ -1274,13 +1274,7 @@ class OctoTetrahedralModel(nn.Module):
                 ignore_index=-100
             )
             
-            # Add information gain bonus (curiosity)
             if self.training:
-                info_gain = self._compute_information_gain(
-                    logits, editing_info
-                )
-                loss = loss - self.config.training.information_gain_weight * info_gain
-                
                 # Add physics-informed losses from GeometricPhysicsLayer
                 if self.use_geometric_physics and physics_loss is not None:
                     loss = loss + physics_loss
@@ -1407,30 +1401,6 @@ class OctoTetrahedralModel(nn.Module):
         """Return System 2→1 knowledge transfer cache statistics."""
         return self.s2_s1_cache.stats()
 
-    def _compute_information_gain(
-        self,
-        logits: torch.Tensor,
-        editing_info: Dict[str, Any]
-    ) -> torch.Tensor:
-        """
-        Compute information gain (curiosity bonus).
-        
-        Higher uncertainty in predictions + RNA editing activity = more learning
-        """
-        # Entropy of predictions
-        probs = F.softmax(logits, dim=-1)
-        entropy = -(probs * torch.log(probs + 1e-10)).sum(-1).mean()
-        
-        # RNA editing activity
-        editing_activity = editing_info.get('adaptation_magnitude', 0.0)
-        if isinstance(editing_activity, torch.Tensor):
-            editing_activity = editing_activity.mean()
-        
-        # Combine: encourage exploration when uncertain and adapting
-        info_gain = 0.1 * entropy + 0.05 * editing_activity
-        
-        return info_gain
-    
     def _limb_loop_step(
         self,
         x: torch.Tensor,

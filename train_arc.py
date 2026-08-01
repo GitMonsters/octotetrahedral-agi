@@ -830,7 +830,9 @@ def main():
     
     # Model
     logger.info("\nCreating model...")
-    model = OctoTetrahedralModel(config)
+    # use_geometric_physics=False matches the serving config in api.py, and keeps
+    # the info_gain fix as the only intentionally-tested variable in this run.
+    model = OctoTetrahedralModel(config, use_geometric_physics=False)
     
     # Trainer
     trainer = ARCTrainer(
