@@ -30,7 +30,8 @@ class TetrahedralAttention(nn.Module):
         hidden_dim: int = 256,
         num_heads: int = 8,
         dropout: float = 0.1,
-        use_geometric_bias: bool = True
+        use_geometric_bias: bool = True,
+        is_causal: bool = True
     ):
         super().__init__()
         
@@ -38,6 +39,12 @@ class TetrahedralAttention(nn.Module):
         self.num_heads = num_heads
         self.head_dim = hidden_dim // num_heads
         self.use_geometric_bias = use_geometric_bias
+        # Autoregressive next-token prediction requires causal masking so a
+        # position cannot attend to (leak information from) future positions,
+        # including its own training target. Without this, teacher-forced
+        # training can trivially "cheat" by attending forward to the answer,
+        # producing low loss but no real generative ability.
+        self.is_causal = is_causal
         
         assert hidden_dim % num_heads == 0, \
             f"hidden_dim ({hidden_dim}) must be divisible by num_heads ({num_heads})"
@@ -126,6 +133,19 @@ class TetrahedralAttention(nn.Module):
             scaled_geo_bias = self.geo_bias_scale * geo_bias_subset.unsqueeze(0).unsqueeze(0)  # [1, 1, seq, seq]
             head_scales = self.head_geo_scales.view(1, self.num_heads, 1, 1)  # [1, heads, 1, 1]
             attn_scores = attn_scores + scaled_geo_bias * head_scales
+        
+        # Apply causal mask: position i may only attend to positions <= i.
+        # Required for autoregressive next-token prediction; prevents the
+        # model from attending to (leaking) future/target tokens during
+        # teacher-forced training.
+        if self.is_causal:
+            causal_mask = torch.triu(
+                torch.ones(seq_len, seq_len, dtype=torch.bool, device=x.device),
+                diagonal=1
+            )
+            attn_scores = attn_scores.masked_fill(
+                causal_mask.unsqueeze(0).unsqueeze(0), float('-inf')
+            )
         
         # Apply attention mask if provided
         if attention_mask is not None:
