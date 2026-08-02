@@ -317,9 +317,17 @@ class ARCTrainer:
                 
                 # Tokenize input
                 input_tokens = self.tokenizer.encode(input_text)
-                # Limit input length for faster generation
-                if len(input_tokens) > 256:
-                    input_tokens = input_tokens[:256]
+                # Limit input length for faster generation. Truncate from the LEFT
+                # (keep the tail) to match the training data pipeline (ARCDataset.__getitem__
+                # uses input_tokens_all[-max_input:]). format_compact() places the test input
+                # and the "->[" generation trigger at the END of input_text, so truncating from
+                # the right (input_tokens[:N]) would silently drop the actual test input on any
+                # task whose prompt exceeds the limit -- previously this affected ~94% of tasks
+                # and destroyed the "->[" trigger in 100% of those cases, making generation
+                # metrics meaningless regardless of model quality.
+                max_input_len = self.config.model.max_seq_len - 60  # reserve room for generation
+                if len(input_tokens) > max_input_len:
+                    input_tokens = input_tokens[-max_input_len:]
                 input_ids = torch.tensor([input_tokens]).to(self.device)
                 
                 # Generate output (limit to 50 tokens for speed)
