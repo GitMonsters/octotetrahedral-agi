@@ -85,7 +85,22 @@ class ARCTrainer:
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
         self.tokenizer = tokenizer
-        
+
+        # Token ids for the dominant "background/fill" characters in ARC grid
+        # targets. Measured on the real ARC train/eval splits: ' ' + '0' alone
+        # account for ~74% of all target tokens (48% + 26%), so a trivial
+        # "always predict space" baseline already scores ~48% token accuracy --
+        # statistically indistinguishable from what this model reports after
+        # training. Used to compute a non-trivial-token accuracy metric that
+        # isn't saturated by this class imbalance (see train_step/validate).
+        self._trivial_token_ids = set()
+        if self.tokenizer is not None:
+            try:
+                for trivial_char in (' ', '0'):
+                    self._trivial_token_ids.update(self.tokenizer.encode(trivial_char))
+            except Exception:
+                pass
+
         # Device
         self.device = device or config.device
         self.model.to(self.device)
@@ -206,7 +221,21 @@ class ARCTrainer:
                 return 0.5 * (1 + math.cos(math.pi * progress))
         
         return LambdaLR(self.optimizer, lr_lambda)
-    
+
+    def _nontrivial_mask(self, labels: torch.Tensor, loss_mask: torch.Tensor) -> torch.Tensor:
+        """
+        Boolean mask selecting label positions that are both counted in the loss
+        (loss_mask, i.e. labels != -100) and NOT one of the dominant background
+        tokens (space, '0'). Used to compute a token-accuracy variant that isn't
+        saturated by trivially predicting the majority class.
+        """
+        if not self._trivial_token_ids:
+            return loss_mask
+        trivial = torch.zeros_like(labels, dtype=torch.bool)
+        for tid in self._trivial_token_ids:
+            trivial |= (labels == tid)
+        return loss_mask & ~trivial
+
     def train_step(self, batch: Dict[str, torch.Tensor]) -> Dict[str, Any]:
         """Single training step"""
         self.model.train()
@@ -231,7 +260,7 @@ class ARCTrainer:
         # Skip step if loss is NaN (can happen with newly initialized layers)
         if torch.isnan(loss) or torch.isinf(loss):
             self.optimizer.zero_grad()
-            return {'loss': 0.0, 'token_accuracy': 0.0, 'lr': self.optimizer.param_groups[0]['lr'], 'skipped': True}
+            return {'loss': 0.0, 'token_accuracy': 0.0, 'nontrivial_token_accuracy': 0.0, 'lr': self.optimizer.param_groups[0]['lr'], 'skipped': True}
         
         # Backward pass
         loss.backward()
@@ -273,10 +302,21 @@ class ARCTrainer:
                 token_acc = torch.tensor(0.0, device=preds.device)
             else:
                 token_acc = ((preds == labels) & mask).float().sum() / denom
+
+            # Non-trivial-token accuracy: excludes the dominant background/fill
+            # tokens (space, '0') so this metric isn't saturated by a trivial
+            # majority-class baseline (~48%, see _trivial_token_ids).
+            nontrivial_mask = self._nontrivial_mask(labels, mask)
+            nontrivial_denom = nontrivial_mask.sum()
+            if nontrivial_denom.item() == 0:
+                nontrivial_token_acc = torch.tensor(0.0, device=preds.device)
+            else:
+                nontrivial_token_acc = ((preds == labels) & nontrivial_mask).float().sum() / nontrivial_denom
         
         return {
             'loss': loss.item(),
             'token_accuracy': token_acc.item(),
+            'nontrivial_token_accuracy': nontrivial_token_acc.item(),
             'lr': self.scheduler.get_last_lr()[0],
             'confidences': output.get('confidences', {}),
             'synced': sync_result is not None,
@@ -411,6 +451,8 @@ class ARCTrainer:
         total_loss = 0.0
         total_correct = 0
         total_tokens = 0
+        total_correct_nontrivial = 0
+        total_nontrivial_tokens = 0
         num_batches = 0
         
         for batch in self.val_dataloader:
@@ -433,15 +475,23 @@ class ARCTrainer:
             mask = labels != -100
             total_correct += ((preds == labels) & mask).sum().item()
             total_tokens += mask.sum().item()
+
+            # Non-trivial-token accuracy (excludes space/'0' background fill --
+            # see _trivial_token_ids for why plain token accuracy is misleading)
+            nontrivial_mask = self._nontrivial_mask(labels, mask)
+            total_correct_nontrivial += ((preds == labels) & nontrivial_mask).sum().item()
+            total_nontrivial_tokens += nontrivial_mask.sum().item()
             
             num_batches += 1
         
         avg_loss = total_loss / max(1, num_batches)
         token_accuracy = total_correct / max(1, total_tokens)
+        nontrivial_token_accuracy = total_correct_nontrivial / max(1, total_nontrivial_tokens)
         
         return {
             'val_loss': avg_loss,
-            'val_token_accuracy': token_accuracy
+            'val_token_accuracy': token_accuracy,
+            'val_nontrivial_token_accuracy': nontrivial_token_accuracy
         }
     
     def train(
@@ -500,6 +550,7 @@ class ARCTrainer:
         start_time = time.time()
         running_loss = 0.0
         running_token_acc = 0.0
+        running_nontrivial_token_acc = 0.0
         
         while self.global_step < max_steps:
             for batch in self.train_dataloader:
@@ -510,18 +561,20 @@ class ARCTrainer:
                 step_result = self.train_step(batch)
                 running_loss += step_result['loss']
                 running_token_acc += step_result['token_accuracy']
+                running_nontrivial_token_acc += step_result['nontrivial_token_accuracy']
                 
                 # Logging
                 if self.global_step % self.config.training.log_interval == 0:
                     avg_loss = running_loss / self.config.training.log_interval
                     avg_token_acc = running_token_acc / self.config.training.log_interval
+                    avg_nontrivial_token_acc = running_nontrivial_token_acc / self.config.training.log_interval
                     elapsed = time.time() - start_time
                     steps_per_sec = self.global_step / elapsed if elapsed > 0 else 0
                     
                     logger.info(
                         f"Step {self.global_step}/{max_steps} | "
                         f"Loss: {avg_loss:.4f} | "
-                        f"Token Acc: {avg_token_acc:.3f} | "
+                        f"Token Acc: {avg_token_acc:.3f} (non-trivial: {avg_nontrivial_token_acc:.3f}) | "
                         f"LR: {step_result['lr']:.2e} | "
                         f"Speed: {steps_per_sec:.1f} steps/s"
                     )
@@ -540,6 +593,7 @@ class ARCTrainer:
                     self.train_losses.append(avg_loss)
                     running_loss = 0.0
                     running_token_acc = 0.0
+                    running_nontrivial_token_acc = 0.0
                 
                 # Validation (token-level)
                 if (self.global_step % self.config.training.eval_interval == 0 
@@ -547,7 +601,8 @@ class ARCTrainer:
                     val_result = self.validate()
                     logger.info(
                         f"  Validation - Loss: {val_result['val_loss']:.4f}, "
-                        f"Token Acc: {val_result['val_token_accuracy']:.4f}"
+                        f"Token Acc: {val_result['val_token_accuracy']:.4f} "
+                        f"(non-trivial: {val_result['val_nontrivial_token_accuracy']:.4f})"
                     )
                     self.val_metrics.append(val_result)
                 
@@ -870,7 +925,8 @@ def main():
         logger.info("\nRunning evaluation only...")
         val_result = trainer.validate()
         logger.info(f"Validation - Loss: {val_result['val_loss']:.4f}, "
-                   f"Token Acc: {val_result['val_token_accuracy']:.4f}")
+                   f"Token Acc: {val_result['val_token_accuracy']:.4f} "
+                   f"(non-trivial: {val_result['val_nontrivial_token_accuracy']:.4f})")
         
         gen_result = trainer.evaluate_generation(num_samples=50)
         if gen_result:
