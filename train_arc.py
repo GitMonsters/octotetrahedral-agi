@@ -852,6 +852,10 @@ def main():
     parser.add_argument('--hermes-max-agents', type=int, default=3, help='Maximum parallel HERMES agents')
     parser.add_argument('--use-cohesion', action='store_true', help='Enable Cognitive Cohesion Braid (cross-bridge feedback)')
     parser.add_argument('--cohesion-output-dir', type=str, default='logs/cohesion', help='Directory for cohesion reports')
+    parser.add_argument('--use-compound-loop', action='store_true',
+                        help='Enable Compound Loop (adaptive-depth reasoning via RDT + ACT). '
+                             'Never enabled/tested in this repo before -- adds real trainable '
+                             'params and up to max-loops (default 4) extra compute passes per step.')
     args = parser.parse_args()
     
     # Configuration
@@ -901,6 +905,10 @@ def main():
         config.training.use_cohesion = True
         config.training.cohesion_output_dir = args.cohesion_output_dir
 
+    # Compound Loop settings (adaptive-depth reasoning: RDT + ACT)
+    if args.use_compound_loop:
+        config.compound_loop.enabled = True
+
     logger.info("=" * 60)
     logger.info("OctoTetrahedral AGI - ARC Training")
     logger.info("=" * 60)
@@ -917,6 +925,9 @@ def main():
         logger.info(f"  EUPHAN enabled (frequency={args.euphan_log_frequency})")
     if args.use_hermes:
         logger.info(f"  HERMES enabled (agents={args.hermes_max_agents}, frequency={args.hermes_log_frequency})")
+    if args.use_compound_loop:
+        logger.info(f"  Compound Loop enabled (max_loops={config.compound_loop.max_loops}, "
+                    f"exit_threshold={config.compound_loop.exit_threshold})")
     
     # Tokenizer
     tokenizer = get_tokenizer()

@@ -965,7 +965,10 @@ class OctoTetrahedralModel(nn.Module):
 
             # System 2→1 transfer: compound loop is deliberative (System 2 equivalent)
             # Store output if the loop ran with high confidence, retrieve prior knowledge
-            _loop_conf = float(loop_result.get('exit_distribution', torch.zeros(1)).max().item()) if loop_result.get('exit_distribution') is not None else 0.5
+            # NOTE: exit_distribution is a plain list of floats (already .item()-ed in
+            # CompoundLoopController), not a tensor -- use the builtin max(), not .max().
+            _exit_dist = loop_result.get('exit_distribution')
+            _loop_conf = float(max(_exit_dist)) if _exit_dist else 0.5
             self.s2_s1_cache.store(input_ids, multi_limb_output, _loop_conf, 'slow')
 
             # Blend any cached S2 knowledge back into the output (S2→S1 transfer)

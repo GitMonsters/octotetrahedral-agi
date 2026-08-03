@@ -68,7 +68,10 @@ class DepthAwareAttention(nn.Module):
         attn = torch.matmul(q, k.transpose(-2, -1)) * scale
         
         if mask is not None:
-            attn = attn.masked_fill(~mask.unsqueeze(1).unsqueeze(2), float('-inf'))
+            # mask convention (matches TetrahedralAttention): 1 = attend, 0 = pad.
+            # Compare to 0 rather than boolean-negating so this works regardless
+            # of whether mask arrives as Long (from the dataloader) or Bool.
+            attn = attn.masked_fill(mask.unsqueeze(1).unsqueeze(2) == 0, float('-inf'))
         
         attn_weights = F.softmax(attn, dim=-1)
         attn_weights = self.dropout(attn_weights)
