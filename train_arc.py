@@ -755,14 +755,24 @@ class ARCTrainer:
         the most recent `keep`. Each checkpoint is a full 163M-param model
         + optimizer state (~1.6-1.9GB), so unbounded accumulation over a
         long run can exhaust disk space. Never touches 'best_arc.pt' or
-        'arc_final.pt' (fixed filenames outside this glob pattern)."""
+        'arc_final.pt' (fixed filenames outside this glob pattern).
+
+        IMPORTANT: sorts by file modification time, NOT by the step number
+        parsed from the filename. Step numbers reset to 0 on every fresh
+        run, so leftover checkpoints from an older/unrelated run can have
+        numerically larger step numbers than the current run's brand-new
+        checkpoints (e.g. a stale arc_step_1000.pt from a prior run vs. the
+        current run's arc_step_50.pt) -- sorting by parsed step number would
+        rank the stale file as "most recent" and delete the actually-recent
+        one. mtime always reflects true recency regardless of which run
+        created the file."""
         step_ckpts = []
         for p in self.checkpoint_dir.glob('arc_step_*.pt'):
             try:
-                step_num = int(p.stem.replace('arc_step_', ''))
-                step_ckpts.append((step_num, p))
+                int(p.stem.replace('arc_step_', ''))  # validate naming pattern
             except ValueError:
                 continue
+            step_ckpts.append((p.stat().st_mtime, p))
         step_ckpts.sort(key=lambda x: x[0])
         to_delete = step_ckpts[:-keep] if keep > 0 else step_ckpts
         for _, p in to_delete:
