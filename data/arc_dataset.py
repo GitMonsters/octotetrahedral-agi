@@ -42,6 +42,32 @@ def grid_to_tokens(grid: List[List[int]]) -> str:
         rows.append(' '.join(str(c) for c in row))
     return ' | '.join(rows)
 
+def _dihedral_transform(grid: List[List[int]], transform_id: int) -> List[List[int]]:
+    """Apply one of the 8 dihedral (square symmetry group) transforms to a
+    grid: identity, 3 rotations, 2 axis flips, and 2 diagonal
+    transposes. Mirrors the transform_id convention used by
+    arc_conv_ttt.py's dihedral_transform (numpy-based) so augmentation
+    stays consistent across the codebase, but works on plain
+    List[List[int]] grids (no numpy dependency needed here)."""
+    if transform_id == 0:
+        return [row[:] for row in grid]
+    if transform_id == 1:  # rotate 90 (counter-clockwise, matches np.rot90(arr, 1))
+        return [list(row) for row in zip(*grid)][::-1]
+    if transform_id == 2:  # rotate 180
+        return [row[::-1] for row in grid[::-1]]
+    if transform_id == 3:  # rotate 270 (counter-clockwise, matches np.rot90(arr, 3))
+        return [list(row) for row in zip(*grid[::-1])]
+    if transform_id == 4:  # flip left-right
+        return [row[::-1] for row in grid]
+    if transform_id == 5:  # flip up-down
+        return [row[:] for row in grid[::-1]]
+    if transform_id == 6:  # transpose (main diagonal)
+        return [list(row) for row in zip(*grid)]
+    if transform_id == 7:  # transpose + flip (anti-diagonal)
+        return [list(row) for row in zip(*grid[::-1])][::-1]
+    return [row[:] for row in grid]
+
+
 def tokens_to_grid(tokens: str) -> List[List[int]]:
     """Convert token string back to grid"""
     s = tokens.strip()
@@ -319,10 +345,39 @@ class ARCDataset(Dataset):
         return item
     
     def _augment_task(self, task: ARCTask) -> ARCTask:
-        """Apply random augmentation to task"""
-        # For now, just return as-is
-        # TODO: implement rotation, flip, color permutation
-        return task
+        """Apply a random dihedral (rotation/flip) transform plus a random
+        color permutation, applied *consistently* across every grid in the
+        task (all train pairs + all test examples) so the input->output
+        transformation rule the model must learn stays intact.
+
+        Color 0 is conventionally the ARC background color and is kept
+        fixed; colors 1-9 are randomly permuted. This is the standard
+        augmentation recipe used across ARC solvers (see also the
+        dihedral_transform/augment_pairs helpers in arc_conv_ttt.py) and is
+        important here since the raw training set is only 400 tasks.
+        """
+        transform_id = self.rng.randint(0, 7)
+        color_perm = list(range(10))
+        shuffled_tail = color_perm[1:]
+        self.rng.shuffle(shuffled_tail)
+        color_perm[1:] = shuffled_tail
+
+        def transform_grid(grid: List[List[int]]) -> List[List[int]]:
+            g = _dihedral_transform(grid, transform_id)
+            return [[color_perm[c] for c in row] for row in g]
+
+        new_train = [
+            {'input': transform_grid(ex['input']), 'output': transform_grid(ex['output'])}
+            for ex in task.train_examples
+        ]
+        new_test = []
+        for ex in task.test_examples:
+            new_ex = {'input': transform_grid(ex['input'])}
+            if 'output' in ex and ex['output'] is not None:
+                new_ex['output'] = transform_grid(ex['output'])
+            new_test.append(new_ex)
+
+        return ARCTask(task.task_id, {'train': new_train, 'test': new_test})
 
 
 def arc_collate_fn(batch: List[Dict], pad_token_id: int = 0) -> Dict[str, Any]:
@@ -371,14 +426,23 @@ def create_arc_dataloader(
     tokenizer = None,
     max_seq_len: int = 512,
     shuffle: bool = True,
-    num_workers: int = 0
+    num_workers: int = 0,
+    augment: bool = True
 ) -> DataLoader:
-    """Create DataLoader for ARC dataset"""
+    """Create DataLoader for ARC dataset.
+
+    Note: `augment` should be True for the training split and False for
+    validation/evaluation splits -- augmenting validation data would make
+    loss/accuracy non-reproducible across calls (a different random
+    transform each time __getitem__ runs) and not comparable to earlier
+    (pre-augmentation) baselines.
+    """
     dataset = ARCDataset(
         data_dir=data_dir,
         split=split,
         tokenizer=tokenizer,
-        max_seq_len=max_seq_len
+        max_seq_len=max_seq_len,
+        augment=augment
     )
     
     return DataLoader(

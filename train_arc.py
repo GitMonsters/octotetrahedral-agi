@@ -497,7 +497,9 @@ class ARCTrainer:
     def train(
         self,
         max_steps: int = None,
-        eval_generation_every: int = 500
+        eval_generation_every: int = 500,
+        eval_num_samples: int = 20,
+        keep_checkpoints: int = 3
     ):
         """
         Main training loop for ARC tasks.
@@ -507,6 +509,10 @@ class ARCTrainer:
         Args:
             max_steps: Maximum training steps
             eval_generation_every: How often to run generation evaluation
+            eval_num_samples: Number of validation samples used for each
+                periodic (in-loop) generation eval. Kept separate from the
+                fixed 50-sample final eval since this one repeats many times
+                and evaluate_generation()/_generate() has no KV-cache.
         """
         max_steps = max_steps or self.config.training.max_steps
         
@@ -609,7 +615,7 @@ class ARCTrainer:
                 # Generation evaluation (actual grid prediction)
                 if self.global_step % eval_generation_every == 0 and self.global_step > 0:
                     logger.info("  Running generation evaluation...")
-                    gen_result = self.evaluate_generation(num_samples=20)
+                    gen_result = self.evaluate_generation(num_samples=eval_num_samples)
                     if gen_result:
                         logger.info(
                             f"  Generation - Exact Match: {gen_result['exact_match']:.3f}, "
@@ -626,6 +632,7 @@ class ARCTrainer:
                 # Periodic checkpointing
                 if self.global_step % self.config.training.save_interval == 0:
                     self.save_checkpoint(f'arc_step_{self.global_step}.pt')
+                    self._prune_old_step_checkpoints(keep=keep_checkpoints)
 
                 # Cohesion dashboard — export every 500 steps
                 if self.global_step % 500 == 0:
@@ -742,6 +749,28 @@ class ARCTrainer:
         
         torch.save(checkpoint, path)
         logger.info(f"Saved checkpoint to {path}")
+
+    def _prune_old_step_checkpoints(self, keep: int = 3):
+        """Delete older periodic 'arc_step_N.pt' checkpoints, keeping only
+        the most recent `keep`. Each checkpoint is a full 163M-param model
+        + optimizer state (~1.6-1.9GB), so unbounded accumulation over a
+        long run can exhaust disk space. Never touches 'best_arc.pt' or
+        'arc_final.pt' (fixed filenames outside this glob pattern)."""
+        step_ckpts = []
+        for p in self.checkpoint_dir.glob('arc_step_*.pt'):
+            try:
+                step_num = int(p.stem.replace('arc_step_', ''))
+                step_ckpts.append((step_num, p))
+            except ValueError:
+                continue
+        step_ckpts.sort(key=lambda x: x[0])
+        to_delete = step_ckpts[:-keep] if keep > 0 else step_ckpts
+        for _, p in to_delete:
+            try:
+                p.unlink()
+                logger.info(f"  Pruned old checkpoint: {p.name}")
+            except OSError as e:
+                logger.warning(f"  Could not prune checkpoint {p.name}: {e}")
     
     def load_checkpoint(self, path: str, strict: bool = True):
         """Load training checkpoint"""
@@ -790,6 +819,22 @@ def main():
     parser = argparse.ArgumentParser(description='Train OctoTetrahedral AGI on ARC')
     parser.add_argument('--max-steps', type=int, default=5000, help='Max training steps')
     parser.add_argument('--batch-size', type=int, default=4, help='Batch size')
+    parser.add_argument('--warmup-steps', type=int, default=None,
+                        help='LR warmup steps (default: 5%% of max-steps)')
+    parser.add_argument('--eval-interval', type=int, default=100,
+                        help='Run token-level validation every N steps')
+    parser.add_argument('--eval-generation-every', type=int, default=500,
+                        help='Run the slow autoregressive generation eval every N steps '
+                             '(no KV-cache -- keep this much less frequent than --eval-interval)')
+    parser.add_argument('--eval-samples', type=int, default=20,
+                        help='Number of samples for periodic (in-loop) generation eval; '
+                             'the final end-of-training eval always uses 50')
+    parser.add_argument('--save-interval', type=int, default=50,
+                        help='Save a checkpoint every N steps')
+    parser.add_argument('--keep-checkpoints', type=int, default=3,
+                        help='Number of periodic arc_step_N.pt checkpoints to retain '
+                             '(older ones auto-deleted; each is ~1.6-1.9GB). '
+                             'best_arc.pt/arc_final.pt are never pruned.')
     parser.add_argument('--data-dir', type=str, 
                         default='/Users/evanpieser/ARC_AMD_TRANSFER/data/ARC-AGI/data',
                         help='ARC data directory')
@@ -824,8 +869,12 @@ def main():
     config.training.max_steps = args.max_steps
     config.training.batch_size = args.batch_size
     config.training.log_interval = 10
-    config.training.eval_interval = 100
-    config.training.save_interval = 50
+    config.training.eval_interval = args.eval_interval
+    config.training.save_interval = args.save_interval
+    config.training.warmup_steps = (
+        args.warmup_steps if args.warmup_steps is not None
+        else max(1, int(0.05 * args.max_steps))
+    )
     
     # SIMULA settings from command line
     if args.use_simula:
@@ -881,17 +930,21 @@ def main():
         batch_size=config.training.batch_size,
         tokenizer=tokenizer,
         max_seq_len=config.model.max_seq_len,
-        shuffle=True
+        shuffle=True,
+        augment=True
     )
     
     # Use subset of training as validation (ARC eval set is held out)
+    # augment=False: validation must stay on the canonical (untransformed)
+    # task so loss/accuracy are stable and comparable across eval calls.
     val_loader = create_arc_dataloader(
         data_dir=args.data_dir,
         split='evaluation',
         batch_size=config.training.batch_size,
         tokenizer=tokenizer,
         max_seq_len=config.model.max_seq_len,
-        shuffle=False
+        shuffle=False,
+        augment=False
     )
     
     logger.info(f"Training samples: {len(train_loader.dataset)}")
@@ -937,7 +990,9 @@ def main():
         # Train
         trainer.train(
             max_steps=args.max_steps,
-            eval_generation_every=500
+            eval_generation_every=args.eval_generation_every,
+            eval_num_samples=args.eval_samples,
+            keep_checkpoints=args.keep_checkpoints
         )
     
     # Final model statistics
