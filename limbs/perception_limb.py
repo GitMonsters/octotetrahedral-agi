@@ -89,7 +89,8 @@ class PerceptionLimb(BaseLimb):
         dropout: float = 0.1,
         lora_rank: int = 4,
         lora_alpha: float = 1.0,
-        buffer_size: int = 100
+        buffer_size: int = 100,
+        use_positional_encoding: bool = True
     ):
         # Initialize base (input_dim=hidden_dim since we embed first)
         super().__init__(
@@ -104,6 +105,12 @@ class PerceptionLimb(BaseLimb):
         
         self.vocab_size = vocab_size
         self.hidden_dim = hidden_dim
+        # When rotary position embedding (RoPE) is used inside attention,
+        # this additive sinusoidal encoding is redundant/conflicting -- RoPE
+        # already injects positional information relative to each attention
+        # dot-product. Kept constructable (not deleted) so old checkpoints
+        # saved with this buffer still load cleanly under strict=True.
+        self.use_positional_encoding = use_positional_encoding
         
         # Token embedding
         self.token_embedding = nn.Embedding(vocab_size, hidden_dim)
@@ -151,8 +158,9 @@ class PerceptionLimb(BaseLimb):
         # Token embedding
         embeddings = self.token_embedding(token_ids)
         
-        # Add positional encoding
-        embeddings = self.pos_encoding(embeddings)
+        # Add positional encoding (skipped when RoPE handles position instead)
+        if self.use_positional_encoding:
+            embeddings = self.pos_encoding(embeddings)
         
         return embeddings
     

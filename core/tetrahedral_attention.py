@@ -13,6 +13,8 @@ import torch.nn.functional as F
 import math
 from typing import Optional, Tuple
 
+from .rotary_embedding import RotaryEmbedding, apply_rotary_pos_emb
+
 
 class TetrahedralAttention(nn.Module):
     """
@@ -31,7 +33,10 @@ class TetrahedralAttention(nn.Module):
         num_heads: int = 8,
         dropout: float = 0.1,
         use_geometric_bias: bool = True,
-        is_causal: bool = True
+        is_causal: bool = True,
+        use_rope: bool = True,
+        max_seq_len: int = 512,
+        rope_base: float = 10000.0
     ):
         super().__init__()
         
@@ -48,6 +53,22 @@ class TetrahedralAttention(nn.Module):
         
         assert hidden_dim % num_heads == 0, \
             f"hidden_dim ({hidden_dim}) must be divisible by num_heads ({num_heads})"
+
+        # Rotary position embedding: rotates Q/K by an angle proportional to
+        # position, injecting *relative* positional information directly into
+        # the attention dot-product (see core/rotary_embedding.py). Requires
+        # an even head_dim to split into rotation pairs; falls back to no RoPE
+        # (relying on whatever additive positional encoding is upstream) if not.
+        if use_rope and self.head_dim % 2 != 0:
+            import warnings
+            warnings.warn(
+                f"RoPE requires an even head_dim, got {self.head_dim} "
+                f"(hidden_dim={hidden_dim}, num_heads={num_heads}); disabling RoPE for this layer."
+            )
+            use_rope = False
+        self.use_rope = use_rope
+        if self.use_rope:
+            self.rope = RotaryEmbedding(self.head_dim, max_seq_len=max_seq_len, base=rope_base)
         
         self.scale = math.sqrt(self.head_dim)
         
@@ -106,6 +127,12 @@ class TetrahedralAttention(nn.Module):
         q = q.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
         k = k.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
         v = v.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+        
+        # Apply rotary position embedding to Q/K (not V) before computing
+        # attention scores, so scores become a function of relative position.
+        if self.use_rope:
+            cos, sin = self.rope(seq_len, device=x.device, dtype=q.dtype)
+            q, k = apply_rotary_pos_emb(q, k, cos, sin)
         
         # Compute attention scores: [batch, num_heads, seq_len, seq_len]
         attn_scores = torch.matmul(q, k.transpose(-2, -1)) / self.scale

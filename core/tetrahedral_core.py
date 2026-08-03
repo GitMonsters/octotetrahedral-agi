@@ -64,6 +64,9 @@ class TetrahedralTransformerLayer(nn.Module):
         dropout: float = 0.1,
         use_geometric_bias: bool = True,
         moe_config: Optional[Dict[str, Any]] = None,
+        use_rope: bool = True,
+        max_seq_len: int = 512,
+        rope_base: float = 10000.0,
     ):
         super().__init__()
         self.use_moe = moe_config is not None and moe_config.get("enabled", False)
@@ -75,7 +78,10 @@ class TetrahedralTransformerLayer(nn.Module):
             hidden_dim=hidden_dim,
             num_heads=num_heads,
             dropout=dropout,
-            use_geometric_bias=use_geometric_bias
+            use_geometric_bias=use_geometric_bias,
+            use_rope=use_rope,
+            max_seq_len=max_seq_len,
+            rope_base=rope_base
         )
         
         self.norm2 = nn.LayerNorm(hidden_dim)
@@ -176,6 +182,8 @@ class TetrahedralCore(nn.Module):
         max_seq_len: int = 512,
         device: str = 'cpu',
         moe_config: Optional[Dict[str, Any]] = None,
+        use_rope: bool = True,
+        rope_base: float = 10000.0,
     ):
         super().__init__()
         
@@ -196,6 +204,9 @@ class TetrahedralCore(nn.Module):
                 dropout=dropout,
                 use_geometric_bias=True,
                 moe_config=moe_config,
+                use_rope=use_rope,
+                max_seq_len=max_seq_len,
+                rope_base=rope_base,
             )
             for _ in range(num_layers)
         ])

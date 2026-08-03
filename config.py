@@ -84,6 +84,17 @@ class ModelConfig:
     # Sequence
     max_seq_len: int = 512  # Reduced from 4096 to fit in 16GB RAM during training
     
+    # Positional encoding: rotary (RoPE) applied inside attention, rather than
+    # additive sinusoidal encoding at the embedding layer. RoPE encodes
+    # *relative* position via Q/K rotation, which generalizes better to
+    # sequence lengths/positions not densely seen during training -- relevant
+    # here since most real ARC task prompts exceed max_seq_len and get
+    # truncated (see evaluate_generation's truncation handling). When True,
+    # PerceptionLimb's additive sinusoidal encoding is skipped to avoid mixing
+    # two different positional signals.
+    use_rope: bool = True
+    rope_base: float = 10000.0
+    
     # Regularization
     dropout: float = 0.1
     

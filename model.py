@@ -220,7 +220,8 @@ class OctoTetrahedralModel(nn.Module):
             dropout=self.config.model.dropout,
             lora_rank=self.config.lora.rank,
             lora_alpha=self.config.lora.alpha,
-            buffer_size=self.config.limb.buffer_size
+            buffer_size=self.config.limb.buffer_size,
+            use_positional_encoding=not self.config.model.use_rope
         )
         
         # === RNA Editing Layer (Dynamic Adaptation) ===
@@ -251,6 +252,9 @@ class OctoTetrahedralModel(nn.Module):
             ffn_dim=self.config.model.ffn_dim,
             dropout=self.config.model.dropout,
             moe_config=moe_dict,
+            max_seq_len=self.config.model.max_seq_len,
+            use_rope=self.config.model.use_rope,
+            rope_base=self.config.model.rope_base,
         )
         
         # === Geometric Physics Layer (Fuller/Lloyd/Morphogenesis/TPMS/QbitNexus/ParallelUniverse) ===
