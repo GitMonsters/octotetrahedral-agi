@@ -273,16 +273,16 @@ class CompoundMoELayer(nn.Module):
             weights = F.softmax(top_k_logits, dim=-1)
             indices = top_k_indices
 
-        # Dispatch to experts. Vectorized over the top_k dimension: loop only
-        # over experts (num_experts iterations) instead of over every
-        # (k, expert) pair (top_k * num_experts iterations). Each token's
-        # top_k experts are guaranteed distinct (torch.topk), so flattening
-        # across k and gathering by expert never double-counts a token.
-        # Crucially, this also drops the `if mask.any():` Python-bool check
-        # that previously forced a CUDA sync on every one of those
-        # top_k * num_experts iterations (512 for the default 8x64 config) --
-        # nn.Linear/Dropout handle zero-row batches safely, so we can always
-        # dispatch unconditionally.
+        # Dispatch to experts via sort-then-contiguous-slice (the standard
+        # efficient MoE dispatch pattern). A per-expert boolean-mask gather
+        # (`flat_x[mask]`) requires, on backward, scattering gradients into a
+        # freshly zero-allocated full-size tensor for *every* masked index op
+        # -- profiling on an L40S showed this (`IndexBackward0`) was ~70% of
+        # total step time even after reducing the loop from top_k*num_experts
+        # to num_experts iterations. Sorting tokens by assigned expert once
+        # and using torch.split (contiguous, cheap-backward slicing) instead
+        # of per-expert masked indexing replaces up to 2*num_experts indexing
+        # ops with just 2 (one gather to sort, one scatter to unsort).
         n_tokens = flat_x.shape[0]
         flat_expert_idx = indices.reshape(-1)  # [n_tokens * top_k]
         flat_weight = weights.reshape(-1)  # [n_tokens * top_k]
@@ -293,18 +293,28 @@ class CompoundMoELayer(nn.Module):
             .reshape(-1)
         )  # [n_tokens * top_k]
 
-        output = torch.zeros_like(flat_x)
-        expert_outputs_for_tracking: Dict[int, torch.Tensor] = {}
+        sort_order = torch.argsort(flat_expert_idx)
+        sorted_expert_idx = flat_expert_idx[sort_order]
+        sorted_token_ids = token_ids[sort_order]
+        sorted_weight = flat_weight[sort_order]
+        sorted_x = flat_x[sorted_token_ids]  # single gather (was num_experts gathers)
 
+        # One sync to get per-expert chunk sizes for torch.split (was one
+        # `if mask.any():` sync per expert).
+        counts = torch.bincount(sorted_expert_idx, minlength=self.num_experts).tolist()
+        x_chunks = torch.split(sorted_x, counts)
+
+        expert_outs = []
+        expert_outputs_for_tracking: Dict[int, torch.Tensor] = {}
         for e in range(self.num_experts):
-            mask = flat_expert_idx == e
-            sel_tokens = token_ids[mask]
-            expert_input = flat_x[sel_tokens]
-            expert_out = self.experts[e](expert_input)
-            weighted_out = flat_weight[mask].unsqueeze(-1) * expert_out
-            output.index_add_(0, sel_tokens, weighted_out)
+            expert_out = self.experts[e](x_chunks[e])
+            expert_outs.append(expert_out)
             if self.training:
                 expert_outputs_for_tracking[e] = expert_out.detach()
+
+        sorted_out = torch.cat(expert_outs, dim=0) * sorted_weight.unsqueeze(-1)
+        output = torch.zeros_like(flat_x)
+        output.index_add_(0, sorted_token_ids, sorted_out)  # single scatter
 
         # Cross-expert knowledge transfer residual
         if self.enable_cross_transfer and self.training:
