@@ -3,9 +3,9 @@
 The `arc-puzzle-catalog/` directory previously here was a byte-identical duplicate of
 a separate showcase repo and has been removed to de-duplicate this codebase.
 
-The unified, honestly-verified catalog (514/632 independently-verified solvers, with
+The unified, honestly-verified catalog (530/648 independently-verified solvers, with
 full caveats) now lives at:
 
-**→ https://github.com/GitMonsters/SOLVED-514-of-632**
+**→ https://github.com/GitMonsters/SOLVED-530-of-648**
 
 This repo (`octotetrahedral-agi`) remains focused on the neural network training project.
