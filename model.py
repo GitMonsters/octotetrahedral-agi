@@ -40,6 +40,7 @@ from config import Config, get_config
 from core.tetrahedral_geometry import TetrahedralGeometry
 from core.tetrahedral_core import TetrahedralCore
 from core.working_memory import WorkingMemory
+from core.masking_utils import masked_mean as _masked_mean
 from adaptation.rna_editing import RNAEditingLayer
 from limbs.perception_limb import PerceptionLimb
 from limbs.reasoning_limb import ReasoningLimb
@@ -777,7 +778,7 @@ class OctoTetrahedralModel(nn.Module):
         # encoded: [batch, seq_len, hidden_dim]
         
         # === 2. RNA Editing: Dynamic Adaptation ===
-        editing_result = self.rna_editing(encoded)
+        editing_result = self.rna_editing(encoded, attention_mask=attention_mask)
         edited = editing_result['output']
         editing_info = {
             'temperature': editing_result['temperature'],
@@ -1231,7 +1232,7 @@ class OctoTetrahedralModel(nn.Module):
                 )
         
         # === 7. Planning Limb: Action Sequencing ===
-        current_state = reasoned.mean(dim=1)  # [batch, hidden]
+        current_state = _masked_mean(reasoned, attention_mask)  # [batch, hidden]
         goal_state = current_state
         _t_plan = time.time()
         planning_out, planning_conf, planning_extras = self.planning(
@@ -1245,7 +1246,7 @@ class OctoTetrahedralModel(nn.Module):
         reasoned = reasoned + 0.1 * planning_out.unsqueeze(1)
 
         # === 8. AGI Cognition: Higher-level reasoning ===
-        cognition_features = reasoned.mean(dim=1)  # [batch, hidden]
+        cognition_features = _masked_mean(reasoned, attention_mask)  # [batch, hidden]
         cognition_output = self.cognition(cognition_features)
         enhanced_features = cognition_output['features']  # [batch, hidden] - fixed size
         cognition_enhanced = reasoned + 0.1 * enhanced_features.unsqueeze(1)
@@ -1512,7 +1513,7 @@ class OctoTetrahedralModel(nn.Module):
 
         # --- Consequential memory write (feeds next iteration) ---
         if self._loop_memory_state is not None:
-            write_content = reasoned.mean(dim=1)  # [batch, hidden]
+            write_content = _masked_mean(reasoned, attention_mask)  # [batch, hidden]
             self._loop_memory_state = self.working_memory.write_to_state(
                 write_content, self._loop_memory_state
             )

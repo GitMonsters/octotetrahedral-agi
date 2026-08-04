@@ -22,6 +22,7 @@ import torch.nn.functional as F
 from typing import Optional, Dict, Tuple
 
 from core.reservoir_dynamics import NeuralPacemaker
+from core.masking_utils import masked_mean
 
 
 class ExcitatoryInhibitoryClassifier(nn.Module):
@@ -307,6 +308,7 @@ class RNAEditingLayer(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
+        attention_mask: Optional[torch.Tensor] = None,
         return_diagnostics: bool = False
     ) -> Dict[str, torch.Tensor]:
         """
@@ -314,6 +316,12 @@ class RNAEditingLayer(nn.Module):
         
         Args:
             x: Input tensor [batch, seq_len, hidden_dim] or [batch, hidden_dim]
+            attention_mask: Optional mask [batch, seq_len] (1=real, 0=pad).
+                Excludes padding from the pooled context so the global
+                editing signals (temperature/head_gates/pathway_weights/
+                confidence/ei_signs) don't depend on batch padding amount,
+                which would otherwise diverge from the unpadded conditions
+                seen during single-sequence autoregressive generation.
             return_diagnostics: Whether to return detailed diagnostics
             
         Returns:
@@ -336,8 +344,8 @@ class RNAEditingLayer(nn.Module):
         
         batch_size, seq_len, _ = x.shape
         
-        # Use mean-pooled representation for context
-        context = x.mean(dim=1)  # [batch, hidden_dim]
+        # Use mean-pooled representation for context (padding-excluded)
+        context = masked_mean(x, attention_mask, dim=1)  # [batch, hidden_dim]
         
         # Compute confidence
         confidence = self.confidence_net(context)  # [batch, 1]
