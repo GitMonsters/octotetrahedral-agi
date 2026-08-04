@@ -369,18 +369,34 @@ class RepetitionDampener(nn.Module):
             return logits
 
         B, S, V = logits.shape
-        dampened = logits.clone()
+        device = logits.device
 
-        for b in range(B):
-            for s in range(S):
-                start = max(0, s - self.window)
-                seen = input_ids[b, start:s]
-                if len(seen) > 0:
-                    unique_seen = seen.unique()
-                    # Reduce logits of recently seen tokens
-                    dampened[b, s, unique_seen] /= self.penalty
+        # Vectorized equivalent of the old per-(batch, position) Python loop.
+        # That loop called `.unique()` and did fancy-indexed in-place writes
+        # up to B*S times per forward pass, each forcing a CUDA sync and an
+        # expensive IndexPutBackward0 node — dominating training step time.
+        #
+        # Build a [B, S, window] tensor of the up-to-`window` previous token
+        # ids for each position (left-padded with an out-of-vocab sentinel
+        # for positions with less history than `window`), then scatter a
+        # "recently seen" boolean mask into a [B, S, V+1] tensor in one shot.
+        # The sentinel occupies the extra column, which is dropped before
+        # use. Duplicate ids within a window are harmless: every scatter
+        # write sets the same True value, so write order doesn't matter —
+        # matching the original's `.unique()` dedup behavior exactly. Using
+        # `where(mask, logits / penalty, logits)` (rather than precomputing
+        # the reciprocal and multiplying) keeps this bit-exact with the
+        # original's in-place `/=` under low-precision (e.g. bfloat16) autocast.
+        sentinel = V  # one past the valid vocab range
+        pad = torch.full((B, self.window), sentinel, dtype=input_ids.dtype, device=device)
+        padded = torch.cat([pad, input_ids], dim=1)  # [B, S + window]
+        windows = padded.unfold(1, self.window, 1)[:, :S, :].contiguous()  # [B, S, window]
 
-        return dampened
+        mask = torch.zeros(B, S, V + 1, dtype=torch.bool, device=device)
+        mask.scatter_(-1, windows, True)
+        mask = mask[..., :V]
+
+        return torch.where(mask, logits / self.penalty, logits)
 
 
 class BranchScorer(nn.Module):
