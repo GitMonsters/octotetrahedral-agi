@@ -78,13 +78,23 @@ class ARCTrainer:
         use_simula: bool = False,
         use_euphan: bool = False,
         use_hermes: bool = False,
-        use_cohesion: bool = False
+        use_cohesion: bool = False,
+        use_amp: bool = False
     ):
         self.model = model
         self.config = config
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
         self.tokenizer = tokenizer
+
+        # Mixed precision (bf16 autocast). bf16 has the same exponent range as
+        # fp32 (just less mantissa precision), so unlike fp16 it needs no
+        # GradScaler -- safe to enable without risking gradient underflow.
+        # Roughly halves activation memory, which is the actual lever for
+        # affording a larger batch size on memory-constrained devices (e.g.
+        # MPS unified memory on a 16GB machine).
+        self.use_amp = use_amp
+        self.amp_dtype = torch.bfloat16
 
         # Token ids for the dominant "background/fill" characters in ARC grid
         # targets. Measured on the real ARC train/eval splits: ' ' + '0' alone
@@ -247,16 +257,18 @@ class ARCTrainer:
         if attention_mask is not None:
             attention_mask = attention_mask.to(self.device)
         
-        # Forward pass
-        output = self.model(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            labels=labels,
-            return_confidences=True
-        )
-        
-        loss = output['loss']
-        
+        # Forward pass (bf16 autocast when enabled -- halves activation memory;
+        # backward() stays outside the context per standard autocast usage)
+        with torch.autocast(device_type=self.device, dtype=self.amp_dtype, enabled=self.use_amp):
+            output = self.model(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                labels=labels,
+                return_confidences=True
+            )
+
+            loss = output['loss']
+
         # Skip step if loss is NaN (can happen with newly initialized layers)
         if torch.isnan(loss) or torch.isinf(loss):
             self.optimizer.zero_grad()
@@ -419,7 +431,8 @@ class ARCTrainer:
                 context = generated
             
             # Forward pass
-            output = self.model(input_ids=context)
+            with torch.autocast(device_type=self.device, dtype=self.amp_dtype, enabled=self.use_amp):
+                output = self.model(input_ids=context)
             logits = output['logits'][:, -1, :] / temperature
             
             # Top-k sampling
@@ -462,11 +475,12 @@ class ARCTrainer:
             if attention_mask is not None:
                 attention_mask = attention_mask.to(self.device)
             
-            output = self.model(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                labels=labels
-            )
+            with torch.autocast(device_type=self.device, dtype=self.amp_dtype, enabled=self.use_amp):
+                output = self.model(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    labels=labels
+                )
             
             total_loss += output['loss'].item()
             
@@ -866,6 +880,12 @@ def main():
                         help='Enable Compound Loop (adaptive-depth reasoning via RDT + ACT). '
                              'Never enabled/tested in this repo before -- adds real trainable '
                              'params and up to max-loops (default 4) extra compute passes per step.')
+    parser.add_argument('--use-amp', action='store_true',
+                        help='Enable bf16 mixed-precision autocast for forward passes '
+                             '(train_step, validate, _generate). Roughly halves activation '
+                             'memory with no GradScaler needed (bf16 has fp32 exponent range). '
+                             'Intended to afford a larger --batch-size on memory-constrained '
+                             'devices such as MPS unified memory.')
     args = parser.parse_args()
     
     # Configuration
@@ -938,6 +958,8 @@ def main():
     if args.use_compound_loop:
         logger.info(f"  Compound Loop enabled (max_loops={config.compound_loop.max_loops}, "
                     f"exit_threshold={config.compound_loop.exit_threshold})")
+    if args.use_amp:
+        logger.info("  Mixed precision enabled (bf16 autocast)")
     
     # Tokenizer
     tokenizer = get_tokenizer()
@@ -987,7 +1009,8 @@ def main():
         use_simula=args.use_simula,
         use_euphan=args.use_euphan,
         use_hermes=args.use_hermes,
-        use_cohesion=args.use_cohesion
+        use_cohesion=args.use_cohesion,
+        use_amp=args.use_amp
     )
     
     # Resume if specified
