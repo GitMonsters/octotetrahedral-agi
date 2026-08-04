@@ -94,16 +94,21 @@ class ExpertCompoundTracker(nn.Module):
             load, alpha=1 - self.ema_decay
         )
 
-        # Update co-activation counts (which experts are selected together)
+        # Update co-activation counts (which experts are selected together).
+        # Vectorized via bincount over flattened (e1, e2) pair indices --
+        # avoids a per-token Python loop with .item() calls, which forces a
+        # CUDA sync on every single element (N = batch_size * seq_len per
+        # step) and was previously the dominant cost of a training step.
+        n_pairs = self.num_experts * self.num_experts
         for k1 in range(expert_indices.shape[1]):
             for k2 in range(k1 + 1, expert_indices.shape[1]):
-                pairs = torch.stack(
-                    [expert_indices[:, k1], expert_indices[:, k2]], dim=1
-                )
-                for i in range(pairs.shape[0]):
-                    e1, e2 = pairs[i, 0].item(), pairs[i, 1].item()
-                    self.expert_pair_coactivation[e1, e2] += 1
-                    self.expert_pair_coactivation[e2, e1] += 1
+                e1 = expert_indices[:, k1]
+                e2 = expert_indices[:, k2]
+                counts = torch.bincount(
+                    e1 * self.num_experts + e2, minlength=n_pairs
+                ).float().view(self.num_experts, self.num_experts)
+                self.expert_pair_coactivation += counts
+                self.expert_pair_coactivation += counts.t()
 
     def get_load_balance_score(self) -> float:
         """Returns 0-1 score; 1.0 = perfectly balanced."""
@@ -268,21 +273,38 @@ class CompoundMoELayer(nn.Module):
             weights = F.softmax(top_k_logits, dim=-1)
             indices = top_k_indices
 
-        # Dispatch to experts
+        # Dispatch to experts. Vectorized over the top_k dimension: loop only
+        # over experts (num_experts iterations) instead of over every
+        # (k, expert) pair (top_k * num_experts iterations). Each token's
+        # top_k experts are guaranteed distinct (torch.topk), so flattening
+        # across k and gathering by expert never double-counts a token.
+        # Crucially, this also drops the `if mask.any():` Python-bool check
+        # that previously forced a CUDA sync on every one of those
+        # top_k * num_experts iterations (512 for the default 8x64 config) --
+        # nn.Linear/Dropout handle zero-row batches safely, so we can always
+        # dispatch unconditionally.
+        n_tokens = flat_x.shape[0]
+        flat_expert_idx = indices.reshape(-1)  # [n_tokens * top_k]
+        flat_weight = weights.reshape(-1)  # [n_tokens * top_k]
+        token_ids = (
+            torch.arange(n_tokens, device=flat_x.device)
+            .unsqueeze(1)
+            .expand(-1, self.top_k)
+            .reshape(-1)
+        )  # [n_tokens * top_k]
+
         output = torch.zeros_like(flat_x)
         expert_outputs_for_tracking: Dict[int, torch.Tensor] = {}
 
-        for k in range(self.top_k):
-            expert_idx = indices[:, k]
-            w = weights[:, k].unsqueeze(-1)
-            for e in range(self.num_experts):
-                mask = expert_idx == e
-                if mask.any():
-                    expert_input = flat_x[mask]
-                    expert_out = self.experts[e](expert_input)
-                    output[mask] += w[mask] * expert_out
-                    if self.training:
-                        expert_outputs_for_tracking[e] = expert_out.detach()
+        for e in range(self.num_experts):
+            mask = flat_expert_idx == e
+            sel_tokens = token_ids[mask]
+            expert_input = flat_x[sel_tokens]
+            expert_out = self.experts[e](expert_input)
+            weighted_out = flat_weight[mask].unsqueeze(-1) * expert_out
+            output.index_add_(0, sel_tokens, weighted_out)
+            if self.training:
+                expert_outputs_for_tracking[e] = expert_out.detach()
 
         # Cross-expert knowledge transfer residual
         if self.enable_cross_transfer and self.training:
