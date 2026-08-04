@@ -1013,6 +1013,9 @@ class OctoTetrahedralModel(nn.Module):
             use_fast_path = (rna_confidence.mean().item() > 0.7) and not return_confidences
             
             if use_fast_path:
+                # Initialize before use below -- s2_knowledge_blend is filled in
+                # once the cache lookup result is known, not overwritten after.
+                two_speed_info = {'path': 'fast', 'confidence': rna_confidence.mean().item()}
                 # Fast path: only core limbs (perception already done, spatial + action)
                 _t_spa = time.time()
                 spatial_out, spatial_conf, _ = self.spatial(memory_enhanced)
@@ -1042,7 +1045,11 @@ class OctoTetrahedralModel(nn.Module):
                 self._log_limb_event('reasoning', 'forward', time.time() - _t_reas, 0.5, reasoned.shape)
                 _limb_outputs_for_cg = None
                 kimi_braid_info = {}
-                two_speed_info = {'path': 'fast', 'confidence': rna_confidence.mean().item()}
+                # Fast path skips compound_braid / dream_mode entirely, so give
+                # these placeholders (same treatment as kimi_braid_info above) --
+                # both are unconditionally referenced later in Build Output.
+                braid_info = {}
+                dream_info = {}
             else:
                 two_speed_info = {'path': 'slow', 'confidence': rna_confidence.mean().item()}
                 # Slow path: full deliberation with all 11 limbs
