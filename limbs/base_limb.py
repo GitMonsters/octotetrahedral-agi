@@ -21,8 +21,9 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, Tuple, List
 from collections import deque
 
+import os
 import sys
-sys.path.append('..')
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from adaptation.lora import LoRALayer
 
 
