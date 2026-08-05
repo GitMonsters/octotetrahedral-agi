@@ -41,6 +41,7 @@ from data.arc_dataset import (
     ARCTask,
     create_arc_dataloader,
     evaluate_arc_prediction,
+    grid_to_tokens,
     tokens_to_grid
 )
 from training.simula_enhanced_trainer import SyntheticDataAugmentation
@@ -382,10 +383,23 @@ class ARCTrainer:
                     input_tokens = input_tokens[-max_input_len:]
                 input_ids = torch.tensor([input_tokens]).to(self.device)
                 
-                # Generate output (limit to 50 tokens for speed)
+                # Token budget for generation. A fixed cap silently made exact
+                # match impossible for most tasks: held-out targets have a
+                # median length of 209 tokens, so the previous cap of 50
+                # truncated 76% of them before the grid could be finished, and
+                # the metric could never report success no matter how good the
+                # model was. Size the budget from the task's own train outputs,
+                # which are legitimately available at inference time.
+                train_out_lens = [
+                    len(self.tokenizer.encode(grid_to_tokens(ex['output'])))
+                    for ex in task.train_examples
+                ] or [64]
+                max_new_tokens = min(1200, int(max(train_out_lens) * 1.5) + 16)
+
+                # Generate output
                 generated_ids = self._generate(
                     input_ids,
-                    max_new_tokens=50,
+                    max_new_tokens=max_new_tokens,
                     temperature=0.3
                 )
                 
