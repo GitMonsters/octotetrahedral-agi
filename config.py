@@ -82,7 +82,16 @@ class ModelConfig:
     head_dim: int = 32  # hidden_dim // num_heads
     
     # Sequence
-    max_seq_len: int = 512  # Reduced from 4096 to fit in 16GB RAM during training
+    # 2048 is the smallest window in which 100% of complete ARC tasks fit under
+    # the dense grid encoding (measured: p50 1050, p90 1738, p100 2048 tokens).
+    # This matters more than it looks. The prompt format is in-context few-shot,
+    # so truncation removes the exemplars the rule has to be induced from. At
+    # the previous 512 with the old spaced encoding, 128 of 150 sampled
+    # instances retained ZERO complete examples and only 11.5% of each sequence
+    # survived -- the model was being asked to infer a rule from examples it
+    # never saw, which teacher forcing hides because the retained tail still
+    # contains the target prefix.
+    max_seq_len: int = 2048
     
     # Positional encoding: rotary (RoPE) applied inside attention, rather than
     # additive sinusoidal encoding at the embedding layer. RoPE encodes

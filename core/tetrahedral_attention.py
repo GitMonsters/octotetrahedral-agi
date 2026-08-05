@@ -134,69 +134,108 @@ class TetrahedralAttention(nn.Module):
             cos, sin = self.rope(seq_len, device=x.device, dtype=q.dtype)
             q, k = apply_rotary_pos_emb(q, k, cos, sin)
         
-        # Compute attention scores: [batch, num_heads, seq_len, seq_len]
-        attn_scores = torch.matmul(q, k.transpose(-2, -1)) / self.scale
-        
-        # Add geometric bias if provided
+        # Normalise head_gates once; both attention paths need the same shape.
+        if head_gates is not None:
+            if head_gates.dim() == 1:
+                head_gates = head_gates.view(1, self.num_heads, 1, 1)
+            elif head_gates.dim() == 2:
+                head_gates = head_gates.unsqueeze(-1).unsqueeze(-1)
+
+        # Build the additive bias (geometric bias + padding mask) without ever
+        # forming the score matrix. This is what allows the memory-efficient
+        # path below.
+        attn_bias = None
         if self.use_geometric_bias and geometric_bias is not None:
-            # Handle different sequence lengths (geometric bias is for 64-point grid)
             if seq_len != geometric_bias.size(0):
-                # If sequence is shorter, use subset of geometric bias
                 if seq_len < geometric_bias.size(0):
                     geo_bias_subset = geometric_bias[:seq_len, :seq_len]
                 else:
-                    # If sequence is longer, pad geometric bias
                     geo_bias_subset = F.pad(
                         geometric_bias,
-                        (0, seq_len - geometric_bias.size(1), 0, seq_len - geometric_bias.size(0)),
+                        (0, seq_len - geometric_bias.size(1),
+                         0, seq_len - geometric_bias.size(0)),
                         value=0
                     )
             else:
                 geo_bias_subset = geometric_bias
-            
-            # Scale per head and add to attention scores
-            # geo_bias_subset: [seq_len, seq_len]
-            # head_geo_scales: [num_heads]
-            scaled_geo_bias = self.geo_bias_scale * geo_bias_subset.unsqueeze(0).unsqueeze(0)  # [1, 1, seq, seq]
-            head_scales = self.head_geo_scales.view(1, self.num_heads, 1, 1)  # [1, heads, 1, 1]
-            attn_scores = attn_scores + scaled_geo_bias * head_scales
-        
-        # Apply causal mask: position i may only attend to positions <= i.
-        # Required for autoregressive next-token prediction; prevents the
-        # model from attending to (leaking) future/target tokens during
-        # teacher-forced training.
-        if self.is_causal:
-            causal_mask = torch.triu(
-                torch.ones(seq_len, seq_len, dtype=torch.bool, device=x.device),
-                diagonal=1
-            )
-            attn_scores = attn_scores.masked_fill(
-                causal_mask.unsqueeze(0).unsqueeze(0), float('-inf')
-            )
-        
-        # Apply attention mask if provided
+            attn_bias = (self.geo_bias_scale
+                         * geo_bias_subset.unsqueeze(0).unsqueeze(0)
+                         * self.head_geo_scales.view(1, self.num_heads, 1, 1))
+
+        pad_bias = None
         if attention_mask is not None:
-            if attention_mask.dim() == 2:
-                # [batch, seq_len] -> [batch, 1, 1, seq_len]
-                attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
-            attn_scores = attn_scores.masked_fill(attention_mask == 0, float('-inf'))
-        
-        # Softmax to get attention weights
-        attn_weights = F.softmax(attn_scores, dim=-1)
-        attn_weights = self.dropout(attn_weights)
-        
-        # Apply head gating from RNA editing layer
-        if head_gates is not None:
-            if head_gates.dim() == 1:
-                # [num_heads] -> [1, num_heads, 1, 1]
-                head_gates = head_gates.view(1, self.num_heads, 1, 1)
-            elif head_gates.dim() == 2:
-                # [batch, num_heads] -> [batch, num_heads, 1, 1]
-                head_gates = head_gates.unsqueeze(-1).unsqueeze(-1)
-            attn_weights = attn_weights * head_gates
-        
-        # Compute output: [batch, num_heads, seq_len, head_dim]
-        output = torch.matmul(attn_weights, v)
+            m = attention_mask
+            if m.dim() == 2:
+                m = m.unsqueeze(1).unsqueeze(2)
+            pad_bias = torch.zeros(m.shape, dtype=q.dtype, device=q.device)
+            pad_bias = pad_bias.masked_fill(m == 0, float('-inf'))
+
+        # Memory-efficient attention.
+        #
+        # The explicit path materialises [batch, heads, seq, seq] several times
+        # over (scores, softmax output, post-dropout, post-gating) and autograd
+        # retains them all. At seq_len=2048 one such tensor is 134MB in fp32,
+        # which is what made a long context unaffordable -- and ARC needs a long
+        # context, because if the in-context exemplars do not fit there is no
+        # rule for the model to induce.
+        #
+        # scaled_dot_product_attention never forms the score matrix. The result
+        # is identical here because:
+        #   - the geometric bias is additive on scores, which is exactly what
+        #     SDPA's float attn_mask applies;
+        #   - head gating scales post-softmax weights by a per-head scalar, and
+        #     (g * W) @ V == g * (W @ V), so it can move to the output. Dropout
+        #     commutes with it for the same reason.
+        # return_attention needs the real weight matrix, so it falls back.
+        use_sdpa = (not return_attention
+                    and hasattr(F, 'scaled_dot_product_attention'))
+
+        if use_sdpa:
+            bias = attn_bias
+            if pad_bias is not None:
+                bias = pad_bias if bias is None else bias + pad_bias
+            if self.is_causal and bias is not None:
+                # is_causal cannot be combined with an explicit mask, so fold
+                # the causal constraint into the bias.
+                causal = torch.triu(
+                    torch.ones(seq_len, seq_len, dtype=torch.bool,
+                               device=x.device),
+                    diagonal=1
+                )
+                bias = bias.masked_fill(causal, float('-inf'))
+
+            output = F.scaled_dot_product_attention(
+                q, k, v,
+                attn_mask=bias,
+                dropout_p=self.dropout.p if self.training else 0.0,
+                is_causal=self.is_causal and bias is None,
+                scale=1.0 / self.scale,
+            )
+            attn_weights = None
+            if head_gates is not None:
+                output = output * head_gates
+        else:
+            # Compute attention scores: [batch, num_heads, seq_len, seq_len]
+            attn_scores = torch.matmul(q, k.transpose(-2, -1)) / self.scale
+            if attn_bias is not None:
+                attn_scores = attn_scores + attn_bias
+            if self.is_causal:
+                causal_mask = torch.triu(
+                    torch.ones(seq_len, seq_len, dtype=torch.bool,
+                               device=x.device),
+                    diagonal=1
+                )
+                attn_scores = attn_scores.masked_fill(
+                    causal_mask.unsqueeze(0).unsqueeze(0), float('-inf')
+                )
+            if pad_bias is not None:
+                attn_scores = attn_scores + pad_bias
+
+            attn_weights = F.softmax(attn_scores, dim=-1)
+            attn_weights = self.dropout(attn_weights)
+            if head_gates is not None:
+                attn_weights = attn_weights * head_gates
+            output = torch.matmul(attn_weights, v)
         
         # Reshape back: [batch, num_heads, seq_len, head_dim] -> [batch, seq_len, hidden_dim]
         output = output.transpose(1, 2).contiguous().view(batch_size, seq_len, self.hidden_dim)

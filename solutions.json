@@ -1,0 +1,63 @@
+{
+  "summary": {
+    "total_tasks": 9,
+    "successful": 0,
+    "failed": 9,
+    "success_rate": "0.0%"
+  },
+  "performance": {
+    "avg_confidence": 0,
+    "avg_latency_ms": 0,
+    "min_latency_ms": 0,
+    "max_latency_ms": 0
+  },
+  "methods": {},
+  "results": [
+    {
+      "task_id": "total_tasks",
+      "success": false,
+      "error": "HTTP 422: {\"detail\":[{\"type\":\"dict_type\",\"loc\":[\"body\",\"task\"],\"msg\":\"Input should be a valid dictionary\",\"input\":20}]}"
+    },
+    {
+      "task_id": "solved",
+      "success": false,
+      "error": "HTTP 422: {\"detail\":[{\"type\":\"dict_type\",\"loc\":[\"body\",\"task\"],\"msg\":\"Input should be a valid dictionary\",\"input\":0}]}"
+    },
+    {
+      "task_id": "failed",
+      "success": false,
+      "error": "HTTP 422: {\"detail\":[{\"type\":\"dict_type\",\"loc\":[\"body\",\"task\"],\"msg\":\"Input should be a valid dictionary\",\"input\":20}]}"
+    },
+    {
+      "task_id": "accuracy",
+      "success": false,
+      "error": "HTTP 422: {\"detail\":[{\"type\":\"dict_type\",\"loc\":[\"body\",\"task\"],\"msg\":\"Input should be a valid dictionary\",\"input\":0.0}]}"
+    },
+    {
+      "task_id": "transformations_tried",
+      "success": false,
+      "error": "HTTP 422: {\"detail\":[{\"type\":\"dict_type\",\"loc\":[\"body\",\"task\"],\"msg\":\"Input should be a valid dictionary\",\"input\":219}]}"
+    },
+    {
+      "task_id": "patterns_found",
+      "success": false,
+      "error": "HTTP 422: {\"detail\":[{\"type\":\"dict_type\",\"loc\":[\"body\",\"task\"],\"msg\":\"Input should be a valid dictionary\",\"input\":60}]}"
+    },
+    {
+      "task_id": "task_results",
+      "success": false,
+      "error": "HTTP 422: {\"detail\":[{\"type\":\"dict_type\",\"loc\":[\"body\",\"task\"],\"msg\":\"Input should be a valid dictionary\",\"input\":[{\"task_id\":\"synthetic_000000\",\"correct\":false,\"transformation\":\"horizontal_flip\",\"prediction_made\":true},{\"task_id\":\"synthetic_000001\",\"correct\":false,\"transformation\":\"horizontal_flip\",\"prediction_made\":true},{\"task_id\":\"synthetic_000002\",\"correct\":false,\"transformation\":\"rotate_90\",\"prediction_made\":true},{\"task_id\":\"synthetic_000003\",\"correct\":false,\"transformation\":\"unknown\",\"prediction_made\":true},{\"task_id\":\"synthetic_000004\",\"correct\":false,\"transformation\":\"unknown\",\"prediction_made\":true},{\"task_id\":\"synthetic_000005\",\"correct\":false,\"transformation\":\"unknown\",\"prediction_made\":true},{\"task_id\":\"synthetic_000006\",\"correct\":false,\"transformation\":\"rotate_90\",\"prediction_made\":true},{\"task_id\":\"synthetic_000007\",\"correct\":false,\"transformation\":\"unknown\",\"prediction_made\":true},{\"task_id\":\"synthetic_000008\",\"correct\":false,\"transformation\":\"rotate_90\",\"prediction_made\":true},{\"task_id\":\"synthetic_000009\",\"correct\":false,\"transformation\":\"unknown\",\"prediction_made\":true},{\"task_id\":\"synthetic_000010\",\"correct\":false,\"transformation\":\"rotate_90\",\"prediction_made\":true},{\"task_id\":\"synthetic_000011\",\"correct\":false,\"transformation\":\"transpose\",\"prediction_made\":true},{\"task_id\":\"synthetic_000012\",\"correct\":false,\"transformation\":\"transpose\",\"prediction_made\":true},{\"task_id\":\"synthetic_000013\",\"correct\":false,\"transformation\":\"unknown\",\"prediction_made\":true},{\"task_id\":\"synthetic_000014\",\"correct\":false,\"transformation\":\"rotate_90\",\"prediction_made\":true},{\"task_id\":\"synthetic_000015\",\"correct\":false,\"transformation\":\"rotate_90\",\"prediction_made\":true},{\"task_id\":\"synthetic_000016\",\"correct\":false,\"transformation\":\"rotate_90\",\"prediction_made\":true},{\"task_id\":\"synthetic_000017\",\"correct\":false,\"transformation\":\"rotate_90\",\"prediction_made\":true},{\"task_id\":\"synthetic_000018\",\"correct\":false,\"transformation\":\"transpose\",\"prediction_made\":true},{\"task_id\":\"synthetic_000019\",\"correct\":false,\"transformation\":\"horizontal_flip\",\"prediction_made\":true}]}]}"
+    },
+    {
+      "task_id": "time_elapsed",
+      "success": false,
+      "error": "HTTP 422: {\"detail\":[{\"type\":\"dict_type\",\"loc\":[\"body\",\"task\"],\"msg\":\"Input should be a valid dictionary\",\"input\":0.0043909549713134766}]}"
+    },
+    {
+      "task_id": "tasks_per_second",
+      "success": false,
+      "error": "HTTP 422: {\"detail\":[{\"type\":\"dict_type\",\"loc\":[\"body\",\"task\"],\"msg\":\"Input should be a valid dictionary\",\"input\":4554.817831351469}]}"
+    }
+  ],
+  "total_time_seconds": 0.03
+}
