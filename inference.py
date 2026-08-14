@@ -306,7 +306,7 @@ class OctoTetrahedralInference:
             except KeyboardInterrupt:
                 print("\nGoodbye!")
                 break
-            except (RuntimeError, ValueError, TypeError) as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"Error: {e}")
 
 

@@ -424,7 +424,7 @@ class TrainingConfig:
     use_euphan: bool = False
     euphan_log_frequency: int = 100        # Log every N steps
     euphan_output_dir: str = "logs/euphan" # Where to save HTML reports
-    euphan_tracking_limbs: list[str] = None  # Which limbs to track (None = all)
+    euphan_tracking_limbs: list[str] | None = None  # Which limbs to track (None = all)
     
     # SIMULA synthetic data augmentation
     use_simula: bool = False
