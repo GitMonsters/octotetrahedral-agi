@@ -72,7 +72,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 import production_config as cfg
 from api_types import make_request
@@ -151,7 +151,7 @@ class CompoundWorkflow:
     # Lifecycle
     # ------------------------------------------------------------------
 
-    def initialize(self) -> "CompoundWorkflow":
+    def initialize(self) -> CompoundWorkflow:
         """Initialize monitoring and inference service.
 
         Safe to call multiple times — returns self without re-initialising.
@@ -194,7 +194,7 @@ class CompoundWorkflow:
 
     # Context-manager support
 
-    def __enter__(self) -> "CompoundWorkflow":
+    def __enter__(self) -> Self:
         return self.initialize()
 
     def __exit__(self, *_: object) -> None:
@@ -428,7 +428,7 @@ class CompoundWorkflow:
         logger.info(json.dumps({"event": "server_launch", "cmd": cmd}))
         # extra_args are forwarded verbatim to serve.py; callers are responsible
         # for ensuring only known-safe arguments are passed (e.g. --scale, --checkpoint).
-        return subprocess.Popen(cmd)  # noqa: S603
+        return subprocess.Popen(cmd)
 
 
 # ---------------------------------------------------------------------------
