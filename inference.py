@@ -9,10 +9,11 @@ Features:
 - Model introspection
 """
 
+import logging
+from typing import Any
+
 import torch
 import torch.nn.functional as F
-from typing import Optional, List, Dict, Any
-import logging
 
 try:
     import tiktoken
@@ -42,7 +43,7 @@ class OctoTetrahedralInference:
         self,
         model: OctoTetrahedralModel,
         tokenizer=None,
-        device: str = None
+        device: str | None = None,
     ):
         self.model = model
         self.model.eval()
@@ -82,12 +83,12 @@ class OctoTetrahedralInference:
         prompt: str,
         max_new_tokens: int = 50,
         temperature: float = 0.8,
-        top_k: Optional[int] = 50,
-        top_p: Optional[float] = 0.9,
+        top_k: int | None = 50,
+        top_p: float | None = 0.9,
         do_sample: bool = True,
-        stop_tokens: Optional[List[str]] = None,
+        stop_tokens: list[str] | None = None,
         return_confidence: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate text from prompt.
         
@@ -148,7 +149,7 @@ class OctoTetrahedralInference:
         self,
         task_text: str,
         max_tokens: int = 20
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Complete a task (arithmetic, pattern, etc.).
         
@@ -212,7 +213,7 @@ class OctoTetrahedralInference:
         return torch.exp(output['loss']).item()
     
     @torch.no_grad()
-    def get_confidence(self, text: str) -> Dict[str, float]:
+    def get_confidence(self, text: str) -> dict[str, float]:
         """Get model confidence for input text"""
         input_ids = self.encode(text)
         
@@ -305,13 +306,13 @@ class OctoTetrahedralInference:
             except KeyboardInterrupt:
                 print("\nGoodbye!")
                 break
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"Error: {e}")
 
 
 def load_model(
-    checkpoint_path: Optional[str] = None,
-    device: str = None
+    checkpoint_path: str | None = None,
+    device: str | None = None,
 ) -> OctoTetrahedralInference:
     """
     Load model for inference.

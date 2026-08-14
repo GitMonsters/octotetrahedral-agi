@@ -1,0 +1,64 @@
+[package]
+name        = "octotetrahedral-agi"
+version     = "0.1.0"
+edition     = "2021"
+description = """
+OctoTetrahedral AGI — Rust-native core library for performance-sensitive
+subsystems. This crate implements the hot-path primitives (forward pass,
+hub-sync, tensor decomposition, monitoring, eval harness) that are called
+from the Python orchestration layer via HTTP or the PyO3 FFI bridge.
+
+Python remains the canonical layer for solver experimentation, ARC reasoning,
+and rapid prototyping. Rust owns determinism, throughput, and memory safety.
+"""
+authors     = ["GitMonsters"]
+license     = "MIT"
+
+[[bin]]
+name = "octo-health"
+path = "src/bin/health.rs"
+
+[[bin]]
+name = "octo-infer"
+path = "src/bin/infer.rs"
+
+[[bin]]
+name = "octo-eval"
+path = "src/bin/eval.rs"
+
+[[bin]]
+name = "octo-serve"
+path = "src/bin/serve.rs"
+
+[lib]
+name = "octotetrahedral_agi"
+path = "src/lib.rs"
+
+[dependencies]
+# Async runtime + HTTP server
+tokio       = { version = "1",  features = ["full"] }
+axum        = { version = "0.7", features = ["json"] }
+tower-http  = { version = "0.5", features = ["cors", "trace"] }
+
+# Serialisation / config
+serde       = { version = "1", features = ["derive"] }
+serde_json  = "1"
+
+# Logging / tracing
+tracing             = "0.1"
+tracing-subscriber  = { version = "0.3", features = ["env-filter"] }
+
+# CLI argument parsing
+clap = { version = "4", features = ["derive"] }
+
+# Error handling
+anyhow = "1"
+
+# Timestamp / duration
+chrono = { version = "0.4", features = ["serde"] }
+
+# UUID for request IDs
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+tempfile = "3"

@@ -13,14 +13,14 @@ These primitives integrate with the OctoTetrahedral limb architecture
 to form a complete cognitive system.
 """
 
-import torch
-import torch.nn as nn
-from typing import Optional, Tuple, Dict, Any, List
-from dataclasses import dataclass, field
-from collections import deque, defaultdict
 import math
 import random
+from collections import defaultdict, deque
+from dataclasses import dataclass, field
+from typing import Any
 
+import torch
+from torch import nn
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURATION
@@ -66,8 +66,8 @@ class DiscoveredVariable:
     """A latent causal variable discovered from observations."""
     id: int
     name: str
-    signature: List[float]  # Feature signature
-    parent_variables: List[int]  # Variables this was derived from
+    signature: list[float]  # Feature signature
+    parent_variables: list[int]  # Variables this was derived from
     information_gain: float
     discovered_at: int  # Step when discovered
     utility_count: int = 0
@@ -76,8 +76,8 @@ class DiscoveredVariable:
 @dataclass
 class CausalObservation:
     """An observation for causal discovery."""
-    features: List[float]
-    action: Optional[int]
+    features: list[float]
+    action: int | None
     reward: float
     step: int
 
@@ -92,16 +92,16 @@ class CausalDiscovery:
     
     def __init__(self, config: CognitionConfig):
         self.config = config
-        self.variables: List[DiscoveredVariable] = []
+        self.variables: list[DiscoveredVariable] = []
         self.observation_history: deque = deque(maxlen=config.observation_history_size)
-        self.mutual_info_cache: Dict[Tuple[int, int], float] = {}
+        self.mutual_info_cache: dict[tuple[int, int], float] = {}
         self.next_id = 0
         self.current_step = 0
     
     def observe(
         self,
         features: torch.Tensor,
-        action: Optional[int] = None,
+        action: int | None = None,
         reward: float = 0.0
     ):
         """
@@ -261,7 +261,7 @@ class CausalDiscovery:
         
         return augmented
     
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Get summary statistics."""
         return {
             'total_observations': len(self.observation_history),
@@ -288,12 +288,12 @@ class Concept:
     id: int
     name: str
     level: int  # 0 = ground level, higher = more abstract
-    prototype: List[float]  # Centroid of concept
-    children: List[int] = field(default_factory=list)
-    parents: List[int] = field(default_factory=list)
+    prototype: list[float]  # Centroid of concept
+    children: list[int] = field(default_factory=list)
+    parents: list[int] = field(default_factory=list)
     activation_count: int = 0
     confidence: float = 0.5
-    associated_actions: List[int] = field(default_factory=list)
+    associated_actions: list[int] = field(default_factory=list)
 
 
 class AbstractionHierarchy:
@@ -306,8 +306,8 @@ class AbstractionHierarchy:
     
     def __init__(self, config: CognitionConfig):
         self.config = config
-        self.concepts: Dict[int, Concept] = {}
-        self.levels: List[List[int]] = [[] for _ in range(config.max_abstraction_depth)]
+        self.concepts: dict[int, Concept] = {}
+        self.levels: list[list[int]] = [[] for _ in range(config.max_abstraction_depth)]
         self.next_id = 0
         self.current_step = 0
     
@@ -358,10 +358,10 @@ class AbstractionHierarchy:
     
     def _find_matching_concept(
         self,
-        features: List[float],
+        features: list[float],
         level: int,
         threshold: float = 0.7
-    ) -> Optional[int]:
+    ) -> int | None:
         """Find a concept matching the features at given level."""
         best_match = None
         best_similarity = threshold
@@ -433,7 +433,7 @@ class AbstractionHierarchy:
                     
                     self.next_id += 1
     
-    def _cosine_similarity(self, a: List[float], b: List[float]) -> float:
+    def _cosine_similarity(self, a: list[float], b: list[float]) -> float:
         """Compute cosine similarity between two vectors."""
         dot = sum(ai * bi for ai, bi in zip(a, b))
         norm_a = math.sqrt(sum(ai * ai for ai in a))
@@ -446,7 +446,7 @@ class AbstractionHierarchy:
         self,
         features: torch.Tensor,
         threshold: float = 0.5
-    ) -> List[Tuple[int, float]]:
+    ) -> list[tuple[int, float]]:
         """Get concepts activated by features."""
         if isinstance(features, torch.Tensor):
             features = features.detach().cpu().tolist()
@@ -467,7 +467,7 @@ class AbstractionHierarchy:
             if action not in concept.associated_actions:
                 concept.associated_actions.append(action)
     
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Get summary statistics."""
         return {
             'total_concepts': len(self.concepts),
@@ -490,7 +490,7 @@ class AbstractionHierarchy:
 @dataclass
 class WorldState:
     """A state in the world model."""
-    features: List[float]
+    features: list[float]
     reward: float
     is_terminal: bool
     uncertainty: float = 0.5
@@ -499,9 +499,9 @@ class WorldState:
 @dataclass
 class WorldTransition:
     """A learned transition in the world model."""
-    from_features: List[float]
+    from_features: list[float]
     action: int
-    to_features: List[float]
+    to_features: list[float]
     reward: float
     count: int = 1
 
@@ -509,8 +509,8 @@ class WorldTransition:
 @dataclass
 class SimulatedTrajectory:
     """A simulated trajectory for planning."""
-    states: List[WorldState]
-    actions: List[int]
+    states: list[WorldState]
+    actions: list[int]
     total_reward: float
     avg_uncertainty: float
 
@@ -528,17 +528,17 @@ class WorldModel:
         self.feature_dim = feature_dim
         
         # Transition model: (discretized_state, action) -> transition
-        self.transitions: Dict[Tuple[Tuple[int, ...], int], WorldTransition] = {}
+        self.transitions: dict[tuple[tuple[int, ...], int], WorldTransition] = {}
         
         # State visitation counts
-        self.state_visits: Dict[Tuple[int, ...], int] = defaultdict(int)
+        self.state_visits: dict[tuple[int, ...], int] = defaultdict(int)
         
         # Reward model
-        self.reward_model: Dict[Tuple[int, ...], float] = defaultdict(float)
+        self.reward_model: dict[tuple[int, ...], float] = defaultdict(float)
         
         self.total_experience = 0
     
-    def _discretize_state(self, features: List[float]) -> Tuple[int, ...]:
+    def _discretize_state(self, features: list[float]) -> tuple[int, ...]:
         """Discretize continuous features for lookup."""
         bins = self.config.state_discretization_bins
         return tuple(
@@ -606,7 +606,7 @@ class WorldModel:
         self,
         state: torch.Tensor,
         action: int
-    ) -> Tuple[Optional[WorldState], float]:
+    ) -> tuple[WorldState | None, float]:
         """
         Predict next state and reward given state and action.
         
@@ -641,7 +641,7 @@ class WorldModel:
     def imagine_trajectory(
         self,
         start_state: torch.Tensor,
-        actions: List[int]
+        actions: list[int]
     ) -> SimulatedTrajectory:
         """
         Imagine a trajectory by simulating actions.
@@ -663,7 +663,7 @@ class WorldModel:
         total_uncertainty = 0.0
         
         for action in actions:
-            next_state, uncertainty = self.predict(
+            next_state, _uncertainty = self.predict(
                 torch.tensor(current_features), action
             )
             
@@ -691,7 +691,7 @@ class WorldModel:
             avg_uncertainty=total_uncertainty / max(len(states), 1)
         )
     
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Get summary statistics."""
         return {
             'total_experience': self.total_experience,
@@ -732,10 +732,10 @@ class MetaLearner:
         
         # Performance history
         self.performance_history: deque = deque(maxlen=config.meta_learning_window)
-        self.param_history: List[MetaParams] = []
+        self.param_history: list[MetaParams] = []
         
         # Strategy effectiveness
-        self.strategy_scores: Dict[str, deque] = {
+        self.strategy_scores: dict[str, deque] = {
             'high_lr': deque(maxlen=50),
             'low_lr': deque(maxlen=50),
             'high_explore': deque(maxlen=50),
@@ -744,7 +744,7 @@ class MetaLearner:
         
         self.current_step = 0
     
-    def record_performance(self, performance: float, context: Optional[str] = None):
+    def record_performance(self, performance: float, context: str | None = None):
         """
         Record performance metric.
         
@@ -784,7 +784,7 @@ class MetaLearner:
         older_mean = sum(older) / len(older) if older else 0
         
         # Adaptation based on trend
-        _adaptation_rate = self.config.meta_param_adaptation_rate  # noqa: F841
+        _adaptation_rate = self.config.meta_param_adaptation_rate
         
         if recent_mean > older_mean:
             # Things are improving - keep current strategy
@@ -831,7 +831,7 @@ class MetaLearner:
         """Determine if agent should explore vs exploit."""
         return random.random() < self.params.exploration_rate
     
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Get summary statistics."""
         return {
             'current_lr': self.params.learning_rate,
@@ -853,8 +853,8 @@ class Symbol:
     """A grounded symbol connecting language to experience."""
     id: int
     name: str
-    sensory_grounding: List[float]  # Sensory experience signature
-    motor_grounding: List[float]  # Motor/action signature
+    sensory_grounding: list[float]  # Sensory experience signature
+    motor_grounding: list[float]  # Motor/action signature
     confidence: float = 0.5
     usage_count: int = 0
 
@@ -862,9 +862,9 @@ class Symbol:
 @dataclass
 class SymbolicExpression:
     """A composition of symbols."""
-    symbols: List[int]
+    symbols: list[int]
     relation: str  # 'sequence', 'parallel', 'causal', etc.
-    meaning: Optional[List[float]] = None
+    meaning: list[float] | None = None
 
 
 class SymbolSystem:
@@ -877,16 +877,16 @@ class SymbolSystem:
     
     def __init__(self, config: CognitionConfig):
         self.config = config
-        self.symbols: Dict[int, Symbol] = {}
-        self.name_to_id: Dict[str, int] = {}
-        self.expressions: List[SymbolicExpression] = []
+        self.symbols: dict[int, Symbol] = {}
+        self.name_to_id: dict[str, int] = {}
+        self.expressions: list[SymbolicExpression] = []
         self.next_id = 0
     
     def get_or_create_symbol(
         self,
         name: str,
-        sensory_grounding: Optional[List[float]] = None,
-        motor_grounding: Optional[List[float]] = None
+        sensory_grounding: list[float] | None = None,
+        motor_grounding: list[float] | None = None
     ) -> int:
         """Get existing symbol or create new one."""
         if name in self.name_to_id:
@@ -929,7 +929,7 @@ class SymbolSystem:
     
     def compose(
         self,
-        symbol_ids: List[int],
+        symbol_ids: list[int],
         relation: str = 'sequence'
     ) -> SymbolicExpression:
         """Compose symbols into an expression."""
@@ -961,8 +961,8 @@ class SymbolSystem:
     def ground_text(
         self,
         text: str,
-        sensory_context: Optional[torch.Tensor] = None
-    ) -> List[int]:
+        sensory_context: torch.Tensor | None = None
+    ) -> list[int]:
         """
         Ground a text string by creating/updating symbols.
         
@@ -977,9 +977,8 @@ class SymbolSystem:
         symbol_ids = []
         
         sensory = None
-        if sensory_context is not None:
-            if isinstance(sensory_context, torch.Tensor):
-                sensory = sensory_context.detach().cpu().tolist()
+        if sensory_context is not None and isinstance(sensory_context, torch.Tensor):
+            sensory = sensory_context.detach().cpu().tolist()
         
         for word in words:
             # Each word gets grounded with context
@@ -991,7 +990,7 @@ class SymbolSystem:
         
         return symbol_ids
     
-    def retrieve_grounding(self, symbol_id: int) -> Optional[torch.Tensor]:
+    def retrieve_grounding(self, symbol_id: int) -> torch.Tensor | None:
         """Get sensory grounding for a symbol."""
         if symbol_id in self.symbols:
             symbol = self.symbols[symbol_id]
@@ -999,7 +998,7 @@ class SymbolSystem:
                 return torch.tensor(symbol.sensory_grounding)
         return None
     
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Get summary statistics."""
         grounded_count = sum(
             1 for s in self.symbols.values()
@@ -1040,7 +1039,7 @@ class AGICognition(nn.Module):
     - Meta-learning optimizes everything
     """
     
-    def __init__(self, config: Optional[CognitionConfig] = None, feature_dim: int = 256):
+    def __init__(self, config: CognitionConfig | None = None, feature_dim: int = 256):
         super().__init__()
         
         self.config = config or CognitionConfig(feature_dim=feature_dim)
@@ -1066,11 +1065,11 @@ class AGICognition(nn.Module):
     def forward(
         self,
         features: torch.Tensor,
-        action: Optional[int] = None,
+        action: int | None = None,
         reward: float = 0.0,
-        next_features: Optional[torch.Tensor] = None,
+        next_features: torch.Tensor | None = None,
         is_terminal: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Process experience through all cognitive systems.
         
@@ -1139,7 +1138,7 @@ class AGICognition(nn.Module):
     def imagine(
         self,
         state: torch.Tensor,
-        action_sequence: List[int]
+        action_sequence: list[int]
     ) -> SimulatedTrajectory:
         """Imagine a trajectory using the world model."""
         return self.world_model.imagine_trajectory(state, action_sequence)
@@ -1147,12 +1146,12 @@ class AGICognition(nn.Module):
     def ground_language(
         self,
         text: str,
-        sensory_context: Optional[torch.Tensor] = None
-    ) -> List[int]:
+        sensory_context: torch.Tensor | None = None
+    ) -> list[int]:
         """Ground text in sensory experience."""
         return self.symbols.ground_text(text, sensory_context)
     
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Get full cognitive state summary."""
         return {
             'step': self.current_step,

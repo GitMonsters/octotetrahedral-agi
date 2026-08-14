@@ -8,9 +8,10 @@ Combines:
 - Distributed limb architecture (semi-autonomous processing)
 """
 
-from dataclasses import dataclass, field
-from typing import List, Dict, Any
 import os
+from dataclasses import dataclass, field
+from typing import Any, ClassVar
+
 import torch
 
 
@@ -34,7 +35,7 @@ def _select_device() -> str:
             ids = torch.tensor([1, 2, 3, 4], device="cuda")
             _ = emb(ids).sum().item()
             return "cuda"
-        except Exception:
+        except RuntimeError:
             pass
 
     if torch.backends.mps.is_available():
@@ -120,7 +121,7 @@ class LoRAConfig:
     rank: int = 4
     alpha: float = 1.0  # Scaling factor
     dropout: float = 0.0
-    target_modules: List[str] = field(default_factory=lambda: [
+    target_modules: list[str] = field(default_factory=lambda: [
         'query', 'key', 'value', 'output'
     ])
 
@@ -296,7 +297,7 @@ class ScaleConfig:
     
     # Preset definitions:
     # (hidden_dim, num_layers, num_heads, num_experts, expert_ffn_dim, top_k, active_ratio)
-    PRESETS = {
+    PRESETS: ClassVar[dict[str, tuple[int, int, int, int, int, int, float]]] = {
         'tiny':  (256,    3,   8,   64,    512,   8, 0.44),   # 204M total, ~90M active
         'base':  (1024,  24,  16,  128,   4096,  16, 0.12),   # ~7B total, ~850M active
         'large': (4096,  48,  32,  256,  16384,  16, 0.06),   # ~110B total, ~7B active
@@ -423,7 +424,7 @@ class TrainingConfig:
     use_euphan: bool = False
     euphan_log_frequency: int = 100        # Log every N steps
     euphan_output_dir: str = "logs/euphan" # Where to save HTML reports
-    euphan_tracking_limbs: List[str] = None  # Which limbs to track (None = all)
+    euphan_tracking_limbs: list[str] | None = None  # Which limbs to track (None = all)
     
     # SIMULA synthetic data augmentation
     use_simula: bool = False
@@ -551,7 +552,7 @@ class Config:
             self.geometry.num_internal_points
         ), "Point distribution must sum to num_points"
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert config to dictionary for serialization"""
         return {
             'geometry': self.geometry.__dict__,
