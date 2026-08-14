@@ -43,3 +43,6 @@ benchmarks/results/llm_cache.json
 benchmarks/results/comparison_results.json
 benchmarks/results/BENCHMARK_COMPARISON.md
 benchmarks/results/charts/
+
+# Root Rust crate build artifacts
+target/
