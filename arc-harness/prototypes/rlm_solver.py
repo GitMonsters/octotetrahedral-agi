@@ -26,6 +26,11 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from rlm.core.rlm import RLM  # noqa: E402
+from rlm.logger import RLMLogger  # noqa: E402
+
+# compounding: cross-task verified-result store
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "harness"))
+from compounding import CompoundingStore  # noqa: E402
 
 
 def _force_ipv4() -> None:
@@ -261,9 +266,102 @@ def _load_task(task_id: str, cfg: dict) -> dict:
         return json.load(f)
 
 
-def _domain_prompt(cfg: dict, ntest: int) -> str:
+def _task_features(task: dict) -> dict:
+    """Extract sparse feature vector from a CCL task for compounding retrieval."""
+    features = {}
+    grids = [tr["input"] for tr in task.get("train", [])]
+    grids += [tr["output"] for tr in task.get("train", [])]
+    h_set, w_set, color_set = set(), set(), set()
+    for g in grids:
+        if g and g[0]:
+            h_set.add(len(g))
+            w_set.add(len(g[0]))
+            for row in g:
+                color_set.update(row)
+    features["n_colors"] = len(color_set)
+    features["max_h"] = max(h_set) if h_set else 0
+    features["max_w"] = max(w_set) if w_set else 0
+    features["n_train"] = len(task.get("train", []))
+    for c in sorted(color_set)[:10]:
+        features[f"color_{c}"] = 1.0
+    return features
+
+
+def _compounding_section(store, task_id: str, task: dict, cfg: dict) -> str:
+    """Build a prompt section from verified compounding data.
+
+    Injects similar verified solutions as few-shot examples and relevant
+    patterns as strategy hints.  Only verified (test-passed) results
+    compound into the prompt.
+    """
+    features = _task_features(task)
+    lines = []
+
+    # verified similar solutions
+    similar = store.solutions.similar(features, top_k=3)
+    if similar:
+        lines.append(
+            "VERIFIED SOLUTIONS FROM SIMILAR TASKS (for reference only — "
+            "do NOT copy, study the approach):"
+        )
+        for sol in similar:
+            code = sol.get("code", "")
+            rules = sol.get("rules", [])
+            if not code:
+                continue
+            tag = f"  # task {sol['task_id']}"
+            if rules:
+                tag += f" ({', '.join(rules)})"
+            # take first 15 lines max to save context
+            short = "\n".join(code.splitlines()[:15])
+            if len(code.splitlines()) > 15:
+                short += "\n  # ..."
+            lines.append(f"{tag}\n{short}")
+        lines.append("")
+
+    # relevant patterns
+    patterns = store.patterns.relevant_to(features, top_k=5)
+    if patterns:
+        pattern_names = [name for name, score in patterns]
+        lines.append(
+            f"VERIFIED PATTERNS for similar tasks: {', '.join(pattern_names)}"
+        )
+        lines.append(
+            "Consider whether any of these patterns apply. Use them as a "
+            "starting hypothesis but verify with check()."
+        )
+        lines.append("")
+
+    # cross-task capability signal
+    enrichment = store.get_enrichment_multiplier()
+    cap = store.capability
+    if cap > 0:
+        lines.append(
+            f"Cross-task capability: {store._capability['tasks_solved']}/"
+            f"{store._capability['tasks_attempted']} solved so far "
+            f"(enrichment x{enrichment:.2f})."
+        )
+        lines.append("")
+
+    return "\n".join(lines) if lines else ""
+
+
+def _domain_prompt(cfg: dict, ntest: int, store=None, task_id: str = "", task: dict | None = None) -> str:
     prompt = SYSTEM_PROMPT_CCL if cfg.get("domain") == "ccl" else SYSTEM_PROMPT
-    return prompt.replace("__NTEST__", str(ntest))
+    prompt = prompt.replace("__NTEST__", str(ntest))
+
+    # compounding: inject verified similar solutions + relevant patterns
+    if store is not None and task is not None:
+        section = _compounding_section(store, task_id, task, cfg)
+        if section:
+            # insert before the final answer format block
+            marker = "FINAL ANSWER FORMAT:"
+            if marker in prompt:
+                prompt = prompt.replace(marker, section + "\n" + marker)
+            else:
+                prompt = prompt + "\n" + section
+
+    return prompt
 
 
 def build_setup_code(task: dict) -> str:
@@ -472,10 +570,10 @@ def parse_answer(content: str) -> dict[str, list]:
     return {str(k): v for k, v in parsed.items()}
 
 
-def run_task(task_id: str, cfg: dict) -> dict:
+def run_task(task_id: str, cfg: dict, store=None) -> dict:
     task = _load_task(task_id, cfg)
     setup_code = build_setup_code(task)
-    prompt = _domain_prompt(cfg, len(task["test"]))
+    prompt = _domain_prompt(cfg, len(task["test"]), store=store, task_id=task_id, task=task)
     meta = task.get("metadata", {})
 
     def on_iter(itr, depth):
@@ -631,7 +729,7 @@ def _read_compound_log(rlm) -> tuple[list[dict], dict | None]:
         return [], None
 
 
-def compound_run_task(task_id: str, cfg: dict) -> dict:
+def compound_run_task(task_id: str, cfg: dict, store=None) -> dict:
     """Compound-loop mode: run the RLM in persistent batches where each batch's
     budget and continuation are governed by the compound growth formula
     capability *= (1 + rate * confidence), with decay-weighted feedback and
@@ -639,7 +737,7 @@ def compound_run_task(task_id: str, cfg: dict) -> dict:
     task = _load_task(task_id, cfg)
     setup_code = build_setup_code(task)
     ntest = len(task["test"])
-    base_prompt = _domain_prompt(cfg, ntest)
+    base_prompt = _domain_prompt(cfg, ntest, store=store, task_id=task_id, task=task)
     meta = task.get("metadata", {})
 
     batch_iters = cfg.get("batch_iters", 5)
@@ -648,6 +746,7 @@ def compound_run_task(task_id: str, cfg: dict) -> dict:
     decay = cfg.get("feedback_decay", 0.85)
     patience = cfg.get("patience", 2)
     min_cohesion = cfg.get("min_cohesion", 0.5)
+    accept_gate = cfg.get("accept_gate", 0.8)
 
     rlm = RLM(
         backend="openai",
@@ -680,12 +779,14 @@ def compound_run_task(task_id: str, cfg: dict) -> dict:
 
     t0 = time.perf_counter()
     batches: list[dict] = []
-    enrichment = 1.0
+    max_enrichment = cfg.get("max_enrichment", 3.0)
+    enrichment = min(store.get_enrichment_multiplier(max_enrichment), max_enrichment) if store else 1.0
     best_cohesion = 0.0
     stall = 0
     rejected = False
     rejected_cohesion = 0.0
     final = None
+    depth = batch_iters
     try:
         for b in range(max_batches):
             if time.perf_counter() - t0 > cfg["task_timeout"]:
@@ -705,7 +806,12 @@ def compound_run_task(task_id: str, cfg: dict) -> dict:
                         f"Your previous submission (cohesion {rejected_cohesion:.2f}) was REJECTED "
                         f"because not all train pairs passed. Do NOT set answer until check() shows "
                         f"ALL train pairs passing, then submit in the same repl block as a passing "
-                        f"check()."
+                        f"check().\n"
+                        f"CRITICAL: preserve cohesion. transform() currently passes some train "
+                        f"pairs; do NOT rewrite it wholesale. Keep the logic that already passes "
+                        f"and only patch the remaining failing pairs (special-case branches or "
+                        f"generalize). Verify with check() after every change so you never drop a "
+                        f"previously-passing pair."
                     )
                 user = (
                     f"Continue the ARC task (batch {b + 1} of {max_batches}). "
@@ -717,7 +823,10 @@ def compound_run_task(task_id: str, cfg: dict) -> dict:
                     f"repl block as a passing check().\n"
                     f"Last cohesion: {status}. {corrective}"
                 )
-            print(f"[{task_id}] compound batch {b + 1} (enrichment x{enrichment:.2f})", flush=True)
+            print(f"[{task_id}] compound batch {b + 1} (enrichment x{enrichment:.2f}"
+                  f"{' [capped]' if enrichment >= max_enrichment else ''})", flush=True)
+            depth = max(batch_iters, int(round(batch_iters * enrichment)))
+            rlm.max_iterations = depth
             result = rlm.completion(user)
             log, latest = _read_compound_log(rlm)
             cohesion = (latest["n_pass"] / latest["n_total"]) if latest and latest["n_total"] else 0.0
@@ -728,6 +837,10 @@ def compound_run_task(task_id: str, cfg: dict) -> dict:
             else:
                 stall += 1
             enrichment *= 1.0 + rate * confidence
+            enrichment = min(enrichment, max_enrichment)
+            # feedback decay: reduce enrichment when no progress
+            if stall > 0:
+                enrichment *= decay
             submitted = False
             try:
                 preds = parse_answer(result.response)
@@ -736,26 +849,26 @@ def compound_run_task(task_id: str, cfg: dict) -> dict:
                 preds = {}
             batches.append({
                 "batch": b + 1,
-                "iterations": batch_iters,
+                "iterations": depth,
                 "cohesion": round(cohesion, 3),
                 "confidence": round(confidence, 3),
                 "enrichment": round(enrichment, 3),
                 "stall": stall,
                 "submitted": submitted,
-                "accepted": bool(submitted and cohesion >= min_cohesion),
+                "accepted": bool(submitted and cohesion >= accept_gate),
             })
             print(f"[{task_id}] batch {b + 1}: cohesion {cohesion:.2f} "
                   f"conf {confidence:.2f} enrich x{enrichment:.2f} "
                   f"{'SUBMITTED' if submitted else ''}", flush=True)
             if submitted:
-                if cohesion >= min_cohesion:
+                if cohesion >= accept_gate:
                     final = result
                     print(f"[{task_id}] submission accepted (cohesion {cohesion:.2f})", flush=True)
                     break
                 rejected = True
                 rejected_cohesion = cohesion
                 print(f"[{task_id}] submission REJECTED (cohesion {cohesion:.2f} < "
-                      f"{min_cohesion}); continuing to compound", flush=True)
+                      f"gate {accept_gate:.2f}); continuing to compound", flush=True)
                 continue
             if best_cohesion >= 1.0:
                 print(f"[{task_id}] cohesion reached 1.0 in batch {b + 1}; finalizing", flush=True)
@@ -770,7 +883,7 @@ def compound_run_task(task_id: str, cfg: dict) -> dict:
                     "every test input and answer[\"ready\"]=True in a single repl block, "
                     "then it is submitted. Use your current transform().")
             final = rlm.completion(user)
-            batches.append({"batch": max_batches + 1, "iterations": batch_iters,
+            batches.append({"batch": max_batches + 1, "iterations": depth,
                             "cohesion": None, "confidence": None, "enrichment": round(enrichment, 3),
                             "stall": stall, "submitted": True,
                             "note": f"forced finalize; last cohesion {status}"})
@@ -854,6 +967,13 @@ def run_task_worker(task_id: str, cfg: dict) -> None:
     """Child-process entry point. Runs one task, writes a per-task result JSON,
     and never raises. The parent watches this process for crashes/timeouts."""
     _SOCKET_TIMEOUT_STATE["timeout"] = cfg["call_timeout"]
+    # compounding: create a store instance to read verified solutions/patterns
+    store = None
+    if cfg.get("compounding_dir"):
+        try:
+            store = CompoundingStore(cfg["compounding_dir"])
+        except Exception:
+            pass  # non-fatal: run without compounding
     stop = threading.Event()
     heartbeat = threading.Thread(
         target=_heartbeat, args=(task_id, cfg.get("heartbeat", 90), stop), daemon=True
@@ -861,9 +981,9 @@ def run_task_worker(task_id: str, cfg: dict) -> None:
     heartbeat.start()
     try:
         if cfg.get("compound"):
-            report = compound_run_task(task_id, cfg)
+            report = compound_run_task(task_id, cfg, store=store)
         else:
-            report = run_task(task_id, cfg)
+            report = run_task(task_id, cfg, store=store)
     except Exception as e:
         report = {
             "task": task_id,
@@ -941,6 +1061,10 @@ def main() -> None:
     ap.add_argument("--compound-rate", type=float, default=0.2, help="enrichment rate (compound growth)")
     ap.add_argument("--feedback-decay", type=float, default=0.85, help="recency weight decay for confidence")
     ap.add_argument("--patience", type=int, default=2, help="batches without cohesion gain before converged")
+    ap.add_argument("--accept-gate", type=float, default=0.8,
+                    help="cohesion threshold for accepting a submission (compound)")
+    ap.add_argument("--max-enrichment", type=float, default=3.0,
+                    help="cap on enrichment multiplier to prevent runaway growth")
     ap.add_argument("--ccl", action="store_true",
                     help="run on the CCL benchmark (Compound Concept Learning, 300 tasks, L1-L3) from data/ccl_tasks")
     args = ap.parse_args()
@@ -966,6 +1090,9 @@ def main() -> None:
     os.makedirs(args.out, exist_ok=True)
     result_dir = os.path.join(args.out, "results")
     os.makedirs(result_dir, exist_ok=True)
+    compounding_dir = os.path.join(args.out, "compounding")
+    os.makedirs(compounding_dir, exist_ok=True)
+    store = CompoundingStore(compounding_dir)
     cfg = {
         "iterations": args.iterations,
         "task_timeout": args.timeout,
@@ -976,6 +1103,7 @@ def main() -> None:
         "verbose": args.verbose,
         "out": args.out,
         "result_dir": result_dir,
+        "compounding_dir": compounding_dir,
         "heartbeat": args.heartbeat,
         "compound": args.compound,
         "batch_iters": args.batch_iters,
@@ -983,6 +1111,8 @@ def main() -> None:
         "compound_rate": args.compound_rate,
         "feedback_decay": args.feedback_decay,
         "patience": args.patience,
+        "accept_gate": args.accept_gate,
+        "max_enrichment": args.max_enrichment,
         "ccl": args.ccl,
         "domain": "ccl" if args.ccl else "arc",
         "task_root": os.path.join(DATA_ROOT, "ccl_tasks") if args.ccl
@@ -1036,6 +1166,26 @@ def main() -> None:
                 result_file = _result_path(cfg, tid)
                 if os.path.exists(result_file):
                     reports[tid] = _load_result(cfg, tid)
+                    # compounding: record verified result
+                    r = reports[tid]
+                    task_data = _load_task(tid, cfg)
+                    features = _task_features(task_data)
+                    rules = r.get("rules", [])
+                    if not rules and r.get("compound"):
+                        rules = [b.get("note", "") for b in r["compound"].get("batches", []) if b.get("accepted")]
+                    store.record_task(
+                        task_id=tid,
+                        solved=r.get("solved", False),
+                        code=r.get("raw_answer", "")[:2000] if r.get("solved") else "",
+                        features=features,
+                        rules=rules,
+                        level=r.get("level"),
+                        config={"compound": cfg.get("compound"), "batch_iters": cfg.get("batch_iters"),
+                                "accept_gate": cfg.get("accept_gate")},
+                        cost_usd=r.get("cost_usd", 0),
+                        time_s=r.get("elapsed_s", 0),
+                        test_passed=r.get("solved", False),
+                    )
                 elif info["attempt"] < args.retries:
                     reports.pop(tid, None)
                     print(f"[sched] requeue {tid} (attempt {info['attempt']} of {args.retries})", flush=True)
@@ -1074,6 +1224,10 @@ def main() -> None:
         print(f"CCL: EM@L1 {em[1]*100:.1f}%  EM@L2 {em[2]*100:.1f}%  "
               f"EM@L3 {em[3]*100:.1f}%  CES {em[3]/em[1]:.3f}"
               if em[1] > 0 else "CCL: EM@L1 = 0 (CES undefined)")
+    cs = store.summary()
+    print(f"compounding: {cs['verified_solutions']} verified solutions, "
+          f"{cs['patterns']} patterns, capability {cs['capability']:.3f}, "
+          f"enrichment x{cs['enrichment_multiplier']:.2f}")
     print(f"report: {out_path}")
 
 
