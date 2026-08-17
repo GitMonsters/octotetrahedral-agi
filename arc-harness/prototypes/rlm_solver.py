@@ -22,6 +22,7 @@ import re
 import sys
 import threading
 import time
+import traceback
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -354,6 +355,9 @@ def _domain_prompt(cfg: dict, ntest: int, store=None, task_id: str = "", task: d
     if store is not None and task is not None:
         section = _compounding_section(store, task_id, task, cfg)
         if section:
+            # Escape braces so .format() in RLM library doesn't choke on
+            # JSON like {"0": [...]} in verified solution code.
+            section = section.replace("{", "{{").replace("}", "}}")
             # insert before the final answer format block
             marker = "FINAL ANSWER FORMAT:"
             if marker in prompt:
@@ -827,7 +831,53 @@ def compound_run_task(task_id: str, cfg: dict, store=None) -> dict:
                   f"{' [capped]' if enrichment >= max_enrichment else ''})", flush=True)
             depth = max(batch_iters, int(round(batch_iters * enrichment)))
             rlm.max_iterations = depth
-            result = rlm.completion(user)
+            result = None
+            for _attempt in range(2):
+                try:
+                    result = rlm.completion(user)
+                    break
+                except Exception as batch_err:
+                    if _attempt == 0:
+                        print(f"[{task_id}] batch {b+1} attempt 1 error: "
+                              f"{type(batch_err).__name__}: {batch_err}; retrying", flush=True)
+                        traceback.print_exc()
+                        try:
+                            rlm.close()
+                        except Exception:
+                            pass
+                        rlm = RLM(
+                            backend="openai",
+                            backend_kwargs={
+                                "model_name": MODEL,
+                                "base_url": XAI_BASE_URL,
+                                "api_key": os.environ.get("XAI_API_KEY", ""),
+                                "timeout": cfg["call_timeout"],
+                            },
+                            environment="local",
+                            environment_kwargs={"setup_code": setup_code},
+                            persistent=True,
+                            max_iterations=depth,
+                            max_timeout=cfg["task_timeout"],
+                            max_errors=cfg.get("max_errors", 8),
+                            custom_system_prompt=base_prompt,
+                            sampling_args={
+                                "temperature": 0.7,
+                                "max_tokens": 8000,
+                                "extra_body": {"reasoning_effort": "low"},
+                            },
+                            sub_sampling_args={
+                                "extra_body": {"reasoning_effort": cfg.get("sub_reasoning", "medium")}
+                            },
+                            logger=RLMLogger(log_dir=cfg["out"], file_name=f"trace_{task_id}")
+                            if cfg.get("trace")
+                            else None,
+                            verbose=cfg.get("verbose", False),
+                        )
+                    else:
+                        print(f"[{task_id}] batch {b+1} attempt 2 error: "
+                              f"{type(batch_err).__name__}: {batch_err}", flush=True)
+                        traceback.print_exc()
+                        raise
             log, latest = _read_compound_log(rlm)
             cohesion = (latest["n_pass"] / latest["n_total"]) if latest and latest["n_total"] else 0.0
             confidence = _compound_confidence(log, decay) if log else cohesion
@@ -889,6 +939,7 @@ def compound_run_task(task_id: str, cfg: dict, store=None) -> dict:
                             "note": f"forced finalize; last cohesion {status}"})
     except Exception as e:
         print(f"[{task_id}] compound RLM error: {type(e).__name__}: {e}", flush=True)
+        traceback.print_exc()
         final = None
     finally:
         rlm.close()
