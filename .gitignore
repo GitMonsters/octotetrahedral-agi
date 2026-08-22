@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pt
+*.pth
+checkpoints/
+data/
+*.log
+training.log
+server.log
+.git/
+arc_agi2_submission/
+archive/

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLARIN POS Tagger — Visual Demo</title>
+<style>
+  :root {
+    --bg: #0a0e17; --bg2: #111827; --bg3: #1a2235; --bg4: #243049;
+    --text: #e2e8f0; --dim: #64748b;
+    --cyan: #00e5ff; --magenta: #e040fb; --green: #76ff03;
+    --yellow: #ffea00; --blue: #448aff; --red: #ff5252; --orange: #ff9800;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'SF Mono','Fira Code','Cascadia Code',monospace;
+    min-height: 100vh;
+  }
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridMove 20s linear infinite;
+  }
+  @keyframes gridMove { 0%{transform:translate(0,0)} 100%{transform:translate(40px,40px)} }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+  .header { text-align: center; padding: 20px 0 16px; border-bottom: 1px solid rgba(0,229,255,0.15); margin-bottom: 20px; }
+  .header h1 {
+    font-size: 22px; font-weight: 700;
+    background: linear-gradient(135deg, var(--cyan), var(--green));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .header .sub { font-size: 12px; color: var(--dim); margin-top: 4px; }
+  .back-link { font-size: 11px; color: var(--dim); margin-top: 6px; }
+  .back-link a { color: var(--cyan); text-decoration: none; }
+
+  .panel {
+    background: var(--bg2); border: 1px solid rgba(0,229,255,0.1);
+    border-radius: 8px; padding: 16px; margin-bottom: 16px;
+  }
+  .panel-title {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--cyan); margin-bottom: 12px;
+  }
+
+  textarea {
+    width: 100%; height: 80px; resize: vertical;
+    background: var(--bg3); color: var(--text); border: 1px solid var(--bg4);
+    border-radius: 6px; padding: 10px; font-family: inherit; font-size: 13px;
+    outline: none; transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--cyan); }
+  textarea::placeholder { color: var(--dim); }
+
+  .btn {
+    padding: 8px 16px; border: none; border-radius: 5px;
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--cyan), #0097a7); color: #000; }
+  .btn-primary:hover { filter: brightness(1.15); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--bg4); }
+  .btn-secondary:hover { border-color: var(--cyan); }
+
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .preset-btn {
+    padding: 4px 10px; background: var(--bg4); border: 1px solid transparent;
+    border-radius: 4px; font-family: inherit; font-size: 10px; color: var(--dim);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .preset-btn:hover { border-color: var(--cyan); color: var(--text); }
+
+  /* POS tokens */
+  .pos-container { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; }
+  .pos-token {
+    display: inline-flex; flex-direction: column; align-items: center;
+    padding: 4px 6px; border-radius: 4px; background: var(--bg3);
+    border: 1px solid var(--bg4);
+  }
+  .pos-word { font-size: 13px; border-bottom: 2px solid; padding-bottom: 2px; margin-bottom: 2px; }
+  .pos-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; }
+
+  .pos-NOUN { color: var(--blue); border-color: var(--blue); }
+  .pos-PROPN { color: var(--blue); border-color: var(--blue); }
+  .pos-VERB { color: var(--green); border-color: var(--green); }
+  .pos-AUX { color: var(--green); border-color: var(--green); }
+  .pos-ADJ { color: var(--orange); border-color: var(--orange); }
+  .pos-ADV { color: var(--orange); border-color: var(--orange); }
+  .pos-DET { color: var(--magenta); border-color: var(--magenta); }
+  .pos-ADP { color: var(--magenta); border-color: var(--magenta); }
+  .pos-CONJ, .pos-CCONJ, .pos-SCONJ { color: var(--magenta); border-color: var(--magenta); }
+  .pos-PRON { color: var(--cyan); border-color: var(--cyan); }
+  .pos-PART { color: var(--cyan); border-color: var(--cyan); }
+  .pos-NUM { color: var(--yellow); border-color: var(--yellow); }
+  .pos-SYM, .pos-X { color: var(--yellow); border-color: var(--yellow); }
+  .pos-PUNCT { color: var(--dim); border-color: var(--dim); }
+
+  /* Tag distribution bars */
+  .dist-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .dist-label { width: 60px; font-size: 11px; color: var(--dim); text-align: right; }
+  .dist-track { flex: 1; height: 16px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+  .dist-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+  .dist-count { width: 50px; font-size: 10px; color: var(--dim); }
+
+  /* Accuracy */
+  .acc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+  .acc-card {
+    background: var(--bg3); border-radius: 6px; padding: 8px; text-align: center;
+    border: 1px solid var(--bg4);
+  }
+  .acc-card .tag { font-size: 11px; color: var(--dim); }
+  .acc-card .val { font-size: 16px; font-weight: 700; margin: 2px 0; }
+  .acc-card .sup { font-size: 9px; color: var(--dim); }
+
+  .overall-acc {
+    font-size: 36px; font-weight: 700; text-align: center;
+    margin: 16px 0;
+  }
+
+  .status { font-size: 11px; color: var(--dim); min-height: 16px; }
+  .status.running { color: var(--yellow); }
+  .status.done { color: var(--green); }
+
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--bg4);
+    border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.8s linear infinite;
+    vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="container">
+  <div class="header">
+    <h1>OctoTetrahedral POS Tagger</h1>
+    <div class="sub">BiLSTM + Transformer + TranscendPlexity + WorkingMemory + Reservoir + Cohesion</div>
+    <div class="back-link"><a href="/">&larr; back to main dashboard</a></div>
+  </div>
+
+  <!-- Input -->
+  <div class="panel">
+    <div class="panel-title">Input Text</div>
+    <textarea id="inputText" placeholder="Type or paste text to POS-tag...">The capital of France is Paris.</textarea>
+    <div class="presets">
+      <button class="preset-btn" onclick="setPreset('The capital of France is Paris.')">Factual</button>
+      <button class="preset-btn" onclick="setPreset('Scientists have discovered a new species of deep-sea fish in the Pacific Ocean.')">Scientific</button>
+      <button class="preset-btn" onclick="setPreset('She sells seashells by the seashore.')">Tongue twister</button>
+      <button class="preset-btn" onclick="setPreset('The quick brown fox jumps over the lazy dog.')">Pangram</button>
+      <button class="preset-btn" onclick="setPreset('Running is the best exercise for cardiovascular health.')">Gerund</button>
+      <button class="preset-btn" onclick="setPreset('What is the meaning of life?')">Question</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="tagBtn" onclick="doTag()">Tag Text</button>
+      <button class="btn btn-secondary" onclick="doAccuracy()">Run Accuracy Benchmark</button>
+      <button class="btn btn-secondary" onclick="doDataStats()">Data Stats</button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <!-- POS Output -->
+  <div class="panel hidden" id="posPanel">
+    <div class="panel-title">POS Tags (CLARIN Head)</div>
+    <div class="pos-container" id="posContainer"></div>
+    <div style="margin-top:10px;font-size:10px;color:var(--dim)">
+      Phase: <span id="tpPhase" style="color:var(--green)">-</span>
+      &middot; Cohesion: <span id="tpCohesion">-</span>
+    </div>
+  </div>
+
+  <!-- Tag Distribution -->
+  <div class="panel hidden" id="distPanel">
+    <div class="panel-title">Tag Distribution</div>
+    <div id="distChart"></div>
+  </div>
+
+  <!-- Accuracy -->
+  <div class="panel hidden" id="accPanel">
+    <div class="panel-title">POS Accuracy Benchmark</div>
+    <div class="overall-acc" id="overallAcc">-</div>
+    <div class="acc-grid" id="accGrid"></div>
+  </div>
+
+  <!-- Data Stats -->
+  <div class="panel hidden" id="dataPanel">
+    <div class="panel-title">CLARIN Data Stats</div>
+    <div id="dataContent"></div>
+  </div>
+
+  <!-- Chat -->
+  <div class="panel" id="chatPanel">
+    <div class="panel-title">Chat with OctoTetrahedral</div>
+    <div id="chatMessages" style="max-height:300px;overflow-y:auto;margin-bottom:12px;padding:8px;background:var(--bg3);border-radius:6px;font-size:13px;line-height:1.6">
+      <div style="color:var(--dim);font-style:italic">Type a message below. The model uses the same BiLSTM backbone that tags POS at 99.6%.</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <input id="chatInput" type="text" placeholder="Say something..."
+             style="flex:1;padding:10px;background:var(--bg3);color:var(--text);border:1px solid var(--bg4);border-radius:6px;font-family:inherit;font-size:13px;outline:none"
+             onkeydown="if(event.key==='Enter')doChat()">
+      <button class="btn btn-primary" onclick="doChat()">Send</button>
+    </div>
+    <div style="margin-top:8px;font-size:10px;color:var(--dim)">
+      Temperature: <input id="chatTemp" type="number" value="0.7" min="0.1" max="2.0" step="0.1"
+        style="width:50px;padding:2px 4px;background:var(--bg3);color:var(--text);border:1px solid var(--bg4);border-radius:3px;font-family:inherit;font-size:10px">
+      Top-k: <input id="chatTopk" type="number" value="20" min="1" max="200" step="5"
+        style="width:50px;padding:2px 4px;background:var(--bg3);color:var(--text);border:1px solid var(--bg4);border-radius:3px;font-family:inherit;font-size:10px">
+      <span id="chatPhase" style="margin-left:12px;color:var(--cyan)">Phase: -</span>
+      <span id="chatModel" style="margin-left:12px;color:var(--magenta)">Model: -</span>
+    </div>
+  </div>
+
+<script>
+function setStatus(msg, cls) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status ' + (cls || '');
+}
+
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+
+function setPreset(text) {
+  document.getElementById('inputText').value = text;
+  doTag();
+}
+
+const POS_COLORS = {
+  NOUN:'#448aff', PROPN:'#448aff', VERB:'#76ff03', AUX:'#76ff03',
+  ADJ:'#ff9800', ADV:'#ff9800', DET:'#e040fb', ADP:'#e040fb',
+  CONJ:'#e040fb', CCONJ:'#e040fb', SCONJ:'#e040fb', PRON:'#00e5ff',
+  PART:'#00e5ff', NUM:'#ffea00', SYM:'#ffea00', X:'#ffea00', PUNCT:'#64748b',
+};
+
+const TAG_DIST_COLORS = [
+  '#448aff','#76ff03','#ff9800','#e040fb','#00e5ff',
+  '#ffea00','#ff5252','#64748b','#8bc34a','#9c27b0',
+];
+
+async function doTag() {
+  const text = document.getElementById('inputText').value.trim();
+  if (!text) return;
+
+  setStatus('Tagging...', 'running');
+  document.getElementById('tagBtn').disabled = true;
+
+  try {
+    const r = await fetch('/tag', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text}),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+
+    // POS tokens
+    const container = document.getElementById('posContainer');
+    container.innerHTML = '';
+    for (let i = 0; i < data.words.length; i++) {
+      const token = data.words[i];
+      const tag = data.pos_tags[i] || '_';
+      const cls = 'pos-' + tag;
+      const color = POS_COLORS[tag] || '#64748b';
+      container.innerHTML += `
+        <div class="pos-token">
+          <div class="pos-word ${cls}" style="border-color:${color}">${esc(token)}</div>
+          <div class="pos-tag ${cls}" style="color:${color}">${tag}</div>
+        </div>`;
+    }
+    show('posPanel');
+
+    // TP state
+    const tp = data.tp || {};
+    document.getElementById('tpPhase').textContent = tp.phase || 'N/A';
+    document.getElementById('tpCohesion').textContent = (tp.cohesion || 0).toFixed(4);
+
+    // Tag distribution
+    const dist = data.tag_distribution;
+    const total = Object.values(dist).reduce((a,b) => a+b, 0);
+    const sorted = Object.entries(dist).sort((a,b) => b[1] - a[1]);
+    const distEl = document.getElementById('distChart');
+    distEl.innerHTML = '';
+    let ci = 0;
+    for (const [tag, count] of sorted) {
+      const pct = count / total * 100;
+      const color = TAG_DIST_COLORS[ci % TAG_DIST_COLORS.length];
+      distEl.innerHTML += `
+        <div class="dist-row">
+          <div class="dist-label">${tag}</div>
+          <div class="dist-track">
+            <div class="dist-fill" style="width:${pct}%;background:${color}"></div>
+          </div>
+          <div class="dist-count">${count} (${pct.toFixed(0)}%)</div>
+        </div>`;
+      ci++;
+    }
+    show('distPanel');
+
+    setStatus(`Tagged ${data.words.length} words — ${Object.keys(dist).length} unique tags`, 'done');
+  } catch(e) {
+    setStatus('Error: ' + e.message);
+  }
+  document.getElementById('tagBtn').disabled = false;
+}
+
+async function doAccuracy() {
+  setStatus('Running accuracy benchmark (100 sentences)...', 'running');
+  try {
+    const r = await fetch('/accuracy?sentences=100');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+
+    const pct = (data.overall_accuracy * 100).toFixed(1);
+    document.getElementById('overallAcc').innerHTML =
+      `<span style="color:${data.overall_accuracy > 0.85 ? 'var(--green)' : 'var(--orange)'}">${pct}%</span>
+       <div style="font-size:12px;color:var(--dim)">${data.correct}/${data.total} tags correct</div>`;
+
+    const grid = document.getElementById('accGrid');
+    grid.innerHTML = '';
+    const perTag = data.per_tag;
+    const sorted = Object.entries(perTag).sort((a,b) => b[1].support - a[1].support);
+    for (const [tag, info] of sorted) {
+      const acc = (info.accuracy * 100).toFixed(1);
+      const color = info.accuracy > 0.9 ? 'var(--green)' : info.accuracy > 0.7 ? 'var(--orange)' : 'var(--red)';
+      grid.innerHTML += `
+        <div class="acc-card">
+          <div class="tag">${tag}</div>
+          <div class="val" style="color:${color}">${acc}%</div>
+          <div class="sup">n=${info.support}</div>
+        </div>`;
+    }
+    show('accPanel');
+    setStatus(`Done — ${pct}% overall accuracy`, 'done');
+  } catch(e) {
+    setStatus('Error: ' + e.message);
+  }
+}
+
+async function doDataStats() {
+  setStatus('Loading data stats...', 'running');
+  try {
+    const r = await fetch('/data-stats');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+
+    let html = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+        <div class="acc-card"><div class="tag">Sentences</div><div class="val">${data.total_sentences.toLocaleString()}</div></div>
+        <div class="acc-card"><div class="tag">Avg Length</div><div class="val">${data.avg_length}</div></div>
+        <div class="acc-card"><div class="tag">Max Length</div><div class="val">${data.max_length}</div></div>
+      </div>
+      <div class="panel-title" style="font-size:10px">Tag Distribution (Training Data)</div>`;
+
+    const total = Object.values(data.tag_distribution).reduce((a,b) => a + b.count, 0);
+    let ci = 0;
+    for (const [tag, info] of Object.entries(data.tag_distribution)) {
+      const color = TAG_DIST_COLORS[ci % TAG_DIST_COLORS.length];
+      html += `
+        <div class="dist-row">
+          <div class="dist-label">${tag}</div>
+          <div class="dist-track">
+            <div class="dist-fill" style="width:${info.pct}%;background:${color}"></div>
+          </div>
+          <div class="dist-count">${info.count} (${info.pct}%)</div>
+        </div>`;
+      ci++;
+    }
+
+    document.getElementById('dataContent').innerHTML = html;
+    show('dataPanel');
+    setStatus('Done', 'done');
+  } catch(e) {
+    setStatus('Error: ' + e.message);
+  }
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function doChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  const container = document.getElementById('chatMessages');
+  container.innerHTML += `<div style="margin-bottom:8px"><span style="color:var(--cyan);font-weight:600">You:</span> ${esc(msg)}</div>`;
+
+  const temp = parseFloat(document.getElementById('chatTemp').value) || 0.7;
+  const topk = parseInt(document.getElementById('chatTopk').value) || 20;
+
+  container.innerHTML += `<div id="chatLoading" style="color:var(--yellow);font-size:11px"><span class="spinner"></span>Generating...</div>`;
+  container.scrollTop = container.scrollHeight;
+
+  try {
+    const r = await fetch('/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: msg, max_tokens: 50, temperature: temp, top_k: topk, rep_penalty: 3.0}),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+
+    const loading = document.getElementById('chatLoading');
+    if (loading) loading.remove();
+
+    const reply = data.reply || '(no response)';
+    const tags = (data.pos_tags || []).join(' ');
+    container.innerHTML += `
+      <div style="margin-bottom:8px">
+        <span style="color:var(--green);font-weight:600">Octo:</span> ${esc(reply)}
+        <div style="font-size:9px;color:var(--dim);margin-top:2px">POS: ${esc(tags)}</div>
+      </div>`;
+    document.getElementById('chatPhase').textContent = 'Phase: ' + (data.tp_phase || '-');
+    document.getElementById('chatModel').textContent = 'Model: ' + (data.model || '-');
+  } catch(e) {
+    const loading = document.getElementById('chatLoading');
+    if (loading) loading.remove();
+    container.innerHTML += `<div style="color:var(--red);font-size:11px;margin-bottom:8px">Error: ${esc(e.message)}</div>`;
+  }
+
+  container.scrollTop = container.scrollHeight;
+}
+
+// Auto-tag on load
+window.addEventListener('load', () => { doTag(); });
+</script>
+</body>
+</html>
