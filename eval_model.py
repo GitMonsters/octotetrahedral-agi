@@ -1,0 +1,172 @@
+#!/usr/bin/env python3
+"""Evaluate transformer LM on WikiText-2 test set."""
+import torch
+import json
+import math
+import sys
+import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from train_transformer import OctoTransformerLM, CHAR_PAD, BOS_ID, EOS_ID
+
+
+def load_wikitext2_test():
+    path = Path("data/wikitext2_test.jsonl")
+    if not path.exists():
+        path = Path("data/wikitext2_train.jsonl")
+        if not path.exists():
+            print("No WikiText-2 data found, using training set as proxy")
+            return []
+    sentences = []
+    with open(path) as f:
+        for line in f:
+            entry = json.loads(line)
+            if "text" in entry:
+                words = entry["text"].split()
+                if len(words) >= 3:
+                    sentences.append(words)
+    return sentences
+
+
+def evaluate_ppl(model, word_vocab, char_vocab, sentences, device, batch_size=16):
+    model.eval()
+    max_word_len = 30
+    total_loss = 0.0
+    total_tokens = 0
+    total_batches = 0
+
+    for i in range(0, len(sentences), batch_size):
+        batch = sentences[i:i+batch_size]
+        max_len = max(len(s) for s in batch) + 2
+        B = len(batch)
+
+        word_ids = torch.zeros(B, max_len, dtype=torch.long)
+        char_ids = torch.zeros(B, max_len, max_word_len, dtype=torch.long)
+
+        for b, words in enumerate(batch):
+            ids = [BOS_ID] + [word_vocab.get(w, 1) for w in words] + [EOS_ID]
+            word_ids[b, :len(ids)] = torch.tensor(ids)
+            raw = ["<BOS>"] + words + ["<EOS>"]
+            for j, w in enumerate(raw):
+                if j >= max_len:
+                    break
+                chars = [char_vocab.get(c, 1) for c in w.lower()[:max_word_len]]
+                while len(chars) < max_word_len:
+                    chars.append(CHAR_PAD)
+                char_ids[b, j] = torch.tensor(chars[:max_word_len])
+
+        word_ids = word_ids.to(device)
+        char_ids = char_ids.to(device)
+
+        with torch.no_grad():
+            out = model(word_ids, char_ids, targets=word_ids)
+
+        if out["lm_loss"] is not None:
+            shift_logits = out["lm_logits"][:, :-1].reshape(-1, out["lm_logits"].size(-1))
+            shift_targets = word_ids[:, 1:].reshape(-1)
+            mask = shift_targets != 0
+            if mask.sum() > 0:
+                total_loss += F.cross_entropy(shift_logits[mask], shift_targets[mask]).item() * mask.sum().item()
+                total_tokens += mask.sum().item()
+                total_batches += 1
+
+    avg_loss = total_loss / max(total_tokens, 1)
+    ppl = math.exp(min(avg_loss, 30))
+    return avg_loss, ppl, total_tokens
+
+
+def evaluate_generation(model, word_vocab, char_vocab, device):
+    inv = {v: k for k, v in word_vocab.items()}
+    prompts = [
+        ["the", "cat", "sat"],
+        ["in", "the", "year"],
+        ["she", "was", "a"],
+        ["he", "said", "that"],
+        ["the", "university", "of"],
+        ["Instruction", ":", "What", "is", "AI", "?"],
+        ["Instruction", ":", "Explain", "machine", "learning"],
+    ]
+    results = []
+    for words in prompts:
+        ids = torch.tensor([[word_vocab.get(w, 1) for w in words]]).to(device)
+        chars = torch.zeros(1, len(words), 30, dtype=torch.long).to(device)
+        for i, w in enumerate(words):
+            cs = [char_vocab.get(c, 1) for c in w.lower()[:30]]
+            while len(cs) < 30:
+                cs.append(CHAR_PAD)
+            chars[0, i] = torch.tensor(cs[:30]).to(device)
+        gen = model.generate(ids, chars, max_new=30, temperature=0.7, top_k=30, rep_penalty=3.0)
+        gen_words = [inv.get(j.item(), "?") for j in gen[0]]
+        results.append(" ".join(gen_words))
+    return results
+
+
+if __name__ == "__main__":
+    import torch.nn.functional as F
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--checkpoint", default="checkpoints/octo_transformer_best.pt")
+    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--device", default=None)
+    args = parser.parse_args()
+
+    if args.device:
+        device = torch.device(args.device)
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
+
+    print(f"Loading model from {args.checkpoint}...")
+    ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
+    wc, cc = ckpt["word_vocab"], ckpt["char_vocab"]
+    cfg = ckpt["config"]
+    model = OctoTransformerLM(len(wc), len(cc), **cfg)
+    missing, _ = model.load_state_dict(ckpt["model"], strict=False)
+    model.to(device)
+    model.eval()
+    print(f"  Loaded with {len(missing)} missing (monitoring stubs)")
+
+    total = sum(p.numel() for p in model.parameters())
+    core = sum(p.numel() for n, p in model.named_parameters()
+               if not any(m in n for m in ("working_memory", "reservoir", "tp_controller", "_cohesion")))
+    print(f"  Total: {total/1e6:.1f}M, Core: {core/1e6:.1f}M")
+    print(f"  Training loss: {ckpt.get('loss', '?'):.4f}, ppl: {ckpt.get('ppl', '?'):.2f}")
+    print(f"  Epoch: {ckpt.get('epoch', '?')}")
+    print()
+
+    print("=" * 60)
+    print("PERPLEXITY EVALUATION")
+    print("=" * 60)
+    sentences = load_wikitext2_test()
+    print(f"Test sentences: {len(sentences)}")
+    if sentences:
+        t0 = time.time()
+        avg_loss, ppl, n_tokens = evaluate_ppl(model, wc, cc, sentences, device, args.batch_size)
+        elapsed = time.time() - t0
+        print(f"  Loss:      {avg_loss:.4f}")
+        print(f"  Perplexity: {ppl:.2f}")
+        print(f"  Tokens:    {n_tokens:,}")
+        print(f"  Time:      {elapsed:.1f}s")
+    print()
+
+    print("=" * 60)
+    print("GENERATION EVALUATION")
+    print("=" * 60)
+    results = evaluate_generation(model, wc, cc, device)
+    for r in results:
+        print(f"  {r}")
+    print()
+
+    print("=" * 60)
+    print("SUMMARY")
+    print("=" * 60)
+    print(f"  Model:         {total/1e6:.1f}M params")
+    print(f"  Vocab:         {len(wc)} words, {len(cc)} chars")
+    print(f"  Train loss:    {ckpt.get('loss', '?'):.4f}")
+    print(f"  Train ppl:     {ckpt.get('ppl', '?'):.2f}")
+    if sentences:
+        print(f"  Eval ppl:      {ppl:.2f}")
+    print(f"  Diagnostics:   {model.get_diagnostics()}")
