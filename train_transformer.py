@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from core.working_memory import WorkingMemory
 from core.reservoir_dynamics import ReservoirDynamics
 from core.transcendplexity_integration import TranscendPlexityController
+from core.cognitive_geometry import CognitiveGeometryEngine, CognitiveGeometryConfig
 
 CHAR_PAD = 0
 BOS_ID = 2
@@ -161,47 +162,35 @@ class OctoTransformerLM(nn.Module):
             hidden_dim=d_model, num_dimensions=8, alpha_temperature=1.0,
             loss_decay=0.9, phase_history_len=16,
         )
+        self.cog_geom = CognitiveGeometryEngine(
+            hidden_dim=d_model, num_limbs=6,
+            config=CognitiveGeometryConfig(
+                svd_enabled=False,
+                alignment_enabled=False,
+                entropy_monitor_enabled=True,
+                drift_enabled=True,
+                anchor_enabled=True,
+                repetition_dampen_enabled=False,
+                branch_scorer_enabled=False,
+                manifold_enabled=False,
+                goal_vector_enabled=True,
+                attention_plane_enabled=True,
+                vector_field_enabled=True,
+            ),
+        )
         self._cohesion_tracker = CompoundingCohesionTracker()
         self._tp_state = None
-        self._attn_weights = []
-        self._hook_handles = []
-        self._register_attn_hooks()
         self._init_weights()
-
-    def _register_attn_hooks(self):
-        for layer in self.transformer.layers:
-            def hook_fn(mod, inp, out, _layer=layer):
-                if hasattr(mod, "self_attn") and isinstance(out, tuple) and len(out) > 1:
-                    pass
-            handle = layer.register_forward_hook(hook_fn)
-            self._hook_handles.append(handle)
-
-    def geometric_regularization(self):
-        attn_orth = torch.tensor(0.0, device=self._attn_weights[0].device if self._attn_weights else next(self.parameters()).device)
-        hidden_smooth = torch.tensor(0.0, device=attn_orth.device)
-        hidden_uniform = torch.tensor(0.0, device=attn_orth.device)
-
-        for name, param in self.named_parameters():
-            if "transformer" in name and "weight" in name and param.dim() == 2:
-                d = min(param.shape[0], param.shape[1])
-                if d > 1:
-                    sub = param[:d, :d]
-                    gram = sub @ sub.T
-                    eye = torch.eye(d, device=gram.device)
-                    attn_orth = attn_orth + ((gram - eye) ** 2).mean()
-                    break
-
-        return {
-            "attn_orth": attn_orth * 0.01,
-            "hidden_smooth": hidden_smooth,
-            "hidden_uniform": hidden_uniform,
-            "total": attn_orth * 0.01,
-        }
 
     def _init_weights(self):
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
+
+    def geometric_regularization(self, hidden, logits=None, input_ids=None):
+        cg_out = self.cog_geom(hidden, logits=logits, input_ids=input_ids)
+        return cg_out["aux_loss"], cg_out["info"]
+
     def _encode(self, word_ids, char_ids):
         B, W = word_ids.shape
         C = char_ids.shape[2]
@@ -337,8 +326,10 @@ def train(args):
             lm_loss = out["lm_loss"]
             if lm_loss is None:
                 continue
-            geo_reg = model.geometric_regularization()
-            loss = lm_loss + geo_reg["total"]
+            geo_loss, geo_info = model.geometric_regularization(
+                out["hidden"], logits=out["lm_logits"], input_ids=word_ids
+            )
+            loss = lm_loss + geo_loss
             optimizer.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -347,7 +338,8 @@ def train(args):
             n_batches += 1
             if batch_idx % 100 == 0:
                 ppl = math.exp(min(lm_loss.item(), 20))
-                print(f"  epoch {epoch} batch {batch_idx}/{len(loader)} loss={lm_loss.item():.4f} ppl={ppl:.1f} geo={geo_reg['total'].item():.4f}")
+                geo_val = geo_loss.item() if torch.is_tensor(geo_loss) else geo_loss
+                print(f"  epoch {epoch} batch {batch_idx}/{len(loader)} loss={lm_loss.item():.4f} ppl={ppl:.1f} geo={geo_val:.4f}")
 
         scheduler.step()
         avg_loss = total_loss / max(n_batches, 1)
