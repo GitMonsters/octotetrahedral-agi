@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 """
-OctoTetrahedral Transformer - Large LM + Instruction Following
-61M param transformer for language modeling + instruction following
+OctoTetrahedral Transformer — Full Integrated Architecture
+TetrahedralAttention + CognitiveGeometry + RecursiveEngineObjective + full cohesion wiring
 """
 
 import torch
@@ -21,10 +21,13 @@ from core.working_memory import WorkingMemory
 from core.reservoir_dynamics import ReservoirDynamics
 from core.transcendplexity_integration import TranscendPlexityController
 from core.cognitive_geometry import CognitiveGeometryEngine, CognitiveGeometryConfig
+from core.tetrahedral_transformer_layer import TetrahedralTransformerEncoder
+from core.recursive_engine_objective import RecursiveEngineObjective, RecursiveEngineConfig
 
 CHAR_PAD = 0
 BOS_ID = 2
 EOS_ID = 3
+
 
 def build_vocab(data_paths, min_freq=2):
     word_freq = {}
@@ -59,6 +62,7 @@ def build_vocab(data_paths, min_freq=2):
             idx += 1
 
     return word_vocab, char_vocab
+
 
 class LMDataset(Dataset):
     def __init__(self, data_paths, word_vocab, max_len=128):
@@ -104,6 +108,8 @@ def make_collate(word_vocab, char_vocab, max_word_len=30):
 
 
 class CompoundingCohesionTracker:
+    """Tracks compounding cohesion — feeds into RecursiveEngineObjective stability loss."""
+
     def __init__(self):
         self._prev_hidden = None
         self._cohesion_history = []
@@ -141,21 +147,28 @@ class OctoTransformerLM(nn.Module):
         self.d_model = d_model
         self.nhead = nhead
         self.max_len = max_len
+
+        # ── Embeddings ─────────────────────────────────────────────────────
         self.word_emb = nn.Embedding(word_vocab_size, d_model, padding_idx=0)
         self.char_emb = nn.Embedding(char_vocab_size, 32, padding_idx=0)
         self.char_proj = nn.Linear(32, d_model)
         self.embed_dropout = nn.Dropout(dropout)
         self.pos_emb = nn.Embedding(max_len, d_model)
-        encoder_layer = nn.TransformerEncoderLayer(
-            d_model=d_model, nhead=nhead, dim_feedforward=dim_ff,
-            dropout=dropout, activation="gelu", batch_first=True, norm_first=True,
+
+        # ── Core transformer (tetrahedral attention) ───────────────────────
+        self.transformer = TetrahedralTransformerEncoder(
+            d_model=d_model, nhead=nhead, num_layers=num_layers,
+            dim_ff=dim_ff, dropout=dropout, use_geometric_bias=True,
         )
-        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+
+        # ── LM head (factorised) ──────────────────────────────────────────
         self.final_norm = nn.LayerNorm(d_model)
         self.lm_head = nn.Sequential(
             nn.Linear(d_model, 256), nn.GELU(), nn.Dropout(dropout),
             nn.Linear(256, word_vocab_size),
         )
+
+        # ── Auxiliary modules (all feed into cohesion / geometry / loss) ───
         self.working_memory = WorkingMemory(num_slots=4, hidden_dim=d_model)
         self.reservoir = ReservoirDynamics(hidden_dim=d_model, n_limbs=8, echo_rho=0.9)
         self.tp_controller = TranscendPlexityController(
@@ -180,16 +193,32 @@ class OctoTransformerLM(nn.Module):
         )
         self._cohesion_tracker = CompoundingCohesionTracker()
         self._tp_state = None
+        self._prev_hidden_for_stability = None
+
+        # ── Recursive Engine Objective (6-term composite loss) ─────────────
+        self.recursive_obj = RecursiveEngineObjective(
+            RecursiveEngineConfig(
+                lambda_wm=0.10,      # world-model: next-token prediction from hidden
+                lambda_meta=0.05,    # meta-learning: adaptability tracking
+                lambda_resource=0.02,# resource: activation-norm proportionality
+                lambda_ground=0.05,  # grounding: cohesion-as-grounding signal
+                lambda_stability=0.15,# stability: cohesion deficit + forgetting + oscillation
+            )
+        )
+
+        # ── World-model projection head (for L_WM) ────────────────────────
+        # Predicts next-step hidden from current hidden (causal world model)
+        self.wm_proj = nn.Sequential(
+            nn.Linear(d_model, d_model), nn.GELU(),
+            nn.Linear(d_model, d_model),
+        )
+
         self._init_weights()
 
     def _init_weights(self):
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
-
-    def geometric_regularization(self, hidden, logits=None, input_ids=None):
-        cg_out = self.cog_geom(hidden, logits=logits, input_ids=input_ids)
-        return cg_out["aux_loss"], cg_out["info"]
 
     def _encode(self, word_ids, char_ids):
         B, W = word_ids.shape
@@ -202,8 +231,7 @@ class OctoTransformerLM(nn.Module):
         positions = torch.arange(W, device=x.device).unsqueeze(0).expand(B, W)
         x = x + self.pos_emb(positions)
         x = self.embed_dropout(x)
-        mask = nn.Transformer.generate_square_subsequent_mask(W, device=x.device)
-        x = self.transformer(x, mask=mask, is_causal=True)
+        x = self.transformer(x)
         x = self.final_norm(x)
         return x
 
@@ -217,6 +245,8 @@ class OctoTransformerLM(nn.Module):
             mask = shift_targets != 0
             if mask.sum() > 0:
                 lm_loss = F.cross_entropy(shift_logits[mask], shift_targets[mask])
+
+        # ── Auxiliary modules (no_grad for monitoring) ─────────────────────
         with torch.no_grad():
             pooled = hidden.mean(dim=1)
             self.reservoir.tick()
@@ -224,11 +254,54 @@ class OctoTransformerLM(nn.Module):
             tp_state, _ = self.tp_controller(hidden.detach(), step_loss=None)
             self._tp_state = tp_state
         cohesion = self._cohesion_tracker.compute(hidden)
+
+        # ── Cognitive geometry pass (gradient flows through) ───────────────
+        cg_out = self.cog_geom(hidden, logits=lm_logits, input_ids=word_ids)
+        hidden = cg_out["hidden"]
+        geo_aux_loss = cg_out["aux_loss"]
+        geo_info = cg_out["info"]
+
+        # ── World-model prediction (L_WM term) ────────────────────────────
+        pred_next = self.wm_proj(hidden[:, :-1, :])   # [B, S-1, D]
+        true_next = hidden[:, 1:, :].detach()          # [B, S-1, D] (stop-grad on target)
+
+        # ── Resource estimate: activation norm as proxy for compute cost ───
+        activation_norm = hidden.norm(dim=-1).mean(dim=1)  # [B]
+        resource_pseudo = (activation_norm / (activation_norm.max() + 1e-8)).detach()
+
+        # ── Stability inputs ───────────────────────────────────────────────
+        named_params = dict(self.named_parameters())
+        prev_out = self._prev_hidden_for_stability
+        curr_out = hidden.detach()
+        self._prev_hidden_for_stability = curr_out.mean(dim=1).clone()
+
+        # ── 6-term composite loss ─────────────────────────────────────────
+        task_loss = lm_loss if lm_loss is not None else torch.tensor(0.0, device=hidden.device)
+
+        total_loss, metrics = self.recursive_obj.compute_loss(
+            task_loss=task_loss,
+            pred_next=pred_next,
+            true_next=true_next,
+            cohesion_score=cohesion,
+            named_params=named_params,
+            prev_output=prev_out,
+            curr_output=curr_out.mean(dim=1) if curr_out is not None else None,
+        )
+
+        # Add geometric aux loss
+        total_loss = total_loss + geo_aux_loss
+
         return {
-            "lm_logits": lm_logits, "lm_loss": lm_loss,
-            "hidden": hidden, "cohesion": cohesion,
+            "lm_logits": lm_logits,
+            "lm_loss": lm_loss,
+            "hidden": hidden,
+            "cohesion": cohesion,
+            "total_loss": total_loss,
+            "metrics": metrics,
+            "geo_info": geo_info,
             "tp_phase": getattr(self._tp_state, "phase_name", "UNKNOWN") if self._tp_state else "UNKNOWN",
         }
+
     @torch.no_grad()
     def generate(self, seed_word_ids, seed_char_ids, max_new=50,
                  temperature=0.7, top_k=20, rep_penalty=3.0):
@@ -271,8 +344,10 @@ class OctoTransformerLM(nn.Module):
         return {
             "phase": getattr(tp, "phase_name", "UNKNOWN") if tp else "UNKNOWN",
             "stability": stability,
-            "cohesion": round(float(self._cohesion_tracker.compute(torch.zeros(1, 1, self.d_model))), 4),
+            "cohesion": round(float(self._cohesion_tracker.compute(
+                torch.zeros(1, 1, self.d_model))), 4),
         }
+
 
 def train(args):
     if args.device:
@@ -323,23 +398,28 @@ def train(args):
             word_ids = word_ids.to(device)
             char_ids = char_ids.to(device)
             out = model(word_ids, char_ids, targets=word_ids)
-            lm_loss = out["lm_loss"]
-            if lm_loss is None:
+
+            if out["total_loss"] is None or torch.isnan(out["total_loss"]):
                 continue
-            geo_loss, geo_info = model.geometric_regularization(
-                out["hidden"], logits=out["lm_logits"], input_ids=word_ids
-            )
-            loss = lm_loss + geo_loss
+
+            loss = out["total_loss"]
             optimizer.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
-            total_loss += lm_loss.item()
+
+            lm_val = out["lm_loss"].item() if out["lm_loss"] is not None else 0
+            total_loss += lm_val
             n_batches += 1
             if batch_idx % 100 == 0:
-                ppl = math.exp(min(lm_loss.item(), 20))
-                geo_val = geo_loss.item() if torch.is_tensor(geo_loss) else geo_loss
-                print(f"  epoch {epoch} batch {batch_idx}/{len(loader)} loss={lm_loss.item():.4f} ppl={ppl:.1f} geo={geo_val:.4f}")
+                ppl = math.exp(min(lm_val, 20))
+                m = out["metrics"]
+                print(
+                    f"  epoch {epoch} batch {batch_idx}/{len(loader)} "
+                    f"lm={lm_val:.4f} ppl={ppl:.1f} "
+                    f"wm={m.get('l_wm', 0):.4f} stab={m.get('l_stability', 0):.4f} "
+                    f"geo={out['geo_info'].get('entropy', {}).get('mean_entropy', 0):.2f}"
+                )
 
         scheduler.step()
         avg_loss = total_loss / max(n_batches, 1)
@@ -359,6 +439,11 @@ def train(args):
             best_loss = avg_loss
             torch.save(ckpt, "checkpoints/octo_transformer_best.pt")
             print(f"  New best: loss={avg_loss:.4f} ppl={ppl:.2f}")
+
+        # EWC consolidation every 5 epochs
+        if (epoch + 1) % 5 == 0:
+            model.recursive_obj.consolidate_after_task(model)
+            print("  EWC consolidation done")
 
         print("  Generating:")
         seeds = ["the", "cat", "sat"]

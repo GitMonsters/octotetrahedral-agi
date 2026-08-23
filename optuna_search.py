@@ -20,6 +20,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 from core.working_memory import WorkingMemory
 from core.reservoir_dynamics import ReservoirDynamics
 from core.transcendplexity_integration import TranscendPlexityController
+from core.cognitive_geometry import CognitiveGeometryEngine, CognitiveGeometryConfig
+from core.tetrahedral_transformer_layer import TetrahedralTransformerEncoder
+from core.recursive_engine_objective import RecursiveEngineObjective, RecursiveEngineConfig
 
 import optuna
 from optuna.trial import TrialState
@@ -152,11 +155,10 @@ class OctoTransformerLM(nn.Module):
         self.char_proj = nn.Linear(32, d_model)
         self.embed_dropout = nn.Dropout(dropout)
         self.pos_emb = nn.Embedding(max_len, d_model)
-        encoder_layer = nn.TransformerEncoderLayer(
-            d_model=d_model, nhead=nhead, dim_feedforward=dim_ff,
-            dropout=dropout, activation="gelu", batch_first=True, norm_first=True,
+        self.transformer = TetrahedralTransformerEncoder(
+            d_model=d_model, nhead=nhead, num_layers=num_layers,
+            dim_ff=dim_ff, dropout=dropout, use_geometric_bias=True,
         )
-        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
         self.final_norm = nn.LayerNorm(d_model)
         self.lm_head = nn.Sequential(
             nn.Linear(d_model, 256), nn.GELU(), nn.Dropout(dropout),
@@ -168,8 +170,24 @@ class OctoTransformerLM(nn.Module):
             hidden_dim=d_model, num_dimensions=8, alpha_temperature=1.0,
             loss_decay=0.9, phase_history_len=16,
         )
+        self.cog_geom = CognitiveGeometryEngine(
+            hidden_dim=d_model, num_limbs=6,
+            config=CognitiveGeometryConfig(
+                svd_enabled=False, alignment_enabled=False,
+                entropy_monitor_enabled=True, drift_enabled=True, anchor_enabled=True,
+                repetition_dampen_enabled=False, branch_scorer_enabled=False,
+                manifold_enabled=False, goal_vector_enabled=True,
+                attention_plane_enabled=True, vector_field_enabled=True,
+            ),
+        )
+        self.recursive_obj = RecursiveEngineObjective(RecursiveEngineConfig(
+            lambda_wm=0.10, lambda_meta=0.05, lambda_resource=0.02,
+            lambda_ground=0.05, lambda_stability=0.15,
+        ))
+        self.wm_proj = nn.Sequential(nn.Linear(d_model, d_model), nn.GELU(), nn.Linear(d_model, d_model))
         self._cohesion_tracker = CompoundingCohesionTracker()
         self._tp_state = None
+        self._prev_hidden_for_stability = None
         self._init_weights()
 
     def _init_weights(self):
@@ -192,8 +210,7 @@ class OctoTransformerLM(nn.Module):
         positions = torch.arange(W, device=x.device).unsqueeze(0).expand(B, W)
         x = x + self.pos_emb(positions)
         x = self.embed_dropout(x)
-        mask = nn.Transformer.generate_square_subsequent_mask(W, device=x.device)
-        x = self.transformer(x, mask=mask, is_causal=True)
+        x = self.transformer(x)
         x = self.final_norm(x)
         return x
 
@@ -216,9 +233,26 @@ class OctoTransformerLM(nn.Module):
             tp_state, _ = self.tp_controller(hidden.detach(), step_loss=None)
             self._tp_state = tp_state
         cohesion = self._cohesion_tracker.compute(hidden)
+        cg_out = self.cog_geom(hidden, logits=lm_logits, input_ids=word_ids)
+        hidden = cg_out["hidden"]
+        geo_aux_loss = cg_out["aux_loss"]
+        pred_next = self.wm_proj(hidden[:, :-1, :])
+        true_next = hidden[:, 1:, :].detach()
+        named_params = dict(self.named_parameters())
+        prev_out = self._prev_hidden_for_stability
+        curr_out = hidden.detach()
+        self._prev_hidden_for_stability = curr_out.mean(dim=1).clone()
+        task_loss = lm_loss if lm_loss is not None else torch.tensor(0.0, device=hidden.device)
+        total_loss, metrics = self.recursive_obj.compute_loss(
+            task_loss=task_loss, pred_next=pred_next, true_next=true_next,
+            cohesion_score=cohesion, named_params=named_params,
+            prev_output=prev_out,
+            curr_output=curr_out.mean(dim=1) if curr_out is not None else None,
+        )
+        total_loss = total_loss + geo_aux_loss
         return {
-            "lm_logits": lm_logits, "lm_loss": lm_loss,
-            "hidden": hidden, "cohesion": cohesion,
+            "lm_logits": lm_logits, "lm_loss": lm_loss, "hidden": hidden,
+            "cohesion": cohesion, "total_loss": total_loss, "metrics": metrics,
         }
 
     @torch.no_grad()
@@ -404,14 +438,14 @@ def objective(trial):
             word_ids = word_ids.to(device)
             char_ids = char_ids.to(device)
             out = model(word_ids, char_ids, targets=word_ids)
-            loss = out["lm_loss"]
-            if loss is None:
+            loss = out["total_loss"]
+            if loss is None or math.isnan(loss.item()):
                 continue
             optimizer.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
-            total_loss += loss.item()
+            total_loss += out["lm_loss"].item() if out["lm_loss"] is not None else 0
             n_batches += 1
 
         scheduler.step()
