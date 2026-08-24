@@ -66,6 +66,7 @@ def build_vocab(data_paths, min_freq=2):
 
 class LMDataset(Dataset):
     def __init__(self, data_paths, word_vocab, max_len=128):
+        self.max_len = max_len
         self.samples = []
         for data_path in data_paths:
             with open(data_path) as f:
@@ -222,6 +223,10 @@ class OctoTransformerLM(nn.Module):
 
     def _encode(self, word_ids, char_ids):
         B, W = word_ids.shape
+        if W > self.max_len:
+            word_ids = word_ids[:, :self.max_len]
+            char_ids = char_ids[:, :self.max_len]
+            W = self.max_len
         C = char_ids.shape[2]
         word_e = self.word_emb(word_ids)
         flat_c = char_ids.reshape(B * W, C)
@@ -237,6 +242,8 @@ class OctoTransformerLM(nn.Module):
 
     def forward(self, word_ids, char_ids, targets=None):
         hidden = self._encode(word_ids, char_ids)
+        if targets is not None and targets.size(1) > hidden.size(1):
+            targets = targets[:, :hidden.size(1)]
         lm_logits = self.lm_head(hidden)
         lm_loss = None
         if targets is not None:
@@ -272,8 +279,8 @@ class OctoTransformerLM(nn.Module):
         # ── Stability inputs ───────────────────────────────────────────────
         named_params = dict(self.named_parameters())
         prev_out = self._prev_hidden_for_stability
-        curr_out = hidden.detach()
-        self._prev_hidden_for_stability = curr_out.mean(dim=1).clone()
+        curr_out_mean = hidden.mean(dim=(0, 1)).unsqueeze(0)  # [1, D]
+        self._prev_hidden_for_stability = curr_out_mean.detach().clone()
 
         # ── 6-term composite loss ─────────────────────────────────────────
         task_loss = lm_loss if lm_loss is not None else torch.tensor(0.0, device=hidden.device)
@@ -285,7 +292,7 @@ class OctoTransformerLM(nn.Module):
             cohesion_score=cohesion,
             named_params=named_params,
             prev_output=prev_out,
-            curr_output=curr_out.mean(dim=1) if curr_out is not None else None,
+            curr_output=curr_out_mean,
         )
 
         # Add geometric aux loss

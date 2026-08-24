@@ -227,14 +227,14 @@ class OctoTransformerLM(nn.Module):
         true_next = hidden[:, 1:, :].detach()
         named_params = dict(self.named_parameters())
         prev_out = self._prev_hidden_for_stability
-        curr_out = hidden.detach()
-        self._prev_hidden_for_stability = curr_out.mean(dim=1).clone()
+        curr_out_mean = hidden.mean(dim=(0, 1)).unsqueeze(0).detach().clone()
+        self._prev_hidden_for_stability = curr_out_mean
         task_loss = lm_loss if lm_loss is not None else torch.tensor(0.0, device=hidden.device)
         total_loss, metrics = self.recursive_obj.compute_loss(
             task_loss=task_loss, pred_next=pred_next, true_next=true_next,
             cohesion_score=cohesion, named_params=named_params,
             prev_output=prev_out,
-            curr_output=curr_out.mean(dim=1) if curr_out is not None else None,
+            curr_output=curr_out_mean,
         )
         total_loss = total_loss + geo_aux_loss
         return {

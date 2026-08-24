@@ -234,7 +234,7 @@ if __name__ == "__main__":
 
     total = sum(p.numel() for p in model.parameters())
     core = sum(p.numel() for n, p in model.named_parameters()
-               if not any(m in n for m in ("working_memory", "reservoir", "tp_controller", "_cohesion")))
+               if not any(m in n for m in ("working_memory", "reservoir", "tp_controller", "_cohesion", "cog_geom", "recursive_obj", "wm_proj")))
     print(f"  Total: {total/1e6:.1f}M, Core: {core/1e6:.1f}M")
     print(f"  Training loss: {ckpt.get('loss', '?'):.4f}, ppl: {ckpt.get('ppl', '?'):.2f}")
     print(f"  Epoch: {ckpt.get('epoch', '?')}")
