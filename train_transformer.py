@@ -110,35 +110,54 @@ def make_collate(word_vocab, char_vocab, max_word_len=30):
 
 
 class CompoundingCohesionTracker:
-    """Tracks compounding cohesion — feeds into RecursiveEngineObjective stability loss."""
+    """Tracks compounding cohesion — feeds into RecursiveEngineObjective stability loss.
+
+    Measures WITHIN-SENTENCE cohesion: how smoothly hidden states transition
+    across positions. A well-trained model should have smooth, coherent
+    representations that don't jump erratically between positions.
+    """
 
     def __init__(self):
-        self._prev_hidden = None
+        self._prev_anchor = None
         self._cohesion_history = []
-        self._trajectory_angles = []
 
     def compute(self, hidden):
-        import numpy as np
-        first_sample = hidden[0].mean(dim=0).detach().cpu().float().numpy()
-        if self._prev_hidden is None:
-            self._prev_hidden = first_sample
+        """Compute cohesion from hidden states [B, W, D].
+
+        Two signals:
+        1. Position smoothness: cosine sim between consecutive positions (avg across batch)
+        2. Anchor stability: cosine sim of batch-mean with a running anchor
+        """
+        B, W, D = hidden.shape
+        if W < 2:
             return 1.0
-        cos_sim = float(np.dot(self._prev_hidden, first_sample) /
-                        (np.linalg.norm(self._prev_hidden) * np.linalg.norm(first_sample) + 1e-8))
-        cos_sim = max(0.0, min(1.0, cos_sim))
-        delta = first_sample - self._prev_hidden
-        mag = float(np.linalg.norm(delta))
-        self._trajectory_angles.append(mag)
-        if len(self._trajectory_angles) >= 2:
-            angles = list(self._trajectory_angles)
-            mean_a = sum(angles) / len(angles)
-            var_a = sum((a - mean_a) ** 2 for a in angles) / len(angles)
-            traj_score = 1.0 / (1.0 + var_a * 10)
+
+        # Position smoothness: how similar are consecutive hidden states?
+        with torch.no_grad():
+            h = hidden.detach().float()
+            # [B, W-1, D] dot [B, W-1, D] per position
+            h_curr = h[:, :-1, :].reshape(-1, D)
+            h_next = h[:, 1:, :].reshape(-1, D)
+            cos_sim = F.cosine_similarity(h_curr, h_next, dim=-1)  # [B*(W-1)]
+            pos_smooth = float(cos_sim.mean())  # avg across all positions and batch
+            pos_smooth = max(0.0, min(1.0, pos_smooth))
+
+        # Anchor stability: does the batch-level representation drift?
+        batch_mean = hidden.detach().float().mean(dim=(0, 1))  # [D]
+        if self._prev_anchor is None:
+            self._prev_anchor = batch_mean.clone()
+            anchor_sim = 1.0
         else:
-            traj_score = 1.0
-        cohesion = 0.6 * cos_sim + 0.4 * traj_score
+            anchor_sim = float(F.cosine_similarity(
+                batch_mean.unsqueeze(0), self._prev_anchor.unsqueeze(0)
+            ))
+            anchor_sim = max(0.0, min(1.0, anchor_sim))
+            # EMA update anchor
+            self._prev_anchor = 0.9 * self._prev_anchor + 0.1 * batch_mean
+
+        # Combined: 60% position smoothness, 40% anchor stability
+        cohesion = 0.6 * pos_smooth + 0.4 * anchor_sim
         self._cohesion_history.append(cohesion)
-        self._prev_hidden = first_sample
         return cohesion
 
 
