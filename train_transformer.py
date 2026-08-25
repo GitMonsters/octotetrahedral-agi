@@ -415,9 +415,11 @@ def train(args):
     epochs_no_improve = 0
     inv_vocab = {v: k for k, v in word_vocab.items()}
 
-    # Build held-out eval set from wikitext2_train.jsonl (subset not in training)
+    # Build held-out eval set from CLEAN source (not in training data)
     eval_sents = []
-    eval_path = "data/wikitext2_train.jsonl"
+    eval_path = "data/eval_heldout.jsonl"
+    if not Path(eval_path).exists():
+        eval_path = "data/wikitext2_train.jsonl"  # fallback
     if Path(eval_path).exists():
         with open(eval_path) as f:
             for line in f:
@@ -428,7 +430,7 @@ def train(args):
                         eval_sents.append(words)
         random.shuffle(eval_sents)
         eval_sents = eval_sents[:500]
-        print(f"  Eval set: {len(eval_sents)} held-out sentences")
+        print(f"  Eval set: {len(eval_sents)} held-out sentences (from {eval_path})")
 
     def compute_eval_ppl(sents, max_n=500):
         if not sents:
