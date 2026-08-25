@@ -13,6 +13,7 @@ import time
 import math
 import sys
 import os
+import random
 from pathlib import Path
 from torch.utils.data import Dataset, DataLoader
 
@@ -391,9 +392,50 @@ def train(args):
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
     best_loss = float("inf")
+    best_eval_ppl = float("inf")
+    epochs_no_improve = 0
     inv_vocab = {v: k for k, v in word_vocab.items()}
 
-    print(f"\nTraining: {args.epochs} epochs, lr={args.lr}\n")
+    # Build held-out eval set from wikitext2_train.jsonl (subset not in training)
+    eval_sents = []
+    eval_path = "data/wikitext2_train.jsonl"
+    if Path(eval_path).exists():
+        with open(eval_path) as f:
+            for line in f:
+                entry = json.loads(line)
+                if "text" in entry:
+                    words = entry["text"].split()
+                    if 3 <= len(words) <= 126:
+                        eval_sents.append(words)
+        random.shuffle(eval_sents)
+        eval_sents = eval_sents[:500]
+        print(f"  Eval set: {len(eval_sents)} held-out sentences")
+
+    def compute_eval_ppl(sents, max_n=500):
+        if not sents:
+            return float("inf")
+        model.eval()
+        total_loss, total_tok = 0.0, 0
+        for words in sents[:max_n]:
+            ids = torch.tensor([[BOS_ID] + [word_vocab.get(w, 1) for w in words] + [EOS_ID]])
+            cids = torch.zeros(1, ids.size(1), 30, dtype=torch.long)
+            raw = ["<BOS>"] + words + ["<EOS>"]
+            for j, w in enumerate(raw):
+                if j >= ids.size(1):
+                    break
+                cs = [char_vocab.get(c, 1) for c in w.lower()[:30]]
+                while len(cs) < 30:
+                    cs.append(CHAR_PAD)
+                cids[0, j] = torch.tensor(cs[:30])
+            with torch.no_grad():
+                out = model(ids, cids, targets=ids)
+            if out["lm_loss"] is not None:
+                total_loss += out["lm_loss"].item() * ids.size(1)
+                total_tok += ids.size(1)
+        avg = total_loss / max(total_tok, 1)
+        return math.exp(min(avg, 30))
+
+    print(f"\nTraining: {args.epochs} epochs, lr={args.lr}, early_stop_patience={args.patience}\n")
 
     for epoch in range(args.epochs):
         model.train()
@@ -432,26 +474,42 @@ def train(args):
         avg_loss = total_loss / max(n_batches, 1)
         ppl = math.exp(min(avg_loss, 20))
         elapsed = time.time() - t0
-        print(f"\nEpoch {epoch}: loss={avg_loss:.4f} ppl={ppl:.2f} time={elapsed:.0f}s")
+
+        # Eval PPL on held-out data
+        eval_ppl = compute_eval_ppl(eval_sents)
+        print(f"\nEpoch {epoch}: train_loss={avg_loss:.4f} train_ppl={ppl:.2f} "
+              f"eval_ppl={eval_ppl:.2f} time={elapsed:.0f}s")
 
         ckpt = {"epoch": epoch, "model": model.state_dict(),
                 "word_vocab": word_vocab, "char_vocab": char_vocab,
                 "config": {"d_model": args.d_model, "nhead": args.nhead,
                            "num_layers": args.num_layers, "dim_ff": args.dim_ff,
                            "dropout": args.dropout},
-                "loss": avg_loss, "ppl": ppl}
+                "loss": avg_loss, "ppl": ppl, "eval_ppl": eval_ppl}
         torch.save(ckpt, f"checkpoints/octo_transformer_epoch{epoch}.pt")
 
-        if avg_loss < best_loss:
+        # Save best by eval PPL (not train loss)
+        if eval_ppl < best_eval_ppl:
+            best_eval_ppl = eval_ppl
             best_loss = avg_loss
             torch.save(ckpt, "checkpoints/octo_transformer_best.pt")
-            print(f"  New best: loss={avg_loss:.4f} ppl={ppl:.2f}")
+            epochs_no_improve = 0
+            print(f"  New best: eval_ppl={eval_ppl:.2f} train_ppl={ppl:.2f}")
+        else:
+            epochs_no_improve += 1
+            print(f"  No improvement for {epochs_no_improve}/{args.patience} epochs")
+
+        # Early stopping
+        if epochs_no_improve >= args.patience:
+            print(f"\nEarly stopping at epoch {epoch} (no improvement for {args.patience} epochs)")
+            break
 
         # EWC consolidation every 5 epochs
         if (epoch + 1) % 5 == 0:
             model.recursive_obj.consolidate_after_task(model)
             print("  EWC consolidation done")
 
+        # Generation sample
         print("  Generating:")
         seeds = ["the", "cat", "sat"]
         seed_ids = torch.tensor([[word_vocab.get(w, 1) for w in seeds]]).to(device)
@@ -466,7 +524,7 @@ def train(args):
         print(f"  {' '.join(gen_words)}\n")
 
     print("=" * 50)
-    print(f"TRAINING COMPLETE - Best loss: {best_loss:.4f}")
+    print(f"TRAINING COMPLETE - Best eval_ppl: {best_eval_ppl:.2f}")
     print("Saved: checkpoints/octo_transformer_best.pt")
 
 if __name__ == "__main__":
@@ -482,5 +540,6 @@ if __name__ == "__main__":
     p.add_argument("--dim-ff", type=int, default=2048)
     p.add_argument("--dropout", type=float, default=0.2)
     p.add_argument("--min-freq", type=int, default=2)
+    p.add_argument("--patience", type=int, default=5, help="Early stopping patience (epochs without eval PPL improvement)")
     p.add_argument("--device", default=None)
     train(p.parse_args())
