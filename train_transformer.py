@@ -546,7 +546,8 @@ def train(args):
             while len(chars) < 30:
                 chars.append(CHAR_PAD)
             seed_chars[0, i] = torch.tensor(chars[:30]).to(device)
-        gen_ids = model.generate(seed_ids, seed_chars, max_new=30)
+        gen_ids = model.generate(seed_ids, seed_chars, max_new=30,
+                                temperature=1.0, top_k=50, rep_penalty=1.5)
         gen_words = [inv_vocab.get(i.item(), "?") for i in gen_ids[0]]
         print(f"  {' '.join(gen_words)}\n")
 
