@@ -438,8 +438,8 @@ def train(args):
         model.eval()
         total_loss, total_tok = 0.0, 0
         for words in sents[:max_n]:
-            ids = torch.tensor([[BOS_ID] + [word_vocab.get(w, 1) for w in words] + [EOS_ID]])
-            cids = torch.zeros(1, ids.size(1), 30, dtype=torch.long)
+            ids = torch.tensor([[BOS_ID] + [word_vocab.get(w, 1) for w in words] + [EOS_ID]]).to(device)
+            cids = torch.zeros(1, ids.size(1), 30, dtype=torch.long).to(device)
             raw = ["<BOS>"] + words + ["<EOS>"]
             for j, w in enumerate(raw):
                 if j >= ids.size(1):
@@ -447,7 +447,7 @@ def train(args):
                 cs = [char_vocab.get(c, 1) for c in w.lower()[:30]]
                 while len(cs) < 30:
                     cs.append(CHAR_PAD)
-                cids[0, j] = torch.tensor(cs[:30])
+                cids[0, j] = torch.tensor(cs[:30]).to(device)
             with torch.no_grad():
                 out = model(ids, cids, targets=ids)
             if out["lm_loss"] is not None:
