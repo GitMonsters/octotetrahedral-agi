@@ -266,12 +266,14 @@ class OctoTransformerLM(nn.Module):
             targets = targets[:, :hidden.size(1)]
         lm_logits = self.lm_head(hidden)
         lm_loss = None
+        raw_lm_loss = None
         if targets is not None:
             shift_logits = lm_logits[:, :-1].reshape(-1, lm_logits.size(-1))
             shift_targets = targets[:, 1:].reshape(-1)
             mask = shift_targets != 0
             if mask.sum() > 0:
-                lm_loss = F.cross_entropy(shift_logits[mask], shift_targets[mask])
+                lm_loss = F.cross_entropy(shift_logits[mask], shift_targets[mask], label_smoothing=0.1)
+                raw_lm_loss = F.cross_entropy(shift_logits[mask], shift_targets[mask])
 
         # ── Auxiliary modules (no_grad for monitoring) ─────────────────────
         with torch.no_grad():
@@ -321,6 +323,7 @@ class OctoTransformerLM(nn.Module):
         return {
             "lm_logits": lm_logits,
             "lm_loss": lm_loss,
+            "raw_lm_loss": raw_lm_loss,
             "hidden": hidden,
             "cohesion": cohesion,
             "total_loss": total_loss,
@@ -450,8 +453,8 @@ def train(args):
                 cids[0, j] = torch.tensor(cs[:30]).to(device)
             with torch.no_grad():
                 out = model(ids, cids, targets=ids)
-            if out["lm_loss"] is not None:
-                total_loss += out["lm_loss"].item() * ids.size(1)
+            if out["raw_lm_loss"] is not None:
+                total_loss += out["raw_lm_loss"].item() * ids.size(1)
                 total_tok += ids.size(1)
         avg = total_loss / max(total_tok, 1)
         return math.exp(min(avg, 30))
