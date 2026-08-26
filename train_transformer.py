@@ -347,6 +347,7 @@ class OctoTransformerLM(nn.Module):
                 char_ids = char_ids[:, -(self.max_len - 1):]
             out = self.forward(word_ids, char_ids)
             logits = out["lm_logits"][:, -1] / temperature
+            logits[:, 1] = float("-inf")  # mask UNK
             if rep_penalty != 1.0 and recent:
                 for rid in recent:
                     logits[:, rid] -= rep_penalty
@@ -493,6 +494,8 @@ def train(args):
                     f"wm={m.get('l_wm', 0):.4f} stab={m.get('l_stability', 0):.4f} "
                     f"geo={out['geo_info'].get('entropy', {}).get('mean_entropy', 0):.2f}"
                 )
+                if batch_idx % 500 == 0 and hasattr(torch, 'mps') and torch.backends.mps.is_available():
+                    torch.mps.empty_cache()
 
         scheduler.step()
         avg_loss = total_loss / max(n_batches, 1)
