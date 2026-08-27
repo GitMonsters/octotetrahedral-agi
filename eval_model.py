@@ -13,21 +13,20 @@ from train_transformer import OctoTransformerLM, CHAR_PAD, BOS_ID, EOS_ID
 
 
 def load_wikitext2_test():
-    path = Path("data/wikitext2_test.jsonl")
-    if not path.exists():
-        path = Path("data/wikitext2_train.jsonl")
-        if not path.exists():
-            print("No WikiText-2 data found, using training set as proxy")
-            return []
-    sentences = []
-    with open(path) as f:
-        for line in f:
-            entry = json.loads(line)
-            if "text" in entry:
-                words = entry["text"].split()
-                if len(words) >= 3:
-                    sentences.append(words)
-    return sentences
+    for p in ("data/wikitext2_test.jsonl", "data/eval_heldout.jsonl", "data/wikitext2_train.jsonl"):
+        path = Path(p)
+        if path.exists():
+            sentences = []
+            with open(path) as f:
+                for line in f:
+                    entry = json.loads(line)
+                    if "text" in entry:
+                        words = entry["text"].split()
+                        if len(words) >= 3:
+                            sentences.append(words)
+            return sentences
+    print("No WikiText-2 data found, using training set as proxy")
+    return []
 
 
 def evaluate_ppl(model, word_vocab, char_vocab, sentences, device, batch_size=16):
@@ -100,7 +99,7 @@ def evaluate_generation(model, word_vocab, char_vocab, device):
             while len(cs) < 30:
                 cs.append(CHAR_PAD)
             chars[0, i] = torch.tensor(cs[:30]).to(device)
-        gen = model.generate(ids, chars, max_new=30, temperature=0.7, top_k=30, rep_penalty=3.0)
+        gen = model.generate(ids, chars, max_new=30, temperature=1.0, top_k=50, rep_penalty=1.5)
         gen_words = [inv.get(j.item(), "?") for j in gen[0]]
         results.append(" ".join(gen_words))
     return results
