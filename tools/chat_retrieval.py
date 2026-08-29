@@ -8,6 +8,7 @@ so this uses it correctly instead of asking it to hallucinate open-ended text.
 """
 import argparse
 import difflib
+import html
 import json
 import math
 import os
@@ -155,6 +156,21 @@ class ChatBot:
                 for p in d2.get("query", {}).get("pages", {}).values():
                     if p.get("extract"):
                         add(f"web: wikipedia: {p['title']}", p["extract"])
+            u3 = ("https://www.urbandictionary.com/define.php?term="
+                  + urllib.parse.quote(question))
+            r = urllib.request.Request(u3, headers=HDRS)
+            with urllib.request.urlopen(r, timeout=8) as resp:
+                body = resp.read().decode("utf-8", "replace")
+            m = re.search(r'class="break-words meaning[^"]*"\s*>(.*?)</div>',
+                          body, re.S)
+            if m:
+                t = re.sub(r"<[^>]+>", "", m.group(1))
+                t = html.unescape(t.replace("**", "").replace("*", ""))
+                t = re.sub(r"\s+", " ", t).strip()
+                chunk = t.split(". ")[0].rstrip(".") + "."
+                chunk = " ".join(chunk.split()[:50])
+                if len(chunk.split()) >= 3:
+                    add("web: urbandictionary", chunk)
         except Exception:
             pass
 
@@ -241,18 +257,22 @@ class ChatBot:
             if cov < 0.6:
                 continue
             ppl = self._answer_span_ppl(prefix, answer)
+            well = answer[0][0].isupper() if answer and answer[0] else True
             scored.append({"ppl": ppl, "sid": sid,
                            "text": " ".join(answer), "coverage": cov,
-                           "source": self.sources[sid]})
+                           "source": self.sources[sid],
+                           "score": ppl * (1.03 if not well else 1.0)})
         if not scored and self.online:
             for src, words in self._web_search(question):
                 words = words[: self.max_answer]
                 ppl = self._answer_span_ppl(prefix, words)
                 if ppl < 4.0:
+                    well = words[0][0].isupper() if words and words[0] else True
                     scored.append({"ppl": ppl, "sid": -1,
                                    "text": " ".join(words),
-                                   "coverage": 1.0, "source": src})
-            scored.sort(key=lambda x: x["ppl"])
+                                   "coverage": 1.0, "source": src,
+                                   "score": ppl * (1.03 if not well else 1.0)})
+            scored.sort(key=lambda x: x["score"])
         if not scored:
             if self.online:
                 reason = f"{reason}; web search also found nothing relevant"
@@ -260,6 +280,7 @@ class ChatBot:
                     "reason": reason,
                     "maybe": maybe}
 
+        scored.sort(key=lambda x: x.get("score", x["ppl"]))
         best = scored[0]
         median = sorted(x["ppl"] for x in scored)[len(scored) // 2] if scored else float("inf")
         beat_peers = best["ppl"] < 0.87 * median if median != float("inf") else False
@@ -279,7 +300,8 @@ class ChatBot:
 def load_repo_docs():
     root = Path(__file__).resolve().parent.parent
     docs = []
-    for fname in ("PITCH.md", "PITCH_READ_ALOUD.md", "PITCH_DEEP_DIVE.md", "RESULTS.md"):
+    for fname in ("PITCH.md", "PITCH_READ_ALOUD.md", "PITCH_DEEP_DIVE.md",
+                  "RESULTS.md", "FACTS.md"):
         p = root / fname
         if p.exists():
             docs.append((fname, p.read_text()))
