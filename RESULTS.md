@@ -145,6 +145,27 @@ PYTORCH_ENABLE_MPS_FALLBACK=1 python3 -u train_transformer.py \
 
 ---
 
+## Working Demo: Retrieval + Ranking Chat (`tools/chat_retrieval.py`)
+
+A chat-shaped demo that uses the model's measured strength instead of its weakness:
+answers are **retrieved verbatim** from a local corpus and **ranked by the LM's
+naturalness score** (answer-span perplexity conditioned on `Question : <q>
+Response : <answer>`), not generated.
+
+```
+PYTORCH_ENABLE_MPS_FALLBACK=1 python3 tools/chat_retrieval.py        # interactive
+python3 tools/chat_retrieval.py --question "What is a black hole?"   # one-shot
+```
+
+Known, honest limits of the demo:
+- The scorer is weakly discriminative at this temperature of results — most fluent
+  sentences score ~1.05-1.15 answer-PPL, so the keyword retrieval does the topical
+  narrowing and the LM only picks among near-ties.
+- Answers are pulled verbatim from the corpus (science/tech transcripts); it will
+  happily surface a sentence that merely mentions a topic rather than defining it.
+
+---
+
 ## Bottom Line
 
 - **Good:** 52.9M from-scratch LM, teacher-forced eval PPL **1.32**, robust 0.721,
