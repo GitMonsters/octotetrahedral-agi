@@ -157,6 +157,12 @@ PYTORCH_ENABLE_MPS_FALLBACK=1 python3 tools/chat_retrieval.py        # interacti
 python3 tools/chat_retrieval.py --question "What is a black hole?"   # one-shot
 ```
 
+When the corpus has no topical answer, the bot falls back to **online search**
+(DuckDuckGo Instant Answer + Wikipedia plain-text extracts, request headers set to
+pass Wikimedia's User-Agent policy) and ranks the retrieved web sentences with the
+same LM naturalness score; results are tagged with their source (local vs web).
+`--no-online` disables it.
+
 Known, honest limits of the demo:
 - A relevance gate (weighted-IDF query-token coverage ≥ 0.6) rejects candidates that
   merely contain a fuzzy keyword — e.g. "where is the grand canyon?" elicits an honest
