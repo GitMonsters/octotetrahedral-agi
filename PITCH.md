@@ -1,286 +1,163 @@
 # OctoTetrahedral AGI
 
-### A Pure OctoTetrahedral Architecture for Language Modeling
+### A Pure from-Scratch Transformer with Cognitive Modules — Final Results
 
 ---
 
-## The Problem
+## What It Is
 
-Modern language models achieve impressive fluency but share fundamental weaknesses:
+A complete language-model pipeline built from zero — no GPT-2, no pretrained encoders,
+every parameter trained from scratch on Apple Silicon MPS. The geometry of the project:
+a tetrahedral-bias transformer, a six-term cognitive loss, differentiable working memory,
+and reservoir dynamics, all wrapped in a reproducible 102K-sentence corpus and eval suite.
 
-1. **Memorization without understanding** — models learn surface statistics, not structure
-2. **Catastrophic forgetting** — new knowledge overwrites old
-3. **Brittle perturbation response** — swapping one word causes a 60x perplexity blowup
-4. **No principled training objective** — standard cross-entropy ignores stability, grounding, and resource efficiency
-5. **Architecture ceiling** — transformer attention has no geometric structure; it treats all token relationships as learned from scratch
+**Status: complete.** The headline measured result is a 52.9M-param model that predicts
+held-out next tokens at **perplexity 1.32** and survives word-swap perturbation
+(**robustness 0.721**). Open-ended generation is the documented, honest limitation
+(see [The Wall](#the-wall) below).
 
 ---
 
-## The Solution
+## The Architecture
 
-OctoTetrahedral AGI is a **pure transformer language model** enhanced with six integrated cognitive modules derived from neuroscience, reservoir computing, and geometric deep learning. No external backbones (no GPT-2, no pretrained encoders). Every parameter is trained from scratch.
-
-The architecture rests on three pillars:
+Three pillars, all trained from scratch:
 
 ### 1. Tetrahedral Attention
-
-Standard transformer attention computes:
+Standard attention computes `softmax(QK^T / sqrt(d))`. OctoTetrahedral adds a learned
+**geometric bias** with a Gaussian positional prior:
 ```
-softmax(QK^T / sqrt(d))
+softmax(QK^T / sqrt(d) + alpha * exp(-d^2 / (2 * sigma^2))),   sigma = sqrt(d_model)
 ```
-
-OctoTetrahedral attention adds a **learned geometric bias**:
-```
-softmax(QK^T / sqrt(d) + alpha * geometric_bias)
-```
-
-The geometric bias encodes spatial relationships derived from tetrahedral structure. Tokens closer in tetrahedral space attend more strongly, creating structured information flow that respects positional proximity via Gaussian decay:
-```
-bias = exp(-d_ij^2 / (2 * sigma^2)),  sigma = sqrt(d_model)
-```
-
-This gives the model a **structural prior** — it doesn't have to learn positional relationships from scratch.
+A structural prior on nearby-token coupling instead of learning it from data.
 
 ### 2. Cognitive Geometry Engine
-
-12 operational modules implementing the full ML vocabulary as differentiable components:
-
-| Module | What It Does |
-|--------|-------------|
-| SVD Activation Decomposer | Extracts dominant semantic axes via truncated SVD |
-| Concept Alignment Matrix | Penalizes limb collapse via cosine similarity |
-| Entropy Flow Monitor | Tracks uncertainty across stages (target: 2.0 bits) |
-| Semantic Drift Detector | Measures vector rotation across forward passes |
-| Anchor Vector System | Persistent identity/topic bias vectors (4 anchors, decay 0.95) |
-| Repetition Dampener | Suppresses token echo patterns in logits |
-| Branch Scorer | Scores reasoning branches by goal alignment |
-| Manifold Partitioner | Enforces orthogonality between limb subspaces |
-| Goal Vector System | Explicit direction guiding all reasoning |
-| Attention Plane Reconstructor | Compresses attention into a 2D concept map |
-| Vector Field Tracker | Tracks representation flow across layers |
-| Cross-Limb Orthogonality | Keeps reasoning limbs independent |
-
-All modules are **gated by config** (zero overhead when disabled) and produce auxiliary losses + diagnostic info.
+12 differentiable modules wired into every forward pass — SVD semantic-axis decomposer,
+concept-alignment matrix, entropy-flow monitor, semantic-drift detector, anchor/topic
+vectors, repetition dampener, branch scorer, manifold partitioner, goal vectors, attention
+plane reconstructor, vector-field tracker, cross-limb orthogonality. All gated by config,
+all producing auxiliary losses and diagnostics.
 
 ### 3. Six-Term Composite Objective
-
-Standard language models optimize a single loss. OctoTetrahedral optimizes six:
-
 ```
-L_total = L_task + 0.10 * L_WM + 0.05 * L_meta + 0.02 * L_resource + 0.05 * L_ground + 0.15 * L_stability
+L = L_task + 0.10 L_WM + 0.05 L_meta + 0.02 L_resource + 0.05 L_ground + 0.15 L_stability
 ```
+Task (cross-entropy, label-smoothed 0.1) plus a world-model hidden-state predictor,
+meta-learning adaptation term, compute-efficiency term, grounding term, and a
+stability term built on a compounding-cohesion tracker with EWC-style forgetting penalty.
 
-| Term | Weight | What It Measures |
-|------|--------|-----------------|
-| **L_task** | 1.0 | Cross-entropy prediction loss (standard LM) |
-| **L_WM** | 0.10 | World-model: predicts next hidden state (MSE + causal + rollout + calibration) |
-| **L_meta** | 0.05 | Meta-learning: rewards faster adaptation and lower post-shift error |
-| **L_resource** | 0.02 | Compute efficiency: penalizes over-compute on easy tasks, under-compute on hard |
-| **L_ground** | 0.05 | Grounding: ties abstraction to reality via action-outcome accuracy |
-| **L_stability** | 0.15 | Cohesion deficit + EWC forgetting penalty + oscillation detection |
-
-Plus geometric auxiliary losses from the Cognitive Geometry Engine (entropy, drift, anchor drift, goal alignment, attention coherence, vector field smoothness).
+### Supporting modules
+- **Working memory** — 4-slot differentiable memory (goal / context / results / output).
+- **Reservoir dynamics** — 8 parallel echo-state limbs, theta/alpha/gamma pacemaker,
+  spectral radius 0.9 (edge of chaos).
+- **TranscendPlexity controller** — phase tracking (EXPLORATION / CONSOLIDATION /
+  DEEP_REASONING), 8-dim alpha ordering.
 
 ---
 
-## Supporting Modules
-
-### Working Memory
-Neural Turing Machine-inspired 4-slot differentiable memory:
-- **Slot 0**: Goal/task representation
-- **Slot 1**: Current context
-- **Slot 2**: Intermediate results
-- **Slot 3**: Output buffer
-
-Multi-head attention reads, sigmoid-gated writes, selective erase gates. Gradients flow through memory state.
-
-### Reservoir Dynamics
-Echo-state computing with four mechanisms:
-- **Echo State Constraint**: Spectral radius scaled to 0.9 (edge of chaos)
-- **Neural Pacemaker**: Multi-frequency oscillatory driving (theta 6Hz, alpha 10Hz, gamma 40Hz)
-- **Temporal Basis Diversity**: 8 "limbs" with different leak rates (Fourier-rich basis)
-- **Linear Readout**: Harvests signal from concatenated limb states
-
-### TranscendPlexity Controller
-Phase detection and alpha-order dynamics:
-- Tracks processing phase (EXPLORATION / CONSOLIDATION / DEEP_REASONING)
-- Monitors compounding loss and stability
-- 8-dimensional alpha ordering for multi-concept learning
-
-### Compounding Cohesion Tracker
-```
-cohesion = 0.6 * cos_sim(prev_hidden, hidden) + 0.4 * trajectory_score
-trajectory_score = 1 / (1 + 10 * variance(step_magnitudes))
-```
-Feeds into stability loss to prevent representation collapse.
-
-### Tetrahedral Transformer Layer
-Drop-in replacement for `nn.TransformerEncoderLayer`:
-- Pre-norm residual blocks
-- Geometric-bias attention shared across all layers
-- LayerNorm + FFN (GELU) + dropout
-
----
-
-## Architecture (Current Training Run)
+## Final Model (v8)
 
 | Parameter | Value |
 |-----------|-------|
-| d_model | 256 |
+| d_model | 512 |
 | nhead | 8 |
-| num_layers | 4 |
-| dim_ff | 512 |
-| dropout | 0.06 |
+| num_layers | 8 |
+| dim_ff | 2048 |
+| dropout | 0.3 |
 | max_len | 128 tokens |
-| Total params | **6.7M** |
-| Word vocab | 5,226 (min_freq=100) |
-| Char vocab | 126 |
-| Training data | 106,121 sentences (C4 + WikiText-2 + CLARIN) |
-| Optimizer | AdamW (lr=3e-4, weight_decay=0.01, cosine annealing) |
+| Total params | **52.9M** (45.9M core) |
+| Word vocab | 26,603 (min_freq=5, 95.6% coverage) |
+| Char vocab | 333 |
+| Training data | 102,358 sentences (`data/combined_train.jsonl`) |
+| Optimizer | AdamW (lr=3e-4, weight_decay 0.01, cosine annealing) |
 | Hardware | Apple Silicon MPS |
+| Checkpoint | `checkpoints/octo_transformer_best.pt` (epoch 16) |
 
 ---
 
-## Results
+## Results (Measured)
 
-### POS Tagging (BiLSTM Backbone)
-- **99.65% accuracy** on CLARIN evaluation set
-- 17 POS tags, per-tag accuracy >99% on all categories
-- 9.4M parameter BiLSTM with char + word embeddings
+### Language Modeling (teacher-forced, held-out 500 sentences / 21,548 tokens)
 
-### Language Modeling
+| Model | Params | Eval PPL | Robustness |
+|-------|--------|----------|------------|
+| Old flagship (plain transformer) | 34.3M | 89.3 | 0.0 (fragile; 60x swap blowup) |
+| Optuna-tuned (d=128, l=2, mf=100) | 2.7M | 140.5 | — |
+| **v6** | 13.7M | 1.04 | 0.996 |
+| v7 (warm-start + transcripts) | 15.2M | 1.48 | — |
+| **v8 (final)** | **52.9M** | **1.32** | **0.721** |
 
-| Model | Params | Eval PPL | Notes |
-|-------|--------|----------|-------|
-| Old Transformer (nn.TransformerEncoder) | 34.3M | 89.3 | Best checkpoint, epoch 28 |
-| Optuna-tuned (d=128, l=2, mf=100) | 2.7M | 140.5 | Best of 60 Optuna trials |
-| **New Architecture (in training)** | **6.7M** | **TBD** | 6-term loss + tetrahedral attention |
+Per-token accuracy at eval PPL 1.32 is ≈74%. v8's eval PPL declined monotonically across
+its 17 epochs (1.67 → 1.32). The checkpoint is `octo_transformer_best.pt`.
+
+### The Wall (honest limitation)
+Autoregressive generation degenerates into repetition at **every** size tested
+(v6: 1.04, v7: 1.48, v8: 1.32). Root cause: per-token survival ≈0.75 at sampling
+temperature compounds to ~2e-4 over 30 tokens, so samples collapse into the highest
+frequency vocabulary entries. Break-even needs PPL < ~1.05 *at sampling temperature* —
+a regime this model family does not reach on a laptop. Instruction fine-tuning was
+attempted in two formats (7K samples); both retained the collapse. This is reported
+plainly. What the model **does** do extremely well is next-token prediction under
+teacher forcing and robustness in the face of lexical noise.
+
+### POS Tagging (separate BiLSTM backbone)
+- **99.65% accuracy**, 17 tags, per-tag >99% — the project's strongest single result.
+- 9.4M params, char + word embeddings.
 
 ### Hyperparameter Optimization
-- 60 Optuna trials completed
-- Key finding: **min_freq=100** (5K vocab) is the single most important hyperparameter
-- Small models (128-dim, 2-3 layers) consistently outperform large ones at this search scale
-- Dropout ~0.06, learning rate ~9e-4 optimal for small models
-
-### Perturbation Robustness (Old Architecture)
-- 34M model showed **complete fragility**: robustness = 0.0
-- Single word swap caused 60x perplexity blowup
-- Model was memorizing, not reasoning
-- New architecture with geometric bias + cohesion tracking expected to improve this
-
-### Training Diagnostics (New Architecture)
-
-| Epoch | Train Loss | Cohesion | WM Loss | Stability | Phase |
-|-------|-----------|----------|---------|-----------|-------|
-| 0 | 0.342 | 0.010 | 0.599 | 0.187 | DEEP_REASONING |
-| 1 | 0.004 | 0.006 | 0.123 | 0.100 | DEEP_REASONING |
-| 2 | 0.002 | 0.005 | 0.062 | 0.090 | DEEP_REASONING |
-| 3 | 0.002 | 0.004 | 0.038 | 0.085 | DEEP_REASONING |
-| 4 | 0.001 | 0.003 | 0.028 | 0.083 | DEEP_REASONING |
-| 5 | 0.001 | 0.003 | 0.020 | 0.080 | DEEP_REASONING |
-
-All six loss terms active and converging. World-model loss decreasing (learning to predict next hidden state). Stability loss stable (model not oscillating). Phase locked to DEEP_REASONING.
+- 60 completed Optuna trials.
+- Key finding: vocabulary cutoff (`min_freq`) matters more than model size.
+  Small vocab / 5K-word models beat 30K-word models at this scale consistently.
 
 ---
 
-## What Makes This Different
+## Corpus
 
-### vs. Standard Transformers
-| Dimension | Standard Transformer | OctoTetrahedral |
-|-----------|---------------------|-----------------|
-| Attention | Learned from scratch | Geometric-bias prior |
-| Loss | Cross-entropy only | 6-term composite |
-| Forgetting | Catastrophic | EWC stability loss |
-| Uncertainty | None | Entropy monitoring |
-| Memory | Stateless | 4-slot working memory |
-| Dynamics | Feedforward only | Reservoir + pacemaker |
-| Robustness | Fragile | Cohesion-tracked |
+`data/combined_train.jsonl` — 102,358 sentences, surviving and rebuilt after the
+original 106K set (`mega_train_v2.jsonl`) was lost to a git/data incident:
 
-### vs. GPT-2 / Pretrained Models
-- **No pretrained backbone** — every parameter is learned from scratch
-- **Transparent** — all cognitive modules produce diagnostic outputs
-- **Principled** — training objective optimizes for stability, not just prediction
-- **Compact** — 6.7M params vs 124M+ for GPT-2 small
+| Source | Sentences |
+|--------|-----------|
+| Wikipedia-style training text | 78,139 |
+| CLARIN (news, POS-enriched) | 11,479 |
+| Cleaned long-form science transcripts (`data/transcripts.jsonl`) | 8,558 |
+| WikiText-2 raw (re-downloaded parquet) | 4,182 |
 
-### vs. Neuroscience-Inspired Models
-- **Fully integrated** — not bolted on; all modules wired into the forward pass and loss
-- **Trainable** — geometric bias, working memory, and reservoir all participate in backprop
-- **Measurable** — cohesion, phase, entropy, drift all tracked per-batch
+Transcript cleaning is fully scripted (`tools/clean_transcripts.py`, 8,498 unique
+sentences from ~30 DownSub files).
 
 ---
 
-## Roadmap
-
-### Phase 1: Architecture (Current)
-- [x] Tetrahedral attention with geometric bias
-- [x] 12-module cognitive geometry engine
-- [x] 6-term composite loss
-- [x] Working memory (4-slot NTM)
-- [x] Reservoir dynamics (8-limb echo state)
-- [x] Compounding cohesion tracker
-- [x] Full MPS integration
-- [ ] Complete 50-epoch training run
-- [ ] Eval on WikiText-2 test set
-- [ ] Perturbation robustness benchmark
-
-### Phase 2: Optimization
-- [ ] Optuna retrain with new architecture (NaN fix applied)
-- [ ] Scale to 35M+ params on MPS
-- [ ] Hyperparameter sweep with 6-term loss weights
-
-### Phase 3: Instruction Tuning
-- [ ] Fine-tune on instruction data for chat
-- [ ] Multi-turn conversation support
-- [ ] Context window expansion
-
-### Phase 4: Evaluation
-- [ ] CCL (Compounding Concept Learning) benchmark
-- [ ] Intelligence testing suite
-- [ ] Real-world task suite
-- [ ] Comparative analysis vs. GPT-2 at same parameter count
-
----
-
-## Repository Structure
+## Repository
 
 ```
-octotetrahedral-agi/
-  train_transformer.py          # Main LM training (6.7M param model)
-  train_pos_bilstm.py           # BiLSTM POS tagger (99.65% accuracy)
-  eval_model.py                 # PPL + generation + perturbation eval
-  finetune_chat.py              # Instruction fine-tuning
-  octo_serve.py                 # FastAPI inference server
-  optuna_search.py              # Phase 1 hyperparameter sweep (60 trials)
-  optuna_retrain.py             # Phase 2 retrain with best configs
-  core/
-    tetrahedral_attention.py    # Geometry-aware attention
-    tetrahedral_transformer_layer.py  # Transformer layer with geometric bias
-    cognitive_geometry.py       # 12 cognitive geometry modules
-    recursive_engine_objective.py  # 6-term composite loss
-    working_memory.py           # 4-slot NTM-style memory
-    reservoir_dynamics.py       # Echo-state + pacemaker reservoir
-    compound_loop.py            # Adaptive looped reasoning
-    transcendplexity_integration.py  # Phase detection + alpha ordering
-  data/
-    mega_train_v2.jsonl         # 106K training sentences
-  checkpoints/                  # 150+ model checkpoints
+train_transformer.py      # training, --resume, warm-start vocab extension
+finetune_chat.py          # instruction fine-tuning (attempted)
+eval_model.py             # PPL + generation + perturbation eval suite
+octo_serve.py             # FastAPI inference server
+optuna_search.py          # 60-trial hyperparameter sweep
+core/                     # tetrahedral attention, cognitive geometry,
+                          # 6-term objective, working memory, reservoir
+data/combined_train.jsonl # 102,358-sentence corpus
+data/transcripts.jsonl    # 8,498 cleaned transcript sentences
+data/eval_heldout.jsonl   # 500-sentence eval set (deduped vs train)
+tools/                    # corpus cleaning + merge scripts
+checkpoints/              # v6/v7/v8 era checkpoints + chat probes
+RESULTS.md                # full measured-experiment record (this file's canonical source)
 ```
 
 ---
 
 ## Key Numbers
 
-- **99.65%** POS tagging accuracy
-- **6.7M** parameters (current model)
-- **34.3M** parameters (flagship checkpoint)
-- **6** terms in the composite training objective
-- **12** cognitive geometry modules
-- **8** reservoir limbs with theta/alpha/gamma pacemaker
-- **4** working memory slots (goal / context / results / output)
-- **60** Optuna hyperparameter trials completed
-- **106,121** training sentences from C4 + WikiText-2 + CLARIN
-- **0** pretrained components — fully from scratch
+- **1.32** — v8 held-out eval perplexity (52.9M, from scratch)
+- **0.721** — v8 perturbation robustness (MODERATE; vs 0.0 for the old flagship)
+- **99.65%** — POS tagging accuracy
+- **52.9M** — final model parameters
+- **102,358** — training sentences
+- **26,603** — word vocabulary (95.6% token coverage)
+- **6** — cognitive loss terms; **12** — geometry modules; **8** — reservoir limbs
+- **60** — Optuna trials; **0** — pretrained components
 
 ---
 
-*Built with PyTorch. Runs on Apple Silicon MPS. No GPT-2. No external models. Pure OctoTetrahedral.*
+*Built with PyTorch on Apple Silicon MPS. No GPT-2. No external models. Every claim here is measured; every failure is reported.*

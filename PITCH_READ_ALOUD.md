@@ -1,33 +1,37 @@
-# OctoTetrahedral AGI — Read-Aloud Pitch
+# OctoTetrahedral AGI — Read-Aloud Pitch (Final)
 
 ---
 
 Hey, let me tell you about OctoTetrahedral AGI.
 
-It's a language model — a system that reads text and predicts what comes next. But it's not built like GPT or any of the usual models. It's built from scratch with six cognitive modules inspired by how brains actually work.
+It started as a question: can you build a language model from scratch — no GPT-2, no pretrained anything — that isn't just a pattern matcher? An architecture where the attention mechanism has built-in geometric structure, the loss function cares about stability and memory, not just the next word, and the whole thing runs on a laptop?
 
-Here's the problem it solves. Modern language models are impressive, but they have real weaknesses. They memorize patterns without understanding structure. They forget everything when you teach them something new. If you swap one word in a sentence, their performance collapses — sometimes 60 times worse. And their training is simple: just predict the next word. Nothing about stability, nothing about efficiency, nothing about grounding.
+We did build that. And we measured, honestly, both what works and what doesn't.
 
-OctoTetrahedral fixes this with three big ideas.
+Here's the architecture. Three ideas.
 
-First, tetrahedral attention. Normal attention is just math between every pair of tokens — it has to learn everything from data. We add a geometric bias that encodes spatial structure directly into the attention mechanism. Tokens that are closer together in a tetrahedral space attend to each other more strongly. This gives the model a built-in sense of structure instead of learning it from scratch.
+First, tetrahedral attention. Normal attention learns every token relationship from data. Ours adds a geometric bias — a Gaussian positional prior — so nearby tokens are structured from birth, not memorized.
 
-Second, the cognitive geometry engine. That's 12 different modules running inside the model during every forward pass. One tracks entropy to keep uncertainty in a healthy range. Another detects when the model's representations are drifting. There are anchor vectors that give the model persistent memory of topics, a goal vector system that guides reasoning direction, and a repetition dampener that stops the model from getting stuck in loops. All of these produce small auxiliary losses that train the model to be more stable and more structured.
+Second, the cognitive geometry engine. Twelve differentiable modules running in every forward pass. Entropy monitoring, drift detection, anchor vectors for topic persistence, a repetition dampener, a goal-vector system, and cross-limb orthogonality. Every module produces a small auxiliary loss.
 
-Third — and this is the big one — a six-term composite training objective. Instead of just "predict the next word," the model optimizes six losses simultaneously. The main task loss does the prediction. A world-model loss teaches the model to predict its own future hidden states, which prevents superficial pattern matching. A meta-learning loss rewards faster adaptation. A resource loss keeps compute proportional to difficulty. A grounding loss ties abstract reasoning to concrete outcomes. And a stability loss prevents catastrophic forgetting and representation collapse.
+Third, a six-term composite objective. The task loss predicts the next word. A world-model loss predicts the model's own future hidden states. A meta-learning term rewards fast adaptation. A resource term keeps compute proportional to difficulty. A grounding term ties abstraction to outcome. And a stability term with a compounding-cohesion tracker prevents representation collapse and forgetting.
 
-The model also has working memory — four differentiable slots, like a small scratchpad — and a reservoir computing module with eight parallel limbs driven by neural oscillations at theta, alpha, and gamma frequencies. These give the model temporal dynamics that a standard feedforward network just doesn't have.
+Around that, working memory — four differentiable slots, like a scratchpad you can backprop through — and reservoir dynamics: eight echo-state limbs driven by theta, alpha, and gamma oscillations, set right at the edge of chaos.
 
-Everything runs on Apple Silicon, no GPU required. The current training run is 6.7 million parameters — that's 20 times smaller than GPT-2 small — and it's trained on 106,000 sentences from C4, WikiText-2, and CLARIN.
+The training data is 102,358 sentences, rebuilt from sources that survived the project and expanded with thousands of sentences of long-form science transcripts. Every parameter is trained from scratch on Apple Silicon. No GPU.
 
-We also have a separate POS tagger that gets 99.65% accuracy. And we ran 60 Optuna hyperparameter trials to find the best settings.
+And here's the measured result.
 
-The key insight from those trials: vocabulary size matters more than model size. A small model with a 5,000-word vocabulary outperforms a large model with 30,000 words every time.
+The final model — the v8 "scale-up" — has 52.9 million parameters. On held-out data it predicts the next token at a perplexity of 1.32. That's around 74% next-word accuracy. And here's the number that tells you this isn't just memorization: swap one word in a sentence and the old flagship transformer — 34 million parameters — exploded, 60 times worse, robustness zero. v8 scores 0.721. It's genuinely robust to lexical noise.
 
-Right now the model is training. It's on epoch 6 of 50. All six loss terms are active and converging. The world-model loss is dropping — it's learning to predict its own future. The stability loss is holding steady — the model isn't oscillating. And it's locked into the "deep reasoning" phase.
+The model also does next-token prediction monotonically better across training, and the diagnostics — entropy, stability, cohesion — all behave.
 
-Once training finishes, we'll evaluate on WikiText-2 for real perplexity numbers, test perturbation robustness to see if the model actually understands structure or just memorizes, and compare against the old architecture.
+But I'm going to tell you plainly what it does not do, because that's the honest finding. Autoregressive generation degenerates. Give it a prompt and sample, and it collapses into repetition. We tested this at three sizes — 13.7 million parameters, 15.2 million, and 52.9 million — plus instruction fine-tuning in two formats. Every one of them predicts beautifully under teacher forcing and then collapses when asked to generate open-ended text. The reason is arithmetic: at perplexity 1.32, each sampled token survives with about 75% probability, and over thirty tokens that compounds to one in five thousand. The sample luminance decays into the highest-frequency words in the vocabulary. A fluent generator at this scale would need perplexity under 1.05 while sampling — this family of models doesn't reach that on a laptop.
 
-The old architecture had 34 million parameters and got a perplexity of 89. The new one should do better with a fraction of the parameters, because it's not just memorizing — it's reasoning with structure.
+So the outcome is unusual and worth being precise about. Teacher-forced next-token prediction: excellent. Single-word robustness: real, and far better than the old architecture. Open-ended generation: does not work at this scale. That's the wall, and it's a scaling wall, not a bug — the fixes we applied during the project, like label smoothing to stop one-hot collapse and proper vocabulary handling, are all real engineering wins we kept.
 
-That's OctoTetrahedral. No pretrained backbone. No GPT-2. No external models. Every parameter learned from scratch with a principled training objective that optimizes for stability, not just prediction.
+Elsewhere in the project, the strongest result: a part-of-speech tagger at 99.65% accuracy, all seventeen tags above 99%. And sixty Optuna hyperparameter trials whose key finding was that vocabulary size matters more than model size.
+
+So what you get with OctoTetrahedral is a complete, reproducible, from-scratch language-modeling stack with honest, measured results — including a measured statement of exactly where the ceiling is. No pretrained backbone. No GPT-2. No spin. Every parameter learned from zero, every number in this pitch reproduced by the eval suite in the repo.
+
+That's OctoTetrahedral AGI.

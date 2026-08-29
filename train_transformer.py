@@ -65,6 +65,38 @@ def build_vocab(data_paths, min_freq=2):
     return word_vocab, char_vocab
 
 
+def build_extended_vocab(data_paths, base_word_vocab, base_char_vocab,
+                         min_freq, extend_min_freq):
+    """Extend a checkpoint vocab with new frequent words from the corpus."""
+    word_freq = {}
+    char_freq = {}
+    for data_path in data_paths:
+        with open(data_path) as f:
+            for line in f:
+                entry = json.loads(line)
+                words = entry.get("tokens") or entry.get("text", "").split()
+                for word in words:
+                    word_freq[word] = word_freq.get(word, 0) + 1
+                    for c in word.lower():
+                        char_freq[c] = char_freq.get(c, 0) + 1
+
+    word_vocab = dict(base_word_vocab)
+    idx = max(word_vocab.values()) + 1
+    for w, freq in sorted(word_freq.items(), key=lambda x: -x[1]):
+        if w not in word_vocab and freq >= extend_min_freq:
+            word_vocab[w] = idx
+            idx += 1
+
+    char_vocab = dict(base_char_vocab)
+    idx = max(char_vocab.values()) + 1
+    for c, freq in sorted(char_freq.items(), key=lambda x: -x[1]):
+        if c not in char_vocab and freq >= extend_min_freq:
+            char_vocab[c] = idx
+            idx += 1
+
+    return word_vocab, char_vocab
+
+
 class LMDataset(Dataset):
     def __init__(self, data_paths, word_vocab, max_len=128):
         self.max_len = max_len
@@ -393,15 +425,59 @@ def train(args):
     data_paths = [p.strip() for p in args.data_paths.split(",")]
     print(f"Data: {data_paths}")
 
-    print("Building vocab...")
-    word_vocab, char_vocab = build_vocab(data_paths, min_freq=args.min_freq)
-    print(f"  Word vocab: {len(word_vocab)}, Char vocab: {len(char_vocab)}")
+    ckpt = None
+    if args.resume:
+        ckpt = torch.load(args.resume, map_location="cpu", weights_only=False)
+        base_wv = ckpt["word_vocab"]
+        base_cv = ckpt["char_vocab"]
+        cfg = ckpt.get("config", {})
+        args.d_model = int(cfg.get("d_model", args.d_model))
+        args.nhead = int(cfg.get("nhead", args.nhead))
+        args.num_layers = int(cfg.get("num_layers", args.num_layers))
+        args.dim_ff = int(cfg.get("dim_ff", args.dim_ff))
+        args.dropout = float(cfg.get("dropout", args.dropout))
+        print(f"Resuming from {args.resume} (epoch {ckpt.get('epoch')}, "
+              f"eval_ppl={ckpt.get('eval_ppl')})")
+        print("Building extended vocab...")
+        word_vocab, char_vocab = build_extended_vocab(
+            data_paths, base_wv, base_cv,
+            min_freq=args.min_freq, extend_min_freq=args.extend_min_freq)
+        print(f"  Word vocab: {len(word_vocab)} (base {len(base_wv)} "
+              f"+ {len(word_vocab) - len(base_wv)} new), "
+              f"Char vocab: {len(char_vocab)}")
+    else:
+        print("Building vocab...")
+        word_vocab, char_vocab = build_vocab(data_paths, min_freq=args.min_freq)
+        print(f"  Word vocab: {len(word_vocab)}, Char vocab: {len(char_vocab)}")
 
     model = OctoTransformerLM(
         word_vocab_size=len(word_vocab), char_vocab_size=len(char_vocab),
         d_model=args.d_model, nhead=args.nhead, num_layers=args.num_layers,
         dim_ff=args.dim_ff, dropout=args.dropout,
     ).to(device)
+
+    if args.resume and ckpt is not None:
+        target_sd = model.state_dict()
+        new_sd = {}
+        for k, v in ckpt["model"].items():
+            tv = target_sd[k]
+            if tuple(tv.shape) == tuple(v.shape):
+                new_sd[k] = v
+            elif v.ndim == 2 and tv.ndim == 2:
+                grown = tv.clone()
+                nr = min(v.shape[0], tv.shape[0])
+                nc = min(v.shape[1], tv.shape[1])
+                grown[:nr, :nc] = v[:nr, :nc]
+                new_sd[k] = grown
+            elif v.ndim == 1 and tv.ndim == 1:
+                grown = tv.clone()
+                n0 = min(len(v), len(tv))
+                grown[:n0] = v[:n0]
+                new_sd[k] = grown
+            else:
+                new_sd[k] = tv
+        model.load_state_dict(new_sd, strict=True)
+        print("  Warm-started weights from checkpoint")
 
     total = sum(p.numel() for p in model.parameters())
     print(f"Model: {total / 1e6:.1f}M params")
@@ -569,5 +645,7 @@ if __name__ == "__main__":
     p.add_argument("--dropout", type=float, default=0.2)
     p.add_argument("--min-freq", type=int, default=2)
     p.add_argument("--patience", type=int, default=5, help="Early stopping patience (epochs without eval PPL improvement)")
+    p.add_argument("--resume", default=None, help="Checkpoint path to warm-start from (keeps/extends its vocab)")
+    p.add_argument("--extend-min-freq", type=int, default=3, help="Min freq for NEW words when resuming")
     p.add_argument("--device", default=None)
     train(p.parse_args())
