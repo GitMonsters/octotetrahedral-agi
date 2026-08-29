@@ -42,7 +42,8 @@ WORD_RE = re.compile(r"[a-zA-Z]+|\d+")
 
 class ChatBot:
     def __init__(self, model, word_vocab, char_vocab, corpus_path, device,
-                 topk=12, rerank_top=6, max_answer=42, online=True):
+                 topk=12, rerank_top=6, max_answer=42, online=True,
+                 docs=None):
         self.model = model
         self.wv = word_vocab
         self.cv = char_vocab
@@ -52,16 +53,33 @@ class ChatBot:
         self.max_answer = max_answer
         self.online = online
         self.max_len = getattr(model, "max_len", 128)
-        self.sentences, self.index, self.df, self.n_docs, self.vocab_tokens = self._build_index(corpus_path)
+        (self.sentences, self.sources, self.index, self.df,
+         self.n_docs, self.vocab_tokens) = self._build_index(corpus_path, docs or [])
 
-    def _build_index(self, corpus_path):
+    def _build_index(self, corpus_path, docs=None):
         sentences = []
+        sources = []
+
+        def add_sentence(words, source):
+            if 3 <= len(words) <= 60:
+                sentences.append(words)
+                sources.append(source)
+
         with open(corpus_path) as f:
             for line in f:
                 s = json.loads(line)["text"].strip()
-                words = s.split()
-                if 3 <= len(words) <= 60:
-                    sentences.append(words)
+                add_sentence(s.split(), "local")
+
+        for label, text in (docs or []):
+            for line in text.splitlines():
+                s = line.strip()
+                if not s or s.startswith(("#", "|", "-", "*", "`")):
+                    continue
+                if "|" in s or "://" in s or re.match(r"^[\w./-]+/", s):
+                    continue
+                for part in re.split(r"(?<=[.!?])\s+", s):
+                    add_sentence(part.split(), f"repo: {label}")
+
         index = defaultdict(list)
         df = defaultdict(int)
         for i, words in enumerate(sentences):
@@ -75,7 +93,7 @@ class ChatBot:
             for tok, c in tf.items():
                 index[tok].append((i, c))
                 df[tok] += 1
-        return sentences, index, df, len(sentences), set(index.keys())
+        return sentences, sources, index, df, len(sentences), set(index.keys())
 
     def _suggest(self, missing):
         out = {}
@@ -225,7 +243,7 @@ class ChatBot:
             ppl = self._answer_span_ppl(prefix, answer)
             scored.append({"ppl": ppl, "sid": sid,
                            "text": " ".join(answer), "coverage": cov,
-                           "source": "local"})
+                           "source": self.sources[sid]})
         if not scored and self.online:
             for src, words in self._web_search(question):
                 words = words[: self.max_answer]
@@ -236,6 +254,8 @@ class ChatBot:
                                    "coverage": 1.0, "source": src})
             scored.sort(key=lambda x: x["ppl"])
         if not scored:
+            if self.online:
+                reason = f"{reason}; web search also found nothing relevant"
             return {"answers": [], "question": question,
                     "reason": reason,
                     "maybe": maybe}
@@ -254,6 +274,16 @@ class ChatBot:
             "maybe": maybe,
             "source": best.get("source", "local"),
         }
+
+
+def load_repo_docs():
+    root = Path(__file__).resolve().parent.parent
+    docs = []
+    for fname in ("PITCH.md", "PITCH_READ_ALOUD.md", "PITCH_DEEP_DIVE.md", "RESULTS.md"):
+        p = root / fname
+        if p.exists():
+            docs.append((fname, p.read_text()))
+    return docs
 
 
 def main():
@@ -286,8 +316,8 @@ def main():
 
     bot = ChatBot(model, wc, cc, args.corpus, device,
                   topk=args.topk, rerank_top=args.rerank_top,
-                  online=not args.no_online)
-    print(f"Corpus: {args.corpus} ({bot.n_docs:,} sentences)")
+                  online=not args.no_online, docs=load_repo_docs())
+    print(f"Corpus: {args.corpus} ({bot.n_docs:,} sentences incl. repo docs)")
 
     def render_suggestions(res):
         for tok, suggs in (res.get("maybe") or {}).items():

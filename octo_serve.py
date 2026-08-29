@@ -231,10 +231,10 @@ def load_rag_bot(corpus_path: str):
     import chat_retrieval as _cr
     rag_bot = _cr.ChatBot(
         transformer_model, transformer_word_vocab, transformer_char_vocab,
-        str(path), device, online=True,
+        str(path), device, online=True, docs=_cr.load_repo_docs(),
     )
-    logger.info(f"Retrieval chat ready: corpus={path.name} "
-                f"({rag_bot.n_docs:,} sentences)")
+    logger.info(f"Retrieval chat ready: corpus={path.name} + repo docs "
+                f"({rag_bot.n_docs:,} sentences total)")
 
 
 # ---------------------------------------------------------------------------
