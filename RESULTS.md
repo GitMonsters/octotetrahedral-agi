@@ -162,6 +162,8 @@ Known, honest limits of the demo:
   merely contain a fuzzy keyword — e.g. "where is the grand canyon?" elicits an honest
   "no topically relevant corpus content" since the corpus has no canyon content, rather
   than surfacing a fluent but off-topic sentence.
+- Misspelled / out-of-corpus query tokens get an explicit "Did you mean X?" suggestion
+  (difflib against the corpus vocab), e.g. `plexity` → `complexity`, `quntum` → `quantum`.
 - The scorer is weakly discriminative at this temperature of results — most fluent
   sentences score ~1.05-1.15 answer-PPL, so the keyword retrieval does the topical
   narrowing and the LM only picks among near-ties.

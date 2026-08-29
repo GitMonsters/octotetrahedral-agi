@@ -7,6 +7,7 @@ ranked by the LM's naturalness score (answer-span perplexity conditioned on
 so this uses it correctly instead of asking it to hallucinate open-ended text.
 """
 import argparse
+import difflib
 import json
 import math
 import os
@@ -50,7 +51,7 @@ class ChatBot:
         self.rerank_top = rerank_top
         self.max_answer = max_answer
         self.max_len = getattr(model, "max_len", 128)
-        self.sentences, self.index, self.df, self.n_docs = self._build_index(corpus_path)
+        self.sentences, self.index, self.df, self.n_docs, self.vocab_tokens = self._build_index(corpus_path)
 
     def _build_index(self, corpus_path):
         sentences = []
@@ -73,7 +74,19 @@ class ChatBot:
             for tok, c in tf.items():
                 index[tok].append((i, c))
                 df[tok] += 1
-        return sentences, index, df, len(sentences)
+        return sentences, index, df, len(sentences), set(index.keys())
+
+    def _suggest(self, missing):
+        out = {}
+        for tok in missing:
+            if self.df.get(tok, 0) > 0:
+                continue
+            cands = [t for t in difflib.get_close_matches(
+                        tok, self.vocab_tokens, n=6, cutoff=0.7)
+                     if self.df.get(t, 0) >= 2]
+            if cands:
+                out[tok] = cands[:2]
+        return out
 
     def _retrieve(self, query_words, n):
         scores = defaultdict(float)
@@ -138,12 +151,14 @@ class ChatBot:
     def ask(self, question):
         q_words = question.split()
         q_toks = self._tokens(q_words)
+        missing = [t for t in q_toks if self.df.get(t, 0) == 0]
+        maybe = self._suggest(missing) if missing else {}
         if not q_toks:
             return {"answers": [], "question": question}
         cands = self._retrieve(q_toks, self.topk)
         if not cands:
             return {"answers": [], "question": question,
-                    "reason": "no corpus hits"}
+                    "reason": "no corpus hits", "maybe": maybe}
 
         prefix = ["Question", ":"] + q_words + ["Response", ":"]
         scored = []
@@ -160,7 +175,8 @@ class ChatBot:
         scored.sort(key=lambda x: x["ppl"])
         if not scored:
             return {"answers": [], "question": question,
-                    "reason": f"no topically relevant corpus content for: {' '.join(q_toks)}"}
+                    "reason": f"no topically relevant corpus content for: {' '.join(q_toks)}",
+                    "maybe": maybe}
 
         best = scored[0]
         median = sorted(x["ppl"] for x in scored)[len(scored) // 2] if scored else float("inf")
@@ -173,6 +189,7 @@ class ChatBot:
             "best": best["text"],
             "best_ppl": best["ppl"],
             "confidence": confidence,
+            "maybe": maybe,
         }
 
 
@@ -206,17 +223,25 @@ def main():
                   topk=args.topk, rerank_top=args.rerank_top)
     print(f"Corpus: {args.corpus} ({bot.n_docs:,} sentences)")
 
+    def render_suggestions(res):
+        for tok, suggs in (res.get("maybe") or {}).items():
+            print(f"      Did you mean \"{suggs[0]}\" for '{tok}'? (corpus suggestion)")
+            if len(suggs) > 1:
+                print(f"      or \"{suggs[1]}\"?")
+
     def render(res):
-        if "error" in res:
+        if res.get("answers") is None:
             print(f"\n  (nothing searchable in: {res['question']})")
             return
         if not res["answers"]:
             reason = res.get("reason", "no corpus hits")
             print(f"\n  [{reason}] ({res['question']})")
+            render_suggestions(res)
             return
         print(f"\n  [{res['confidence']}] {res['best']}")
         for a in res["answers"][1:4]:
             print(f"      alt ({a['ppl']:.2f}): {a['text']}")
+        render_suggestions(res)
 
     if args.question:
         t0 = time.time()
