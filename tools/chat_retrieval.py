@@ -9,14 +9,19 @@ so this uses it correctly instead of asking it to hallucinate open-ended text.
 import argparse
 import json
 import math
+import os
 import re
 import sys
 import time
+import warnings
 from collections import defaultdict
 from pathlib import Path
 
+os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 import torch
 import torch.nn.functional as F
+
+warnings.filterwarnings("ignore", category=UserWarning, module=".*transcendplexity_integration")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from train_transformer import OctoTransformerLM, CHAR_PAD, BOS_ID, EOS_ID
@@ -111,28 +116,51 @@ class ChatBot:
         loss = F.cross_entropy(shift, tgt, reduction="mean").item()
         return math.exp(min(loss, 30))
 
-    def ask(self, question):
-        q_words = question.split()
-        q_toks = []
-        for w in q_words:
+    def _tokens(self, words):
+        toks = []
+        for w in words:
             for tok in WORD_RE.findall(w.lower()):
                 if len(tok) >= 2 and tok not in STOPWORDS:
-                    q_toks.append(tok)
+                    toks.append(tok)
+        return toks
+
+    def _coverage(self, cand_tokens, q_toks):
+        idf_sum = 0.0
+        matched = 0.0
+        ct = set(cand_tokens)
+        for tok in q_toks:
+            idf = math.log2(1 + self.n_docs / max(1, self.df.get(tok, 0)))
+            idf_sum += idf
+            if tok in ct:
+                matched += idf
+        return matched / idf_sum if idf_sum > 0 else 0.0
+
+    def ask(self, question):
+        q_words = question.split()
+        q_toks = self._tokens(q_words)
         if not q_toks:
             return {"answers": [], "question": question}
         cands = self._retrieve(q_toks, self.topk)
         if not cands:
-            return {"answers": [], "question": question}
+            return {"answers": [], "question": question,
+                    "reason": "no corpus hits"}
 
         prefix = ["Question", ":"] + q_words + ["Response", ":"]
         scored = []
-        for sid in cands[: self.rerank_top]:
+        for sid in cands[: self.rerank_top * 2]:
             answer = self.sentences[sid]
             if len(answer) > self.max_answer:
                 answer = answer[: self.max_answer]
+            cov = self._coverage(self._tokens(answer), q_toks)
+            if cov < 0.6:
+                continue
             ppl = self._answer_span_ppl(prefix, answer)
-            scored.append({"ppl": ppl, "sid": sid, "text": " ".join(answer)})
+            scored.append({"ppl": ppl, "sid": sid,
+                           "text": " ".join(answer), "coverage": cov})
         scored.sort(key=lambda x: x["ppl"])
+        if not scored:
+            return {"answers": [], "question": question,
+                    "reason": f"no topically relevant corpus content for: {' '.join(q_toks)}"}
 
         best = scored[0]
         median = sorted(x["ppl"] for x in scored)[len(scored) // 2] if scored else float("inf")
@@ -183,7 +211,8 @@ def main():
             print(f"\n  (nothing searchable in: {res['question']})")
             return
         if not res["answers"]:
-            print(f"\n  (no corpus hits for: {res['question']})")
+            reason = res.get("reason", "no corpus hits")
+            print(f"\n  [{reason}] ({res['question']})")
             return
         print(f"\n  [{res['confidence']}] {res['best']}")
         for a in res["answers"][1:4]:

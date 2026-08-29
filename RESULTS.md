@@ -158,6 +158,10 @@ python3 tools/chat_retrieval.py --question "What is a black hole?"   # one-shot
 ```
 
 Known, honest limits of the demo:
+- A relevance gate (weighted-IDF query-token coverage ≥ 0.6) rejects candidates that
+  merely contain a fuzzy keyword — e.g. "where is the grand canyon?" elicits an honest
+  "no topically relevant corpus content" since the corpus has no canyon content, rather
+  than surfacing a fluent but off-topic sentence.
 - The scorer is weakly discriminative at this temperature of results — most fluent
   sentences score ~1.05-1.15 answer-PPL, so the keyword retrieval does the topical
   narrowing and the LM only picks among near-ties.
