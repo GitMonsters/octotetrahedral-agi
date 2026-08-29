@@ -95,6 +95,7 @@ class RagRequest(BaseModel):
     message: str = Field(..., description="User question")
     topk: int = Field(12, description="Keyword candidates to retrieve")
     rerank_top: int = Field(6, description="Candidates to LM-rank")
+    search_online: bool = Field(True, description="Fall back to web search when corpus has no answer")
 
 
 # ---------------------------------------------------------------------------
@@ -230,7 +231,7 @@ def load_rag_bot(corpus_path: str):
     import chat_retrieval as _cr
     rag_bot = _cr.ChatBot(
         transformer_model, transformer_word_vocab, transformer_char_vocab,
-        str(path), device,
+        str(path), device, online=True,
     )
     logger.info(f"Retrieval chat ready: corpus={path.name} "
                 f"({rag_bot.n_docs:,} sentences)")
@@ -336,12 +337,13 @@ _args = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _args, rag_bot
+    global _args, rag_bot, rag_corpus_path
     if _args is None:
         _args = parse_args()
     target = _args.device or "cpu"
     load_model(target)
-    load_rag_bot(_args.rag_corpus or rag_corpus_path)
+    rag_corpus_path = _args.rag_corpus or rag_corpus_path
+    load_rag_bot(rag_corpus_path)
     yield
 
 
@@ -755,6 +757,7 @@ async def chat_rag(req: RagRequest):
     if rag_bot is None:
         raise HTTPException(503, "Retrieval chat not loaded (need transformer checkpoint + corpus)")
 
+    rag_bot.online = req.search_online
     res = rag_bot.ask(req.message)
     if not res["answers"]:
         return {
@@ -768,8 +771,10 @@ async def chat_rag(req: RagRequest):
         "answer": res["best"],
         "confidence": res["confidence"],
         "answer_ppl": round(res["best_ppl"], 3),
+        "source": res.get("source", "local"),
         "alternatives": [
-            {"ppl": round(a["ppl"], 3), "text": a["text"]}
+            {"ppl": round(a["ppl"], 3), "text": a["text"],
+             "source": a.get("source", "local")}
             for a in res["answers"][1:5]
         ],
         "did_you_mean": res.get("maybe", {}),
@@ -811,7 +816,7 @@ def _CHAT_HTML() -> str:
   .dym-tag{color:#e3b341}
 </style></head><body>
 <header><h1>OctoTetrahedral — Retrieval Chat</h1>
-<p>Answers are retrieved verbatim from the corpus and ranked by the model's naturalness score — not generated. Sampled from a transcript corpus.</p></header>
+<p>Answers are retrieved verbatim (local corpus, or DuckDuckGo + Wikipedia when the corpus lacks the topic) and ranked by the model's naturalness score — not generated.</p></header>
 <div id="log"></div>
 <form onsubmit="ask(event)"><input id="inp" placeholder="Ask something (e.g. what is a black hole?)" autocomplete="off"><button>Ask</button></form>
 <script>
@@ -825,9 +830,9 @@ async function ask(ev){ev.preventDefault();const m=inp.value.trim();if(!m)return
   if(j.answer===null){let h='<div class="dym">'+j.reason.replace(/</g,'&lt;')+'</div>';
     for(const[k,s]of Object.entries(j.did_you_mean||{}))h+='<div class="dym dym-tag">Did you mean "'+s[0]+'" for "'+k+'"? (corpus suggestion)</div>';
     add('a',h);return;}
-  let h='<div class="conf">'+j.confidence+' · answer perplexity '+j.answer_ppl+'</div>'+j.answer.replace(/</g,'&lt;');
+  let h='<div class="conf">'+j.confidence+' · '+j.source+' · answer perplexity '+j.answer_ppl+'</div>'+j.answer.replace(/</g,'&lt;');
   const alts=j.alternatives||[];
-  for(const a of alts.slice(0,3))h+='<div class="alt">alt ('+a.ppl+'): '+a.text.replace(/</g,'&lt;')+'</div>';
+  for(const a of alts.slice(0,3))h+='<div class="alt">alt ('+a.ppl+' · '+a.source+'): '+a.text.replace(/</g,'&lt;')+'</div>';
   for(const[k,s]of Object.entries(j.did_you_mean||{}))h+='<div class="dym dym-tag">Did you mean "'+s[0]+'" for "'+k+'"? (corpus suggestion)</div>';
   add('a',h);
 }

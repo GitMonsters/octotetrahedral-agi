@@ -42,7 +42,7 @@ WORD_RE = re.compile(r"[a-zA-Z]+|\d+")
 
 class ChatBot:
     def __init__(self, model, word_vocab, char_vocab, corpus_path, device,
-                 topk=12, rerank_top=6, max_answer=42):
+                 topk=12, rerank_top=6, max_answer=42, online=True):
         self.model = model
         self.wv = word_vocab
         self.cv = char_vocab
@@ -50,6 +50,7 @@ class ChatBot:
         self.topk = topk
         self.rerank_top = rerank_top
         self.max_answer = max_answer
+        self.online = online
         self.max_len = getattr(model, "max_len", 128)
         self.sentences, self.index, self.df, self.n_docs, self.vocab_tokens = self._build_index(corpus_path)
 
@@ -87,6 +88,59 @@ class ChatBot:
             if cands:
                 out[tok] = cands[:2]
         return out
+
+    def _web_search(self, question):
+        import urllib.parse
+        import urllib.request
+        HDRS = {"User-Agent": "OctoTetrahedralRAG/1.0 (local research demo)"}
+        cands = []
+
+        def add(src, text):
+            for part in re.split(r"(?<=[.!?])\s+", text):
+                w = part.split()
+                if 4 <= len(w) <= 50:
+                    cands.append((src, w))
+
+        def get_json(url):
+            return json.load(urllib.request.urlopen(
+                urllib.request.Request(url, headers=HDRS), timeout=8))
+
+        try:
+            q = urllib.parse.quote(question)
+            u = (f"https://api.duckduckgo.com/?q={q}"
+                 "&format=json&no_html=1&skip_disambig=1")
+            d = get_json(u)
+            if d.get("AbstractText"):
+                add("web (duckduckgo)", d["AbstractText"])
+            for t in d.get("RelatedTopics", []) or []:
+                if not isinstance(t, dict):
+                    continue
+                for sub in t.get("Topics", []) or []:
+                    if sub.get("Text"):
+                        add("web (duckduckgo)", sub["Text"])
+                if t.get("Text"):
+                    add("web (duckduckgo)", t["Text"])
+        except Exception:
+            pass
+
+        try:
+            q = urllib.parse.quote(question)
+            u = (f"https://en.wikipedia.org/w/api.php?action=query"
+                 f"&format=json&list=search&srsearch={q}&srlimit=4")
+            d = get_json(u)
+            titles = [h["title"] for h in d.get("query", {}).get("search", [])]
+            for title in titles[:2]:
+                t = urllib.parse.quote(title)
+                u2 = (f"https://en.wikipedia.org/w/api.php?action=query"
+                      f"&format=json&prop=extracts&exintro&explaintext&titles={t}")
+                d2 = get_json(u2)
+                for p in d2.get("query", {}).get("pages", {}).values():
+                    if p.get("extract"):
+                        add(f"web: wikipedia: {p['title']}", p["extract"])
+        except Exception:
+            pass
+
+        return cands[:12]
 
     def _retrieve(self, query_words, n):
         scores = defaultdict(float)
@@ -156,9 +210,8 @@ class ChatBot:
         if not q_toks:
             return {"answers": [], "question": question}
         cands = self._retrieve(q_toks, self.topk)
-        if not cands:
-            return {"answers": [], "question": question,
-                    "reason": "no corpus hits", "maybe": maybe}
+        reason = ("no corpus hits" if not cands
+                  else f"no topically relevant corpus content for: {' '.join(q_toks)}")
 
         prefix = ["Question", ":"] + q_words + ["Response", ":"]
         scored = []
@@ -171,11 +224,20 @@ class ChatBot:
                 continue
             ppl = self._answer_span_ppl(prefix, answer)
             scored.append({"ppl": ppl, "sid": sid,
-                           "text": " ".join(answer), "coverage": cov})
-        scored.sort(key=lambda x: x["ppl"])
+                           "text": " ".join(answer), "coverage": cov,
+                           "source": "local"})
+        if not scored and self.online:
+            for src, words in self._web_search(question):
+                words = words[: self.max_answer]
+                ppl = self._answer_span_ppl(prefix, words)
+                if ppl < 4.0:
+                    scored.append({"ppl": ppl, "sid": -1,
+                                   "text": " ".join(words),
+                                   "coverage": 1.0, "source": src})
+            scored.sort(key=lambda x: x["ppl"])
         if not scored:
             return {"answers": [], "question": question,
-                    "reason": f"no topically relevant corpus content for: {' '.join(q_toks)}",
+                    "reason": reason,
                     "maybe": maybe}
 
         best = scored[0]
@@ -190,6 +252,7 @@ class ChatBot:
             "best_ppl": best["ppl"],
             "confidence": confidence,
             "maybe": maybe,
+            "source": best.get("source", "local"),
         }
 
 
@@ -201,6 +264,8 @@ def main():
     ap.add_argument("--rerank-top", type=int, default=6)
     ap.add_argument("--question", default=None)
     ap.add_argument("--device", default=None)
+    ap.add_argument("--no-online", action="store_true",
+                    help="Disable web search fallback (DuckDuckGo + Wikipedia)")
     args = ap.parse_args()
 
     if args.device:
@@ -220,7 +285,8 @@ def main():
           f"(eval_ppl {ckpt.get('eval_ppl', '?'):.2f}) | device={device}")
 
     bot = ChatBot(model, wc, cc, args.corpus, device,
-                  topk=args.topk, rerank_top=args.rerank_top)
+                  topk=args.topk, rerank_top=args.rerank_top,
+                  online=not args.no_online)
     print(f"Corpus: {args.corpus} ({bot.n_docs:,} sentences)")
 
     def render_suggestions(res):
@@ -238,9 +304,10 @@ def main():
             print(f"\n  [{reason}] ({res['question']})")
             render_suggestions(res)
             return
-        print(f"\n  [{res['confidence']}] {res['best']}")
+        src = res.get("source", "local")
+        print(f"\n  [{res['confidence']} · {src}] {res['best']}")
         for a in res["answers"][1:4]:
-            print(f"      alt ({a['ppl']:.2f}): {a['text']}")
+            print(f"      alt ({a['ppl']:.2f} · {a.get('source','local')}): {a['text']}")
         render_suggestions(res)
 
     if args.question:
@@ -252,7 +319,8 @@ def main():
         return
 
     print("Chat demo (retrieved verbatim + ranked by LM naturalness score; "
-          "answer text is NOT generated). 'quit' to exit.")
+          "answer text is NOT generated). Falls back to web search "
+          "(DuckDuckGo + Wikipedia) when the corpus has no answer. 'quit' to exit.")
     while True:
         try:
             q = input("\nQ> ").strip()
