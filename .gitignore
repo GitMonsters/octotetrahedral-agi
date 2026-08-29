@@ -2,6 +2,8 @@ __pycache__/
 *.pyc
 *.pt
 *.pth
+*.db
+.pytest_cache/
 checkpoints/
 data/
 *.log
