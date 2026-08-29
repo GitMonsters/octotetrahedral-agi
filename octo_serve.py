@@ -15,12 +15,14 @@ Usage:
 import argparse
 import json
 import logging
+import os
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from collections import Counter
 from typing import Optional
 
+os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 import torch
 import uvicorn
 from fastapi import FastAPI, HTTPException
@@ -54,6 +56,10 @@ transformer_char_vocab = None
 transformer_word_vocab = None
 transformer_inv_vocab = {}
 
+# Retrieval+ranking chat bot (Perplexity-style wrapper)
+rag_bot = None
+rag_corpus_path = "data/transcripts.jsonl"
+
 # ---------------------------------------------------------------------------
 # Schemas
 # ---------------------------------------------------------------------------
@@ -85,6 +91,12 @@ class ChatRequest(BaseModel):
     history: list[str] = Field(default_factory=list, description="Previous messages")
 
 
+class RagRequest(BaseModel):
+    message: str = Field(..., description="User question")
+    topk: int = Field(12, description="Keyword candidates to retrieve")
+    rerank_top: int = Field(6, description="Candidates to LM-rank")
+
+
 # ---------------------------------------------------------------------------
 # Model loading
 # ---------------------------------------------------------------------------
@@ -96,76 +108,82 @@ def load_model(target_device: str):
 
     import sys
     sys.path.insert(0, str(Path(__file__).parent))
-    from train_pos_bilstm import (
-        OctoTetrahedralPosTagger, CHAR_PAD as _CP, POS_VOCAB as _PV
-    )
-    CHAR_PAD_local = _CP
-    POS_VOCAB = _PV
-    tag_inv = {v: k for k, v in POS_VOCAB.items()}
 
+    global tagger_ok
+    tagger_ok = False
     device = torch.device(target_device)
 
-    ckpt_path = Path("checkpoints/octo_integrated_best.pt")
-    if not ckpt_path.exists():
-        ckpt_path = Path("checkpoints/octo_pos_best.pt")
-    if not ckpt_path.exists():
-        raise FileNotFoundError("No POS tagger checkpoint found")
+    try:
+        from train_pos_bilstm import (
+            OctoTetrahedralPosTagger, CHAR_PAD as _CP, POS_VOCAB as _PV
+        )
+        POS_VOCAB = _PV
+        tag_inv = {v: k for k, v in POS_VOCAB.items()}
 
-    logger.info(f"Loading OctoTetrahedral tagger from {ckpt_path}...")
-    ckpt = torch.load(ckpt_path, map_location="cpu")
-    char_vocab = ckpt["char_vocab"]
-    word_vocab = ckpt["word_vocab"]
-    config = ckpt["config"]
+        ckpt_path = Path("checkpoints/octo_integrated_best.pt")
+        if not ckpt_path.exists():
+            ckpt_path = Path("checkpoints/octo_pos_best.pt")
+        if not ckpt_path.exists():
+            raise FileNotFoundError("No POS tagger checkpoint found")
 
-    tagger = OctoTetrahedralPosTagger(
-        char_vocab_size=len(char_vocab),
-        word_vocab_size=len(word_vocab),
-        char_emb=config["char_emb"],
-        word_emb=config["word_emb"],
-        hidden_dim=config["hidden"],
-        dropout=config["dropout"],
-        max_loops=config.get("max_loops", 3),
-    ).to(device)
+        logger.info(f"Loading OctoTetrahedral tagger from {ckpt_path}...")
+        ckpt = torch.load(ckpt_path, map_location="cpu")
+        char_vocab = ckpt["char_vocab"]
+        word_vocab = ckpt["word_vocab"]
+        config = ckpt["config"]
 
-    state = ckpt.get("model", ckpt.get("model_state_dict", {}))
-    tagger.load_state_dict(state, strict=False)
-    tagger.eval()
-
-    total = sum(p.numel() for p in tagger.parameters())
-    acc = ckpt.get("accuracy", "?")
-    logger.info(f"OctoTetrahedral tagger loaded: {total / 1e6:.1f}M params, accuracy={acc}")
-
-    # Load dual-head model for generation
-    dual_ckpt_path = Path("checkpoints/octo_dual_best.pt")
-    if dual_ckpt_path.exists():
-        logger.info(f"Loading dual-head model from {dual_ckpt_path}...")
-        from train_lm import OctoDualHead
-        dual_ckpt = torch.load(dual_ckpt_path, map_location="cpu")
-
-        dual_word_vocab = dual_ckpt["word_vocab"]
-        dual_char_vocab = dual_ckpt["char_vocab"]
-        dual_inv_vocab = {v: k for k, v in dual_word_vocab.items()}
-
-        dual_tagger = OctoTetrahedralPosTagger(
-            char_vocab_size=len(dual_char_vocab),
-            word_vocab_size=len(dual_word_vocab),
+        tagger = OctoTetrahedralPosTagger(
+            char_vocab_size=len(char_vocab),
+            word_vocab_size=len(word_vocab),
             char_emb=config["char_emb"],
             word_emb=config["word_emb"],
             hidden_dim=config["hidden"],
             dropout=config["dropout"],
             max_loops=config.get("max_loops", 3),
         ).to(device)
-        dual_tagger.load_state_dict(ckpt.get("model", ckpt.get("model_state_dict", {})), strict=False)
 
-        dual_model = OctoDualHead(dual_tagger).to(device)
-        state = dual_ckpt.get("model", dual_ckpt.get("model_state_dict", {}))
-        dual_model.load_state_dict(state, strict=False)
-        dual_model.eval()
+        state = ckpt.get("model", ckpt.get("model_state_dict", {}))
+        tagger.load_state_dict(state, strict=False)
+        tagger.eval()
 
-        n_gen = sum(p.numel() for p in dual_model.lm_head.parameters())
-        logger.info(f"Dual-head model loaded: LM head={n_gen / 1e6:.1f}M params, ppl={dual_ckpt.get('lm_ppl', '?')}")
-    else:
-        logger.warning("No octo_dual_best.pt — generation disabled")
+        total = sum(p.numel() for p in tagger.parameters())
+        acc = ckpt.get("accuracy", "?")
+        logger.info(f"OctoTetrahedral tagger loaded: {total / 1e6:.1f}M params, accuracy={acc}")
+        tagger_ok = True
+
+        # Load dual-head model for generation (needs the tagger backbone)
+        dual_ckpt_path = Path("checkpoints/octo_dual_best.pt")
+        if dual_ckpt_path.exists():
+            logger.info(f"Loading dual-head model from {dual_ckpt_path}...")
+            from train_lm import OctoDualHead
+            dual_ckpt = torch.load(dual_ckpt_path, map_location="cpu")
+
+            dual_word_vocab = dual_ckpt["word_vocab"]
+            dual_char_vocab = dual_ckpt["char_vocab"]
+            dual_inv_vocab = {v: k for k, v in dual_word_vocab.items()}
+
+            dual_tagger = OctoTetrahedralPosTagger(
+                char_vocab_size=len(dual_char_vocab),
+                word_vocab_size=len(dual_word_vocab),
+                char_emb=config["char_emb"],
+                word_emb=config["word_emb"],
+                hidden_dim=config["hidden"],
+                dropout=config["dropout"],
+                max_loops=config.get("max_loops", 3),
+            ).to(device)
+            dual_tagger.load_state_dict(ckpt.get("model", ckpt.get("model_state_dict", {})), strict=False)
+
+            dual_model = OctoDualHead(dual_tagger).to(device)
+            state = dual_ckpt.get("model", dual_ckpt.get("model_state_dict", {}))
+            dual_model.load_state_dict(state, strict=False)
+            dual_model.eval()
+
+            n_gen = sum(p.numel() for p in dual_model.lm_head.parameters())
+            logger.info(f"Dual-head model loaded: LM head={n_gen / 1e6:.1f}M params, ppl={dual_ckpt.get('lm_ppl', '?')}")
+        else:
+            logger.warning("No octo_dual_best.pt — dual-head generation disabled")
+    except Exception as e:
+        logger.warning(f"POS tagger / dual-head unavailable, skipping: {e}")
 
     # Load transformer model (better generation quality)
     transformer_ckpt_path = Path("checkpoints/octo_transformer_best.pt")
@@ -196,6 +214,26 @@ def load_model(target_device: str):
         logger.info(f"Transformer loaded: {n_params / 1e6:.1f}M params, ppl={transformer_ckpt.get('lm_ppl', '?')}")
     else:
         logger.warning("No octo_transformer_best.pt — transformer generation disabled")
+
+
+def load_rag_bot(corpus_path: str):
+    global rag_bot
+    if transformer_model is None:
+        logger.warning("No transformer model loaded — retrieval chat disabled")
+        return
+    path = Path(corpus_path)
+    if not path.exists():
+        logger.warning(f"RAG corpus not found: {path} — retrieval chat disabled")
+        return
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent / "tools"))
+    import chat_retrieval as _cr
+    rag_bot = _cr.ChatBot(
+        transformer_model, transformer_word_vocab, transformer_char_vocab,
+        str(path), device,
+    )
+    logger.info(f"Retrieval chat ready: corpus={path.name} "
+                f"({rag_bot.n_docs:,} sentences)")
 
 
 # ---------------------------------------------------------------------------
@@ -298,11 +336,12 @@ _args = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _args
+    global _args, rag_bot
     if _args is None:
         _args = parse_args()
     target = _args.device or "cpu"
     load_model(target)
+    load_rag_bot(_args.rag_corpus or rag_corpus_path)
     yield
 
 
@@ -319,6 +358,8 @@ def parse_args():
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--host", type=str, default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--rag-corpus", type=str, default=None,
+                        help="Corpus for retrieval chat (default: data/transcripts.jsonl)")
     return parser.parse_args()
 
 
@@ -342,6 +383,7 @@ async def health():
         "model_loaded": tagger is not None,
         "dual_model_loaded": dual_model is not None,
         "transformer_loaded": transformer_model is not None,
+        "rag_chat_loaded": rag_bot is not None,
         "device": str(device),
         "architecture": "BiLSTM + OctoTetrahedral modules + Transformer LM",
         "modules": {
@@ -688,7 +730,10 @@ async def chat(req: ChatRequest):
     gen_words = [inv.get(i.item(), "?") for i in gen_ids[0]]
     reply = " ".join([w for w in gen_words[len(prompt_words)+1:] if w not in ("<UNK>", "?", "<PAD>")])
 
-    pos_result = tag_words(req.message.split())
+    if tagger is None:
+        pos_result = {"tags": [], "tp": {"cohesion": 0}}
+    else:
+        pos_result = tag_words(req.message.split())
     tp_phase = "UNKNOWN"
     if hasattr(model, "_tp_state") and model._tp_state:
         tp_phase = getattr(model._tp_state, "phase_name", "UNKNOWN")
@@ -703,9 +748,91 @@ async def chat(req: ChatRequest):
     }
 
 
+@app.post("/chat/rag")
+async def chat_rag(req: RagRequest):
+    """Perplexity-style retrieval+ranking chat. Answers are retrieved verbatim
+    from the corpus and ranked by the LM's naturalness score — not generated."""
+    if rag_bot is None:
+        raise HTTPException(503, "Retrieval chat not loaded (need transformer checkpoint + corpus)")
+
+    res = rag_bot.ask(req.message)
+    if not res["answers"]:
+        return {
+            "question": res["question"],
+            "answer": None,
+            "reason": res.get("reason", "no corpus hits"),
+            "did_you_mean": res.get("maybe", {}),
+        }
+    return {
+        "question": res["question"],
+        "answer": res["best"],
+        "confidence": res["confidence"],
+        "answer_ppl": round(res["best_ppl"], 3),
+        "alternatives": [
+            {"ppl": round(a["ppl"], 3), "text": a["text"]}
+            for a in res["answers"][1:5]
+        ],
+        "did_you_mean": res.get("maybe", {}),
+        "corpus": str(rag_corpus_path),
+    }
+
+
+@app.get("/chat-ui", response_class=HTMLResponse)
+async def chat_ui():
+    return HTMLResponse(_CHAT_HTML())
+
+
 # ---------------------------------------------------------------------------
 # Entry
 # ---------------------------------------------------------------------------
+
+def _CHAT_HTML() -> str:
+    return """<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OctoTetrahedral — Retrieval Chat</title>
+<style>
+  body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;margin:0;
+       background:#0f1117;color:#e6e8ee;display:flex;flex-direction:column;height:100vh}
+  header{padding:14px 20px;background:#171a23;border-bottom:1px solid #262b3a}
+  header h1{font-size:16px;margin:0}
+  header p{font-size:12px;color:#8b93a7;margin:4px 0 0}
+  #log{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+  .msg{max-width:72%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.5;
+       white-space:pre-wrap;word-break:break-word}
+  .q{align-self:flex-end;background:#2b6cb0;color:#fff}
+  .a{align-self:flex-start;background:#22263c;border:1px solid #2f3550}
+  .a .conf{font-size:11px;color:#7fd19f;margin-bottom:4px}
+  .a .alt{font-size:12px;color:#8b93a7;margin-top:8px;border-top:1px solid #2c3147;padding-top:6px}
+  .a .dym{font-size:12px;color:#e3b341;margin-top:6px}
+  form{display:flex;gap:10px;padding:14px 20px;border-top:1px solid #262b3a;background:#171a23}
+  input{flex:1;padding:12px 14px;border-radius:10px;border:1px solid #2f3550;
+        background:#0f1117;color:#e6e8ee;font-size:14px}
+  button{padding:12px 18px;border-radius:10px;border:0;background:#2b6cb0;color:#fff;font-size:14px;cursor:pointer}
+  .dym-tag{color:#e3b341}
+</style></head><body>
+<header><h1>OctoTetrahedral — Retrieval Chat</h1>
+<p>Answers are retrieved verbatim from the corpus and ranked by the model's naturalness score — not generated. Sampled from a transcript corpus.</p></header>
+<div id="log"></div>
+<form onsubmit="ask(event)"><input id="inp" placeholder="Ask something (e.g. what is a black hole?)" autocomplete="off"><button>Ask</button></form>
+<script>
+const log=document.getElementById('log'),inp=document.getElementById('inp');
+function add(cls,html){const d=document.createElement('div');d.className='msg '+cls;d.innerHTML=html;log.appendChild(d);log.scrollTop=log.scrollHeight;}
+async function ask(ev){ev.preventDefault();const m=inp.value.trim();if(!m)return;
+  add('q',m.replace(/</g,'&lt;'));inp.value='';
+  const t=document.createElement('div');t.className='msg a';t.textContent='…';log.appendChild(t);
+  const r=await fetch('/chat/rag',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:m})});
+  const j=await r.json();t.remove();
+  if(j.answer===null){let h='<div class="dym">'+j.reason.replace(/</g,'&lt;')+'</div>';
+    for(const[k,s]of Object.entries(j.did_you_mean||{}))h+='<div class="dym dym-tag">Did you mean "'+s[0]+'" for "'+k+'"? (corpus suggestion)</div>';
+    add('a',h);return;}
+  let h='<div class="conf">'+j.confidence+' · answer perplexity '+j.answer_ppl+'</div>'+j.answer.replace(/</g,'&lt;');
+  const alts=j.alternatives||[];
+  for(const a of alts.slice(0,3))h+='<div class="alt">alt ('+a.ppl+'): '+a.text.replace(/</g,'&lt;')+'</div>';
+  for(const[k,s]of Object.entries(j.did_you_mean||{}))h+='<div class="dym dym-tag">Did you mean "'+s[0]+'" for "'+k+'"? (corpus suggestion)</div>';
+  add('a',h);
+}
+</script></body></html>"""
+
 
 if __name__ == "__main__":
     _args = parse_args()
