@@ -89,6 +89,16 @@ class ChatRequest(BaseModel):
     top_k: int = Field(20, description="Top-k sampling")
     rep_penalty: float = Field(3.0, description="Repetition penalty (additive)")
     history: list[str] = Field(default_factory=list, description="Previous messages")
+    reason: bool = Field(False, description="Use System-2 test-time reasoning")
+
+
+class ReasonRequest(BaseModel):
+    prompt: str = Field(..., description="Prompt to reason over")
+    num_drafts: int = Field(6, description="Number of candidate drafts to generate")
+    max_tokens: int = Field(24, description="Max tokens per draft")
+    temperature: float = Field(0.8, description="Base sampling temperature")
+    top_k: int = Field(30, description="Top-k sampling")
+    rep_penalty: float = Field(1.3, description="Repetition penalty (additive)")
 
 
 class RagRequest(BaseModel):
@@ -683,6 +693,33 @@ async def generate(req: GenerateRequest):
     }
 
 
+@app.post("/reason")
+async def reason(req: ReasonRequest):
+    """System-2 test-time reasoning: K drafts, LM self-scored, consensus pick."""
+    if transformer_model is None:
+        raise HTTPException(503, "No transformer model loaded")
+
+    import sys
+    repo_root = Path(__file__).parent
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    from test_time_reason import reason as reason_impl
+
+    try:
+        result = reason_impl(
+            transformer_model, transformer_word_vocab, transformer_char_vocab,
+            device, req.prompt,
+            num_drafts=req.num_drafts, max_tokens=req.max_tokens,
+            temperature=req.temperature, top_k=req.top_k, rep_penalty=req.rep_penalty,
+        )
+    except Exception as e:
+        logger.exception("reasoning failed")
+        raise HTTPException(500, f"Reasoning failed: {e}")
+
+    result["model"] = "transformer"
+    return result
+
+
 @app.post("/chat")
 async def chat(req: ChatRequest):
     """Chat with the OctoTetrahedral model."""
@@ -695,6 +732,24 @@ async def chat(req: ChatRequest):
     prompt_words = req.message.split()
     if not prompt_words:
         prompt_words = ["hello"]
+
+    if req.reason and use_transformer:
+        import sys
+        repo_root = Path(__file__).parent
+        if str(repo_root) not in sys.path:
+            sys.path.insert(0, str(repo_root))
+        from test_time_reason import reason as reason_impl
+
+        reasoning = reason_impl(
+            transformer_model, transformer_word_vocab, transformer_char_vocab,
+            device, req.message,
+            num_drafts=6, max_tokens=max(8, min(req.max_tokens, 24)),
+            temperature=0.8, rep_penalty=1.3,
+        )
+        reply = reasoning["chosen"]["text"]
+        reasoning_trace = reasoning["trace"]
+    else:
+        reasoning_trace = None
 
     if use_transformer:
         w_vocab = transformer_word_vocab
@@ -709,28 +764,29 @@ async def chat(req: ChatRequest):
         model = dual_model
         model_type = "lstm"
 
-    seed_ids = torch.tensor([[BOS_ID] + [w_vocab.get(w.lower(), 1) for w in prompt_words]])
-    max_word_len = 30
-    bos_chars = [c_vocab.get(c, 1) for c in "<bos>"[:max_word_len]]
-    while len(bos_chars) < max_word_len:
-        bos_chars.append(CHAR_PAD)
-    seed_chars = torch.zeros(1, len(prompt_words) + 1, max_word_len, dtype=torch.long)
-    seed_chars[0, 0] = torch.tensor(bos_chars[:max_word_len])
-    for i, w in enumerate(prompt_words):
-        chars = [c_vocab.get(c, 1) for c in w.lower()[:max_word_len]]
-        while len(chars) < max_word_len:
-            chars.append(CHAR_PAD)
-        seed_chars[0, i + 1] = torch.tensor(chars[:max_word_len])
+    if reasoning_trace is None:
+        seed_ids = torch.tensor([[BOS_ID] + [w_vocab.get(w.lower(), 1) for w in prompt_words]])
+        max_word_len = 30
+        bos_chars = [c_vocab.get(c, 1) for c in "<bos>"[:max_word_len]]
+        while len(bos_chars) < max_word_len:
+            bos_chars.append(CHAR_PAD)
+        seed_chars = torch.zeros(1, len(prompt_words) + 1, max_word_len, dtype=torch.long)
+        seed_chars[0, 0] = torch.tensor(bos_chars[:max_word_len])
+        for i, w in enumerate(prompt_words):
+            chars = [c_vocab.get(c, 1) for c in w.lower()[:max_word_len]]
+            while len(chars) < max_word_len:
+                chars.append(CHAR_PAD)
+            seed_chars[0, i + 1] = torch.tensor(chars[:max_word_len])
 
-    with torch.no_grad():
-        gen_ids = model.generate(
-            seed_ids.to(device), seed_chars.to(device),
-            max_new=req.max_tokens, temperature=req.temperature, top_k=req.top_k,
-            rep_penalty=req.rep_penalty,
-        )
+        with torch.no_grad():
+            gen_ids = model.generate(
+                seed_ids.to(device), seed_chars.to(device),
+                max_new=req.max_tokens, temperature=req.temperature, top_k=req.top_k,
+                rep_penalty=req.rep_penalty,
+            )
 
-    gen_words = [inv.get(i.item(), "?") for i in gen_ids[0]]
-    reply = " ".join([w for w in gen_words[len(prompt_words)+1:] if w not in ("<UNK>", "?", "<PAD>")])
+        gen_words = [inv.get(i.item(), "?") for i in gen_ids[0]]
+        reply = " ".join([w for w in gen_words[len(prompt_words)+1:] if w not in ("<UNK>", "?", "<PAD>")])
 
     if tagger is None:
         pos_result = {"tags": [], "tp": {"cohesion": 0}}
@@ -740,7 +796,7 @@ async def chat(req: ChatRequest):
     if hasattr(model, "_tp_state") and model._tp_state:
         tp_phase = getattr(model._tp_state, "phase_name", "UNKNOWN")
 
-    return {
+    resp = {
         "user": req.message,
         "reply": reply,
         "pos_tags": pos_result["tags"],
@@ -748,6 +804,10 @@ async def chat(req: ChatRequest):
         "cohesion": pos_result["tp"].get("cohesion", 0),
         "model": model_type,
     }
+    if reasoning_trace is not None:
+        resp["reasoned"] = True
+        resp["reasoning"] = reasoning_trace
+    return resp
 
 
 @app.post("/chat/rag")

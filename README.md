@@ -40,6 +40,30 @@ Dictionary and ranks the retrieved sentences with the same LM score. Answers are
 tagged with their source (`local`, `web: wikipedia: …`, `web: urbandictionary`,
 `repo: FACTS.md`), and misspelled queries get `did you mean` suggestions.
 
+## Test-Time Reasoning
+
+`test_time_reason.py` adds a System-2 reasoning loop that spends compute at
+inference time to compensate for the generative wall: it samples K draft
+continuations with a temperature sweep, **self-scores each draft by its
+conditioned-LM perplexity** (the model's one measured strength), and reports
+a position-wise consensus across drafts (self-consistency). Every response
+carries a full reasoning trace (draft PPLs, spread, agreement, distinct first
+tokens, phase diagnostics).
+
+```bash
+curl -X POST localhost:8080/reason -H 'Content-Type: application/json' \
+     -d '{"prompt":"the cat sat on the mat","num_drafts":6,"max_tokens":24}'
+# or: chat with reason=true
+curl -X POST localhost:8080/chat -H 'Content-Type: application/json' \
+     -d '{"message":"what is ai","reason":true}'
+```
+
+`eval_model.py` measures the payoff (this is the honest part): a
+**generalization probe** (continue-a-held-out-pattern, pick the true next word
+by LM prior; chance = 0.25) and a **self-consistency probe** (agreement across
+drafts). On the mid-training epoch-0 checkpoint: generalization **0.50 vs 0.25**
+chance, reasoning consensus **0.45**.
+
 Web UI:
 
 ```bash
@@ -60,9 +84,10 @@ table.)
 ## Repository Map
 
 - `train_transformer.py` — main model + training loop (`OctoTransformerLM`, `--resume`)
-- `octo_serve.py` — FastAPI server: `/chat/rag`, `/chat-ui`, `/health`
+- `octo_serve.py` — FastAPI server: `/chat/rag`, `/reason`, `/chat-ui`, `/health`
 - `tools/chat_retrieval.py` — retrieval + LM-ranking chatbot (local + web)
-- `eval_model.py` — canonical evaluation suite (perplexity, robustness, diagnostics)
+- `eval_model.py` — canonical evaluation suite (perplexity, robustness, generalization, self-consistency, diagnostics)
+- `test_time_reason.py` — System-2 test-time reasoning (multi-draft, LM self-scored, consensus)
 - `PITCH.md`, `PITCH_READ_ALOUD.md`, `PITCH_DEEP_DIVE.md` — the pitch, with real numbers
 - `RESULTS.md` — full honest results, training history v3–v8, the generative wall
 - `FACTS.md` — small curated facts (e.g. the Transcendplexity definition)

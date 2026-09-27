@@ -10,6 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from train_transformer import OctoTransformerLM, CHAR_PAD, BOS_ID, EOS_ID
+from test_time_reason import encode_prompt, next_word_scores, reason
 
 
 def load_wikitext2_test():
@@ -205,6 +206,97 @@ def evaluate_perturbation(model, word_vocab, char_vocab, sentences, device, n_pa
     }
 
 
+def evaluate_generalization(model, word_vocab, char_vocab, sentences, device, n=50, k_distractors=3):
+    """Out-of-domain continuation probe (uses the model's LM-scoring strength).
+
+    Prompt = first len-2 words of a held-out sentence; the answer is the real
+    next word; distractors are random in-vocabulary words. If the model's LM
+    prior puts the true continuation at rank 1 by conditioned PPL, that is a
+    measurable generalization signal. Chance = 1/(k_distractors+1).
+    """
+    model.eval()
+    import random
+    random.seed(42)
+    pool = [s for s in sentences if len(s) >= 4]
+    common = [w for w, i in word_vocab.items() if i > 3]
+
+    probed = [pool[i] for i in random.sample(range(len(pool)), min(n, len(pool)))]
+    correct = 0
+    used = 0
+    ppl_ans, ppl_dist = [], []
+    misses = []
+
+    for words in probed:
+        prompt = words[1:len(words) - 2]
+        answer = words[len(words) - 2]
+        if len(prompt) < 2:
+            continue
+        distractors = random.sample([w for w in common if w != answer], k_distractors)
+        cands = [answer] + distractors
+        scored = next_word_scores(model, prompt, cands, word_vocab, char_vocab, device=device)
+        if not scored:
+            continue
+        used += 1
+        rank = [w for w, _, _ in scored].index(answer) + 1
+        if rank == 1:
+            correct += 1
+        else:
+            misses.append((answer, rank, scored[:2]))
+        for w, ppl, _ in scored:
+            if w == answer:
+                ppl_ans.append(ppl)
+            else:
+                ppl_dist.append(ppl)
+
+    acc = correct / max(used, 1)
+    return {
+        "n": used,
+        "k_candidates": k_distractors + 1,
+        "chance": 1.0 / (k_distractors + 1),
+        "accuracy": round(acc, 4),
+        "above_chance": round(max(0.0, acc - 1.0 / (k_distractors + 1)), 4),
+        "ppl_answer_mean": round(sum(ppl_ans) / max(len(ppl_ans), 1), 3),
+        "ppl_distractor_mean": round(sum(ppl_dist) / max(len(ppl_dist), 1), 3),
+        "separation": round(sum(ppl_dist) / max(len(ppl_dist), 1) - sum(ppl_ans) / max(len(ppl_ans), 1), 3),
+        "misses": misses[:5],
+    }
+
+
+def evaluate_test_time_reasoning(model, word_vocab, char_vocab, sentences, device, n=6, drafts=6):
+    """Self-consistency of multi-draft reasoning over held-out prompts."""
+    model.eval()
+    import random
+    random.seed(7)
+    pool = [s for s in sentences if len(s) >= 5]
+    prompts = [" ".join(s[1:5]) for s in random.sample(pool, min(n, len(pool)))]
+
+    agreements, spreads, diversities, ppls = [], [], [], []
+    examples = []
+    for p in prompts:
+        r = reason(model, word_vocab, char_vocab, device, p,
+                   num_drafts=drafts, max_tokens=12, temperature=0.9)
+        t = r["trace"]
+        agreements.append(t["consensus_agreement"])
+        if t["ppl_spread"] is not None:
+            spreads.append(t["ppl_spread"])
+        diversities.append(t["distinct_first_tokens"])
+        if t["ppl_best"] is not None:
+            ppls.append(t["ppl_best"])
+        examples.append({"prompt": p, "chosen": r["chosen"]["text"],
+                         "consensus": r["consensus"]["text"],
+                         "agreement": t["consensus_agreement"]})
+
+    return {
+        "n": len(prompts),
+        "drafts_per_prompt": drafts,
+        "consensus_agreement_mean": round(sum(agreements) / max(len(agreements), 1), 3),
+        "ppl_spread_mean": round(sum(spreads) / max(len(spreads), 1), 3),
+        "distinct_first_tokens_mean": round(sum(diversities) / max(len(diversities), 1), 2),
+        "chosen_ppl_mean": round(sum(ppls) / max(len(ppls), 1), 3),
+        "examples": examples,
+    }
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -294,6 +386,39 @@ if __name__ == "__main__":
     print()
 
     print("=" * 60)
+    print("GENERALIZATION PROBE (continue-the-pattern, ranked by LM prior)")
+    print("=" * 60)
+    if sentences:
+        t0 = time.time()
+        gen = evaluate_generalization(model, wc, cc, sentences, device, n=50)
+        elapsed = time.time() - t0
+        print(f"  Trials:             {gen['n']}  (chance = {gen['chance']:.2f})")
+        print(f"  Accuracy:           {gen['accuracy']:.3f}  (above chance: +{gen['above_chance']:.3f})")
+        print(f"  PPL answer:         {gen['ppl_answer_mean']:.2f}  vs distractor: {gen['ppl_distractor_mean']:.2f}")
+        print(f"  Separation:         {gen['separation']:.2f}")
+        for m in gen["misses"][:3]:
+            print(f"    MISS '{m[0]}' ranked {m[1]} (top: {m[2]})")
+        print(f"  Time:               {elapsed:.1f}s")
+    print()
+
+    print("=" * 60)
+    print("TEST-TIME REASONING (multi-draft self-consistency)")
+    print("=" * 60)
+    if sentences:
+        t0 = time.time()
+        tt = evaluate_test_time_reasoning(model, wc, cc, sentences, device, n=6, drafts=6)
+        elapsed = time.time() - t0
+        print(f"  Prompts:            {tt['n']} x {tt['drafts_per_prompt']} drafts")
+        print(f"  Consensus agreement: {tt['consensus_agreement_mean']:.3f}")
+        print(f"  Draft PPL spread:   {tt['ppl_spread_mean']:.2f}")
+        print(f"  Distinct 1st tokens: {tt['distinct_first_tokens_mean']:.2f}")
+        print(f"  Chosen PPL:         {tt['chosen_ppl_mean']:.2f}")
+        for ex in tt["examples"][:3]:
+            print(f"    '{ex['prompt']}' -> chosen: '{ex['chosen'][:40]}' | consensus: '{ex['consensus'][:30]}'")
+        print(f"  Time:               {elapsed:.1f}s")
+    print()
+
+    print("=" * 60)
     print("SUMMARY")
     print("=" * 60)
     print(f"  Model:         {total/1e6:.1f}M params")
@@ -302,4 +427,7 @@ if __name__ == "__main__":
     print(f"  Train ppl:     {ckpt.get('ppl', '?'):.2f}")
     if sentences:
         print(f"  Eval ppl:      {ppl:.2f}")
+    if sentences:
+        print(f"  Generalization: {gen['accuracy']:.3f} vs chance {gen['chance']:.2f}")
+        print(f"  Reasoning consensus: {tt['consensus_agreement_mean']:.3f}")
     print(f"  Diagnostics:   {model.get_diagnostics()}")
