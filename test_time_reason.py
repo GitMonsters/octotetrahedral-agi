@@ -66,19 +66,26 @@ def score_continuation(model, seed_ids, seed_chars, completion, device=None):
     max_len = getattr(model, "max_len", 128)
     L = seed_chars.size(2)
 
-    ids = torch.cat([seed_ids, torch.tensor([completion + [EOS_ID]], dtype=torch.long)], dim=1)
+    ids = torch.cat([seed_ids, torch.tensor([completion + [EOS_ID]], dtype=torch.long, device=seed_ids.device)], dim=1)
     ids = ids[:, :max_len]
-    extra = torch.zeros(1, ids.size(1) - S, L, dtype=torch.long)
+    extra = torch.zeros(1, ids.size(1) - S, L, dtype=torch.long, device=seed_chars.device)
     chars = torch.cat([seed_chars, extra], dim=1)[:, :max_len]
 
     out = model(ids, chars, targets=ids)
     logits = out["lm_logits"]  # [1, T, V]
 
     # Prediction at column i targets ids[i+1]; completion occupies columns S..S+C-1
-    C = len([t for t in completion if t != 0])
+    C = len(completion)
+    max_avail = ids.size(1) - S          # truncation may shorten the completion
+    C = min(C, max_avail)
+    completion = completion[:C]
     pred_logits = logits[0, S - 1:S - 1 + C, :]
-    targets = torch.tensor([t for t in completion[:C] if t != 0], dtype=torch.long, device=pred_logits.device)
-    pred_logits = pred_logits[:C]
+    targets_list = [t for t in completion if t != 0]
+    if not targets_list:
+        return None, None
+    pred_logits = pred_logits[:len(targets_list)]
+    targets = torch.tensor(targets_list, dtype=torch.long, device=pred_logits.device)
+    C = len(targets_list)
 
     nll = F.cross_entropy(pred_logits, targets, reduction="sum")
     if C == 0:
@@ -117,6 +124,8 @@ def reason(model, word_vocab, char_vocab, device, prompt,
     inv = {v: k for k, v in word_vocab.items()}
     words = prompt.split() or ["the"]
     seed_ids, seed_chars = encode_prompt(words, word_vocab, char_vocab)
+    if device is not None:
+        seed_ids, seed_chars = seed_ids.to(device), seed_chars.to(device)
 
     temps = [max(0.2, temperature + d) for d in (-0.3, 0.0, 0.3)]
     candidates = []

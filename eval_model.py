@@ -249,15 +249,16 @@ def evaluate_generalization(model, word_vocab, char_vocab, sentences, device, n=
                 ppl_dist.append(ppl)
 
     acc = correct / max(used, 1)
+    import statistics
     return {
         "n": used,
         "k_candidates": k_distractors + 1,
         "chance": 1.0 / (k_distractors + 1),
         "accuracy": round(acc, 4),
-        "above_chance": round(max(0.0, acc - 1.0 / (k_distractors + 1)), 4),
-        "ppl_answer_mean": round(sum(ppl_ans) / max(len(ppl_ans), 1), 3),
-        "ppl_distractor_mean": round(sum(ppl_dist) / max(len(ppl_dist), 1), 3),
-        "separation": round(sum(ppl_dist) / max(len(ppl_dist), 1) - sum(ppl_ans) / max(len(ppl_ans), 1), 3),
+        "above_chance": round(acc - 1.0 / (k_distractors + 1), 4),
+        "ppl_answer_median": round(statistics.median(ppl_ans) if ppl_ans else 0.0, 2),
+        "ppl_distractor_median": round(statistics.median(ppl_dist) if ppl_dist else 0.0, 2),
+        "separation": round(statistics.median(ppl_dist) - statistics.median(ppl_ans) if ppl_ans and ppl_dist else 0.0, 2),
         "misses": misses[:5],
     }
 
@@ -393,8 +394,8 @@ if __name__ == "__main__":
         gen = evaluate_generalization(model, wc, cc, sentences, device, n=50)
         elapsed = time.time() - t0
         print(f"  Trials:             {gen['n']}  (chance = {gen['chance']:.2f})")
-        print(f"  Accuracy:           {gen['accuracy']:.3f}  (above chance: +{gen['above_chance']:.3f})")
-        print(f"  PPL answer:         {gen['ppl_answer_mean']:.2f}  vs distractor: {gen['ppl_distractor_mean']:.2f}")
+        print(f"  Accuracy:           {gen['accuracy']:.3f}  (above chance: {gen['above_chance']:+.3f})")
+        print(f"  PPL answer:         {gen['ppl_answer_median']:.1f}  vs distractor: {gen['ppl_distractor_median']:.1f}")
         print(f"  Separation:         {gen['separation']:.2f}")
         for m in gen["misses"][:3]:
             print(f"    MISS '{m[0]}' ranked {m[1]} (top: {m[2]})")

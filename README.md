@@ -62,7 +62,11 @@ curl -X POST localhost:8080/chat -H 'Content-Type: application/json' \
 **generalization probe** (continue-a-held-out-pattern, pick the true next word
 by LM prior; chance = 0.25) and a **self-consistency probe** (agreement across
 drafts). On the mid-training epoch-0 checkpoint: generalization **0.50 vs 0.25**
-chance, reasoning consensus **0.45**.
+chance (significant: one-sided p < 0.001, stable across seeds), reasoning
+consensus **0.45**. The score is partly a word-frequency prior: a null control
+with a random in-vocabulary "answer" scores 0.34, so the context-discriminative
+component is ≈0.16 above that — real, but small, consistent with a model this
+young.
 
 Web UI:
 
