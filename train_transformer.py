@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import json
 import time
+import os
 import math
 import sys
 import os
@@ -589,6 +590,7 @@ def train(args):
                            "num_layers": args.num_layers, "dim_ff": args.dim_ff,
                            "dropout": args.dropout},
                 "loss": avg_loss, "ppl": ppl, "eval_ppl": eval_ppl}
+        os.makedirs("checkpoints", exist_ok=True)
         torch.save(ckpt, f"checkpoints/octo_transformer_epoch{epoch}.pt")
 
         # Save best by eval PPL (not train loss)
