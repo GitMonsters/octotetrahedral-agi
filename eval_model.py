@@ -30,6 +30,23 @@ def load_wikitext2_test():
     return []
 
 
+def load_hidden_split():
+    """Sealed held-out from corpus docs the LM never trained on (see
+    tools/build_hidden_split.py). Read-only at validation time."""
+    path = Path("data/eval_hidden.jsonl")
+    if not path.exists():
+        return []
+    sentences = []
+    with open(path) as f:
+        for line in f:
+            entry = json.loads(line)
+            if "text" in entry:
+                words = entry["text"].split()
+                if len(words) >= 3:
+                    sentences.append(words)
+    return sentences
+
+
 def evaluate_ppl(model, word_vocab, char_vocab, sentences, device, batch_size=16):
     model.eval()
     max_word_len = 30
@@ -206,6 +223,49 @@ def evaluate_perturbation(model, word_vocab, char_vocab, sentences, device, n_pa
     }
 
 
+def _binomial_one_sided(k, n, p):
+    """P(X >= k) for X ~ Binomial(n, p); exact sum (n is small here)."""
+    return sum(math.comb(n, i) * (p ** i) * ((1 - p) ** (n - i))
+               for i in range(max(0, int(k)), n + 1))
+
+
+def evaluate_generalization_null_control(model, word_vocab, char_vocab, sentences,
+                                         device, n=50, k_distractors=3):
+    """Same probe as evaluate_generalization but the 'answer' slot holds a
+    random common word instead of the true continuation. This measures how
+    much of the headline accuracy is a word-frequency prior rather than
+    context discrimination. Net signal = accuracy - null_accuracy."""
+    model.eval()
+    import random
+    random.seed(424242)
+    pool = [s for s in sentences if len(s) >= 4]
+    common = [w for w, i in word_vocab.items() if i > 3]
+
+    probed = [pool[i] for i in random.sample(range(len(pool)), min(n, len(pool)))]
+    correct = 0
+    used = 0
+    for words in probed:
+        prompt = words[1:len(words) - 2]
+        if len(prompt) < 2:
+            continue
+        answer = random.choice(common)
+        distractors = random.sample([w for w in common if w != answer], k_distractors)
+        cands = [answer] + distractors
+        scored = next_word_scores(model, prompt, cands, word_vocab, char_vocab, device=device)
+        if not scored:
+            continue
+        used += 1
+        rank = [w for w, _, _ in scored].index(answer) + 1
+        if rank == 1:
+            correct += 1
+
+    return {
+        "n": used,
+        "chance": 1.0 / (k_distractors + 1),
+        "null_accuracy": round(correct / max(used, 1), 4),
+    }
+
+
 def evaluate_generalization(model, word_vocab, char_vocab, sentences, device, n=50, k_distractors=3):
     """Out-of-domain continuation probe (uses the model's LM-scoring strength).
 
@@ -252,6 +312,7 @@ def evaluate_generalization(model, word_vocab, char_vocab, sentences, device, n=
     import statistics
     return {
         "n": used,
+        "correct": correct,
         "k_candidates": k_distractors + 1,
         "chance": 1.0 / (k_distractors + 1),
         "accuracy": round(acc, 4),
@@ -305,6 +366,8 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint", default="checkpoints/octo_transformer_best.pt")
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--device", default=None)
+    parser.add_argument("--gate", type=float, default=None,
+                        help="(hidden split) exit 1 if net context signal below this threshold")
     args = parser.parse_args()
 
     if args.device:
@@ -403,6 +466,45 @@ if __name__ == "__main__":
     print()
 
     print("=" * 60)
+    print("GENERALIZATION NULL CONTROL (random-answer prior)")
+    print("=" * 60)
+    if sentences:
+        t0 = time.time()
+        gen_null = evaluate_generalization_null_control(model, wc, cc, sentences, device, n=50)
+        elapsed = time.time() - t0
+        p_val = _binomial_one_sided(gen["correct"], gen["n"], gen["chance"])
+        net = gen["accuracy"] - gen_null["null_accuracy"]
+        print(f"  Null accuracy:      {gen_null['null_accuracy']:.3f}  (random common word as answer, chance {gen_null['chance']:.2f})")
+        print(f"  Context signal:     acc - null = {gen['accuracy']:.3f} - {gen_null['null_accuracy']:.3f} = {net:+.3f}")
+        print(f"  p (acc vs chance):  {p_val:.4f}  (one-sided binomial, n={gen['n']})")
+        print(f"  Time:               {elapsed:.1f}s")
+    print()
+
+    print("=" * 60)
+    print("HIDDEN GENERALIZATION PROBE (sealed split, never trained on)")
+    print("=" * 60)
+    hidden = load_hidden_split()
+    if hidden:
+        t0 = time.time()
+        hgen = evaluate_generalization(model, wc, cc, hidden, device, n=30)
+        hnull = evaluate_generalization_null_control(model, wc, cc, hidden, device, n=30)
+        elapsed = time.time() - t0
+        hp = _binomial_one_sided(hgen["correct"], hgen["n"], hgen["chance"])
+        hnet = hgen["accuracy"] - hnull["null_accuracy"]
+        print(f"  Sentences:          {len(hidden)} (corpus docs, OOD)")
+        print(f"  Accuracy:           {hgen['accuracy']:.3f}  (chance {hgen['chance']:.2f}, p={hp:.4f})")
+        print(f"  Null control:       {hnull['null_accuracy']:.3f}  ->  net context signal {hnet:+.3f}")
+        print(f"  Time:               {elapsed:.1f}s")
+        if args.gate is not None and hnet < args.gate:
+            print(f"  GATE: FAIL (net {hnet:+.3f} < threshold {args.gate:+.3f}; do NOT promote this model)")
+            sys.exit(1)
+        if args.gate is not None:
+            print(f"  GATE: PASS (net {hnet:+.3f} >= threshold {args.gate:+.3f})")
+    else:
+        print("  data/eval_hidden.jsonl not found -- run tools/build_hidden_split.py")
+    print()
+
+    print("=" * 60)
     print("TEST-TIME REASONING (multi-draft self-consistency)")
     print("=" * 60)
     if sentences:
@@ -429,6 +531,8 @@ if __name__ == "__main__":
     if sentences:
         print(f"  Eval ppl:      {ppl:.2f}")
     if sentences:
-        print(f"  Generalization: {gen['accuracy']:.3f} vs chance {gen['chance']:.2f}")
+        print(f"  Generalization: {gen['accuracy']:.3f} vs chance {gen['chance']:.2f} (null {gen_null['null_accuracy']:.3f}, p={p_val:.4f})")
         print(f"  Reasoning consensus: {tt['consensus_agreement_mean']:.3f}")
+    if hidden:
+        print(f"  Hidden gen:    {hgen['accuracy']:.3f} vs chance {hgen['chance']:.2f} (null {hnull['null_accuracy']:.3f}, net {hnet:+.3f})")
     print(f"  Diagnostics:   {model.get_diagnostics()}")

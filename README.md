@@ -66,7 +66,10 @@ chance (significant: one-sided p < 0.001, stable across seeds), reasoning
 consensus **0.45**. The score is partly a word-frequency prior: a null control
 with a random in-vocabulary "answer" scores 0.34, so the context-discriminative
 component is ≈0.16 above that — real, but small, consistent with a model this
-young.
+young. A sealed OOD probe (`data/eval_hidden.jsonl`, corpus docs the LM was
+never trained on) is an honest transfer check: at epoch-11 the model shows
+**no net context signal there** (acc 0.55 vs null 0.60), i.e. generalization
+does not yet transfer out-of-domain.
 
 Web UI:
 

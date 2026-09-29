@@ -114,7 +114,7 @@ def next_word_scores(model, seed_words, candidates, word_vocab, char_vocab, devi
 @torch.no_grad()
 def reason(model, word_vocab, char_vocab, device, prompt,
            num_drafts=6, max_tokens=24, temperature=0.8, top_k=30,
-           rep_penalty=1.3):
+           rep_penalty=1.3, stall_restart=True):
     """Multi-draft test-time reasoning over a prompt.
 
     Returns chosen text (best-PPL draft), the self-consistency trace, and all
@@ -146,6 +146,53 @@ def reason(model, word_vocab, char_vocab, device, prompt,
 
     scored = [c for c in candidates if c["ppl"] is not None and not c["empty"]]
     scored.sort(key=lambda c: c["ppl"])
+
+    # Stall-restart: when the drafts have converged (all stuck in one basin),
+    # stop re-sampling it and instead copy the best draft's stem, extend the
+    # seed with it, and re-spin with a fresh temperature (Weco's slot-machine
+    # discovery: the winner "pays" only while it still diverges). Scores stay
+    # comparable because restarts are scored against the ORIGINAL seed.
+    restarts_added = 0
+    if scored and stall_restart and num_drafts >= 3:
+        sig_counts = Counter(tuple(c["tokens"]) for c in scored)
+        top_sig, top_n = sig_counts.most_common(1)[0] if sig_counts else ((), 0)
+        texts0 = [c["text"].split() for c in scored]
+        distinct0 = len({t[0] for t in texts0 if t})
+        stall = (top_n >= max(2, num_drafts // 2)) or distinct0 <= 1
+        if stall:
+            anchor = [t for t in (list(top_sig) or scored[0]["tokens"])
+                      if t not in (BOS_ID, EOS_ID, 0)][:6]
+            n_restarts = min(2, max(1, num_drafts // 3))
+            for r in range(n_restarts):
+                if not anchor:
+                    break
+                ext_sid = torch.cat([seed_ids,
+                                     torch.tensor([anchor], dtype=torch.long,
+                                                  device=seed_ids.device)], dim=1)
+                ext_sch = torch.cat([seed_chars,
+                                     torch.zeros(1, len(anchor), seed_chars.size(2),
+                                                 dtype=torch.long, device=seed_chars.device)], dim=1)
+                temp_r = max(0.3, temperature + 0.4 + 0.15 * r)
+                comp = draft(model, ext_sid, ext_sch, max_tokens,
+                             temp_r, min(top_k, 12), rep_penalty + 0.3)
+                if any(entry["tokens"] == comp for entry in candidates):
+                    continue
+                nll, ppl = score_continuation(model, seed_ids, seed_chars, comp, device=device)
+                text = " ".join([w for w in decode_ids(comp, inv) if w not in ("<PAD>", "<BOS>", "<EOS>", "?")])
+                candidates.append({
+                    "index": len(candidates),
+                    "text": text,
+                    "tokens": comp,
+                    "ppl": round(float(ppl), 3) if ppl is not None else None,
+                    "mean_nll": round(float(nll), 3) if nll is not None else None,
+                    "temperature": round(temp_r, 2),
+                    "empty": len(comp) == 0,
+                    "restart": True,
+                })
+                restarts_added += 1
+            scored = [c for c in candidates if c["ppl"] is not None and not c["empty"]]
+            scored.sort(key=lambda c: c["ppl"])
+
     chosen = scored[0] if scored else candidates[0]
 
     consensus_text = ""
@@ -169,6 +216,7 @@ def reason(model, word_vocab, char_vocab, device, prompt,
     trace = {
         "num_drafts": num_drafts,
         "temps": temps,
+        "restart_drafts": restarts_added,
         "distinct_first_tokens": dist_first,
         "consensus_agreement": round(agreement, 3),
         "ppl_best": chosen.get("ppl"),
