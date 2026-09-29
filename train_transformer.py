@@ -427,6 +427,7 @@ def train(args):
     print(f"Data: {data_paths}")
 
     ckpt = None
+    rbs = None
     if args.resume:
         ckpt = torch.load(args.resume, map_location="cpu", weights_only=False)
         base_wv = ckpt["word_vocab"]
@@ -446,6 +447,40 @@ def train(args):
         print(f"  Word vocab: {len(word_vocab)} (base {len(base_wv)} "
               f"+ {len(word_vocab) - len(base_wv)} new), "
               f"Char vocab: {len(char_vocab)}")
+    elif args.resume_rollback:
+        try:
+            rbs = torch.load(args.resume_rollback, map_location="cpu", weights_only=False)
+        except Exception as _e:
+            print(f"[train] rollback unreadable ({_e}); falling back to warm-start")
+            rbs = None
+        if rbs is not None:
+            print(f"Resuming mid-epoch from {args.resume_rollback} "
+                  f"(epoch {rbs.get('epoch')}, batch {rbs.get('batch')})")
+            word_vocab = rbs["word_vocab"]
+            char_vocab = rbs["char_vocab"]
+            for _a in ("d_model", "nhead", "num_layers", "dim_ff", "dropout"):
+                if _a in rbs.get("config", {}):
+                    setattr(args, _a, rbs["config"][_a])
+            print(f"  Word vocab: {len(word_vocab)}, Char vocab: {len(char_vocab)} "
+                  "(exact, no extension)")
+        else:
+            _fb = "checkpoints/octo_transformer_best.pt"
+            if not Path(_fb).exists():
+                _fb = args.resume_rollback
+            ckpt = torch.load(_fb, map_location="cpu", weights_only=False)
+            base_wv = ckpt["word_vocab"]
+            base_cv = ckpt["char_vocab"]
+            for _a in ("d_model", "nhead", "num_layers", "dim_ff", "dropout"):
+                if _a in ckpt.get("config", {}):
+                    setattr(args, _a, ckpt["config"][_a])
+            print(f"Warm-start fallback from {_fb} "
+                  f"(epoch {ckpt.get('epoch')}, eval_ppl={ckpt.get('eval_ppl')})")
+            word_vocab, char_vocab = build_extended_vocab(
+                data_paths, base_wv, base_cv,
+                min_freq=args.min_freq, extend_min_freq=args.extend_min_freq)
+            print(f"  Word vocab: {len(word_vocab)} (base {len(base_wv)} "
+                  f"+ {len(word_vocab) - len(base_wv)} new), "
+                  f"Char vocab: {len(char_vocab)}")
     else:
         print("Building vocab...")
         word_vocab, char_vocab = build_vocab(data_paths, min_freq=args.min_freq)
@@ -457,7 +492,7 @@ def train(args):
         dim_ff=args.dim_ff, dropout=args.dropout,
     ).to(device)
 
-    if args.resume and ckpt is not None:
+    if ckpt is not None:
         target_sd = model.state_dict()
         new_sd = {}
         for k, v in ckpt["model"].items():
@@ -479,13 +514,17 @@ def train(args):
                 new_sd[k] = tv
         model.load_state_dict(new_sd, strict=True)
         print("  Warm-started weights from checkpoint")
+    elif rbs is not None:
+        model.load_state_dict(rbs["model"], strict=False)
+        print("  Restored weights from rollback (exact vocab)")
 
     total = sum(p.numel() for p in model.parameters())
     print(f"Model: {total / 1e6:.1f}M params")
 
     dataset = LMDataset(data_paths, word_vocab)
     loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True,
-                       collate_fn=make_collate(word_vocab, char_vocab))
+                       collate_fn=make_collate(word_vocab, char_vocab),
+                       generator=torch.Generator().manual_seed(args.seed))
     print(f"Dataset: {len(dataset)} sentences, {len(loader)} batches/epoch")
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
@@ -494,6 +533,23 @@ def train(args):
     best_loss = float("inf")
     best_eval_ppl = float("inf")
     epochs_no_improve = 0
+    start_epoch = 0
+    start_batch = 0
+    if rbs is not None:
+        if "optimizer" in rbs:
+            optimizer.load_state_dict(rbs["optimizer"])
+        if "scheduler" in rbs:
+            scheduler.load_state_dict(rbs["scheduler"])
+        start_epoch = int(rbs.get("epoch", 0))
+        start_batch = int(rbs.get("batch", 0))
+        best_eval_ppl = float(rbs.get("best_eval_ppl", float("inf")))
+        best_loss = float(rbs.get("best_loss", float("inf")))
+        if rbs.get("rng") is not None:
+            try:
+                torch.set_rng_state(rbs["rng"])
+            except Exception as e:
+                print(f"  (rng state not restored: {e})")
+        print(f"  Resuming at epoch {start_epoch} batch {start_batch}")
     inv_vocab = {v: k for k, v in word_vocab.items()}
 
     # Build held-out eval set from CLEAN source (not in training data)
@@ -539,13 +595,15 @@ def train(args):
 
     print(f"\nTraining: {args.epochs} epochs, lr={args.lr}, early_stop_patience={args.patience}\n")
 
-    for epoch in range(args.epochs):
+    for epoch in range(start_epoch, args.epochs):
         model.train()
         total_loss = 0.0
         n_batches = 0
         t0 = time.time()
 
         for batch_idx, (word_ids, char_ids) in enumerate(loader):
+            if epoch == start_epoch and batch_idx < start_batch:
+                continue
             word_ids = word_ids.to(device)
             char_ids = char_ids.to(device)
             out = model(word_ids, char_ids, targets=word_ids)
@@ -558,6 +616,27 @@ def train(args):
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
+
+            if (batch_idx + 1) % args.rollback_interval == 0:
+                rb = {
+                    "epoch": epoch,
+                    "batch": batch_idx + 1,
+                    "model": model.state_dict(),
+                    "word_vocab": word_vocab,
+                    "char_vocab": char_vocab,
+                    "config": {"d_model": args.d_model, "nhead": args.nhead,
+                               "num_layers": args.num_layers, "dim_ff": args.dim_ff,
+                               "dropout": args.dropout},
+                    "optimizer": optimizer.state_dict(),
+                    "scheduler": scheduler.state_dict(),
+                    "best_eval_ppl": best_eval_ppl,
+                    "best_loss": best_loss,
+                    "rng": torch.get_rng_state(),
+                }
+                os.makedirs("checkpoints", exist_ok=True)
+                _tmp = "checkpoints/octo_transformer_rollback.pt.tmp"
+                torch.save(rb, _tmp)
+                os.replace(_tmp, "checkpoints/octo_transformer_rollback.pt")
 
             lm_val = out["lm_loss"].item() if out["lm_loss"] is not None else 0
             total_loss += lm_val
@@ -591,13 +670,17 @@ def train(args):
                            "dropout": args.dropout},
                 "loss": avg_loss, "ppl": ppl, "eval_ppl": eval_ppl}
         os.makedirs("checkpoints", exist_ok=True)
-        torch.save(ckpt, f"checkpoints/octo_transformer_epoch{epoch}.pt")
+        _ep = f"checkpoints/octo_transformer_epoch{epoch}.pt"
+        torch.save(ckpt, _ep + ".tmp")
+        os.replace(_ep + ".tmp", _ep)
 
         # Save best by eval PPL (not train loss)
         if eval_ppl < best_eval_ppl:
             best_eval_ppl = eval_ppl
             best_loss = avg_loss
-            torch.save(ckpt, "checkpoints/octo_transformer_best.pt")
+            torch.save(ckpt, "checkpoints/octo_transformer_best.pt.tmp")
+            os.replace("checkpoints/octo_transformer_best.pt.tmp",
+                       "checkpoints/octo_transformer_best.pt")
             epochs_no_improve = 0
             print(f"  New best: eval_ppl={eval_ppl:.2f} train_ppl={ppl:.2f}")
         else:
@@ -648,6 +731,9 @@ if __name__ == "__main__":
     p.add_argument("--min-freq", type=int, default=2)
     p.add_argument("--patience", type=int, default=5, help="Early stopping patience (epochs without eval PPL improvement)")
     p.add_argument("--resume", default=None, help="Checkpoint path to warm-start from (keeps/extends its vocab)")
+    p.add_argument("--resume-rollback", default=None, help="Mid-epoch rollback checkpoint: exact vocab, restores opt/sched/epoch/batch/rng")
+    p.add_argument("--rollback-interval", type=int, default=2000, help="Save a resumable snapshot every N batches")
+    p.add_argument("--seed", type=int, default=4096, help="Dataloader shuffle seed (enables deterministic mid-epoch resume)")
     p.add_argument("--extend-min-freq", type=int, default=3, help="Min freq for NEW words when resuming")
     p.add_argument("--device", default=None)
     train(p.parse_args())
