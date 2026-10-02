@@ -807,6 +807,8 @@ async def chat(req: ChatRequest):
     if reasoning_trace is not None:
         resp["reasoned"] = True
         resp["reasoning"] = reasoning_trace
+        if "gist" in reasoning:
+            resp["gist"] = reasoning["gist"]
     return resp
 
 

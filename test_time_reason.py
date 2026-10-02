@@ -213,6 +213,32 @@ def reason(model, word_vocab, char_vocab, device, prompt,
 
     dist_first = len({c["text"].split()[0] for c in scored if c["text"].split()}) if scored else 0
 
+    # ---- compressed gist (learned-to-forget) ----
+    # AIDE's memory lesson: keep SHORT NOTES on the distinct draft modes plus ONE
+    # full solution, and only recall operational failure detail once more than
+    # 15% of recent attempts crash. Callers can stuff `gist` into context
+    # instead of the full trace and spend the savings on more drafts.
+    modes = {}
+    for c in scored:
+        words = c["text"].split()
+        key = words[0] if words else "<empty>"
+        m = modes.setdefault(key, {"first": key, "count": 0,
+                                   "best_ppl": None, "stem": ""})
+        m["count"] += 1
+        if c["ppl"] is not None and (m["best_ppl"] is None or c["ppl"] < m["best_ppl"]):
+            m["best_ppl"] = round(c["ppl"], 3)
+            m["stem"] = " ".join(words[:3])
+    notes = sorted(modes.values(), key=lambda m: -m["count"])
+    failed = sum(1 for c in candidates if c["empty"] or c["ppl"] is None)
+    failure_rate = failed / len(candidates) if candidates else 0.0
+    gist = {
+        "full_solution": chosen["text"],
+        "notes": notes,
+        "failure_rate": round(failure_rate, 3),
+    }
+    if failure_rate > 0.15 and failed:
+        gist["failure_detail"] = f"{failed}/{len(candidates)} drafts failed (empty or unscored)"
+
     trace = {
         "num_drafts": num_drafts,
         "temps": temps,
@@ -230,6 +256,7 @@ def reason(model, word_vocab, char_vocab, device, prompt,
         "prompt": prompt,
         "chosen": chosen,
         "consensus": {"text": consensus_text, "agreement": round(agreement, 3)},
+        "gist": gist,
         "candidates": [{k: c[k] for k in ("index", "text", "ppl", "temperature", "empty")} for c in candidates],
         "trace": trace,
     }
