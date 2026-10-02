@@ -324,7 +324,8 @@ def evaluate_generalization(model, word_vocab, char_vocab, sentences, device, n=
     }
 
 
-def evaluate_test_time_reasoning(model, word_vocab, char_vocab, sentences, device, n=6, drafts=6):
+def evaluate_test_time_reasoning(model, word_vocab, char_vocab, sentences, device, n=6, drafts=6,
+                                 reason_cfg=None):
     """Self-consistency of multi-draft reasoning over held-out prompts."""
     model.eval()
     import random
@@ -332,11 +333,15 @@ def evaluate_test_time_reasoning(model, word_vocab, char_vocab, sentences, devic
     pool = [s for s in sentences if len(s) >= 5]
     prompts = [" ".join(s[1:5]) for s in random.sample(pool, min(n, len(pool)))]
 
+    cfg = dict(reason_cfg) if reason_cfg else {}
+    cfg.setdefault("num_drafts", drafts)
+    cfg.setdefault("max_tokens", 12)
+    cfg.setdefault("temperature", 0.9)
+
     agreements, spreads, diversities, ppls = [], [], [], []
     examples = []
     for p in prompts:
-        r = reason(model, word_vocab, char_vocab, device, p,
-                   num_drafts=drafts, max_tokens=12, temperature=0.9)
+        r = reason(model, word_vocab, char_vocab, device, p, **cfg)
         t = r["trace"]
         agreements.append(t["consensus_agreement"])
         if t["ppl_spread"] is not None:
@@ -368,6 +373,8 @@ if __name__ == "__main__":
     parser.add_argument("--device", default=None)
     parser.add_argument("--gate", type=float, default=None,
                         help="(hidden split) exit 1 if net context signal below this threshold")
+    parser.add_argument("--reason-config", default=None,
+                        help="JSON dict for reason() (e.g. served evolved config)")
     args = parser.parse_args()
 
     if args.device:
@@ -509,9 +516,12 @@ if __name__ == "__main__":
     print("=" * 60)
     if sentences:
         t0 = time.time()
-        tt = evaluate_test_time_reasoning(model, wc, cc, sentences, device, n=6, drafts=6)
+        reason_cfg = json.loads(args.reason_config) if args.reason_config else None
+        tt = evaluate_test_time_reasoning(model, wc, cc, sentences, device, n=6, drafts=6,
+                                          reason_cfg=reason_cfg)
         elapsed = time.time() - t0
         print(f"  Prompts:            {tt['n']} x {tt['drafts_per_prompt']} drafts")
+        print(f"  Reason config:      {args.reason_config or 'default (max_tokens 12, temp 0.9)'}")
         print(f"  Consensus agreement: {tt['consensus_agreement_mean']:.3f}")
         print(f"  Draft PPL spread:   {tt['ppl_spread_mean']:.2f}")
         print(f"  Distinct 1st tokens: {tt['distinct_first_tokens_mean']:.2f}")

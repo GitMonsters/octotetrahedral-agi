@@ -1,0 +1,47 @@
+{
+  "generation_done": 11,
+  "winner": {
+    "config": {
+      "num_drafts": 6,
+      "max_tokens": 32,
+      "temperature": 0.33,
+      "top_k": 30,
+      "rep_penalty": 1.06,
+      "stall_restart": false
+    },
+    "agreement": 0.565,
+    "ppl_best_mean": 1.742,
+    "distinct_first_mean": 3.25,
+    "ok": 12,
+    "fails": 0,
+    "fitness": 0.6955
+  },
+  "default": {
+    "num_drafts": 6,
+    "max_tokens": 24,
+    "temperature": 0.8,
+    "top_k": 30,
+    "rep_penalty": 1.3,
+    "stall_restart": true
+  },
+  "visible_prompts": 12,
+  "hidden_gate": {
+    "default": {
+      "fitness": 0.6231,
+      "agreement": 0.414,
+      "ppl_best_mean": 1.682,
+      "distinct_first_mean": 3.73,
+      "ok": 15,
+      "fails": 0
+    },
+    "winner": {
+      "fitness": 0.6774,
+      "agreement": 0.545,
+      "ppl_best_mean": 1.552,
+      "distinct_first_mean": 2.73,
+      "ok": 15,
+      "fails": 0
+    }
+  },
+  "checkpoint": "octo_transformer_best.pt"
+}

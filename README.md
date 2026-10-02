@@ -52,7 +52,7 @@ tokens, phase diagnostics).
 
 ```bash
 curl -X POST localhost:8080/reason -H 'Content-Type: application/json' \
-     -d '{"prompt":"the cat sat on the mat","num_drafts":6,"max_tokens":24}'
+     -d '{"prompt":"the cat sat on the mat","num_drafts":6,"max_tokens":32}'
 # or: chat with reason=true
 curl -X POST localhost:8080/chat -H 'Content-Type: application/json' \
      -d '{"message":"what is ai","reason":true}'
@@ -61,15 +61,27 @@ curl -X POST localhost:8080/chat -H 'Content-Type: application/json' \
 `eval_model.py` measures the payoff (this is the honest part): a
 **generalization probe** (continue-a-held-out-pattern, pick the true next word
 by LM prior; chance = 0.25) and a **self-consistency probe** (agreement across
-drafts). On the mid-training epoch-0 checkpoint: generalization **0.50 vs 0.25**
-chance (significant: one-sided p < 0.001, stable across seeds), reasoning
-consensus **0.45**. The score is partly a word-frequency prior: a null control
-with a random in-vocabulary "answer" scores 0.34, so the context-discriminative
-component is ≈0.16 above that — real, but small, consistent with a model this
-young. A sealed OOD probe (`data/eval_hidden.jsonl`, corpus docs the LM was
-never trained on) is an honest transfer check: at epoch-11 the model shows
-**no net context signal there** (acc 0.55 vs null 0.60), i.e. generalization
-does not yet transfer out-of-domain.
+drafts). On the final model (61.9M params, 38,358-word vocab, eval ppl 1.74,
+resumed to ~epoch-16-equivalent): generalization **0.420 vs 0.25** chance
+(one-sided p = 0.0063), with a random-answer null control at 0.320 → a
+context-discriminative component of **+0.100**. A sealed OOD probe
+(`data/eval_hidden.jsonl`, corpus docs the LM was never trained on) is the
+transfer check: acc **0.444 vs 0.25** (null 0.423) → net **+0.021** — up from
+−0.054 at epoch-11, but still thin: generalization is beginning to transfer
+out-of-domain, not strong.
+
+The served reasoner config was **not hand-tuned**: `tools/evolve_reason.py`
+ran a 12-generation evolutionary search over `reason()` hyperparameters on 12
+visible prompts, gated once against the 15-prompt sealed hidden split. The
+winner config (`temperature 0.33, top_k 30, rep_penalty 1.06, max_tokens
+32, stall_restart off`) beats the pre-search default on the gate (chosen PPL
+1.552 vs 1.682, agreement 0.545 vs 0.414; n=15 — indicative, not
+statistically powered) and doubles observed self-consistency on held-out
+prompts (consensus agreement **0.679** vs 0.413, chosen PPL 1.58 vs 2.76 with
+the old default). A same-prompt A/B confirms the direction: agreement is
+higher on all 6 sampled prompts while chosen-PPL is flat within noise. Caveat
+kept in the results: most of the agreement gain reflects temperature-collapse
+(lower temp → less diverse drafts), a self-consistency signal, not accuracy.
 
 Web UI:
 

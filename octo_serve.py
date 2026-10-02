@@ -95,10 +95,11 @@ class ChatRequest(BaseModel):
 class ReasonRequest(BaseModel):
     prompt: str = Field(..., description="Prompt to reason over")
     num_drafts: int = Field(6, description="Number of candidate drafts to generate")
-    max_tokens: int = Field(24, description="Max tokens per draft")
-    temperature: float = Field(0.8, description="Base sampling temperature")
+    max_tokens: int = Field(32, description="Max tokens per draft")
+    temperature: float = Field(0.33, description="Base sampling temperature")
     top_k: int = Field(30, description="Top-k sampling")
-    rep_penalty: float = Field(1.3, description="Repetition penalty (additive)")
+    rep_penalty: float = Field(1.06, description="Repetition penalty (additive)")
+    stall_restart: bool = Field(False, description="Restart converged stall drafts")
 
 
 class RagRequest(BaseModel):
@@ -711,6 +712,7 @@ async def reason(req: ReasonRequest):
             device, req.prompt,
             num_drafts=req.num_drafts, max_tokens=req.max_tokens,
             temperature=req.temperature, top_k=req.top_k, rep_penalty=req.rep_penalty,
+            stall_restart=req.stall_restart,
         )
     except Exception as e:
         logger.exception("reasoning failed")
@@ -743,8 +745,8 @@ async def chat(req: ChatRequest):
         reasoning = reason_impl(
             transformer_model, transformer_word_vocab, transformer_char_vocab,
             device, req.message,
-            num_drafts=6, max_tokens=max(8, min(req.max_tokens, 24)),
-            temperature=0.8, rep_penalty=1.3,
+            num_drafts=6, max_tokens=min(req.max_tokens, 32),
+            temperature=0.33, rep_penalty=1.06, stall_restart=False,
         )
         reply = reasoning["chosen"]["text"]
         reasoning_trace = reasoning["trace"]
